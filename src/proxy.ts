@@ -1,30 +1,43 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
+function clearSessionAndRedirect(url: URL) {
+  const res = NextResponse.redirect(url);
+  // Borra cookies de sesión de NextAuth (ambas variantes http/https)
+  res.cookies.delete("next-auth.session-token");
+  res.cookies.delete("__Secure-next-auth.session-token");
+  res.cookies.delete("next-auth.csrf-token");
+  res.cookies.delete("__Host-next-auth.csrf-token");
+  return res;
+}
+
 export default auth((req) => {
   const { pathname } = req.nextUrl;
   const session = req.auth;
+  const role = (session?.user as any)?.role;
+
+  // Si hay sesión pero el token está corrupto/incompleto → borrar y redirigir al login
+  if (session && !role) {
+    return clearSessionAndRedirect(new URL("/login", req.url));
+  }
 
   // Public routes
   if (pathname === "/login" || pathname === "/") {
-    if (session) {
-      const role = (session.user as any).role;
+    if (session && role) {
       return NextResponse.redirect(
-        new URL(role === "admin" ? "/admin/operaciones" : "/portal/operaciones/consultoria", req.url)
+        new URL(role === "admin" ? "/admin/operaciones" : "/portal", req.url)
       );
     }
     return NextResponse.next();
   }
 
-  // Protected routes
-  if (!session) {
-    return NextResponse.redirect(new URL("/login", req.url));
+  // Protected routes — sin sesión válida → login
+  if (!session || !role) {
+    return clearSessionAndRedirect(new URL("/login", req.url));
   }
 
-  const role = (session.user as any).role;
-
   if (pathname.startsWith("/admin") && role !== "admin") {
-    return NextResponse.redirect(new URL("/portal/operaciones/consultoria", req.url));
+    return NextResponse.redirect(new URL("/portal", req.url));
   }
 
   if (pathname.startsWith("/portal") && role !== "colaborador") {
