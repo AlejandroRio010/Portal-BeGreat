@@ -48,7 +48,7 @@ export default function AltaOperacionPage() {
   }
 
   return (
-    <div style={{ maxWidth: 680 }}>
+    <div style={{ maxWidth: 760 }}>
       <div className="mb-8 pb-5 border-b border-gray-200">
         <h1 className="text-2xl font-bold text-gray-900">Alta nueva operación</h1>
         <p className="text-sm text-gray-500 mt-1">

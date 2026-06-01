@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 const equipo = [
   {
@@ -17,83 +18,126 @@ const equipo = [
   },
 ];
 
+const docs = [
+  {
+    label: "Presentación corporativa",
+    desc: "Quiénes somos, qué hacemos y cómo trabajamos.",
+    href: "/docs/BeGreat_Presentacion_Corporativa.pdf",
+    icon: "◈",
+  },
+  {
+    label: "Productos financieros",
+    desc: "Catálogo completo de soluciones de financiación.",
+    href: "/docs/BeGreat_Productos_Financieros.pdf",
+    icon: "◉",
+  },
+];
+
 export default function ContactoPage() {
   return (
-    <div className="max-w-xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Contacto</h1>
-        <p className="text-sm text-gray-400 mt-1">Estamos aquí para ayudarte con tus operaciones</p>
-      </div>
+    <div className="grid grid-cols-2 gap-8 items-start">
 
-      {/* Hero card */}
-      <div className="bg-[#2E1A47] p-7 text-white mb-6">
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <p className="text-white/50 text-xs uppercase tracking-widest mb-1">Oficina principal</p>
-            <h2 className="text-xl font-bold">BeGreat Consulting</h2>
-            <p className="text-white/60 text-sm mt-1">Serrano 118, Madrid</p>
-          </div>
+      {/* ── LEFT: Team ────────────────────────────────────────────── */}
+      <div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Contacto</h1>
+          <p className="text-sm text-gray-400 mt-1">Estamos aquí para ayudarte con tus operaciones</p>
+        </div>
+
+        {/* Office hero */}
+        <div className="bg-[#2E1A47] p-6 text-white mb-5">
+          <p className="text-white/40 text-xs uppercase tracking-widest mb-1">Oficina principal</p>
+          <p className="text-lg font-bold">BeGreat Consulting</p>
+          <p className="text-white/50 text-sm mt-0.5 mb-4">Serrano 118, Madrid</p>
           <a
             href="https://begreatconsulting.es"
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-white/10 hover:bg-white/20 transition-colors text-white text-xs font-semibold px-3 py-1.5"
+            className="inline-block bg-white/10 hover:bg-white/20 transition-colors text-white text-xs font-semibold px-3 py-1.5"
           >
             begreatconsulting.es ↗
           </a>
         </div>
 
-        <div className="flex gap-4">
+        {/* Team cards — photo appears only here */}
+        <div className="space-y-4">
           {equipo.map((p) => (
-            <a
-              key={p.nombre}
-              href={`tel:+34${p.telefono.replace(/\s/g, "")}`}
-              className="flex-1 bg-white/10 hover:bg-white/20 transition-colors p-4 flex items-center gap-3"
-            >
-              <div className="w-10 h-10 flex-shrink-0 overflow-hidden bg-white/20">
-                <Image src={p.foto} alt={p.nombre} width={40} height={40} className="object-cover w-full h-full" />
+            <div key={p.nombre} className="bg-white border border-gray-200 p-5 flex items-center gap-5">
+              <div className="w-16 h-16 flex-shrink-0 overflow-hidden bg-[#EEEBF3]">
+                <Image src={p.foto} alt={p.nombre} width={64} height={64} className="object-cover w-full h-full" />
               </div>
-              <div>
-                <p className="text-sm font-semibold">{p.nombre.split(" ")[0]}</p>
-                <p className="text-white/70 text-sm font-mono">{p.telefono}</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900">{p.nombre}</p>
+                <p className="text-xs text-[#2E1A47] font-bold uppercase tracking-wider mt-0.5">{p.rol}</p>
+                <a href={`mailto:${p.email}`} className="text-xs text-gray-400 hover:text-[#2E1A47] transition-colors mt-1.5 block truncate">
+                  {p.email}
+                </a>
               </div>
-            </a>
+              <div className="flex flex-col gap-2 flex-shrink-0">
+                <a
+                  href={`tel:+34${p.telefono.replace(/\s/g, "")}`}
+                  className="bg-[#2E1A47] text-white px-4 py-2 text-sm font-semibold hover:bg-[#5a3d80] transition-colors text-center whitespace-nowrap"
+                >
+                  {p.telefono}
+                </a>
+                <a
+                  href={`mailto:${p.email}`}
+                  className="bg-[#EEEBF3] text-[#2E1A47] px-4 py-2 text-sm font-semibold hover:bg-[#2E1A47] hover:text-white transition-colors text-center"
+                >
+                  Email
+                </a>
+              </div>
+            </div>
           ))}
         </div>
       </div>
 
-      {/* Team cards */}
-      <div className="space-y-4">
-        {equipo.map((p) => (
-          <div key={p.nombre} className="bg-white border border-gray-200 p-5 flex items-center gap-5">
-            <div className="w-16 h-16 flex-shrink-0 overflow-hidden bg-[#EEEBF3]">
-              <Image src={p.foto} alt={p.nombre} width={64} height={64} className="object-cover w-full h-full" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-gray-900">{p.nombre}</p>
-              <p className="text-xs text-[#2E1A47] font-semibold uppercase tracking-wider mt-0.5">{p.rol}</p>
-              <div className="flex items-center gap-4 mt-2">
-                <a href={`mailto:${p.email}`} className="text-xs text-gray-500 hover:text-[#2E1A47] transition-colors">
-                  {p.email}
-                </a>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
+      {/* ── RIGHT: Downloads + Meeting ────────────────────────────── */}
+      <div className="space-y-5 pt-16">
+
+        {/* Downloads */}
+        <div className="bg-white border border-gray-200 p-6">
+          <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-1">Documentación</p>
+          <p className="text-xs text-gray-400 mb-5">Descarga nuestras presentaciones para compartir con tus clientes.</p>
+
+          <div className="space-y-3">
+            {docs.map((doc) => (
               <a
-                href={`tel:+34${p.telefono.replace(/\s/g, "")}`}
-                className="bg-[#2E1A47] text-white px-4 py-2 text-sm font-semibold hover:bg-[#5a3d80] transition-colors text-center"
+                key={doc.label}
+                href={doc.href}
+                download
+                className="flex items-center gap-4 p-4 border border-gray-200 hover:border-[#2E1A47] hover:bg-[#EEEBF3]/30 transition-all group"
               >
-                {p.telefono}
+                <div className="w-10 h-10 bg-[#2E1A47] flex items-center justify-center flex-shrink-0 text-white text-lg group-hover:bg-[#5a3d80] transition-colors">
+                  {doc.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">{doc.label}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{doc.desc}</p>
+                </div>
+                <span className="text-[#2E1A47] text-sm font-bold flex-shrink-0 group-hover:translate-y-0.5 transition-transform">↓</span>
               </a>
-              <a
-                href={`mailto:${p.email}`}
-                className="bg-[#EEEBF3] text-[#2E1A47] px-4 py-2 text-sm font-semibold hover:bg-[#2E1A47] hover:text-white transition-colors text-center"
-              >
-                Email
-              </a>
-            </div>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {/* Book a meeting */}
+        <div className="bg-[#2E1A47] p-6 text-white">
+          <p className="text-xs text-white/40 uppercase tracking-widest mb-1">Reuniones</p>
+          <p className="text-lg font-bold mb-1">Reserva una llamada</p>
+          <p className="text-white/60 text-sm mb-5">
+            Agenda una reunión con el equipo BeGreat directamente en nuestro calendario. Sin esperas.
+          </p>
+          <a
+            href="https://calendly.com/begreatconsulting"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-white text-[#2E1A47] px-5 py-2.5 text-sm font-bold hover:bg-white/90 transition-colors"
+          >
+            Reservar reunión →
+          </a>
+        </div>
+
       </div>
     </div>
   );
