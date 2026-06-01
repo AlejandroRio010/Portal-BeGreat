@@ -6,12 +6,12 @@ import Link from "next/link";
 import Image from "next/image";
 
 const tiles = [
-  { href: "/portal/alta-operacion", label: "Alta nueva operación", sub: "Registra una nueva operación", accent: true },
+  { href: "/portal/alta-operacion",          label: "Alta nueva operación",   sub: "Registra una nueva operación" },
   { href: "/portal/operaciones/consultoria", label: "Consultoría financiera", sub: "Pólizas, leasing, préstamos..." },
-  { href: "/portal/operaciones/renting", label: "Renting de equipos", sub: "Industrial y tecnológico" },
-  { href: "/portal/historial", label: "Historial & Resumen", sub: "Tus métricas y comisiones" },
-  { href: "/portal/perfil", label: "Mi perfil", sub: "Datos de tu empresa" },
-  { href: "/portal/contacto", label: "Contacto BeGreat", sub: "Rita & Alejandro" },
+  { href: "/portal/operaciones/renting",     label: "Renting de equipos",     sub: "Industrial y tecnológico" },
+  { href: "/portal/historial",               label: "Historial & Resumen",    sub: "Tus métricas y comisiones" },
+  { href: "/portal/perfil",                  label: "Mi perfil",              sub: "Datos de tu empresa" },
+  { href: "/portal/contacto",                label: "Contacto BeGreat",       sub: "Rita & Alejandro" },
 ];
 
 export default async function PortalHomePage() {
@@ -29,61 +29,31 @@ export default async function PortalHomePage() {
   const activas = ops.filter((o) => o.status === "activa").length;
 
   return (
-    <div className="flex gap-6 items-start">
+    <div>
 
-      {/* ── LEFT: Hero card ─────────────────────────────────────────── */}
-      <div className="relative overflow-hidden flex-shrink-0 bg-[#1a0f2e] flex flex-col justify-between" style={{ width: 320, minHeight: 520 }}>
-        {/* Background image */}
-        <Image
-          src="/begreat-banner.jpg"
-          alt="BeGreat"
-          fill
-          className="object-cover opacity-30"
-          priority
-        />
-        {/* Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#1a0f2e]/60 via-[#2E1A47]/70 to-[#1a0f2e]" />
+      {/* ── Rectangular banner ─────────────────────────────────────── */}
+      <div className="relative overflow-hidden bg-[#1a0f2e] mb-6" style={{ height: 200 }}>
+        <Image src="/begreat-banner.jpg" alt="BeGreat" fill className="object-cover opacity-35" priority />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1a0f2e] via-[#2E1A47]/70 to-transparent" />
 
-        {/* Content */}
-        <div className="relative z-10 flex flex-col h-full p-8" style={{ minHeight: 520 }}>
-          {/* Logos */}
-          <div className="flex flex-col gap-5 flex-1">
-            <Image
-              src="/begreat-logo-blanco.png"
-              alt="BeGreat Consulting"
-              width={150}
-              height={45}
-              className="object-contain"
-            />
+        <div className="relative z-10 flex items-center justify-between h-full px-10">
+          {/* Left: BeGreat logo only */}
+          <Image src="/begreat-logo-blanco.png" alt="BeGreat Consulting" width={180} height={54} className="object-contain" />
 
-            {colab?.logo_url && (
-              <div className="bg-white px-4 py-2.5 flex items-center justify-center self-start" style={{ borderRadius: 2 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={colab.logo_url}
-                  alt="Logo colaborador"
-                  style={{ maxHeight: 36, maxWidth: 110, objectFit: "contain" }}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Welcome */}
-          <div className="mt-auto">
-            <p className="text-white/40 text-xs uppercase tracking-widest mb-1">Bienvenido</p>
-            <h1 className="text-2xl font-bold text-white leading-tight mb-1">
-              {colab?.nombre?.split(" ")[0]}
+          {/* Right: welcome + stats — separated clearly */}
+          <div className="text-right">
+            <p className="text-white/40 text-xs uppercase tracking-[0.2em] mb-1">Portal de colaboradores</p>
+            <h1 className="text-3xl font-bold text-white mb-0.5">
+              Bienvenido, {colab?.nombre?.split(" ")[0]}
             </h1>
-            <p className="text-white/30 text-xs mb-6">{colab?.identificador}</p>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-white/10 border border-white/10 px-4 py-3 text-center">
-                <p className="text-2xl font-black text-white">{activas}</p>
-                <p className="text-white/50 text-xs mt-0.5">Ops. activas</p>
+            <p className="text-white/30 text-xs mb-5">{colab?.identificador}</p>
+            <div className="flex gap-3 justify-end">
+              <div className="bg-white/10 border border-white/10 px-5 py-2.5 text-center">
+                <p className="text-xl font-black text-white">{activas}</p>
+                <p className="text-white/50 text-xs mt-0.5">Activas</p>
               </div>
-              <div className="bg-white/10 border border-white/10 px-4 py-3 text-center">
-                <p className="text-2xl font-black text-amber-300">{pendientes}</p>
+              <div className="bg-white/10 border border-white/10 px-5 py-2.5 text-center">
+                <p className="text-xl font-black text-amber-300">{pendientes}</p>
                 <p className="text-white/50 text-xs mt-0.5">Pendientes</p>
               </div>
             </div>
@@ -91,30 +61,44 @@ export default async function PortalHomePage() {
         </div>
       </div>
 
-      {/* ── RIGHT: Tiles grid ───────────────────────────────────────── */}
-      <div className="flex-1 grid grid-cols-2 gap-3 content-start">
-        {tiles.map((tile) => (
-          <Link
-            key={tile.href}
-            href={tile.href}
-            className={`group flex flex-col justify-between p-6 border transition-all hover:shadow-md ${
-              tile.accent
-                ? "bg-[#2E1A47] border-[#2E1A47] text-white"
-                : "bg-white border-gray-200 hover:border-[#2E1A47]/40 text-gray-800"
-            }`}
-            style={{ minHeight: 120, borderRadius: 2 }}
-          >
-            <p className={`text-sm font-semibold ${tile.accent ? "text-white" : "text-gray-900"}`}>
-              {tile.label}
-            </p>
-            <div className="flex items-end justify-between mt-4">
-              <p className={`text-xs ${tile.accent ? "text-white/60" : "text-gray-400"}`}>{tile.sub}</p>
-              <span className={`text-lg font-light transition-transform group-hover:translate-x-1 ${tile.accent ? "text-white/60" : "text-gray-300"}`}>→</span>
-            </div>
-          </Link>
-        ))}
-      </div>
+      {/* ── Below banner: logo square + tiles ─────────────────────── */}
+      <div className="flex gap-6 items-stretch">
 
+        {/* Logo square */}
+        <div className="flex-shrink-0 bg-white border border-gray-200 flex flex-col items-center justify-center gap-5 p-6" style={{ width: 220 }}>
+          <Image src="/begreat-logo.png" alt="BeGreat Consulting" width={140} height={42} className="object-contain" />
+          {colab?.logo_url ? (
+            <>
+              <div className="w-full h-px bg-gray-100" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={colab.logo_url} alt="Logo colaborador" style={{ maxHeight: 42, maxWidth: 140, objectFit: "contain" }} />
+            </>
+          ) : (
+            <p className="text-xs text-gray-300 text-center">Sube tu logo en Mi perfil</p>
+          )}
+        </div>
+
+        {/* Tiles grid — fills remaining space, same height as logo square */}
+        <div className="flex-1 grid grid-cols-3 gap-3">
+          {tiles.map((tile) => (
+            <Link
+              key={tile.href}
+              href={tile.href}
+              className="group flex flex-col justify-between p-5 bg-white border border-gray-200 transition-all duration-200 hover:bg-[#2E1A47] hover:border-[#2E1A47]"
+              style={{ borderRadius: 2 }}
+            >
+              <p className="text-sm font-semibold text-gray-900 group-hover:text-white transition-colors duration-200">
+                {tile.label}
+              </p>
+              <div className="flex items-end justify-between mt-3">
+                <p className="text-xs text-gray-400 group-hover:text-white/60 transition-colors duration-200">{tile.sub}</p>
+                <span className="text-base font-light text-gray-300 group-hover:text-white/60 transition-all duration-200 group-hover:translate-x-1">→</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+      </div>
     </div>
   );
 }

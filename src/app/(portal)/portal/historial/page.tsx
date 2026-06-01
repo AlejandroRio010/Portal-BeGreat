@@ -66,21 +66,25 @@ export default async function HistorialPage({
       label: "Operaciones cerradas & firmadas",
       value: firmadas.length.toString(),
       color: "bg-[#2E1A47]",
+      light: false,
     },
     {
       label: "Comisiones generadas",
       value: fmt(totalGanado),
-      color: "bg-[#1a5c3a]",
+      color: "bg-[#6B7280]",
+      light: false,
     },
     {
       label: "Operaciones en estudio",
       value: pendientes.length.toString(),
-      color: "bg-[#7c4a00]",
+      color: "bg-[#EEEBF3]",
+      light: true,
     },
     {
       label: "Comisiones pendientes",
       value: fmt(feePendiente),
-      color: "bg-[#1a3a5c]",
+      color: "bg-white border border-gray-200",
+      light: true,
     },
   ];
 
@@ -94,9 +98,9 @@ export default async function HistorialPage({
       {/* Stats grid */}
       <div className="grid grid-cols-4 gap-4 mb-10">
         {stats.map((s) => (
-          <div key={s.label} className={`${s.color} p-5 text-white`}>
-            <p className="text-xs font-semibold uppercase tracking-wider text-white/70 mb-3">{s.label}</p>
-            <p className="text-2xl font-black text-white leading-tight">{s.value}</p>
+          <div key={s.label} className={`${s.color} p-5`}>
+            <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${s.light ? "text-[#2E1A47]" : "text-white/70"}`}>{s.label}</p>
+            <p className={`text-2xl font-black leading-tight ${s.light ? "text-[#2E1A47]" : "text-white"}`}>{s.value}</p>
           </div>
         ))}
       </div>
