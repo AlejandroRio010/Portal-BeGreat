@@ -1,21 +1,23 @@
-export default function ContactoPage() {
-  const equipo = [
-    {
-      nombre: "Rita Escudero",
-      email: "rita.escudero@begreatconsulting.es",
-      telefono: "661 367 615",
-      rol: "Socia · Consultoría financiera",
-      inicial: "R",
-    },
-    {
-      nombre: "Alejandro del Río",
-      email: "alejandro.rio@begreatconsulting.es",
-      telefono: "602 033 249",
-      rol: "Socio · Renting & Operaciones",
-      inicial: "A",
-    },
-  ];
+import Image from "next/image";
 
+const equipo = [
+  {
+    nombre: "Rita Escudero",
+    email: "rita.escudero@begreatconsulting.es",
+    telefono: "661 367 615",
+    rol: "General Manager",
+    foto: "/team/rita.png",
+  },
+  {
+    nombre: "Alejandro del Río",
+    email: "alejandro.rio@begreatconsulting.es",
+    telefono: "602 033 249",
+    rol: "Operations Analyst",
+    foto: "/team/alejandro.png",
+  },
+];
+
+export default function ContactoPage() {
   return (
     <div className="max-w-xl">
       <div className="mb-8">
@@ -24,7 +26,7 @@ export default function ContactoPage() {
       </div>
 
       {/* Hero card */}
-      <div className="bg-gradient-to-br from-[#2E1A47] to-[#5a3d80] rounded-2xl p-7 text-white mb-6">
+      <div className="bg-[#2E1A47] p-7 text-white mb-6">
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className="text-white/50 text-xs uppercase tracking-widest mb-1">Oficina principal</p>
@@ -35,7 +37,7 @@ export default function ContactoPage() {
             href="https://begreatconsulting.es"
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-white/10 hover:bg-white/20 transition-colors text-white text-xs font-semibold px-3 py-1.5 rounded-lg"
+            className="bg-white/10 hover:bg-white/20 transition-colors text-white text-xs font-semibold px-3 py-1.5"
           >
             begreatconsulting.es ↗
           </a>
@@ -46,10 +48,10 @@ export default function ContactoPage() {
             <a
               key={p.nombre}
               href={`tel:+34${p.telefono.replace(/\s/g, "")}`}
-              className="flex-1 bg-white/10 hover:bg-white/20 transition-colors rounded-xl p-4 flex items-center gap-3"
+              className="flex-1 bg-white/10 hover:bg-white/20 transition-colors p-4 flex items-center gap-3"
             >
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                {p.inicial}
+              <div className="w-10 h-10 flex-shrink-0 overflow-hidden bg-white/20">
+                <Image src={p.foto} alt={p.nombre} width={40} height={40} className="object-cover w-full h-full" />
               </div>
               <div>
                 <p className="text-sm font-semibold">{p.nombre.split(" ")[0]}</p>
@@ -63,31 +65,31 @@ export default function ContactoPage() {
       {/* Team cards */}
       <div className="space-y-4">
         {equipo.map((p) => (
-          <div key={p.nombre} className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-[#2E1A47] flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-              {p.inicial}
+          <div key={p.nombre} className="bg-white border border-gray-200 p-5 flex items-center gap-5">
+            <div className="w-16 h-16 flex-shrink-0 overflow-hidden bg-[#EEEBF3]">
+              <Image src={p.foto} alt={p.nombre} width={64} height={64} className="object-cover w-full h-full" />
             </div>
             <div className="flex-1">
               <p className="font-semibold text-gray-900">{p.nombre}</p>
-              <p className="text-xs text-[#5a3d80] font-medium mt-0.5">{p.rol}</p>
+              <p className="text-xs text-[#2E1A47] font-semibold uppercase tracking-wider mt-0.5">{p.rol}</p>
               <div className="flex items-center gap-4 mt-2">
-                <a href={`mailto:${p.email}`} className="text-xs text-gray-500 hover:text-[#2E1A47] transition-colors flex items-center gap-1">
-                  ✉ {p.email}
+                <a href={`mailto:${p.email}`} className="text-xs text-gray-500 hover:text-[#2E1A47] transition-colors">
+                  {p.email}
                 </a>
               </div>
             </div>
             <div className="flex flex-col gap-2">
               <a
                 href={`tel:+34${p.telefono.replace(/\s/g, "")}`}
-                className="bg-[#2E1A47] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#5a3d80] transition-colors text-center"
+                className="bg-[#2E1A47] text-white px-4 py-2 text-sm font-semibold hover:bg-[#5a3d80] transition-colors text-center"
               >
-                📞 {p.telefono}
+                {p.telefono}
               </a>
               <a
                 href={`mailto:${p.email}`}
-                className="bg-[#EEEBF3] text-[#2E1A47] px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#2E1A47] hover:text-white transition-colors text-center"
+                className="bg-[#EEEBF3] text-[#2E1A47] px-4 py-2 text-sm font-semibold hover:bg-[#2E1A47] hover:text-white transition-colors text-center"
               >
-                ✉ Email
+                Email
               </a>
             </div>
           </div>

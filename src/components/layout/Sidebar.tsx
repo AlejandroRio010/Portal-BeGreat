@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import Image from "next/image";
 
 interface SidebarProps {
   nombre: string;
@@ -35,12 +36,8 @@ export default function Sidebar({ nombre, identificador, role }: SidebarProps) {
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-[#2E1A47] text-white z-50 shadow-2xl">
       {/* Logo */}
-      <div className="px-6 py-5 border-b border-white/10">
-        <div className="flex items-baseline gap-2">
-          <span className="text-xl font-black tracking-tight text-white">BEGREAT</span>
-          <span className="text-xs font-light text-white/50 tracking-widest uppercase">Consulting</span>
-        </div>
-        <p className="text-white/30 text-xs mt-0.5">Portal de colaboradores</p>
+      <div className="px-5 py-4 border-b border-white/10">
+        <Image src="/begreat-logo-blanco.png" alt="BeGreat Consulting" width={160} height={48} className="object-contain" priority />
       </div>
 
       {/* User info */}

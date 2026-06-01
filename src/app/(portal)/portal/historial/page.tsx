@@ -63,32 +63,24 @@ export default async function HistorialPage({
 
   const stats = [
     {
-      label: "Operaciones firmadas",
+      label: "Operaciones cerradas & firmadas",
       value: firmadas.length.toString(),
-      sub: "Con contrato firmado",
-      color: "from-emerald-500 to-emerald-700",
-      icon: "✓",
+      color: "bg-[#2E1A47]",
     },
     {
-      label: "Dinero ganado con BeGreat",
+      label: "Comisiones generadas",
       value: fmt(totalGanado),
-      sub: "Comisiones cobradas",
-      color: "from-[#2E1A47] to-[#5a3d80]",
-      icon: "€",
+      color: "bg-[#1a5c3a]",
     },
     {
-      label: "Operaciones en curso",
+      label: "Operaciones en estudio",
       value: pendientes.length.toString(),
-      sub: "Activas o pendientes",
-      color: "from-orange-400 to-orange-600",
-      icon: "◎",
+      color: "bg-[#7c4a00]",
     },
     {
-      label: "Fee pendiente de cobrar",
+      label: "Comisiones pendientes",
       value: fmt(feePendiente),
-      sub: "Si todas se firman",
-      color: "from-blue-500 to-blue-700",
-      icon: "◈",
+      color: "bg-[#1a3a5c]",
     },
   ];
 
@@ -102,21 +94,19 @@ export default async function HistorialPage({
       {/* Stats grid */}
       <div className="grid grid-cols-4 gap-4 mb-10">
         {stats.map((s) => (
-          <div key={s.label} className={`bg-gradient-to-br ${s.color} rounded-2xl p-5 text-white relative overflow-hidden`}>
-            <div className="absolute top-3 right-4 text-4xl font-black opacity-10">{s.icon}</div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-white/70 mb-2">{s.label}</p>
+          <div key={s.label} className={`${s.color} p-5 text-white`}>
+            <p className="text-xs font-semibold uppercase tracking-wider text-white/70 mb-3">{s.label}</p>
             <p className="text-2xl font-black text-white leading-tight">{s.value}</p>
-            <p className="text-xs text-white/60 mt-1">{s.sub}</p>
           </div>
         ))}
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-6">
+      <div className="bg-white rounded-sm border border-gray-100 p-5 mb-6">
         <form className="flex items-end gap-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Tipo</label>
-            <select name="tipo" defaultValue={tipo ?? "todas"} className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2E1A47]/30 focus:border-[#2E1A47] bg-gray-50">
+            <select name="tipo" defaultValue={tipo ?? "todas"} className="px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-[#2E1A47]/30 focus:border-[#2E1A47] bg-gray-50">
               <option value="todas">Todas</option>
               <option value="consultoria">Consultoría financiera</option>
               <option value="renting">Renting</option>
@@ -124,13 +114,13 @@ export default async function HistorialPage({
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Desde</label>
-            <input type="date" name="desde" defaultValue={desde} className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2E1A47]/30 focus:border-[#2E1A47] bg-gray-50" />
+            <input type="date" name="desde" defaultValue={desde} className="px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-[#2E1A47]/30 focus:border-[#2E1A47] bg-gray-50" />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Hasta</label>
-            <input type="date" name="hasta" defaultValue={hasta} className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2E1A47]/30 focus:border-[#2E1A47] bg-gray-50" />
+            <input type="date" name="hasta" defaultValue={hasta} className="px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-[#2E1A47]/30 focus:border-[#2E1A47] bg-gray-50" />
           </div>
-          <button type="submit" className="bg-[#2E1A47] text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-[#5a3d80] transition-colors">
+          <button type="submit" className="bg-[#2E1A47] text-white px-5 py-2 rounded-sm text-sm font-semibold hover:bg-[#5a3d80] transition-colors">
             Filtrar
           </button>
           {(tipo || desde || hasta) && (
@@ -142,7 +132,7 @@ export default async function HistorialPage({
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-sm border border-gray-100 overflow-hidden shadow-sm">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <p className="text-sm font-semibold text-gray-700">{filtered.length} operación{filtered.length !== 1 ? "es" : ""}</p>
         </div>
@@ -170,7 +160,7 @@ export default async function HistorialPage({
                     {op.producto && <p className="text-xs text-gray-400">{op.producto}</p>}
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                    <span className={`inline-block px-2.5 py-0.5 rounded text-xs font-semibold ${
                       op.pipeline_key === "consultoria" ? "bg-[#EEEBF3] text-[#2E1A47]" : "bg-blue-50 text-blue-700"
                     }`}>
                       {op.pipeline_key === "consultoria" ? "Consultoría" : "Renting"}
@@ -178,8 +168,8 @@ export default async function HistorialPage({
                   </td>
                   <td className="px-6 py-4">
                     {op.status === "pendiente_de_validar" ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold bg-orange-100 text-orange-700">
+                        <span className="w-1.5 h-1.5 rounded bg-orange-400 animate-pulse" />
                         Pendiente de validar
                       </span>
                     ) : (

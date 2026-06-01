@@ -54,20 +54,20 @@ export default async function RentingPage() {
         </div>
         <Link
           href="/portal/alta-operacion"
-          className="inline-flex items-center gap-2 bg-[#2E1A47] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#5a3d80] transition-colors shadow"
+          className="inline-flex items-center gap-2 bg-[#2E1A47] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#5a3d80] transition-colors"
         >
           + Nueva operación
         </Link>
       </div>
 
       {ops.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center">
-          <div className="w-16 h-16 bg-[#EEEBF3] rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <div className="bg-white rounded-sm border border-gray-100 p-16 text-center">
+          <div className="w-16 h-16 bg-[#EEEBF3] rounded-sm flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl">🖥</span>
           </div>
           <h3 className="font-semibold text-gray-800 mb-1">Sin operaciones de renting</h3>
           <p className="text-sm text-gray-400 mb-5">Da de alta tu primera operación</p>
-          <Link href="/portal/alta-operacion" className="inline-flex items-center gap-2 bg-[#2E1A47] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#5a3d80] transition-colors">
+          <Link href="/portal/alta-operacion" className="inline-flex items-center gap-2 bg-[#2E1A47] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#5a3d80] transition-colors">
             + Dar de alta operación
           </Link>
         </div>
@@ -89,9 +89,9 @@ function OpSection({ title, count, ops, accent }: { title: string; count: number
     <div>
       <div className="flex items-center gap-3 mb-4">
         <h2 className={`text-xs font-bold uppercase tracking-widest ${accent ? "text-orange-500" : "text-gray-400"}`}>{title}</h2>
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${accent ? "bg-orange-100 text-orange-600" : "bg-gray-100 text-gray-500"}`}>{count}</span>
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded ${accent ? "bg-orange-100 text-orange-600" : "bg-gray-100 text-gray-500"}`}>{count}</span>
       </div>
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-sm border border-gray-100 overflow-hidden shadow-sm">
         <table className="w-full">
           <thead>
             <tr className="bg-[#EEEBF3] border-b border-gray-100">
@@ -99,7 +99,7 @@ function OpSection({ title, count, ops, accent }: { title: string; count: number
               <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Equipo / Rol</th>
               <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fase</th>
               <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fecha alta</th>
-              <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Mi comisión</th>
+              <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fee / Comisión</th>
               <th className="px-6 py-3.5"></th>
             </tr>
           </thead>
@@ -115,7 +115,7 @@ function OpSection({ title, count, ops, accent }: { title: string; count: number
                 <td className="px-6 py-4">
                   <div className="flex flex-col gap-1">
                     {op.equipo_tipo && (
-                      <span className="text-xs font-medium text-gray-700 capitalize">{op.equipo_tipo === "industrial" ? "🏗 Industrial" : "💻 Tecnológico"}</span>
+                      <span className="text-xs font-medium text-gray-700 capitalize">{op.equipo_tipo === "industrial" ? "Industrial" : "Tecnológico"}</span>
                     )}
                     {op.renting_rol && (
                       <span className="text-xs text-gray-400 capitalize">{op.renting_rol === "proveedor" ? "Soy proveedor" : "Intermediario"}</span>
@@ -124,12 +124,12 @@ function OpSection({ title, count, ops, accent }: { title: string; count: number
                 </td>
                 <td className="px-6 py-4">
                   {op.status === "pendiente_de_validar" ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
-                      <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold bg-orange-100 text-orange-700">
+                      <span className="w-1.5 h-1.5 rounded bg-orange-400 animate-pulse" />
                       Pendiente de validar
                     </span>
                   ) : (
-                    <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${FASE_STYLE[op.fase] ?? "bg-gray-100 text-gray-600"}`}>
+                    <span className={`inline-block px-2.5 py-1 rounded text-xs font-semibold ${FASE_STYLE[op.fase] ?? "bg-gray-100 text-gray-600"}`}>
                       {op.fase}
                     </span>
                   )}
