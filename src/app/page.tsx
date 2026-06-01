@@ -9,5 +9,5 @@ export default async function Home() {
   }
 
   const role = (session.user as any).role;
-  redirect(role === "admin" ? "/admin/operaciones" : "/portal/operaciones/consultoria");
+  redirect(role === "admin" ? "/admin/operaciones" : "/portal");
 }
