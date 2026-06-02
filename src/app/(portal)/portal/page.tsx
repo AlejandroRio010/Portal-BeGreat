@@ -53,16 +53,11 @@ export default async function PortalHomePage() {
         {/* Overlay: franjas laterales más opacas para legibilidad */}
         <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(26,15,46,0.82) 0%, rgba(26,15,46,0.20) 45%, rgba(26,15,46,0.85) 100%)" }} />
 
-        {/* Left: logos sin bordes */}
-        <div className="relative z-10 flex items-center gap-8">
-          <Image src="/begreat-logo-blanco.png" alt="BeGreat" width={130} height={40} className="object-contain" priority />
-
+        {/* Left: solo logo del colaborador */}
+        <div className="relative z-10">
           {colab?.logo_url && (
-            <>
-              <div className="w-px h-10 bg-white/25" />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={colab.logo_url} alt="Logo colaborador" style={{ maxHeight: 36, maxWidth: 130, objectFit: "contain" }} />
-            </>
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={colab.logo_url} alt="Logo colaborador" style={{ maxHeight: 56, maxWidth: 200, objectFit: "contain" }} />
           )}
         </div>
 
