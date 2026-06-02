@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { collaborators } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import Link from "next/link";
 import ColaboradorEditModal from "./ColaboradorEditModal";
 
 export default async function AdminColaboradoresPage() {
@@ -47,7 +48,15 @@ export default async function AdminColaboradoresPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <ColaboradorEditModal colab={c} />
+                  <div className="flex items-center justify-end gap-3">
+                    <Link
+                      href={`/admin/colaboradores/${c.id}`}
+                      className="text-xs text-[#2E1A47] font-semibold hover:underline"
+                    >
+                      Ver ficha →
+                    </Link>
+                    <ColaboradorEditModal colab={c} />
+                  </div>
                 </td>
               </tr>
             ))}

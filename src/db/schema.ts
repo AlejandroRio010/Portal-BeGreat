@@ -37,6 +37,7 @@ export const collaborators = pgTable("collaborators", {
   web: text("web"),
   num_trabajadores: integer("num_trabajadores"),
   razon_social: text("razon_social"),
+  notas_internas: text("notas_internas"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
