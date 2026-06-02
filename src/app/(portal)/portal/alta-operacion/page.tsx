@@ -82,6 +82,20 @@ export default function AltaOperacionPage() {
           </div>
         </Section>
 
+        {/* Nombre de la operación */}
+        <Section title="Nombre de la operación">
+          <div>
+            <label className={label}>Nombre identificativo *</label>
+            <input
+              name="nombre"
+              required
+              className={inp}
+              placeholder="Ej: Empresa S.L. — Op01 — Banco Santander"
+            />
+            <p className="text-xs text-gray-400 mt-1.5">Un nombre que te ayude a identificar esta operación fácilmente. Puedes usar el formato: Nombre comercial — Nº op — Entidad financiera.</p>
+          </div>
+        </Section>
+
         {/* ── CONSULTORÍA ──────────────────────────────────────────────── */}
         {pipeline === "consultoria" && (
           <>

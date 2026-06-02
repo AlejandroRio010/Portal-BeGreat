@@ -91,25 +91,25 @@ export default async function PortalHomePage() {
       {/* ── KPIs ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         {/* Pareja 1: Firmadas — morado oscuro BeGreat */}
-        <div className="flex gap-px bg-[#2E1A47] overflow-hidden">
+        <div className="flex overflow-hidden">
           <div className="flex-1 bg-[#2E1A47] px-6 py-5">
             <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Ops. firmadas</p>
             <p className="text-3xl font-black text-white">{firmadas.length}</p>
           </div>
-          <div className="w-px bg-white/10" />
-          <div className="flex-1 bg-[#3d2460] px-6 py-5">
+          <div className="w-px bg-white/20" />
+          <div className="flex-1 bg-[#2E1A47] px-6 py-5">
             <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee generadas</p>
             <p className="text-2xl font-black text-white leading-tight">{totalComision > 0 ? fmt(totalComision) : "—"}</p>
           </div>
         </div>
         {/* Pareja 2: En estudio — lila claro */}
-        <div className="flex gap-px bg-[#d8d0e8] overflow-hidden">
+        <div className="flex overflow-hidden border border-[#EEEBF3]">
           <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
             <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">En estudio</p>
             <p className="text-3xl font-black text-[#2E1A47]">{enCurso.length + pendientes.length}</p>
           </div>
-          <div className="w-px bg-[#2E1A47]/10" />
-          <div className="flex-1 bg-[#e8e4f0] px-6 py-5">
+          <div className="w-px bg-[#2E1A47]/25" />
+          <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
             <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee pendiente</p>
             <p className="text-2xl font-black text-[#2E1A47] leading-tight">{feePendiente > 0 ? fmt(feePendiente) : "—"}</p>
           </div>

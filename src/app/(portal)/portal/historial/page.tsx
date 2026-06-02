@@ -70,32 +70,7 @@ export default async function HistorialPage({
   const totalGanado = firmadas.reduce((sum, o) => sum + (o.comision_colaborador ? Number(o.comision_colaborador) : 0), 0);
   const feePendiente = pendientes.reduce((sum, o) => sum + (o.comision_colaborador ? Number(o.comision_colaborador) : 0), 0);
 
-  const stats = [
-    {
-      label: "Operaciones cerradas & firmadas",
-      value: firmadas.length.toString(),
-      color: "bg-[#2E1A47]",
-      light: false,
-    },
-    {
-      label: "Comisiones generadas",
-      value: fmt(totalGanado),
-      color: "bg-[#6B7280]",
-      light: false,
-    },
-    {
-      label: "Operaciones en estudio",
-      value: pendientes.length.toString(),
-      color: "bg-[#EEEBF3]",
-      light: true,
-    },
-    {
-      label: "Comisiones pendientes",
-      value: fmt(feePendiente),
-      color: "bg-white border border-gray-200",
-      light: true,
-    },
-  ];
+  // stats array kept for reference but replaced with custom render below
 
   return (
     <div>
@@ -104,14 +79,32 @@ export default async function HistorialPage({
         <p className="text-sm text-gray-400 mt-1">Todas tus operaciones con BeGreat</p>
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-4 gap-4 mb-10">
-        {stats.map((s) => (
-          <div key={s.label} className={`${s.color} p-5`}>
-            <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${s.light ? "text-[#2E1A47]" : "text-white/70"}`}>{s.label}</p>
-            <p className={`text-2xl font-black leading-tight ${s.light ? "text-[#2E1A47]" : "text-white"}`}>{s.value}</p>
+      {/* Stats — dos parejas igual que inicio */}
+      <div className="grid grid-cols-2 gap-4 mb-10">
+        {/* Pareja 1: oscura */}
+        <div className="flex overflow-hidden">
+          <div className="flex-1 bg-[#2E1A47] px-6 py-5">
+            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Ops. firmadas</p>
+            <p className="text-3xl font-black text-white">{firmadas.length}</p>
           </div>
-        ))}
+          <div className="w-px bg-white/20" />
+          <div className="flex-1 bg-[#2E1A47] px-6 py-5">
+            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee generadas</p>
+            <p className="text-2xl font-black text-white leading-tight">{fmt(totalGanado)}</p>
+          </div>
+        </div>
+        {/* Pareja 2: clara */}
+        <div className="flex overflow-hidden border border-[#EEEBF3]">
+          <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
+            <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">En estudio</p>
+            <p className="text-3xl font-black text-[#2E1A47]">{pendientes.length}</p>
+          </div>
+          <div className="w-px bg-[#2E1A47]/25" />
+          <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
+            <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee pendiente</p>
+            <p className="text-2xl font-black text-[#2E1A47] leading-tight">{fmt(feePendiente)}</p>
+          </div>
+        </div>
       </div>
 
       {/* Filters */}

@@ -124,6 +124,7 @@ export const operations = pgTable("operations", {
   plazo_meses: integer("plazo_meses"),
   lugar_entrega: text("lugar_entrega"),
   // Common
+  nombre: text("nombre"), // nombre comercial de la operación, ej: "Empresa S.L. - Op01 - Banco Santander"
   fase: text("fase").notNull(),
   status: operationStatusEnum("status").notNull().default("pendiente_de_validar"),
   comision_colaborador: numeric("comision_colaborador", { precision: 12, scale: 2 }),

@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
 
   const {
     pipeline_key,
+    nombre,
     renting_rol,
     cliente_nombre,
     cliente_email,
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
     contacto_directo,
   } = body;
 
-  if (!pipeline_key || !cliente_nombre) {
+  if (!pipeline_key || !cliente_nombre || !nombre) {
     return NextResponse.json({ error: "Faltan campos obligatorios" }, { status: 400 });
   }
 
@@ -111,6 +112,7 @@ export async function POST(req: NextRequest) {
     .values({
       collaborator_id: userId,
       pipeline_key,
+      nombre: nombre || null,
       client_id: clientId,
       supplier_id: supplierId,
       producto: producto || null,

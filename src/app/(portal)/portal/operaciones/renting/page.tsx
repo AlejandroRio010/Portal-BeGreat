@@ -24,6 +24,7 @@ export default async function RentingPage() {
   const ops = await db
     .select({
       id: operations.id,
+      nombre: operations.nombre,
       equipo_tipo: operations.equipo_tipo,
       renting_rol: operations.renting_rol,
       importe: operations.importe,
@@ -107,7 +108,10 @@ function OpSection({ title, count, ops, accent }: { title: string; count: number
             {ops.map((op) => (
               <tr key={op.id} className="hover:bg-[#EEEBF3]/30 transition-colors group">
                 <td className="px-6 py-4">
-                  <p className="text-sm font-semibold text-gray-900">{op.client_nombre ?? "—"}</p>
+                  <p className="text-sm font-semibold text-gray-900">{op.nombre ?? op.client_nombre ?? "—"}</p>
+                  {op.nombre && op.client_nombre && (
+                    <p className="text-xs text-gray-400 mt-0.5">{op.client_nombre}</p>
+                  )}
                   {op.importe && (
                     <p className="text-xs text-gray-400 mt-0.5">{Number(op.importe).toLocaleString("es-ES")} €  {op.plazo_meses && `· ${op.plazo_meses}m`}</p>
                   )}

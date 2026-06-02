@@ -43,6 +43,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
   const [op] = await db
     .select({
       id: operations.id,
+      nombre: operations.nombre,
       pipeline_key: operations.pipeline_key,
       producto: operations.producto,
       importe: operations.importe,
@@ -54,6 +55,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       descripcion: operations.descripcion,
       lugar_entrega: operations.lugar_entrega,
       created_at: operations.created_at,
+      client_id: operations.client_id,
       client_nombre: clients.nombre,
       supplier_nombre: suppliers.nombre,
     })
@@ -86,13 +88,16 @@ export default async function OperacionDetallePage({ params }: { params: Promise
           {isConsultoria ? "Consultoría financiera" : "Renting de equipos"}
         </Link>
         <span>/</span>
-        <span className="text-gray-600 font-medium">{op.client_nombre ?? "Operación"}</span>
+        <span className="text-gray-600 font-medium">{op.nombre ?? op.client_nombre ?? "Operación"}</span>
       </div>
 
       {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{op.client_nombre ?? "Operación"}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{op.nombre ?? op.client_nombre ?? "Operación"}</h1>
+          {op.nombre && op.client_nombre && (
+            <p className="text-sm text-gray-400 mt-0.5">{op.client_nombre}</p>
+          )}
           <p className="text-sm text-gray-400 mt-1">{isConsultoria ? "Consultoría financiera" : "Renting de equipos"}</p>
         </div>
         {isPendiente ? (
@@ -174,7 +179,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Datos de la operación</p>
             <dl className="space-y-3">
               {[
-                { label: "Empresa cliente", value: op.client_nombre },
+                { label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/portal/clientes/${op.client_id}` : undefined },
                 { label: "Producto", value: op.producto },
                 { label: "Entidad financiera", value: op.entidad_financiera },
                 { label: "Honorarios firmados", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null },
@@ -183,10 +188,14 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                   { label: "Lugar de entrega", value: op.lugar_entrega },
                 ] : []),
                 { label: "Descripción", value: op.descripcion },
-              ].map(({ label, value }) => value != null && value !== "" ? (
-                <div key={label}>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">{label}</dt>
-                  <dd className="text-sm text-gray-800 font-medium">{value}</dd>
+              ].map((field) => field && field.value != null && field.value !== "" ? (
+                <div key={field.label}>
+                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">{field.label}</dt>
+                  <dd className="text-sm text-gray-800 font-medium">
+                    {(field as any).href
+                      ? <Link href={(field as any).href} className="text-[#2E1A47] hover:underline font-semibold">{field.value}</Link>
+                      : field.value}
+                  </dd>
                 </div>
               ) : null)}
             </dl>
