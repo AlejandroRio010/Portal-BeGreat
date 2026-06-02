@@ -172,12 +172,20 @@ export default async function HistorialPage({
                   </td>
                   <td className="px-6 py-4">
                     {op.status === "pendiente_de_validar" ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold bg-orange-100 text-orange-700">
-                        <span className="w-1.5 h-1.5 rounded bg-orange-400 animate-pulse" />
-                        Pendiente de validar
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold bg-amber-50 border border-amber-200 text-amber-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                        Pendiente
+                      </span>
+                    ) : op.fase === "Contract Signed" || op.fase === "Fees Paid" || op.fase === "Transfered Made" ? (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700">
+                        Firmada ✓
+                      </span>
+                    ) : op.status === "archivada" ? (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold bg-red-50 border border-red-200 text-red-600">
+                        Denegada
                       </span>
                     ) : (
-                      <span className="text-sm text-gray-600">{op.fase}</span>
+                      <span className="inline-block px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600">{op.fase}</span>
                     )}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">{formatDate(op.created_at)}</td>
