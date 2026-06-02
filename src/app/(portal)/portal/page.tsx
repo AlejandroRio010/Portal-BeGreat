@@ -88,19 +88,19 @@ export default async function PortalHomePage() {
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-[#2E1A47] p-5">
           <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-3">Ops. firmadas</p>
-          <p className="text-3xl font-black text-white">{firmadas.length}</p>
+          <p className="text-2xl font-black text-white">{firmadas.length}</p>
         </div>
-        <div className="bg-[#4a3060] p-5">
-          <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-3">En estudio</p>
-          <p className="text-3xl font-black text-white">{enCurso.length + pendientes.length}</p>
+        <div className="bg-[#EEEBF3] p-5">
+          <p className="text-[#2E1A47]/60 text-xs font-semibold uppercase tracking-widest mb-3">En estudio</p>
+          <p className="text-2xl font-black text-[#2E1A47]">{enCurso.length + pendientes.length}</p>
         </div>
-        <div className="bg-white border border-gray-200 p-5">
-          <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-3">Comisiones generadas</p>
-          <p className="text-2xl font-black text-[#2E1A47]">{totalComision > 0 ? fmt(totalComision) : "—"}</p>
+        <div className="bg-[#2E1A47] p-5">
+          <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-3">Fee generadas</p>
+          <p className="text-xl font-black text-white">{totalComision > 0 ? fmt(totalComision) : "—"}</p>
         </div>
         <div className="bg-[#EEEBF3] p-5">
           <p className="text-[#2E1A47]/60 text-xs font-semibold uppercase tracking-widest mb-3">Fee pendiente</p>
-          <p className="text-2xl font-black text-[#2E1A47]">{feePendiente > 0 ? fmt(feePendiente) : "—"}</p>
+          <p className="text-xl font-black text-[#2E1A47]">{feePendiente > 0 ? fmt(feePendiente) : "—"}</p>
         </div>
       </div>
 

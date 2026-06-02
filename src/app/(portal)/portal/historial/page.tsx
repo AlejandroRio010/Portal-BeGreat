@@ -16,9 +16,9 @@ function formatDate(d: Date) {
 export default async function HistorialPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tipo?: string; desde?: string; hasta?: string }>;
+  searchParams: Promise<{ tipo?: string; estado?: string; desde?: string; hasta?: string }>;
 }) {
-  const { tipo, desde, hasta } = await searchParams;
+  const { tipo, estado, desde, hasta } = await searchParams;
   const session = await auth();
   const userId = session!.user!.id as string;
 
@@ -43,6 +43,15 @@ export default async function HistorialPage({
   // Filters
   const filtered = allOps.filter((op) => {
     if (tipo && tipo !== "todas" && op.pipeline_key !== tipo) return false;
+    if (estado && estado !== "todas") {
+      const esFirmada = op.fase === "Contract Signed" || op.fase === "Fees Paid" || op.fase === "Transfered Made";
+      const esEstado =
+        estado === "firmada" ? esFirmada :
+        estado === "pendiente" ? op.status === "pendiente_de_validar" :
+        estado === "activa" ? op.status === "activa" && !esFirmada :
+        estado === "archivada" ? op.status === "archivada" : true;
+      if (!esEstado) return false;
+    }
     if (desde) {
       const desdeDate = new Date(desde);
       if (new Date(op.created_at) < desdeDate) return false;
@@ -107,13 +116,23 @@ export default async function HistorialPage({
 
       {/* Filters */}
       <div className="bg-white rounded-sm border border-gray-100 p-5 mb-6">
-        <form className="flex items-end gap-4">
+        <form className="flex items-end gap-4 flex-wrap">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Tipo</label>
             <select name="tipo" defaultValue={tipo ?? "todas"} className="px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-[#2E1A47]/30 focus:border-[#2E1A47] bg-gray-50">
               <option value="todas">Todas</option>
               <option value="consultoria">Consultoría financiera</option>
               <option value="renting">Renting</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Estado</label>
+            <select name="estado" defaultValue={estado ?? "todas"} className="px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-[#2E1A47]/30 focus:border-[#2E1A47] bg-gray-50">
+              <option value="todas">Todos</option>
+              <option value="pendiente">Pendiente de validar</option>
+              <option value="activa">En estudio</option>
+              <option value="firmada">Firmada</option>
+              <option value="archivada">Denegada</option>
             </select>
           </div>
           <div>
@@ -127,7 +146,7 @@ export default async function HistorialPage({
           <button type="submit" className="bg-[#2E1A47] text-white px-5 py-2 rounded-sm text-sm font-semibold hover:bg-[#5a3d80] transition-colors">
             Filtrar
           </button>
-          {(tipo || desde || hasta) && (
+          {(tipo || estado || desde || hasta) && (
             <Link href="/portal/historial" className="text-sm text-gray-400 hover:text-gray-600 py-2">
               Limpiar filtros
             </Link>
@@ -150,7 +169,7 @@ export default async function HistorialPage({
               <tr className="bg-[#EEEBF3] border-b border-gray-100">
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Cliente</th>
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Tipo</th>
-                <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fase</th>
+                <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Estado</th>
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fecha</th>
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Comisión</th>
                 <th className="px-6 py-3.5"></th>
