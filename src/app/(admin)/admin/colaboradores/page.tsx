@@ -13,6 +13,11 @@ export default async function AdminColaboradoresPage() {
       identificador: collaborators.identificador,
       activo: collaborators.activo,
       created_at: collaborators.created_at,
+      telefono: collaborators.telefono,
+      cif: collaborators.cif,
+      web: collaborators.web,
+      razon_social: collaborators.razon_social,
+      num_trabajadores: collaborators.num_trabajadores,
     })
     .from(collaborators)
     .where(eq(collaborators.role, "colaborador"))

@@ -11,7 +11,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const { id } = await params;
-  const { nombre, email } = await req.json();
+  const body = await req.json();
+  const { nombre, email, telefono, cif, web, razon_social, num_trabajadores, activo } = body;
 
   if (!nombre || !email) {
     return NextResponse.json({ error: "Nombre y email son obligatorios" }, { status: 400 });
@@ -30,7 +31,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   await db
     .update(collaborators)
-    .set({ nombre, email })
+    .set({
+      nombre,
+      email,
+      telefono: telefono ?? null,
+      cif: cif ?? null,
+      web: web ?? null,
+      razon_social: razon_social ?? null,
+      num_trabajadores: num_trabajadores ?? null,
+      ...(activo !== undefined ? { activo } : {}),
+    })
     .where(eq(collaborators.id, id));
 
   return NextResponse.json({ ok: true });

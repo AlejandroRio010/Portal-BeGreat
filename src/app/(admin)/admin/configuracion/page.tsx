@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { customFields, pipelines } from "@/db/schema";
+import { customFields, pipelines, collaborators } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 import ConfiguracionClient from "./ConfiguracionClient";
 
@@ -24,11 +24,25 @@ export default async function AdminConfiguracionPage() {
 
   const fields = await db.select().from(customFields).orderBy(asc(customFields.entidad), asc(customFields.orden));
 
+  const users = await db
+    .select({
+      id: collaborators.id,
+      nombre: collaborators.nombre,
+      email: collaborators.email,
+      role: collaborators.role,
+      activo: collaborators.activo,
+      identificador: collaborators.identificador,
+      created_at: collaborators.created_at,
+    })
+    .from(collaborators)
+    .orderBy(asc(collaborators.role), asc(collaborators.nombre));
+
   return (
     <ConfiguracionClient
       initialFields={fields}
       pipelineConsultoria={(pc?.fases as string[]) ?? FASES_CONSULTORIA_DEFAULT}
       pipelineRenting={(pr?.fases as string[]) ?? FASES_RENTING_DEFAULT}
+      initialUsers={users}
     />
   );
 }

@@ -95,7 +95,11 @@ export default async function AdminClientesPage({
             <tbody className="divide-y divide-gray-50">
               {cls.map((c) => (
                 <tr key={c.id} className="hover:bg-[#EEEBF3]/30 transition-colors">
-                  <td className="px-6 py-3.5 text-sm font-medium text-gray-900">{c.nombre}</td>
+                  <td className="px-6 py-3.5">
+                    <Link href={`/admin/clientes/${c.id}`} className="text-sm font-medium text-gray-900 hover:text-[#2E1A47] hover:underline">
+                      {c.nombre}
+                    </Link>
+                  </td>
                   <td className="px-6 py-3.5 text-sm text-gray-500">{c.cif ?? "—"}</td>
                   <td className="px-6 py-3.5 text-sm text-gray-500">{c.email ?? "—"}</td>
                   <td className="px-6 py-3.5 text-sm text-gray-600">{c.colaborador_nombre ?? "—"}</td>

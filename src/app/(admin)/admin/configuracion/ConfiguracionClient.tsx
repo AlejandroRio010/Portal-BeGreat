@@ -26,13 +26,24 @@ interface CustomField {
   orden: number;
 }
 
+interface UserRow {
+  id: string;
+  nombre: string;
+  email: string;
+  role: "admin" | "colaborador";
+  activo: boolean;
+  identificador: string;
+  created_at: Date;
+}
+
 interface Props {
   initialFields: CustomField[];
   pipelineConsultoria: string[];
   pipelineRenting: string[];
+  initialUsers: UserRow[];
 }
 
-type Tab = "campos" | "fases" | "colaboradores";
+type Tab = "campos" | "fases" | "usuarios";
 
 const TIPO_LABELS: Record<string, string> = {
   texto: "Texto",
@@ -245,8 +256,95 @@ function PipelineEditor({
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function ConfiguracionClient({ initialFields, pipelineConsultoria, pipelineRenting }: Props) {
+// ── Nuevo usuario form ────────────────────────────────────────────────────────
+function NuevoUsuarioForm({ onCreated }: { onCreated: (user: UserRow) => void }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showPass, setShowPass] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    const form = new FormData(e.currentTarget);
+    const data = {
+      nombre: form.get("nombre"),
+      email: form.get("email"),
+      password: form.get("password"),
+      role: form.get("role"),
+    };
+
+    const res = await fetch("/api/admin/usuarios", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    setLoading(false);
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setError(j.error ?? "Error al crear el usuario");
+    } else {
+      const newUser = await res.json();
+      onCreated(newUser);
+      setSuccess(`Usuario ${newUser.nombre} creado. Identificador: ${newUser.identificador}`);
+      (e.target as HTMLFormElement).reset();
+    }
+  }
+
+  const inp = "w-full px-3 py-2.5 border border-gray-200 text-sm focus:outline-none focus:border-[#2E1A47] bg-white";
+  const lbl = "block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5";
+
+  return (
+    <div className="bg-white border border-gray-200">
+      <div className="px-6 py-4 border-b border-gray-100">
+        <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">Dar de alta nuevo usuario</p>
+        <p className="text-xs text-gray-400 mt-0.5">El usuario podrá acceder inmediatamente con las credenciales que indiques</p>
+      </div>
+      <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={lbl}>Nombre completo *</label>
+            <input name="nombre" required className={inp} placeholder="María García" />
+          </div>
+          <div>
+            <label className={lbl}>Email (login) *</label>
+            <input name="email" type="email" required className={inp} placeholder="maria@empresa.com" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={lbl}>Contraseña *</label>
+            <div className="relative">
+              <input name="password" type={showPass ? "text" : "password"} required minLength={8} className={inp + " pr-16"} placeholder="Mínimo 8 caracteres" />
+              <button type="button" onClick={() => setShowPass(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600">
+                {showPass ? "Ocultar" : "Ver"}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className={lbl}>Rol *</label>
+            <select name="role" defaultValue="colaborador" className={inp}>
+              <option value="colaborador">Colaborador</option>
+              <option value="admin">Admin (acceso total)</option>
+            </select>
+          </div>
+        </div>
+        {error && <p className="text-xs text-red-600 font-semibold bg-red-50 border border-red-200 px-3 py-2">{error}</p>}
+        {success && <p className="text-xs text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 px-3 py-2">✓ {success}</p>}
+        <button type="submit" disabled={loading} className="px-5 py-2.5 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50">
+          {loading ? "Creando..." : "Crear usuario"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+export default function ConfiguracionClient({ initialFields, pipelineConsultoria, pipelineRenting, initialUsers }: Props) {
   const [tab, setTab] = useState<Tab>("campos");
+  const [users, setUsers] = useState<UserRow[]>(initialUsers);
   const [fields, setFields] = useState<CustomField[]>(initialFields);
   const [etiqueta, setEtiqueta] = useState("");
   const [entidad, setEntidad] = useState<"operacion" | "cliente">("operacion");
@@ -287,7 +385,7 @@ export default function ConfiguracionClient({ initialFields, pipelineConsultoria
   const tabs: { key: Tab; label: string }[] = [
     { key: "campos", label: "Campos personalizados" },
     { key: "fases", label: "Fases del pipeline" },
-    { key: "colaboradores", label: "Colaboradores" },
+    { key: "usuarios", label: "Usuarios y accesos" },
   ];
 
   return (
@@ -395,13 +493,69 @@ export default function ConfiguracionClient({ initialFields, pipelineConsultoria
         </div>
       )}
 
-      {/* Tab: Colaboradores */}
-      {tab === "colaboradores" && (
-        <div className="bg-white border border-gray-200 p-10 flex flex-col items-center gap-4">
-          <p className="text-sm text-gray-500">Gestiona los colaboradores del portal desde la sección dedicada.</p>
-          <Link href="/admin/colaboradores" className="px-6 py-2.5 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] transition-colors">
-            Ir a Colaboradores →
-          </Link>
+      {/* Tab: Usuarios y accesos */}
+      {tab === "usuarios" && (
+        <div className="space-y-6">
+          {/* Tabla de usuarios existentes */}
+          <div className="bg-white border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">Usuarios del portal</p>
+              <p className="text-xs text-gray-400">{users.length} usuarios</p>
+            </div>
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[#EEEBF3] border-b border-gray-100">
+                  <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Nombre</th>
+                  <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Email</th>
+                  <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Rol</th>
+                  <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Estado</th>
+                  <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Identificador</th>
+                  <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Miembro desde</th>
+                  <th className="px-6 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {users.map((u) => (
+                  <tr key={u.id} className="hover:bg-[#EEEBF3]/20 transition-colors">
+                    <td className="px-6 py-3.5 text-sm font-semibold text-gray-900">{u.nombre}</td>
+                    <td className="px-6 py-3.5 text-sm text-gray-500">{u.email}</td>
+                    <td className="px-6 py-3.5">
+                      <span className={`inline-block px-2 py-0.5 text-xs font-bold uppercase tracking-wide ${
+                        u.role === "admin"
+                          ? "bg-[#2E1A47] text-white"
+                          : "bg-[#EEEBF3] text-[#2E1A47]"
+                      }`}>
+                        {u.role === "admin" ? "Admin" : "Colaborador"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3.5">
+                      <span className={`inline-block px-2 py-0.5 text-xs font-semibold ${
+                        u.activo ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-gray-100 text-gray-400 border border-gray-200"
+                      }`}>
+                        {u.activo ? "Activo" : "Inactivo"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3.5 text-xs text-gray-400 font-mono">{u.identificador}</td>
+                    <td className="px-6 py-3.5 text-xs text-gray-400">
+                      {new Date(u.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}
+                    </td>
+                    <td className="px-6 py-3.5">
+                      {u.role === "colaborador" && (
+                        <Link href={`/admin/colaboradores/${u.id}`} className="text-xs text-[#2E1A47] font-semibold hover:underline">
+                          Ver ficha →
+                        </Link>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Crear nuevo usuario */}
+          <NuevoUsuarioForm
+            onCreated={(u) => setUsers((prev) => [...prev, u])}
+          />
         </div>
       )}
     </div>

@@ -3,10 +3,23 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const inp = "w-full px-3 py-2.5 border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#2E1A47] focus:border-[#2E1A47] bg-white";
+const inp = "w-full px-3 py-2.5 border border-gray-200 text-sm focus:outline-none focus:border-[#2E1A47] bg-white";
 const lbl = "block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5";
 
-export default function ColaboradorEditModal({ colab }: { colab: { id: string; nombre: string; email: string; identificador: string; activo: boolean } }) {
+interface Colab {
+  id: string;
+  nombre: string;
+  email: string;
+  identificador: string;
+  activo: boolean;
+  telefono?: string | null;
+  cif?: string | null;
+  web?: string | null;
+  razon_social?: string | null;
+  num_trabajadores?: number | null;
+}
+
+export default function ColaboradorEditModal({ colab }: { colab: Colab }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -18,7 +31,16 @@ export default function ColaboradorEditModal({ colab }: { colab: { id: string; n
     setLoading(true);
     setError("");
     const form = new FormData(e.currentTarget);
-    const data = { nombre: form.get("nombre"), email: form.get("email") };
+    const data = {
+      nombre: form.get("nombre"),
+      email: form.get("email"),
+      telefono: form.get("telefono") || null,
+      cif: form.get("cif") || null,
+      web: form.get("web") || null,
+      razon_social: form.get("razon_social") || null,
+      num_trabajadores: form.get("num_trabajadores") ? Number(form.get("num_trabajadores")) : null,
+      activo: form.get("activo") === "true",
+    };
 
     const res = await fetch(`/api/admin/colaboradores/${colab.id}`, {
       method: "PATCH",
@@ -43,28 +65,70 @@ export default function ColaboradorEditModal({ colab }: { colab: { id: string; n
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div className="relative bg-white w-full max-w-md p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-5">
+          <div className="relative bg-white w-full max-w-lg shadow-2xl my-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider">Editar colaborador</h2>
-              <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-700 text-lg leading-none">×</button>
+              <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-700 text-xl leading-none">×</button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className={lbl}>Nombre</label>
-                <input name="nombre" defaultValue={colab.nombre} required className={inp} />
+            <form onSubmit={handleSubmit}>
+              <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+                {/* Identificación */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={lbl}>Nombre *</label>
+                    <input name="nombre" defaultValue={colab.nombre} required className={inp} />
+                  </div>
+                  <div>
+                    <label className={lbl}>Email *</label>
+                    <input name="email" type="email" defaultValue={colab.email} required className={inp} />
+                    <p className="text-[10px] text-amber-600 mt-1">⚠ Cambia las credenciales de acceso</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={lbl}>Razón social</label>
+                    <input name="razon_social" defaultValue={colab.razon_social ?? ""} className={inp} placeholder="Empresa S.L." />
+                  </div>
+                  <div>
+                    <label className={lbl}>CIF</label>
+                    <input name="cif" defaultValue={colab.cif ?? ""} className={inp} placeholder="B12345678" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={lbl}>Teléfono</label>
+                    <input name="telefono" defaultValue={colab.telefono ?? ""} className={inp} placeholder="+34 600 000 000" />
+                  </div>
+                  <div>
+                    <label className={lbl}>Nº trabajadores</label>
+                    <input name="num_trabajadores" type="number" defaultValue={colab.num_trabajadores ?? ""} className={inp} placeholder="10" min="0" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={lbl}>Web</label>
+                  <input name="web" defaultValue={colab.web ?? ""} className={inp} placeholder="https://empresa.com" />
+                </div>
+
+                <div>
+                  <label className={lbl}>Estado</label>
+                  <select name="activo" defaultValue={colab.activo ? "true" : "false"} className={inp}>
+                    <option value="true">Activo</option>
+                    <option value="false">Inactivo</option>
+                  </select>
+                </div>
+
+                {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
               </div>
-              <div>
-                <label className={lbl}>Email</label>
-                <input name="email" type="email" defaultValue={colab.email} required className={inp} />
-                <p className="text-xs text-amber-600 mt-1">⚠ Cambiar el email modifica las credenciales de acceso del colaborador.</p>
-              </div>
-              {error && <p className="text-xs text-red-600">{error}</p>}
-              <div className="flex items-center gap-3 pt-2">
-                <button type="submit" disabled={loading} className="bg-[#2E1A47] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#5a3d80] transition-all disabled:opacity-60">
-                  {loading ? "Guardando..." : "Guardar"}
+
+              <div className="px-6 py-4 border-t border-gray-100 flex items-center gap-3">
+                <button type="submit" disabled={loading} className="bg-[#2E1A47] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-60">
+                  {loading ? "Guardando..." : "Guardar cambios"}
                 </button>
                 {saved && <span className="text-sm text-emerald-600 font-medium">Guardado ✓</span>}
                 <button type="button" onClick={() => setOpen(false)} className="text-sm text-gray-400 hover:text-gray-600 ml-auto">Cancelar</button>
