@@ -13,12 +13,13 @@ interface SidebarProps {
 
 const colaboradorNav = [
   { href: "/portal", label: "Inicio", icon: "⌂", exact: true },
-  { href: "/portal/alta-operacion", label: "Alta nueva OP", icon: "✦" },
-  { href: "/portal/operaciones/consultoria", label: "Consultoría financiera", icon: "💼" },
-  { href: "/portal/operaciones/renting", label: "Renting de equipos", icon: "🖥" },
-  { href: "/portal/historial", label: "Historial & Resumen", icon: "◎" },
-  { href: "/portal/perfil", label: "Mi perfil", icon: "◐" },
-  { href: "/portal/contacto", label: "Contacto", icon: "◑" },
+  { href: "/portal/alta-operacion", label: "Alta nueva OP", icon: "✦", exact: false },
+  { href: "/portal/operaciones/consultoria", label: "Consultoría financiera", icon: "◈", exact: false },
+  { href: "/portal/operaciones/renting", label: "Renting de equipos", icon: "◉", exact: false },
+  { href: "/portal/clientes", label: "Mis clientes", icon: "◐", exact: false },
+  { href: "/portal/historial", label: "Historial & Resumen", icon: "◎", exact: false },
+  { href: "/portal/perfil", label: "Mi perfil", icon: "◑", exact: false },
+  { href: "/portal/contacto", label: "Contacto", icon: "◇", exact: false },
 ];
 
 const adminNav = [

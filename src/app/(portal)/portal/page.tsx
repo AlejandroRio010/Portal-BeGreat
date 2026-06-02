@@ -9,6 +9,7 @@ const tiles = [
   { href: "/portal/alta-operacion",          label: "Alta nueva operación",   sub: "Registra una nueva operación" },
   { href: "/portal/operaciones/consultoria", label: "Consultoría financiera", sub: "Pólizas, leasing, préstamos..." },
   { href: "/portal/operaciones/renting",     label: "Renting de equipos",     sub: "Industrial y tecnológico" },
+  { href: "/portal/clientes",               label: "Mis clientes",           sub: "Empresas y personas de contacto" },
   { href: "/portal/historial",               label: "Historial & Resumen",    sub: "Tus métricas y comisiones" },
   { href: "/portal/perfil",                  label: "Mi perfil",              sub: "Datos de tu empresa" },
   { href: "/portal/contacto",                label: "Contacto BeGreat",       sub: "Rita & Alejandro" },
@@ -31,10 +32,8 @@ export default async function PortalHomePage() {
   return (
     <div>
 
-      {/* ── Rectangular banner ─────────────────────────────────────── */}
-      <div className="relative overflow-hidden bg-[#1a0f2e] mb-6" style={{ height: 200 }}>
-        <Image src="/begreat-banner.jpg" alt="BeGreat" fill className="object-cover opacity-35" priority />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1a0f2e] via-[#2E1A47]/70 to-transparent" />
+      {/* ── Rectangular banner — fondo morado sólido ──────────────── */}
+      <div className="relative overflow-hidden mb-6" style={{ height: 200, background: "linear-gradient(135deg, #3d2660 0%, #2E1A47 50%, #1e1235 100%)" }}>
 
         <div className="relative z-10 flex items-center justify-between h-full px-10">
           {/* Left: BeGreat logo only */}
@@ -64,22 +63,25 @@ export default async function PortalHomePage() {
       {/* ── Below banner: logo square + tiles ─────────────────────── */}
       <div className="flex gap-6 items-stretch">
 
-        {/* Logo square */}
-        <div className="flex-shrink-0 bg-white border border-gray-200 flex flex-col items-center justify-center gap-5 p-6" style={{ width: 220 }}>
-          <Image src="/begreat-logo.png" alt="BeGreat Consulting" width={140} height={42} className="object-contain" />
-          {colab?.logo_url ? (
-            <>
-              <div className="w-full h-px bg-gray-100" />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={colab.logo_url} alt="Logo colaborador" style={{ maxHeight: 42, maxWidth: 140, objectFit: "contain" }} />
-            </>
-          ) : (
-            <p className="text-xs text-gray-300 text-center">Sube tu logo en Mi perfil</p>
-          )}
+        {/* Logo square — ambos logos al mismo tamaño */}
+        <div className="flex-shrink-0 bg-white border border-gray-200 flex flex-col items-center justify-center gap-0 p-0 overflow-hidden" style={{ width: 220 }}>
+          {/* BeGreat logo */}
+          <div className="flex-1 w-full flex items-center justify-center px-6 py-4 border-b border-gray-100">
+            <Image src="/begreat-logo.png" alt="BeGreat Consulting" width={130} height={40} className="object-contain" style={{ maxHeight: 40 }} />
+          </div>
+          {/* Colaborador logo — misma celda, mismo tamaño */}
+          <div className="flex-1 w-full flex items-center justify-center px-6 py-4">
+            {colab?.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={colab.logo_url} alt="Logo colaborador" style={{ maxHeight: 40, maxWidth: 130, objectFit: "contain" }} />
+            ) : (
+              <p className="text-xs text-gray-300 text-center leading-tight">Sube tu logo<br/>en Mi perfil</p>
+            )}
+          </div>
         </div>
 
         {/* Tiles grid — fills remaining space, same height as logo square */}
-        <div className="flex-1 grid grid-cols-3 gap-3">
+        <div className="flex-1 grid grid-cols-4 gap-3">
           {tiles.map((tile) => (
             <Link
               key={tile.href}
