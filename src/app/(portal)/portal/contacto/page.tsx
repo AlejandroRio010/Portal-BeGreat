@@ -103,7 +103,7 @@ export default function ContactoPage() {
         {/* Documentación */}
         <div>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Documentación</p>
-          <div className="bg-white border border-gray-200 p-5 h-full">
+          <div className="bg-white border border-gray-200 p-5">
             <p className="text-xs text-gray-400 mb-4">
               Descarga nuestras presentaciones para compartir con tus clientes.
             </p>
