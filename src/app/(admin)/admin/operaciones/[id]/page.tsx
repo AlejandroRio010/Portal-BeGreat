@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, collaborators } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues } from "@/db/schema";
+import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import AdminOpForm from "./AdminOpForm";
@@ -67,6 +67,17 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
     .from(notes)
     .where(eq(notes.operation_id, id))
     .orderBy(notes.created_at);
+
+  const opCustomFields = await db
+    .select()
+    .from(customFields)
+    .where(eq(customFields.entidad, "operacion"))
+    .orderBy(asc(customFields.orden));
+
+  const opCustomValues = await db
+    .select()
+    .from(customFieldValues)
+    .where(eq(customFieldValues.entity_id, id));
 
   const fases = op.pipeline_key === "consultoria" ? FASES_CONSULTORIA : FASES_RENTING;
   const faseIdx = op.status === "pendiente_de_validar" ? -1 : fases.indexOf(op.fase ?? "");
@@ -219,6 +230,8 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialNotasAdmin={op.notas_admin ?? null}
             initialFacturacionRenting={op.facturacion_renting ?? null}
             initialOnedriveUrl={op.onedrive_url ?? null}
+            customFieldDefs={opCustomFields}
+            customFieldValues={opCustomValues.map((v) => ({ field_id: v.field_id, valor: v.valor ?? null }))}
           />
         </div>
 

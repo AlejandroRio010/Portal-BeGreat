@@ -61,6 +61,8 @@ export default function AdminOpForm({
   initialNotasAdmin,
   initialFacturacionRenting,
   initialOnedriveUrl,
+  customFieldDefs = [],
+  customFieldValues: initialCustomFieldValues = [],
 }: Props) {
   const router = useRouter();
   const fases = pipelineKey === "consultoria" ? FASES_CONSULTORIA : FASES_RENTING;
@@ -77,6 +79,17 @@ export default function AdminOpForm({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Custom field values state: map field_id -> valor
+  const [customValues, setCustomValues] = useState<Record<string, string>>(() => {
+    const m: Record<string, string> = {};
+    for (const v of initialCustomFieldValues) {
+      m[v.field_id] = v.valor ?? "";
+    }
+    return m;
+  });
+  const [savingCustom, setSavingCustom] = useState(false);
+  const [savedCustom, setSavedCustom] = useState(false);
 
   // Saving notas admin separately
   const [savingNotas, setSavingNotas] = useState(false);
@@ -127,6 +140,29 @@ export default function AdminOpForm({
       setError("Error al guardar las notas.");
     } finally {
       setSavingNotas(false);
+    }
+  }
+
+  async function handleSaveCustomFields() {
+    if (customFieldDefs.length === 0) return;
+    setSavingCustom(true);
+    setSavedCustom(false);
+    try {
+      await Promise.all(
+        customFieldDefs.map((f) =>
+          fetch("/api/admin/custom-field-values", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ field_id: f.id, entity_id: opId, valor: customValues[f.id] ?? "" }),
+          })
+        )
+      );
+      setSavedCustom(true);
+      router.refresh();
+    } catch {
+      setError("Error al guardar campos adicionales.");
+    } finally {
+      setSavingCustom(false);
     }
   }
 
@@ -322,6 +358,36 @@ export default function AdminOpForm({
           <p className="text-xs text-red-600 font-semibold text-center">{error}</p>
         )}
       </div>
+
+      {/* Campos adicionales */}
+      {customFieldDefs.length > 0 && (
+        <div className="bg-white border border-gray-200 p-5 space-y-4">
+          <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest pb-3 border-b border-gray-100">Campos adicionales</p>
+          {customFieldDefs.map((f) => (
+            <div key={f.id}>
+              <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">{f.etiqueta}</label>
+              <input
+                type={f.tipo === "euros" || f.tipo === "porcentaje" ? "number" : f.tipo === "enlace" ? "url" : "text"}
+                step={f.tipo === "euros" || f.tipo === "porcentaje" ? "0.01" : undefined}
+                value={customValues[f.id] ?? ""}
+                onChange={(e) => setCustomValues((prev) => ({ ...prev, [f.id]: e.target.value }))}
+                placeholder={f.tipo === "euros" ? "0.00" : f.tipo === "porcentaje" ? "0" : f.tipo === "enlace" ? "https://..." : ""}
+                className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
+              />
+            </div>
+          ))}
+          <button
+            onClick={handleSaveCustomFields}
+            disabled={savingCustom}
+            className="w-full py-2 border border-[#2E1A47] text-[#2E1A47] text-sm font-semibold hover:bg-[#EEEBF3] transition-colors disabled:opacity-50"
+          >
+            {savingCustom ? "Guardando..." : "Guardar campos adicionales"}
+          </button>
+          {savedCustom && (
+            <p className="text-xs text-emerald-600 font-semibold text-center">Campos guardados.</p>
+          )}
+        </div>
+      )}
 
       {/* Notas internas (solo admin) */}
       <div className="bg-white border border-gray-200 p-5 space-y-4">
