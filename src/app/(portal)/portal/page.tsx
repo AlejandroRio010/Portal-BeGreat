@@ -53,19 +53,15 @@ export default async function PortalHomePage() {
         {/* Overlay: más opaco en extremos para legibilidad, translúcido en centro */}
         <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(26,15,46,0.75) 0%, rgba(26,15,46,0.30) 40%, rgba(26,15,46,0.90) 100%)" }} />
 
-        {/* Left: logos en cajas idénticas */}
-        <div className="relative z-10 flex items-center gap-6">
-          <div className="bg-white/10 border border-white/20 flex items-center justify-center" style={{ width: 148, height: 48 }}>
-            <Image src="/begreat-logo-blanco.png" alt="BeGreat" width={120} height={36} className="object-contain" priority />
-          </div>
+        {/* Left: logos sin bordes */}
+        <div className="relative z-10 flex items-center gap-8">
+          <Image src="/begreat-logo-blanco.png" alt="BeGreat" width={130} height={40} className="object-contain" priority />
 
           {colab?.logo_url && (
             <>
-              <div className="w-px h-10 bg-white/20" />
-              <div className="bg-white/10 border border-white/20 flex items-center justify-center" style={{ width: 148, height: 48 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={colab.logo_url} alt="Logo colaborador" style={{ maxHeight: 32, maxWidth: 116, objectFit: "contain" }} />
-              </div>
+              <div className="w-px h-10 bg-white/25" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={colab.logo_url} alt="Logo colaborador" style={{ maxHeight: 36, maxWidth: 130, objectFit: "contain" }} />
             </>
           )}
         </div>
