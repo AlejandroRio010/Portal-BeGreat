@@ -135,6 +135,10 @@ export const operations = pgTable("operations", {
   descripcion: text("descripcion"),
   // Communication preference
   contacto_directo: boolean("contacto_directo").default(false), // true = BeGreat contacta al cliente
+  // Admin-only fields
+  notas_admin: text("notas_admin"),
+  facturacion_renting: text("facturacion_renting"), // "begreat" | "financiera" — solo renting
+  onedrive_url: text("onedrive_url"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });

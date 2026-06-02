@@ -4,6 +4,8 @@ import { db } from "@/db";
 import { operations } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
+const FASES_FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -16,31 +18,17 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json();
 
-  const {
-    fase,
-    status,
-    comision_colaborador,
-    comision_begreat,
-    entidad_financiera,
-    honorarios_firmado,
-    notas_admin,
-    facturacion_renting,
-    onedrive_url,
-  } = body;
+  const { fase, notas_admin, facturacion_renting, onedrive_url } = body;
 
   const updateData: Record<string, unknown> = {
     updated_at: new Date(),
   };
 
-  if (fase !== undefined) updateData.fase = fase;
-  if (status !== undefined) updateData.status = status;
-  if (comision_colaborador !== undefined)
-    updateData.comision_colaborador = comision_colaborador === "" ? null : comision_colaborador;
-  if (comision_begreat !== undefined)
-    updateData.comision_begreat = comision_begreat === "" ? null : comision_begreat;
-  if (entidad_financiera !== undefined)
-    updateData.entidad_financiera = entidad_financiera === "" ? null : entidad_financiera;
-  if (honorarios_firmado !== undefined) updateData.honorarios_firmado = honorarios_firmado;
+  if (fase !== undefined) {
+    updateData.fase = fase;
+    // Set status to activa regardless (already activa ops stay activa, or we activate pending ones)
+    updateData.status = "activa";
+  }
   if (notas_admin !== undefined) updateData.notas_admin = notas_admin || null;
   if (facturacion_renting !== undefined) updateData.facturacion_renting = facturacion_renting || null;
   if (onedrive_url !== undefined) updateData.onedrive_url = onedrive_url || null;

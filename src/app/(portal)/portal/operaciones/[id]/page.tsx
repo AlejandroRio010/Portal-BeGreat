@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, clients, suppliers, notes } from "@/db/schema";
+import { operations, clients, suppliers, notes, customFields, customFieldValues } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -58,6 +58,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       client_id: operations.client_id,
       client_nombre: clients.nombre,
       supplier_nombre: suppliers.nombre,
+      onedrive_url: operations.onedrive_url,
     })
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
@@ -72,6 +73,20 @@ export default async function OperacionDetallePage({ params }: { params: Promise
     .from(notes)
     .where(eq(notes.operation_id, id))
     .orderBy(notes.created_at);
+
+  // Custom fields for operations
+  const opCustomFields = await db
+    .select()
+    .from(customFields)
+    .where(eq(customFields.entidad, "operacion"))
+    .orderBy(customFields.orden);
+
+  const opCustomValues = await db
+    .select()
+    .from(customFieldValues)
+    .where(eq(customFieldValues.entity_id, id));
+
+  const customValueMap = new Map(opCustomValues.map((v) => [v.field_id, v.valor]));
 
   const fases = op.pipeline_key === "consultoria" ? FASES_CONSULTORIA : FASES_RENTING;
   const faseIdx = op.status === "pendiente_de_validar" ? -1 : fases.indexOf(op.fase ?? "");
@@ -198,6 +213,21 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                   </dd>
                 </div>
               ) : null)}
+              {op.onedrive_url && (
+                <div>
+                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">📁 Documentación</dt>
+                  <dd className="text-sm">
+                    <a
+                      href={op.onedrive_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#2E1A47] hover:underline font-semibold"
+                    >
+                      Abrir documentación →
+                    </a>
+                  </dd>
+                </div>
+              )}
             </dl>
           </div>
         </div>
@@ -231,6 +261,34 @@ export default async function OperacionDetallePage({ params }: { params: Promise
           <AddNoteForm operationId={id} />
         </div>
       </div>
+
+      {/* Custom fields */}
+      {opCustomFields.length > 0 && (
+        <div className="mt-5 bg-white border border-gray-200 p-5">
+          <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Información adicional</p>
+          <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {opCustomFields.map((f) => {
+              const valor = customValueMap.get(f.id) ?? null;
+              return (
+                <div key={f.id}>
+                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">{f.etiqueta}</dt>
+                  <dd className="text-sm text-gray-800 font-medium">
+                    {valor
+                      ? f.tipo === "enlace"
+                        ? <a href={valor} target="_blank" rel="noopener noreferrer" className="text-[#2E1A47] hover:underline">{valor}</a>
+                        : f.tipo === "euros"
+                          ? `${Number(valor).toLocaleString("es-ES")} €`
+                          : f.tipo === "porcentaje"
+                            ? `${valor}%`
+                            : valor
+                      : <span className="text-gray-300">—</span>}
+                  </dd>
+                </div>
+              );
+            })}
+          </dl>
+        </div>
+      )}
     </div>
   );
 }

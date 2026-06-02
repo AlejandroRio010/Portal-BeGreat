@@ -42,6 +42,9 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       renting_rol: operations.renting_rol,
       equipo_tipo: operations.equipo_tipo,
       plazo_meses: operations.plazo_meses,
+      notas_admin: operations.notas_admin,
+      facturacion_renting: operations.facturacion_renting,
+      onedrive_url: operations.onedrive_url,
       created_at: operations.created_at,
       updated_at: operations.updated_at,
       client_id: operations.client_id,
@@ -213,6 +216,9 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialComisionBegreat={op.comision_begreat}
             initialEntidad={op.entidad_financiera}
             initialHonorarios={op.honorarios_firmado}
+            initialNotasAdmin={op.notas_admin ?? null}
+            initialFacturacionRenting={op.facturacion_renting ?? null}
+            initialOnedriveUrl={op.onedrive_url ?? null}
           />
         </div>
 
