@@ -41,30 +41,30 @@ export default async function PortalHomePage() {
     <div>
 
       {/* ── Banner con imagen de portada ───────────────────────────── */}
-      <div className="relative overflow-hidden mb-6 bg-[#2E1A47] flex items-center justify-between px-10" style={{ height: 180 }}>
+      <div className="relative overflow-hidden mb-6 bg-[#1a0f2e] flex items-center justify-between px-10" style={{ height: 180 }}>
         {/* Imagen de fondo */}
         <Image
-          src="/portada-home.jpg"
+          src="/begreat-banner.jpg"
           alt=""
           fill
-          className="object-cover object-center opacity-60"
+          className="object-cover object-left opacity-55"
           priority
         />
-        {/* Overlay degradado: morado sólido a la derecha para que el texto sea legible */}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(46,26,71,0.15) 0%, rgba(46,26,71,0.5) 50%, rgba(46,26,71,0.92) 100%)" }} />
+        {/* Overlay: más opaco en extremos para legibilidad, translúcido en centro */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(26,15,46,0.75) 0%, rgba(26,15,46,0.30) 40%, rgba(26,15,46,0.90) 100%)" }} />
 
-        {/* Left: logos lado a lado, mismo tamaño */}
-        <div className="relative z-10 flex items-center gap-8">
-          <div style={{ width: 140, height: 44 }} className="flex items-center justify-center">
-            <Image src="/begreat-logo-blanco.png" alt="BeGreat" width={140} height={44} className="object-contain" priority />
+        {/* Left: logos en cajas idénticas */}
+        <div className="relative z-10 flex items-center gap-6">
+          <div className="bg-white/10 border border-white/20 flex items-center justify-center" style={{ width: 148, height: 48 }}>
+            <Image src="/begreat-logo-blanco.png" alt="BeGreat" width={120} height={36} className="object-contain" priority />
           </div>
 
           {colab?.logo_url && (
             <>
               <div className="w-px h-10 bg-white/20" />
-              <div className="bg-white/10 border border-white/15 px-4 py-2 flex items-center justify-center" style={{ width: 140, height: 44 }}>
+              <div className="bg-white/10 border border-white/20 flex items-center justify-center" style={{ width: 148, height: 48 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={colab.logo_url} alt="Logo colaborador" style={{ maxHeight: 32, maxWidth: 120, objectFit: "contain" }} />
+                <img src={colab.logo_url} alt="Logo colaborador" style={{ maxHeight: 32, maxWidth: 116, objectFit: "contain" }} />
               </div>
             </>
           )}
