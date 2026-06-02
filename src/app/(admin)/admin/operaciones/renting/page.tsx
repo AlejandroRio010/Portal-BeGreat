@@ -1,9 +1,17 @@
 import { db } from "@/db";
-import { operations, clients, collaborators } from "@/db/schema";
+import { operations, clients, collaborators, pipelines } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import KanbanBoard from "./KanbanBoard";
 
+const FASES_RENTING_DEFAULT = [
+  "Pre-análisis", "En estudio por entidad", "Operación aprobada",
+  "Condiciones aceptadas", "Contrato firmado", "Transferencia realizada",
+];
+
 export default async function AdminRentingKanbanPage() {
+  const [pr] = await db.select().from(pipelines).where(eq(pipelines.key, "renting")).limit(1);
+  const fases = (pr?.fases as string[]) ?? FASES_RENTING_DEFAULT;
+
   const ops = await db
     .select({
       id: operations.id,
@@ -29,7 +37,7 @@ export default async function AdminRentingKanbanPage() {
         <h1 className="text-2xl font-bold text-gray-900">Renting — Kanban</h1>
         <p className="text-sm text-gray-400 mt-1">Arrastra las operaciones entre columnas para actualizar su fase.</p>
       </div>
-      <KanbanBoard initialOps={ops.map((op) => ({
+      <KanbanBoard fases={fases} initialOps={ops.map((op) => ({
         ...op,
         importe: op.importe ?? null,
         comision_colaborador: op.comision_colaborador ?? null,

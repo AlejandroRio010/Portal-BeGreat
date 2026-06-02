@@ -14,14 +14,6 @@ import {
 } from "@dnd-kit/core";
 import Link from "next/link";
 
-const FASES_CONSULTORIA = [
-  "Pre-análisis",
-  "Firma de honorarios",
-  "En estudio por entidad",
-  "Operación aprobada",
-  "Contrato firmado",
-  "Honorarios pagados",
-];
 
 export interface KanbanOp {
   id: string;
@@ -120,7 +112,7 @@ function CardContent({ op }: { op: KanbanOp }) {
   );
 }
 
-export default function KanbanBoard({ initialOps }: { initialOps: KanbanOp[] }) {
+export default function KanbanBoard({ initialOps, fases }: { initialOps: KanbanOp[]; fases: string[] }) {
   const [ops, setOps] = useState(initialOps);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -158,7 +150,7 @@ export default function KanbanBoard({ initialOps }: { initialOps: KanbanOp[] }) 
     }
   }
 
-  const opsByFase = FASES_CONSULTORIA.reduce<Record<string, KanbanOp[]>>((acc, fase) => {
+  const opsByFase = fases.reduce<Record<string, KanbanOp[]>>((acc, fase) => {
     acc[fase] = ops.filter((op) => op.fase === fase);
     return acc;
   }, {});
@@ -166,7 +158,7 @@ export default function KanbanBoard({ initialOps }: { initialOps: KanbanOp[] }) 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex gap-4 overflow-x-auto pb-4">
-        {FASES_CONSULTORIA.map((fase) => (
+        {fases.map((fase) => (
           <DroppableColumn key={fase} fase={fase} ops={opsByFase[fase]} activeId={activeId} />
         ))}
       </div>
