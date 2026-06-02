@@ -4,21 +4,21 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const FASES_CONSULTORIA = [
-  "Pre-analysis",
-  "Fee Signature",
-  "Under Entity Review",
-  "Operation Approved",
-  "Contract Signed",
-  "Fees Paid",
+  "Pre-análisis",
+  "Firma de honorarios",
+  "En estudio por entidad",
+  "Operación aprobada",
+  "Contrato firmado",
+  "Honorarios pagados",
 ];
 
 const FASES_RENTING = [
-  "Pre-analysis",
-  "Under Entity Review",
-  "Operation Approved",
-  "Terms Accepted",
-  "Contract Signed",
-  "Transfered Made",
+  "Pre-análisis",
+  "En estudio por entidad",
+  "Operación aprobada",
+  "Condiciones aceptadas",
+  "Contrato firmado",
+  "Transferencia realizada",
 ];
 
 interface Props {

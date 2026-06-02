@@ -46,12 +46,12 @@ async function seed() {
     {
       key: "consultoria",
       label: "Consultoría financiera",
-      fases: ["Pre-analysis", "Fee Signature", "Under Entity Review", "Operation Approved", "Contract Signed", "Fees Paid"],
+      fases: ["Pre-análisis", "Firma de honorarios", "En estudio por entidad", "Operación aprobada", "Contrato firmado", "Honorarios pagados"],
     },
     {
       key: "renting",
       label: "Renting",
-      fases: ["Pre-analysis", "Under Entity Review", "Operation Approved", "Terms Accepted", "Contract Signed", "Transfered Made"],
+      fases: ["Pre-análisis", "En estudio por entidad", "Operación aprobada", "Condiciones aceptadas", "Contrato firmado", "Transferencia realizada"],
     },
   ]).onConflictDoNothing();
 
@@ -72,7 +72,7 @@ async function seed() {
       client_id: client1.id,
       producto: "Financiación circulante",
       importe: "150000",
-      fase: "Pre-analysis",
+      fase: "Pre-análisis",
       status: "activa",
       comision_colaborador: "3000",
       comision_begreat: "5000",
@@ -93,7 +93,7 @@ async function seed() {
       client_id: client2.id,
       producto: "Renting equipos informáticos",
       importe: "45000",
-      fase: "Under Entity Review",
+      fase: "En estudio por entidad",
       status: "activa",
       lugar_entrega: "Madrid, Calle Mayor 10",
     });

@@ -7,32 +7,32 @@ import Link from "next/link";
 import AddNoteForm from "./AddNoteForm";
 
 const FASES_CONSULTORIA = [
-  "Pre-analysis",
-  "Fee Signature",
-  "Under Entity Review",
-  "Operation Approved",
-  "Contract Signed",
-  "Fees Paid",
+  "Pre-análisis",
+  "Firma de honorarios",
+  "En estudio por entidad",
+  "Operación aprobada",
+  "Contrato firmado",
+  "Honorarios pagados",
 ];
 
 const FASES_RENTING = [
-  "Pre-analysis",
-  "Under Entity Review",
-  "Operation Approved",
-  "Terms Accepted",
-  "Contract Signed",
-  "Transfered Made",
+  "Pre-análisis",
+  "En estudio por entidad",
+  "Operación aprobada",
+  "Condiciones aceptadas",
+  "Contrato firmado",
+  "Transferencia realizada",
 ];
 
 const FASE_COLOR: Record<string, { bg: string; text: string; border: string }> = {
-  "Pre-analysis":        { bg: "bg-gray-100",     text: "text-gray-600",    border: "border-gray-200" },
-  "Fee Signature":       { bg: "bg-blue-50",      text: "text-blue-700",    border: "border-blue-200" },
-  "Under Entity Review": { bg: "bg-amber-50",     text: "text-amber-700",   border: "border-amber-200" },
-  "Operation Approved":  { bg: "bg-emerald-50",   text: "text-emerald-700", border: "border-emerald-200" },
-  "Terms Accepted":      { bg: "bg-teal-50",      text: "text-teal-700",    border: "border-teal-200" },
-  "Contract Signed":     { bg: "bg-violet-50",    text: "text-violet-700",  border: "border-violet-200" },
-  "Fees Paid":           { bg: "bg-emerald-100",  text: "text-emerald-800", border: "border-emerald-300" },
-  "Transfered Made":     { bg: "bg-emerald-100",  text: "text-emerald-800", border: "border-emerald-300" },
+  "Pre-análisis":        { bg: "bg-gray-100",     text: "text-gray-600",    border: "border-gray-200" },
+  "Firma de honorarios":       { bg: "bg-blue-50",      text: "text-blue-700",    border: "border-blue-200" },
+  "En estudio por entidad": { bg: "bg-amber-50",     text: "text-amber-700",   border: "border-amber-200" },
+  "Operación aprobada":  { bg: "bg-emerald-50",   text: "text-emerald-700", border: "border-emerald-200" },
+  "Condiciones aceptadas":      { bg: "bg-teal-50",      text: "text-teal-700",    border: "border-teal-200" },
+  "Contrato firmado":     { bg: "bg-violet-50",    text: "text-violet-700",  border: "border-violet-200" },
+  "Honorarios pagados":           { bg: "bg-emerald-100",  text: "text-emerald-800", border: "border-emerald-300" },
+  "Transferencia realizada":     { bg: "bg-emerald-100",  text: "text-emerald-800", border: "border-emerald-300" },
 };
 
 export default async function OperacionDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -75,7 +75,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
 
   const fases = op.pipeline_key === "consultoria" ? FASES_CONSULTORIA : FASES_RENTING;
   const faseIdx = op.status === "pendiente_de_validar" ? -1 : fases.indexOf(op.fase ?? "");
-  const faseStyle = op.fase ? (FASE_COLOR[op.fase] ?? FASE_COLOR["Pre-analysis"]) : FASE_COLOR["Pre-analysis"];
+  const faseStyle = op.fase ? (FASE_COLOR[op.fase] ?? FASE_COLOR["Pre-análisis"]) : FASE_COLOR["Pre-análisis"];
 
   const isPendiente = op.status === "pendiente_de_validar";
   const isConsultoria = op.pipeline_key === "consultoria";

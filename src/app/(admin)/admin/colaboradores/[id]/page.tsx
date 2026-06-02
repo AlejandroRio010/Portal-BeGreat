@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import NotasForm from "./NotasForm";
 
-const FASES_FIRMADAS = ["Contract Signed", "Fees Paid", "Transfered Made"];
+const FASES_FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
 
 const STATUS_BADGE: Record<string, { bg: string; text: string; border: string; label: string }> = {
   pendiente_de_validar: { bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200",   label: "Pendiente" },

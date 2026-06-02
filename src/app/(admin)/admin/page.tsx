@@ -30,14 +30,14 @@ export default async function AdminHomePage() {
 
   const pendientes = allOps.filter((o) => o.status === "pendiente_de_validar");
   const firmadas = allOps.filter(
-    (o) => o.fase === "Contract Signed" || o.fase === "Fees Paid" || o.fase === "Transfered Made"
+    (o) => o.fase === "Contrato firmado" || o.fase === "Honorarios pagados" || o.fase === "Transferencia realizada"
   );
   const feeTotalGenerada = firmadas.reduce(
     (s, o) => s + (o.comision_colaborador ? Number(o.comision_colaborador) : 0) + (o.comision_begreat ? Number(o.comision_begreat) : 0),
     0
   );
   const feePendiente = allOps
-    .filter((o) => o.status !== "archivada" && o.fase !== "Contract Signed" && o.fase !== "Fees Paid" && o.fase !== "Transfered Made")
+    .filter((o) => o.status !== "archivada" && o.fase !== "Contrato firmado" && o.fase !== "Honorarios pagados" && o.fase !== "Transferencia realizada")
     .reduce(
       (s, o) => s + (o.comision_colaborador ? Number(o.comision_colaborador) : 0) + (o.comision_begreat ? Number(o.comision_begreat) : 0),
       0

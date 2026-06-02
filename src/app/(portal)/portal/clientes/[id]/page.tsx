@@ -65,12 +65,12 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
     (o) =>
       o.status === "pendiente_de_validar" ||
       (o.status === "activa" &&
-        o.fase !== "Contract Signed" &&
-        o.fase !== "Fees Paid" &&
-        o.fase !== "Transfered Made")
+        o.fase !== "Contrato firmado" &&
+        o.fase !== "Honorarios pagados" &&
+        o.fase !== "Transferencia realizada")
   );
   const firmadaOps = clientOps.filter(
-    (o) => o.fase === "Contract Signed" || o.fase === "Fees Paid" || o.fase === "Transfered Made"
+    (o) => o.fase === "Contrato firmado" || o.fase === "Honorarios pagados" || o.fase === "Transferencia realizada"
   );
 
   return (
@@ -255,9 +255,9 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                             Pendiente
                           </span>
-                        ) : op.fase === "Contract Signed" ||
-                          op.fase === "Fees Paid" ||
-                          op.fase === "Transfered Made" ? (
+                        ) : op.fase === "Contrato firmado" ||
+                          op.fase === "Honorarios pagados" ||
+                          op.fase === "Transferencia realizada" ? (
                           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
                             Firmada ✓
                           </span>

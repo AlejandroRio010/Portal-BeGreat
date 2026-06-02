@@ -19,7 +19,7 @@ function StatusBadge({ status, fase }: { status: string; fase: string | null }) 
       </span>
     );
   }
-  if (fase === "Contract Signed" || fase === "Fees Paid" || fase === "Transfered Made") {
+  if (fase === "Contrato firmado" || fase === "Honorarios pagados" || fase === "Transferencia realizada") {
     return (
       <span className="inline-flex items-center px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
         Firmada ✓
@@ -73,7 +73,7 @@ export default async function AdminOperacionesPage({
   if (tipoFilter && tipoFilter !== "todas") ops = ops.filter((o) => o.pipeline_key === tipoFilter);
   if (statusFilter && statusFilter !== "todos") {
     if (statusFilter === "firmada") {
-      ops = ops.filter((o) => o.fase === "Contract Signed" || o.fase === "Fees Paid" || o.fase === "Transfered Made");
+      ops = ops.filter((o) => o.fase === "Contrato firmado" || o.fase === "Honorarios pagados" || o.fase === "Transferencia realizada");
     } else {
       ops = ops.filter((o) => o.status === statusFilter);
     }

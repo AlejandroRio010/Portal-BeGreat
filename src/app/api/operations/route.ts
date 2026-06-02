@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const initialFase = pipeline_key === "consultoria" ? "Pre-analysis" : "Pre-analysis";
+  const initialFase = pipeline_key === "consultoria" ? "Pre-análisis" : "Pre-análisis";
 
   const [op] = await db
     .insert(operations)

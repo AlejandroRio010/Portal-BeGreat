@@ -5,12 +5,12 @@ import { eq, and } from "drizzle-orm";
 import Link from "next/link";
 
 const FASE_STYLE: Record<string, string> = {
-  "Pre-analysis": "bg-gray-100 text-gray-600",
-  "Fee Signature": "bg-blue-100 text-blue-700",
-  "Under Entity Review": "bg-yellow-100 text-yellow-700",
-  "Operation Approved": "bg-green-100 text-green-700",
-  "Contract Signed": "bg-purple-100 text-purple-700",
-  "Fees Paid": "bg-emerald-100 text-emerald-800",
+  "Pre-análisis": "bg-gray-100 text-gray-600",
+  "Firma de honorarios": "bg-blue-100 text-blue-700",
+  "En estudio por entidad": "bg-yellow-100 text-yellow-700",
+  "Operación aprobada": "bg-green-100 text-green-700",
+  "Contrato firmado": "bg-purple-100 text-purple-700",
+  "Honorarios pagados": "bg-emerald-100 text-emerald-800",
 };
 
 function formatDate(d: Date) {
