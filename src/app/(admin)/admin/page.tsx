@@ -136,11 +136,7 @@ export default async function AdminHomePage({
             <select
               name="year"
               defaultValue={String(selectedYear)}
-              onChange={(e) => {
-                // client-side navigation via form submit
-              }}
               className="border border-gray-200 px-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-[#2E1A47]"
-              // We submit via wrapping form
             >
               {availableYears.map((y) => (
                 <option key={y} value={y}>{y}</option>
