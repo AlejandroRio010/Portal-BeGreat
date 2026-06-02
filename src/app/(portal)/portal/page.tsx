@@ -65,6 +65,10 @@ export default async function PortalHomePage() {
       <div className="relative overflow-hidden mb-6 bg-[#1a0f2e] flex items-center justify-between px-10" style={{ height: 180 }}>
         <Image src="/cabecera-corporate.jpg" alt="" fill className="object-cover object-center opacity-45" priority />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(26,15,46,0.82) 0%, rgba(26,15,46,0.20) 45%, rgba(26,15,46,0.85) 100%)" }} />
+        {/* Marca de agua logo BeGreat centrada */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <Image src="/begreat-logo-blanco.png" alt="" width={200} height={60} className="object-contain opacity-8" />
+        </div>
 
         {/* Logo colaborador */}
         <div className="relative z-10">
@@ -85,22 +89,30 @@ export default async function PortalHomePage() {
       </div>
 
       {/* ── KPIs ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-[#2E1A47] p-5">
-          <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-3">Ops. firmadas</p>
-          <p className="text-2xl font-black text-white">{firmadas.length}</p>
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        {/* Pareja 1: Firmadas — morado oscuro BeGreat */}
+        <div className="flex gap-px bg-[#2E1A47] overflow-hidden">
+          <div className="flex-1 bg-[#2E1A47] px-6 py-5">
+            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Ops. firmadas</p>
+            <p className="text-3xl font-black text-white">{firmadas.length}</p>
+          </div>
+          <div className="w-px bg-white/10" />
+          <div className="flex-1 bg-[#3d2460] px-6 py-5">
+            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee generadas</p>
+            <p className="text-2xl font-black text-white leading-tight">{totalComision > 0 ? fmt(totalComision) : "—"}</p>
+          </div>
         </div>
-        <div className="bg-[#EEEBF3] p-5">
-          <p className="text-[#2E1A47]/60 text-xs font-semibold uppercase tracking-widest mb-3">En estudio</p>
-          <p className="text-2xl font-black text-[#2E1A47]">{enCurso.length + pendientes.length}</p>
-        </div>
-        <div className="bg-[#2E1A47] p-5">
-          <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-3">Fee generadas</p>
-          <p className="text-xl font-black text-white">{totalComision > 0 ? fmt(totalComision) : "—"}</p>
-        </div>
-        <div className="bg-[#EEEBF3] p-5">
-          <p className="text-[#2E1A47]/60 text-xs font-semibold uppercase tracking-widest mb-3">Fee pendiente</p>
-          <p className="text-xl font-black text-[#2E1A47]">{feePendiente > 0 ? fmt(feePendiente) : "—"}</p>
+        {/* Pareja 2: En estudio — lila claro */}
+        <div className="flex gap-px bg-[#d8d0e8] overflow-hidden">
+          <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
+            <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">En estudio</p>
+            <p className="text-3xl font-black text-[#2E1A47]">{enCurso.length + pendientes.length}</p>
+          </div>
+          <div className="w-px bg-[#2E1A47]/10" />
+          <div className="flex-1 bg-[#e8e4f0] px-6 py-5">
+            <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee pendiente</p>
+            <p className="text-2xl font-black text-[#2E1A47] leading-tight">{feePendiente > 0 ? fmt(feePendiente) : "—"}</p>
+          </div>
         </div>
       </div>
 

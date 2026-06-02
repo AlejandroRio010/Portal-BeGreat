@@ -72,6 +72,7 @@ export const clients = pgTable("clients", {
   email: text("email"),
   telefono: text("telefono"),
   web: text("web"),
+  linkedin: text("linkedin"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -85,6 +86,8 @@ export const contacts = pgTable("contacts", {
   email: text("email"),
   telefono: text("telefono"),
   rol: text("rol"),
+  linkedin: text("linkedin"),
+  notas: text("notas"),
 });
 
 // ─── Suppliers ───────────────────────────────────────────────────────────────

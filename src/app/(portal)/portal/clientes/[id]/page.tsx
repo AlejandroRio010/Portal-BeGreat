@@ -4,6 +4,7 @@ import { clients, contacts, operations, collaborators, notes } from "@/db/schema
 import { eq, and, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import ContactoPanel from "./ContactoPanel";
 
 function fmt(d: Date) {
   return new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
@@ -157,6 +158,21 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
                   </dd>
                 </div>
               )}
+              {(client as any).linkedin && (
+                <div>
+                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">LinkedIn</dt>
+                  <dd>
+                    <a
+                      href={(client as any).linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:underline break-all"
+                    >
+                      {(client as any).linkedin}
+                    </a>
+                  </dd>
+                </div>
+              )}
               <div>
                 <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Alta en portal</dt>
                 <dd className="text-sm text-gray-800">{fmt(client.created_at)}</dd>
@@ -183,15 +199,10 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
               <div className="space-y-4">
                 {clientContacts.map((c) => (
                   <div key={c.id} className="border-l-2 border-[#EEEBF3] pl-3">
-                    <p className="text-sm font-semibold text-gray-900">{c.nombre}</p>
+                    <ContactoPanel contact={c} />
                     {c.rol && <p className="text-xs text-[#2E1A47] font-medium mt-0.5">{c.rol}</p>}
                     {c.email && (
-                      <a
-                        href={`mailto:${c.email}`}
-                        className="block text-xs text-gray-400 hover:text-[#2E1A47] mt-1 transition-colors truncate"
-                      >
-                        {c.email}
-                      </a>
+                      <p className="text-xs text-gray-400 mt-1 truncate">{c.email}</p>
                     )}
                     {c.telefono && <p className="text-xs text-gray-400 mt-0.5">{c.telefono}</p>}
                   </div>
