@@ -32,7 +32,7 @@ const docs = [
 
 export default function ContactoPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
 
       {/* ── Brand hero ─────────────────────────────────────────────── */}
       <div className="bg-[#2E1A47] px-10 py-8 flex items-center justify-between">
@@ -65,49 +65,42 @@ export default function ContactoPage() {
         </div>
       </div>
 
-      {/* ── Equipo + Documentación ─────────────────────────────────── */}
+      {/* ── Fila 1: Equipo + Documentación ─────────────────────────── */}
+      {/* items-stretch (default) + h-full en tarjetas → misma altura */}
       <div className="grid grid-cols-2 gap-5">
 
         {/* Equipo */}
-        <div>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Equipo</p>
-          <div className="space-y-3">
-            {equipo.map((p) => (
-              <div key={p.nombre} className="bg-white border border-gray-200 p-4 flex items-center gap-4">
-                <div className="w-14 h-14 flex-shrink-0 overflow-hidden bg-[#EEEBF3]">
-                  <Image src={p.foto} alt={p.nombre} width={56} height={56} className="object-cover w-full h-full" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 text-sm">{p.nombre}</p>
-                  <p className="text-xs text-[#2E1A47] font-bold uppercase tracking-wider mt-0.5">{p.rol}</p>
-                  <div className="flex flex-col gap-1 mt-2">
-                    <a
-                      href={`tel:+34${p.telefono.replace(/\s/g, "")}`}
-                      className="text-xs text-gray-500 hover:text-[#2E1A47] transition-colors font-mono"
-                    >
-                      {p.telefono}
-                    </a>
-                    <a
-                      href={`mailto:${p.email}`}
-                      className="text-xs text-gray-400 hover:text-[#2E1A47] transition-colors truncate"
-                    >
-                      {p.email}
-                    </a>
-                  </div>
+        <div className="flex flex-col gap-3">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Equipo</p>
+          {equipo.map((p) => (
+            <div key={p.nombre} className="bg-white border border-gray-200 p-4 flex items-center gap-4 flex-1">
+              <div className="w-14 h-14 flex-shrink-0 overflow-hidden bg-[#EEEBF3]">
+                <Image src={p.foto} alt={p.nombre} width={56} height={56} className="object-cover w-full h-full" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900 text-sm">{p.nombre}</p>
+                <p className="text-xs text-[#2E1A47] font-bold uppercase tracking-wider mt-0.5">{p.rol}</p>
+                <div className="flex flex-col gap-1 mt-2">
+                  <a href={`tel:+34${p.telefono.replace(/\s/g, "")}`} className="text-xs text-gray-500 hover:text-[#2E1A47] transition-colors font-mono">
+                    {p.telefono}
+                  </a>
+                  <a href={`mailto:${p.email}`} className="text-xs text-gray-400 hover:text-[#2E1A47] transition-colors truncate">
+                    {p.email}
+                  </a>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
 
-        {/* Documentación */}
-        <div>
+        {/* Documentación — flex col para ocupar la misma altura que equipo */}
+        <div className="flex flex-col">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Documentación</p>
-          <div className="bg-white border border-gray-200 p-5">
-            <p className="text-xs text-gray-400 mb-4">
+          <div className="bg-white border border-gray-200 p-5 flex flex-col flex-1">
+            <p className="text-xs text-gray-400 mb-5">
               Descarga nuestras presentaciones para compartir con tus clientes.
             </p>
-            <div className="space-y-3">
+            <div className="space-y-3 flex-1">
               {docs.map((doc) => (
                 <a
                   key={doc.label}
@@ -130,19 +123,17 @@ export default function ContactoPage() {
         </div>
       </div>
 
-      {/* ── Agenda + Oficina ──────────────────────────────────────────── */}
+      {/* ── Fila 2: Agenda + Oficina — misma altura fija ───────────── */}
       <div className="grid grid-cols-2 gap-5">
 
         {/* Reservar reunión */}
-        <div>
+        <div className="flex flex-col">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Agenda una llamada</p>
-          <div className="bg-[#2E1A47] p-6 text-white flex flex-col justify-between" style={{ minHeight: 160 }}>
-            <div>
-              <p className="text-lg font-bold mb-2">Reserva una reunión</p>
-              <p className="text-white/60 text-sm leading-relaxed">
-                Accede a nuestro calendario y elige el horario que mejor te venga. Sin esperas, sin llamadas innecesarias.
-              </p>
-            </div>
+          <div className="bg-[#2E1A47] p-6 text-white flex flex-col flex-1">
+            <p className="text-lg font-bold mb-2">Reserva una reunión</p>
+            <p className="text-white/60 text-sm leading-relaxed flex-1">
+              Accede a nuestro calendario y elige el horario que mejor te venga. Sin esperas, sin llamadas innecesarias.
+            </p>
             <a
               href="https://calendly.com/begreatconsulting"
               target="_blank"
@@ -155,15 +146,15 @@ export default function ContactoPage() {
         </div>
 
         {/* Oficina */}
-        <div>
+        <div className="flex flex-col">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Dónde estamos</p>
-          <div className="bg-white border border-gray-200 p-6 flex flex-col justify-between" style={{ minHeight: 160 }}>
-            <div>
+          <div className="bg-white border border-gray-200 p-6 flex flex-col flex-1">
+            <div className="flex-1">
               <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Oficina principal</p>
-              <p className="text-xl font-bold text-gray-900">Serrano 118</p>
-              <p className="text-sm text-gray-500 mt-0.5">Madrid, España</p>
+              <p className="text-2xl font-bold text-gray-900">Serrano 118</p>
+              <p className="text-sm text-gray-500 mt-1">Madrid, España</p>
             </div>
-            <div className="mt-5">
+            <div className="mt-6">
               <a
                 href="https://maps.google.com/?q=Serrano+118+Madrid"
                 target="_blank"

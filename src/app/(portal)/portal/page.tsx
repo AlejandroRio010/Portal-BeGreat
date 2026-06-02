@@ -44,14 +44,14 @@ export default async function PortalHomePage() {
       <div className="relative overflow-hidden mb-6 bg-[#1a0f2e] flex items-center justify-between px-10" style={{ height: 180 }}>
         {/* Imagen de fondo */}
         <Image
-          src="/begreat-banner.jpg"
+          src="/cabecera-corporate.jpg"
           alt=""
           fill
-          className="object-cover object-left opacity-55"
+          className="object-cover object-center opacity-45"
           priority
         />
-        {/* Overlay: más opaco en extremos para legibilidad, translúcido en centro */}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(26,15,46,0.75) 0%, rgba(26,15,46,0.30) 40%, rgba(26,15,46,0.90) 100%)" }} />
+        {/* Overlay: franjas laterales más opacas para legibilidad */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(26,15,46,0.82) 0%, rgba(26,15,46,0.20) 45%, rgba(26,15,46,0.85) 100%)" }} />
 
         {/* Left: logos sin bordes */}
         <div className="relative z-10 flex items-center gap-8">
