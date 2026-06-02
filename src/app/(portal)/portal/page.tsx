@@ -40,11 +40,21 @@ export default async function PortalHomePage() {
   return (
     <div>
 
-      {/* ── Banner — mismo morado que sidebar ──────────────────────── */}
-      <div className="bg-[#2E1A47] mb-6 px-10 flex items-center justify-between" style={{ height: 180 }}>
+      {/* ── Banner con imagen de portada ───────────────────────────── */}
+      <div className="relative overflow-hidden mb-6 bg-[#2E1A47] flex items-center justify-between px-10" style={{ height: 180 }}>
+        {/* Imagen de fondo */}
+        <Image
+          src="/portada-home.jpg"
+          alt=""
+          fill
+          className="object-cover object-center opacity-60"
+          priority
+        />
+        {/* Overlay degradado: morado sólido a la derecha para que el texto sea legible */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(46,26,71,0.15) 0%, rgba(46,26,71,0.5) 50%, rgba(46,26,71,0.92) 100%)" }} />
 
         {/* Left: logos lado a lado, mismo tamaño */}
-        <div className="flex items-center gap-8">
+        <div className="relative z-10 flex items-center gap-8">
           <div style={{ width: 140, height: 44 }} className="flex items-center justify-center">
             <Image src="/begreat-logo-blanco.png" alt="BeGreat" width={140} height={44} className="object-contain" priority />
           </div>
@@ -61,7 +71,7 @@ export default async function PortalHomePage() {
         </div>
 
         {/* Right: welcome */}
-        <div className="text-right">
+        <div className="relative z-10 text-right">
           <p className="text-white/40 text-xs uppercase tracking-[0.2em] mb-1">Portal de colaboradores</p>
           <h1 className="text-3xl font-bold text-white mb-1">
             Bienvenido, {colab?.nombre?.split(" ")[0]}
