@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { suppliers, collaborators } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import Link from "next/link";
 
 export default async function AdminProveedoresPage() {
   const proveedores = await db
@@ -42,7 +43,9 @@ export default async function AdminProveedoresPage() {
               {proveedores.map((p) => (
                 <tr key={p.id} className="hover:bg-[#EEEBF3]/30 transition-colors">
                   <td className="px-6 py-3.5">
-                    <p className="text-sm font-medium text-gray-900">{p.nombre}</p>
+                    <Link href={`/admin/proveedores/${p.id}`} className="text-sm font-medium text-gray-900 hover:text-[#2E1A47] hover:underline">
+                      {p.nombre}
+                    </Link>
                     {p.persona_contacto && (
                       <p className="text-xs text-gray-400 mt-0.5">{p.persona_contacto}</p>
                     )}

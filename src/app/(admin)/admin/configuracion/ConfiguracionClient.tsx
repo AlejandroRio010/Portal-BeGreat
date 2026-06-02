@@ -274,6 +274,10 @@ function NuevoUsuarioForm({ onCreated }: { onCreated: (user: UserRow) => void })
       email: form.get("email"),
       password: form.get("password"),
       role: form.get("role"),
+      razon_social: form.get("razon_social") || null,
+      cif: form.get("cif") || null,
+      telefono: form.get("telefono") || null,
+      web: form.get("web") || null,
     };
 
     const res = await fetch("/api/admin/usuarios", {
@@ -332,6 +336,31 @@ function NuevoUsuarioForm({ onCreated }: { onCreated: (user: UserRow) => void })
             </select>
           </div>
         </div>
+        {/* Datos empresa (opcional) */}
+        <div className="border-t border-gray-100 pt-4">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Datos de empresa (opcional)</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={lbl}>Razón social</label>
+              <input name="razon_social" className={inp} placeholder="Empresa S.L." />
+            </div>
+            <div>
+              <label className={lbl}>CIF</label>
+              <input name="cif" className={inp} placeholder="B12345678" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div>
+              <label className={lbl}>Teléfono</label>
+              <input name="telefono" className={inp} placeholder="+34 600 000 000" />
+            </div>
+            <div>
+              <label className={lbl}>Web</label>
+              <input name="web" className={inp} placeholder="https://empresa.com" />
+            </div>
+          </div>
+        </div>
+
         {error && <p className="text-xs text-red-600 font-semibold bg-red-50 border border-red-200 px-3 py-2">{error}</p>}
         {success && <p className="text-xs text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 px-3 py-2">✓ {success}</p>}
         <button type="submit" disabled={loading} className="px-5 py-2.5 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50">

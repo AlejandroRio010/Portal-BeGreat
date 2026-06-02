@@ -187,7 +187,7 @@ export default async function AdminOperacionesPage({
                     <td className="px-6 py-3.5">
                       <StatusBadge status={op.status} fase={op.fase} />
                     </td>
-                    <td className="px-6 py-3.5 text-sm">
+                    <td className="px-6 py-3.5 text-sm whitespace-nowrap">
                       {fee > 0
                         ? <span className="font-bold text-[#2E1A47]">{fee.toLocaleString("es-ES")} €</span>
                         : <span className="text-gray-300">—</span>}

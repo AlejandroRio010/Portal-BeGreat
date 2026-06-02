@@ -20,6 +20,7 @@ export const operationStatusEnum = pgEnum("operation_status", [
 ]);
 export const rentingRoleEnum = pgEnum("renting_role", ["proveedor", "colaborador"]);
 export const equipoTipoEnum = pgEnum("equipo_tipo", ["industrial", "tecnologico"]);
+export const entityTypeEnum = pgEnum("entity_type", ["banco", "alternativa_financiera", "renting"]);
 
 // ─── Collaborators (users) ────────────────────────────────────────────────────
 export const collaborators = pgTable("collaborators", {
@@ -164,6 +165,23 @@ export const customFields = pgTable("custom_fields", {
   etiqueta: text("etiqueta").notNull(),
   tipo: fieldTypeEnum("tipo").notNull(),
   orden: integer("orden").notNull().default(0),
+});
+
+// ─── Financial entities ───────────────────────────────────────────────────────
+export const financialEntities = pgTable("financial_entities", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nombre: text("nombre").notNull(),
+  tipo: entityTypeEnum("tipo").notNull(),
+  email: text("email"),
+  telefono: text("telefono"),
+  web: text("web"),
+  linkedin: text("linkedin"),
+  persona_contacto: text("persona_contacto"),
+  contacto_email: text("contacto_email"),
+  contacto_telefono: text("contacto_telefono"),
+  notas: text("notas"),
+  logo_url: text("logo_url"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
 // ─── Custom field values ──────────────────────────────────────────────────────

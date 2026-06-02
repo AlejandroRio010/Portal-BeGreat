@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { nombre, email, password, role } = await req.json();
+  const { nombre, email, password, role, razon_social, cif, telefono, web } = await req.json();
 
   if (!nombre?.trim() || !email?.trim() || !password || !role) {
     return NextResponse.json({ error: "Todos los campos son obligatorios" }, { status: 400 });
@@ -50,6 +50,10 @@ export async function POST(req: NextRequest) {
       role,
       identificador,
       activo: true,
+      razon_social: razon_social ?? null,
+      cif: cif ?? null,
+      telefono: telefono ?? null,
+      web: web ?? null,
     })
     .returning({ id: collaborators.id, nombre: collaborators.nombre, email: collaborators.email, identificador: collaborators.identificador, role: collaborators.role });
 

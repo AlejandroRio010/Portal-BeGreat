@@ -2,18 +2,10 @@
 
 import { useState } from "react";
 import {
-  DndContext,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  useDroppable,
-  useDraggable,
+  DndContext, DragEndEvent, DragOverlay, DragStartEvent,
+  PointerSensor, useSensor, useSensors, useDroppable, useDraggable,
 } from "@dnd-kit/core";
 import Link from "next/link";
-
 
 export interface KanbanOp {
   id: string;
@@ -28,99 +20,123 @@ export interface KanbanOp {
   facturacion_renting: string | null;
 }
 
-function DroppableColumn({
-  fase,
-  ops,
-  activeId,
-}: {
-  fase: string;
-  ops: KanbanOp[];
-  activeId: string | null;
-}) {
-  const { setNodeRef, isOver } = useDroppable({ id: fase });
+const FASE_COLORS: Record<string, { dot: string; header: string }> = {
+  "Pre-análisis":           { dot: "bg-gray-400",    header: "border-t-gray-300" },
+  "En estudio por entidad": { dot: "bg-amber-400",   header: "border-t-amber-400" },
+  "Operación aprobada":     { dot: "bg-blue-400",    header: "border-t-blue-400" },
+  "Condiciones aceptadas":  { dot: "bg-indigo-400",  header: "border-t-indigo-400" },
+  "Contrato firmado":       { dot: "bg-violet-500",  header: "border-t-violet-500" },
+  "Transferencia realizada":{ dot: "bg-emerald-500", header: "border-t-emerald-500" },
+};
 
-  const totalImporte = ops.reduce((sum, op) => sum + (op.importe ? Number(op.importe) : 0), 0);
+function fmtEur(val: string | null | undefined) {
+  if (!val || val === "0") return null;
+  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(val));
+}
+
+function DroppableColumn({ fase, ops, activeId }: { fase: string; ops: KanbanOp[]; activeId: string | null }) {
+  const { setNodeRef, isOver } = useDroppable({ id: fase });
+  const colors = FASE_COLORS[fase] ?? { dot: "bg-[#2E1A47]", header: "border-t-[#2E1A47]" };
+  const totalImporte = ops.reduce((s, op) => s + (op.importe ? Number(op.importe) : 0), 0);
 
   return (
     <div
       ref={setNodeRef}
-      className={`bg-[#f8f7fb] border border-gray-200 min-h-[400px] w-64 flex-shrink-0 p-3 transition-colors ${isOver ? "border-[#2E1A47] bg-[#EEEBF3]" : ""}`}
+      className={`flex-shrink-0 w-60 flex flex-col border-t-[3px] ${colors.header} ${isOver ? "bg-[#EEEBF3]" : "bg-[#f3f2f7]"} transition-colors`}
     >
       {/* Column header */}
-      <div className="mb-3">
-        <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider leading-tight">{fase}</p>
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-xs text-gray-400">{ops.length} op{ops.length !== 1 ? "s" : ""}</span>
+      <div className="px-3 pt-3 pb-2.5">
+        <div className="flex items-center gap-2 mb-1">
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${colors.dot}`} />
+          <p className="text-[11px] font-bold text-[#2E1A47] uppercase tracking-wider leading-tight">{fase}</p>
+        </div>
+        <div className="flex items-center gap-2 pl-4">
+          <span className="text-[10px] text-gray-400 font-semibold">{ops.length} op{ops.length !== 1 ? "s" : ""}</span>
           {totalImporte > 0 && (
             <>
-              <span className="text-gray-200">·</span>
-              <span className="text-xs text-gray-500 font-medium">{totalImporte.toLocaleString("es-ES")} €</span>
+              <span className="text-gray-300">·</span>
+              <span className="text-[10px] text-gray-500 font-semibold">{totalImporte.toLocaleString("es-ES")} €</span>
             </>
           )}
         </div>
       </div>
 
       {/* Cards */}
-      <div className="space-y-2">
+      <div className="flex-1 px-2 pb-3 space-y-2 min-h-[300px]">
         {ops.map((op) => (
-          <DraggableCard key={op.id} op={op} isDragging={activeId === op.id} />
+          <DraggableCard key={op.id} op={op} isDragging={activeId === op.id} linkBase="/admin/operaciones" />
         ))}
       </div>
     </div>
   );
 }
 
-function DraggableCard({ op, isDragging }: { op: KanbanOp; isDragging: boolean }) {
+function DraggableCard({ op, isDragging, linkBase }: { op: KanbanOp; isDragging: boolean; linkBase: string }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: op.id });
-
-  const style = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
-    : undefined;
+  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      {...listeners}
-      {...attributes}
-      className={`bg-white border border-gray-200 p-3 cursor-grab hover:border-[#2E1A47] transition-colors ${isDragging ? "opacity-40" : ""}`}
+      className={`bg-white border border-gray-200 shadow-sm group transition-all hover:shadow-md hover:border-[#2E1A47]/30 ${isDragging ? "opacity-40" : ""}`}
     >
-      <CardContent op={op} />
+      <CardContent op={op} linkBase={linkBase} dragListeners={listeners} dragAttributes={attributes} />
     </div>
   );
 }
 
-function CardContent({ op }: { op: KanbanOp }) {
+function CardContent({ op, linkBase, dragListeners, dragAttributes }: { op: KanbanOp; linkBase: string; dragListeners?: any; dragAttributes?: any }) {
   const displayName = op.nombre ?? op.client_nombre ?? "Sin nombre";
+  const fee = (Number(op.comision_colaborador ?? 0) + Number(op.comision_begreat ?? 0));
+
   return (
-    <>
-      <Link
-        href={`/admin/operaciones/${op.id}`}
-        className="block text-sm font-semibold text-gray-900 hover:text-[#2E1A47] leading-tight mb-1"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {displayName}
-      </Link>
+    <div className="p-2.5">
+      {/* Drag handle + name */}
+      <div className="flex items-start gap-1.5 mb-1.5">
+        <button
+          {...dragListeners}
+          {...dragAttributes}
+          className="mt-0.5 flex-shrink-0 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing touch-none p-0.5"
+          title="Arrastrar"
+          tabIndex={-1}
+        >
+          <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor">
+            <circle cx="2.5" cy="2.5" r="1.5"/><circle cx="7.5" cy="2.5" r="1.5"/>
+            <circle cx="2.5" cy="7" r="1.5"/><circle cx="7.5" cy="7" r="1.5"/>
+            <circle cx="2.5" cy="11.5" r="1.5"/><circle cx="7.5" cy="11.5" r="1.5"/>
+          </svg>
+        </button>
+        <Link
+          href={`${linkBase}/${op.id}`}
+          className="text-[12px] font-semibold text-gray-900 hover:text-[#2E1A47] leading-tight line-clamp-2"
+        >
+          {displayName}
+        </Link>
+      </div>
+
+      {/* Colaborador */}
       {op.colaborador_nombre && (
-        <p className="text-xs text-gray-400 mb-2">{op.colaborador_nombre}</p>
+        <p className="text-[10px] text-gray-400 pl-5 mb-1.5 truncate">{op.colaborador_nombre}</p>
       )}
-      <div className="flex items-center justify-between flex-wrap gap-1">
-        {op.importe && (
-          <span className="text-xs font-bold text-gray-700">
-            {Number(op.importe).toLocaleString("es-ES")} €
-          </span>
+
+      {/* Footer */}
+      <div className="pl-5 flex items-center justify-between gap-1 flex-wrap">
+        {fee > 0 && (
+          <span className="text-[11px] font-bold text-[#2E1A47] whitespace-nowrap">{fee.toLocaleString("es-ES")} €</span>
         )}
         {op.facturacion_renting && (
-          <span className={`text-[10px] font-semibold px-1.5 py-0.5 ${
-            op.facturacion_renting === "begreat"
-              ? "bg-[#EEEBF3] text-[#2E1A47]"
-              : "bg-amber-50 text-amber-700"
+          <span className={`text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-wide ${
+            op.facturacion_renting === "begreat" ? "bg-[#EEEBF3] text-[#2E1A47]" : "bg-amber-50 text-amber-700"
           }`}>
             {op.facturacion_renting === "begreat" ? "BeGreat" : "Financiera"}
           </span>
         )}
+        {op.status === "pendiente_de_validar" && (
+          <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-700 uppercase tracking-wide">Pendiente</span>
+        )}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -128,15 +144,10 @@ export default function KanbanBoard({ initialOps, fases }: { initialOps: KanbanO
   const [ops, setOps] = useState(initialOps);
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  );
-
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const activeOp = ops.find((op) => op.id === activeId) ?? null;
 
-  function handleDragStart(event: DragStartEvent) {
-    setActiveId(String(event.active.id));
-  }
+  function handleDragStart(event: DragStartEvent) { setActiveId(String(event.active.id)); }
 
   async function handleDragEnd(event: DragEndEvent) {
     setActiveId(null);
@@ -146,10 +157,7 @@ export default function KanbanBoard({ initialOps, fases }: { initialOps: KanbanO
     const newFase = String(over.id);
     const op = ops.find((o) => o.id === opId);
     if (!op || op.fase === newFase) return;
-
-    // Optimistic update
     setOps((prev) => prev.map((o) => o.id === opId ? { ...o, fase: newFase } : o));
-
     try {
       await fetch(`/api/admin/operations/${opId}/fase`, {
         method: "PATCH",
@@ -157,7 +165,6 @@ export default function KanbanBoard({ initialOps, fases }: { initialOps: KanbanO
         body: JSON.stringify({ fase: newFase }),
       });
     } catch {
-      // Revert on error
       setOps((prev) => prev.map((o) => o.id === opId ? { ...o, fase: op.fase } : o));
     }
   }
@@ -169,15 +176,15 @@ export default function KanbanBoard({ initialOps, fases }: { initialOps: KanbanO
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-3 overflow-x-auto pb-4">
         {fases.map((fase) => (
           <DroppableColumn key={fase} fase={fase} ops={opsByFase[fase]} activeId={activeId} />
         ))}
       </div>
       <DragOverlay>
         {activeOp ? (
-          <div className="bg-white border border-[#2E1A47] p-3 w-64 shadow-lg cursor-grabbing">
-            <CardContent op={activeOp} />
+          <div className="bg-white border border-[#2E1A47] shadow-xl w-60">
+            <CardContent op={activeOp} linkBase="/admin/operaciones" />
           </div>
         ) : null}
       </DragOverlay>
