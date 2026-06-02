@@ -23,6 +23,7 @@ const colaboradorNav = [
 ];
 
 const adminNav = [
+  { href: "/admin",               label: "Inicio",         exact: true },
   { href: "/admin/operaciones",   label: "Operaciones",    exact: false },
   { href: "/admin/colaboradores", label: "Colaboradores",  exact: false },
   { href: "/admin/clientes",      label: "Clientes",       exact: false },
