@@ -26,6 +26,16 @@ export default function EntidadEditForm({ entidad }: { entidad: Entidad }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/entidades/${entidad.id}`, { method: "DELETE" });
+      if (res.ok) router.push("/admin/entidades");
+    } finally { setDeleting(false); setConfirmDelete(false); }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -141,11 +151,32 @@ export default function EntidadEditForm({ entidad }: { entidad: Entidad }) {
 
         {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2">{error}</p>}
 
-        <div className="flex items-center gap-3 pt-1">
-          <button type="submit" disabled={saving} className="px-5 py-2.5 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50">
-            {saving ? "Guardando..." : "Guardar cambios"}
-          </button>
-          {saved && <span className="text-sm text-emerald-600 font-medium">Guardado ✓</span>}
+        <div className="flex items-center justify-between pt-1 border-t border-gray-100">
+          <div>
+            {!confirmDelete ? (
+              <button type="button" onClick={() => setConfirmDelete(true)} className="text-xs text-red-400 hover:text-red-600 font-semibold">
+                Eliminar entidad
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-red-600 font-semibold">¿Confirmar?</span>
+                <button type="button" onClick={handleDelete} disabled={deleting}
+                  className="px-3 py-1 text-xs font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50">
+                  {deleting ? "..." : "Sí, eliminar"}
+                </button>
+                <button type="button" onClick={() => setConfirmDelete(false)}
+                  className="px-3 py-1 text-xs font-semibold text-gray-500 border border-gray-200 hover:bg-gray-50">
+                  Cancelar
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <button type="submit" disabled={saving} className="px-5 py-2.5 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50">
+              {saving ? "Guardando..." : "Guardar cambios"}
+            </button>
+            {saved && <span className="text-sm text-emerald-600 font-medium">Guardado ✓</span>}
+          </div>
         </div>
       </form>
     </div>
