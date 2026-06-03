@@ -38,6 +38,7 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
       persona_contacto: suppliers.persona_contacto,
       contacto_email: suppliers.contacto_email,
       contacto_telefono: suppliers.contacto_telefono,
+      codigo: suppliers.codigo,
       created_at: suppliers.created_at,
       colaborador_nombre: collaborators.nombre,
       colaborador_id: collaborators.id,
@@ -85,7 +86,10 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
             {inicial}
           </div>
           <div>
-            <p className="text-white text-xl font-bold">{prov.nombre}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-white text-xl font-bold">{prov.nombre}</p>
+              {prov.codigo && <span className="text-[10px] font-bold font-mono bg-white/20 text-white px-2 py-0.5 tracking-wider">{prov.codigo}</span>}
+            </div>
             {prov.web && <p className="text-white/50 text-xs mt-0.5">{prov.web}</p>}
           </div>
         </div>

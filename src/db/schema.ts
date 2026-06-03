@@ -40,6 +40,7 @@ export const collaborators = pgTable("collaborators", {
   notas_internas: text("notas_internas"),
   puede_editar_ops: boolean("puede_editar_ops").notNull().default(false),
   puede_ver_entidades: boolean("puede_ver_entidades").notNull().default(false),
+  codigo: text("codigo").unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -76,6 +77,7 @@ export const clients = pgTable("clients", {
   telefono: text("telefono"),
   web: text("web"),
   linkedin: text("linkedin"),
+  codigo: text("codigo").unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -106,6 +108,7 @@ export const suppliers = pgTable("suppliers", {
   persona_contacto: text("persona_contacto"),
   contacto_email: text("contacto_email"),
   contacto_telefono: text("contacto_telefono"),
+  codigo: text("codigo").unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -176,6 +179,7 @@ export const operations = pgTable("operations", {
   notas_admin: text("notas_admin"),
   facturacion_renting: text("facturacion_renting"),
   onedrive_url: text("onedrive_url"),
+  codigo: text("codigo").unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });

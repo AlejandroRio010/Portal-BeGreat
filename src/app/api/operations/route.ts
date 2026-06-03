@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { operations, clients, suppliers, contacts } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { generateCodigoCLI, generateCodigoPRV, generateCodigoOP } from "@/lib/codigos";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
     contacto_directo,
   } = body;
 
-  if (!pipeline_key || !cliente_nombre || !nombre) {
+  if (!pipeline_key || !cliente_nombre) {
     return NextResponse.json({ error: "Faltan campos obligatorios" }, { status: 400 });
   }
 
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
   if (existingClient) {
     clientId = existingClient.id;
   } else {
+    const clientCodigo = await generateCodigoCLI();
     const [newClient] = await db
       .insert(clients)
       .values({
@@ -61,11 +63,11 @@ export async function POST(req: NextRequest) {
         email: cliente_email || null,
         telefono: cliente_telefono || null,
         web: cliente_web || null,
+        codigo: clientCodigo,
       })
       .returning();
     clientId = newClient.id;
 
-    // Add contact person if provided
     if (contacto_nombre && clientId) {
       await db.insert(contacts).values({
         client_id: clientId,
@@ -88,6 +90,7 @@ export async function POST(req: NextRequest) {
     if (existingSupplier) {
       supplierId = existingSupplier.id;
     } else {
+      const prvCodigo = await generateCodigoPRV();
       const [newSupplier] = await db
         .insert(suppliers)
         .values({
@@ -99,13 +102,14 @@ export async function POST(req: NextRequest) {
           persona_contacto: proveedor_contacto_nombre || null,
           contacto_email: proveedor_contacto_email || null,
           contacto_telefono: proveedor_contacto_telefono || null,
+          codigo: prvCodigo,
         })
         .returning();
       supplierId = newSupplier.id;
     }
   }
 
-  const initialFase = pipeline_key === "consultoria" ? "Pre-análisis" : "Pre-análisis";
+  const opCodigo = await generateCodigoOP(clientId);
 
   const [op] = await db
     .insert(operations)
@@ -123,8 +127,9 @@ export async function POST(req: NextRequest) {
       lugar_entrega: lugar_entrega || null,
       descripcion: descripcion || null,
       contacto_directo: contacto_directo === "true",
-      fase: initialFase,
+      fase: "Pre-análisis",
       status: "pendiente_de_validar",
+      codigo: opCodigo,
     })
     .returning();
 

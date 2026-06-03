@@ -97,7 +97,10 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
             {inicial}
           </div>
           <div>
-            <p className="text-white text-xl font-bold">{client.nombre}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-white text-xl font-bold">{client.nombre}</p>
+              {(client as any).codigo && <span className="text-[10px] font-bold font-mono bg-white/20 text-white px-2 py-0.5 tracking-wider">{(client as any).codigo}</span>}
+            </div>
             {client.cif && <p className="text-white/60 text-xs mt-0.5 font-mono">{client.cif}</p>}
           </div>
         </div>

@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { collaborators } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { generateCodigoCOL } from "@/lib/codigos";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -36,10 +37,13 @@ export async function POST(req: NextRequest) {
 
   const password_hash = await bcrypt.hash(password, 12);
 
-  // Generate unique identificador
+  // Generate identificador
   const base = nombre.trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
   const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
   const identificador = `${base}-${rand}`;
+
+  // Generate codigo
+  const codigo = await generateCodigoCOL();
 
   const [newUser] = await db
     .insert(collaborators)
@@ -49,6 +53,7 @@ export async function POST(req: NextRequest) {
       password_hash,
       role,
       identificador,
+      codigo,
       activo: true,
       razon_social: razon_social ?? null,
       cif: cif ?? null,

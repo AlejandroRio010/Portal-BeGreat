@@ -45,6 +45,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       notas_admin: operations.notas_admin,
       facturacion_renting: operations.facturacion_renting,
       onedrive_url: operations.onedrive_url,
+      codigo: operations.codigo,
       created_at: operations.created_at,
       updated_at: operations.updated_at,
       client_id: operations.client_id,
@@ -110,7 +111,10 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div>
-          <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">{op.colaborador_nombre}</p>
+          <div className="flex items-center gap-3 mb-1">
+            {op.codigo && <span className="text-xs font-bold font-mono bg-[#EEEBF3] text-[#2E1A47] px-2 py-0.5 tracking-wider">{op.codigo}</span>}
+            <p className="text-xs text-gray-400 uppercase tracking-widest">{op.colaborador_nombre}</p>
+          </div>
           <h1 className="text-2xl font-bold text-gray-900">{op.nombre ?? op.client_nombre ?? "Operación"}</h1>
           {op.nombre && op.client_nombre && (
             <p className="text-sm text-gray-400 mt-0.5">{op.client_nombre}</p>

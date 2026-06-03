@@ -446,6 +446,43 @@ export default function ConfiguracionClient({ initialFields, pipelineConsultoria
       {/* Tab: Campos personalizados */}
       {tab === "campos" && (
         <div className="space-y-6">
+
+          {/* ── Cuadro de lógica de códigos ── */}
+          <div className="bg-white border border-gray-200">
+            <div className="bg-[#2E1A47] px-6 py-4">
+              <h3 className="text-xs font-bold text-white uppercase tracking-widest">Sistema de códigos — Lógica</h3>
+              <p className="text-white/60 text-xs mt-1">Referencia para el equipo interno. Los códigos se generan automáticamente al crear cada registro.</p>
+            </div>
+            <div className="px-6 py-5 grid grid-cols-2 gap-6">
+              {[
+                { tipo: "Colaborador", prefijo: "COL", ejemplo: "COL-001", desc: "Secuencial global. Cada colaborador dado de alta recibe el siguiente número disponible." },
+                { tipo: "Cliente", prefijo: "CLI", ejemplo: "CLI-042", desc: "Secuencial global. Se asigna al crear el cliente por primera vez." },
+                { tipo: "Proveedor", prefijo: "PRV", ejemplo: "PRV-003", desc: "Secuencial global. Se asigna al dar de alta el proveedor." },
+                { tipo: "Operación", prefijo: "OP", ejemplo: "OP-042-01", desc: "OP + número de cliente + nº de op de ese cliente. La segunda op del CLI-042 sería OP-042-02." },
+              ].map(({ tipo, prefijo, ejemplo, desc }) => (
+                <div key={tipo} className="flex gap-4">
+                  <div className="flex-shrink-0">
+                    <span className="inline-block font-mono font-bold text-sm bg-[#EEEBF3] text-[#2E1A47] px-3 py-1.5 tracking-widest">{ejemplo}</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-700 mb-0.5">{tipo}</p>
+                    <p className="text-xs text-gray-400">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="px-6 pb-5 pt-0">
+              <div className="bg-[#EEEBF3] px-4 py-3">
+                <p className="text-xs text-[#2E1A47] font-semibold">Ejemplo real:</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  El colaborador María García es <span className="font-mono font-bold text-[#2E1A47]">COL-001</span>.
+                  Da de alta a Empresa Martínez → <span className="font-mono font-bold text-[#2E1A47]">CLI-008</span>.
+                  Crea una op de consultoría → <span className="font-mono font-bold text-[#2E1A47]">OP-008-01</span>.
+                  Crea otra op para el mismo cliente → <span className="font-mono font-bold text-[#2E1A47]">OP-008-02</span>.
+                </p>
+              </div>
+            </div>
+          </div>
           {Object.keys(groupedFields).length === 0 ? (
             <div className="bg-white border border-gray-200 p-10 text-center">
               <p className="text-sm text-gray-400">No hay campos personalizados todavía.</p>

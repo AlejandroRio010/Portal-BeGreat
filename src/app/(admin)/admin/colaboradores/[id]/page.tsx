@@ -106,7 +106,10 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
         {/* Right: name + id + badge */}
         <div className="flex flex-col items-end gap-2">
           <span className="text-white text-xl font-bold">{colab.nombre}</span>
-          <span className="text-white/60 text-xs font-mono">{colab.identificador}</span>
+          <div className="flex items-center gap-2">
+            {colab.codigo && <span className="text-[10px] font-bold font-mono bg-white/20 text-white px-2 py-0.5 tracking-wider">{colab.codigo}</span>}
+            <span className="text-white/60 text-xs font-mono">{colab.identificador}</span>
+          </div>
           <span className={`inline-block px-2 py-0.5 text-xs font-semibold border ${colab.activo ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-gray-100 text-gray-400 border-gray-200"}`}>
             {colab.activo ? "Activo" : "Inactivo"}
           </span>
