@@ -175,7 +175,7 @@ export const operations = pgTable("operations", {
   descripcion: text("descripcion"),
   contacto_directo: boolean("contacto_directo").default(false),
   // Admin-only fields
-  entity_office_id: uuid("entity_office_id").references(() => entityOffices.id),
+  entity_office_id: uuid("entity_office_id").references(() => entityOffices.id, { onDelete: "set null" }),
   notas_admin: text("notas_admin"),
   facturacion_renting: text("facturacion_renting"),
   onedrive_url: text("onedrive_url"),

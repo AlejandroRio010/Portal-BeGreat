@@ -1,21 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { eliminarEntidad } from "../actions";
 
 export default function EliminarEntidadBtn({ entidadId }: { entidadId: string }) {
   const [confirm, setConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleDelete() {
     setDeleting(true);
-    try {
-      await eliminarEntidad(entidadId);
-      window.location.href = "/admin/entidades";
-    } catch {
+    setError(null);
+    const res = await fetch(`/api/admin/entidades/${entidadId}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      window.location.href = "/admin/entidades?deleted=1";
+    } else {
+      setError("Error al eliminar");
       setDeleting(false);
       setConfirm(false);
     }
+  }
+
+  if (error) {
+    return <span className="text-xs text-red-300 font-semibold">{error}</span>;
   }
 
   if (!confirm) {
