@@ -1,39 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { eliminarEntidad } from "../actions";
 
 export default function EliminarEntidadBtn({ entidadId }: { entidadId: string }) {
   const [confirm, setConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleDelete() {
     setDeleting(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/admin/entidades/${entidadId}`, { method: "DELETE" });
-      if (res.ok) {
-        // Hard navigation → fuerza re-render del servidor sin caché
-        window.location.replace("/admin/entidades");
-      } else {
-        const body = await res.json().catch(() => ({}));
-        setError(body.error ?? `Error ${res.status}`);
-        setConfirm(false);
-      }
-    } catch (e) {
-      setError("Error de red al eliminar");
-      setConfirm(false);
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  if (error) {
-    return (
-      <span className="text-xs text-red-600 font-semibold bg-red-50 border border-red-200 px-3 py-1.5">
-        {error}
-      </span>
-    );
+    await eliminarEntidad(entidadId);
   }
 
   if (!confirm) {
