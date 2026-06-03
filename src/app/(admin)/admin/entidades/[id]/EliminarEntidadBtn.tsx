@@ -1,24 +1,39 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function EliminarEntidadBtn({ entidadId }: { entidadId: string }) {
-  const router = useRouter();
   const [confirm, setConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleDelete() {
     setDeleting(true);
+    setError(null);
     try {
       const res = await fetch(`/api/admin/entidades/${entidadId}`, { method: "DELETE" });
       if (res.ok) {
-        window.location.href = "/admin/entidades";
+        // Hard navigation → fuerza re-render del servidor sin caché
+        window.location.replace("/admin/entidades");
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? `Error ${res.status}`);
+        setConfirm(false);
       }
+    } catch (e) {
+      setError("Error de red al eliminar");
+      setConfirm(false);
     } finally {
       setDeleting(false);
-      setConfirm(false);
     }
+  }
+
+  if (error) {
+    return (
+      <span className="text-xs text-red-600 font-semibold bg-red-50 border border-red-200 px-3 py-1.5">
+        {error}
+      </span>
+    );
   }
 
   if (!confirm) {
@@ -34,7 +49,7 @@ export default function EliminarEntidadBtn({ entidadId }: { entidadId: string })
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-red-600 font-semibold">¿Seguro?</span>
+      <span className="text-xs text-red-300 font-semibold">¿Seguro?</span>
       <button
         onClick={handleDelete}
         disabled={deleting}
@@ -44,7 +59,7 @@ export default function EliminarEntidadBtn({ entidadId }: { entidadId: string })
       </button>
       <button
         onClick={() => setConfirm(false)}
-        className="px-3 py-1.5 text-xs font-semibold text-gray-500 border border-gray-200 hover:bg-gray-50"
+        className="px-3 py-1.5 text-xs font-semibold text-gray-300 border border-white/20 hover:bg-white/10"
       >
         Cancelar
       </button>

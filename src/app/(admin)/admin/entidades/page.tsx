@@ -15,6 +15,8 @@ const TIPO_STYLE: Record<string, string> = {
   renting: "bg-violet-50 text-violet-700 border border-violet-200",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function EntidadesPage() {
   const entidades = await db.select().from(financialEntities).orderBy(asc(financialEntities.tipo), asc(financialEntities.nombre));
 
