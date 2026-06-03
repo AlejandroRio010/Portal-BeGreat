@@ -110,12 +110,12 @@ export default async function EntidadFichaPage({ params }: { params: Promise<{ i
               <p className="px-5 py-4 text-sm text-gray-700 whitespace-pre-wrap">{entidad.notas}</p>
             </div>
           )}
-        </div>
 
-        {/* Col 2-3: Edit form */}
-        <div className="col-span-2">
           <EntidadEditForm entidad={entidad} />
         </div>
+
+        {/* Col 2-3: Oficinas vacío / placeholder si se necesita */}
+        <div className="col-span-2" />
       </div>
 
       {/* ── Oficinas ──────────────────────────────────────────────────────────── */}

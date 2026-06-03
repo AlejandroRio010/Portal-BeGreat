@@ -22,6 +22,7 @@ interface Entidad {
 
 export default function EntidadEditForm({ entidad }: { entidad: Entidad }) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -61,10 +62,22 @@ export default function EntidadEditForm({ entidad }: { entidad: Entidad }) {
     }
   }
 
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="text-xs text-[#2E1A47] font-semibold border border-[#2E1A47]/30 px-3 py-1.5 hover:bg-[#EEEBF3] transition-colors"
+      >
+        Editar datos
+      </button>
+    );
+  }
+
   return (
     <div className="bg-white border border-gray-200">
-      <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
+      <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200 flex items-center justify-between">
         <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Editar entidad</h3>
+        <button type="button" onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-700 text-lg leading-none">×</button>
       </div>
 
       <form onSubmit={handleSubmit} className="px-5 py-5 space-y-4">

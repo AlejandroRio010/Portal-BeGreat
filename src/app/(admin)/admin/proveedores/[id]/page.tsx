@@ -3,6 +3,7 @@ import { suppliers, collaborators, operations, clients } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import ProveedorEditForm from "./ProveedorEditForm";
 
 function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
@@ -133,6 +134,9 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
                   </div>
                 ) : null
               )}
+            </div>
+            <div className="px-5 pb-4">
+              <ProveedorEditForm proveedor={{ id: prov.id, nombre: prov.nombre, email: prov.email ?? null, telefono: prov.telefono ?? null, web: prov.web ?? null, persona_contacto: prov.persona_contacto ?? null, contacto_email: prov.contacto_email ?? null, contacto_telefono: prov.contacto_telefono ?? null }} />
             </div>
           </div>
 

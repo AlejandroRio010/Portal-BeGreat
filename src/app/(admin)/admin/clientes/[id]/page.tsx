@@ -66,8 +66,8 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
     .where(eq(operations.client_id, id))
     .orderBy(operations.created_at);
 
-  const FASES_APROBADAS = ["Operación aprobada", "Contrato firmado", "Honorarios pagados", "Condiciones aceptadas", "Transferencia realizada"];
-  const FASES_ESTUDIO = ["Pre-análisis", "Firma de honorarios", "En estudio por entidad"];
+  const FASES_APROBADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
+  const FASES_ESTUDIO = ["Pre-análisis", "Firma de honorarios", "En estudio por entidad", "Operación aprobada", "Condiciones aceptadas"];
 
   // Campos personalizados del cliente
   const clienteCustomFields = await db.select().from(customFields).where(eq(customFields.entidad, "cliente")).orderBy(asc(customFields.orden));
@@ -111,10 +111,10 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
 
       {/* KPIs — parejas */}
       <div className="mx-8 mb-6 grid grid-cols-2 gap-4">
-        {/* Oscuro: aprobadas / financiación conseguida */}
+        {/* Oscuro: firmadas / financiación conseguida */}
         <div className="flex overflow-hidden">
           <div className="flex-1 bg-[#2E1A47] px-6 py-5">
-            <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Ops aprobadas / firmadas</p>
+            <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Ops firmadas</p>
             <p className="text-white text-3xl font-black">{opsAprobadas.length}</p>
             <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">de {ops.length} totales</p>
           </div>

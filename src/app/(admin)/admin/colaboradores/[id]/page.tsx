@@ -4,6 +4,7 @@ import { eq, and, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import NotasForm from "./NotasForm";
+import ColaboradorEditForm from "./ColaboradorEditForm";
 
 const FASES_FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
 
@@ -145,7 +146,7 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
         <div className="flex flex-col gap-4">
           {/* Datos empresa */}
           <div className="bg-white border border-gray-200">
-            <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
+            <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200 flex items-center justify-between">
               <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Datos de la empresa</h3>
             </div>
             <div className="px-5 py-4 divide-y divide-gray-50">
@@ -166,6 +167,14 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
                   </div>
                 ) : null
               ))}
+            </div>
+            <div className="px-5 pb-4">
+              <ColaboradorEditForm colab={{
+                id: colab.id, nombre: colab.nombre, email: colab.email,
+                telefono: colab.telefono ?? null, razon_social: colab.razon_social ?? null,
+                cif: colab.cif ?? null, web: colab.web ?? null,
+                num_trabajadores: colab.num_trabajadores ?? null, activo: colab.activo,
+              }} />
             </div>
           </div>
 

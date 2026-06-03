@@ -172,12 +172,10 @@ export default async function OficinaFichaPage({
               <p className="px-5 py-4 text-sm text-gray-700 whitespace-pre-wrap">{oficina.notas}</p>
             </div>
           )}
-        </div>
-
-        {/* Col 2-3: Edit form */}
-        <div className="col-span-2">
           <OficinaEditForm oficina={oficina} />
         </div>
+
+        <div className="col-span-2" />
       </div>
 
       {/* Operaciones */}
