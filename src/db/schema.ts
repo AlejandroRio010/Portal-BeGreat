@@ -33,7 +33,6 @@ export const collaborators = pgTable("collaborators", {
   activo: boolean("activo").notNull().default(true),
   logo_url: text("logo_url"),
   telefono: text("telefono"),
-  // Extended profile fields
   cif: text("cif"),
   web: text("web"),
   num_trabajadores: integer("num_trabajadores"),
@@ -51,7 +50,7 @@ export const collaboratorContacts = pgTable("collaborator_contacts", {
   nombre: text("nombre").notNull(),
   email: text("email"),
   telefono: text("telefono"),
-  rol: text("rol"), // role within the company
+  rol: text("rol"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -108,6 +107,41 @@ export const suppliers = pgTable("suppliers", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── Financial entities ───────────────────────────────────────────────────────
+export const financialEntities = pgTable("financial_entities", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nombre: text("nombre").notNull(),
+  tipo: entityTypeEnum("tipo").notNull(),
+  email: text("email"),
+  telefono: text("telefono"),
+  web: text("web"),
+  linkedin: text("linkedin"),
+  persona_contacto: text("persona_contacto"),
+  contacto_email: text("contacto_email"),
+  contacto_telefono: text("contacto_telefono"),
+  notas: text("notas"),
+  logo_url: text("logo_url"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Entity offices (sub-offices of financial entities) ───────────────────────
+export const entityOffices = pgTable("entity_offices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entity_id: uuid("entity_id")
+    .notNull()
+    .references(() => financialEntities.id, { onDelete: "cascade" }),
+  nombre: text("nombre").notNull(),
+  ciudad: text("ciudad"),
+  direccion: text("direccion"),
+  email: text("email"),
+  telefono: text("telefono"),
+  persona_contacto: text("persona_contacto"),
+  contacto_email: text("contacto_email"),
+  contacto_telefono: text("contacto_telefono"),
+  notas: text("notas"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Operations ───────────────────────────────────────────────────────────────
 export const operations = pgTable("operations", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -118,15 +152,15 @@ export const operations = pgTable("operations", {
   client_id: uuid("client_id").references(() => clients.id),
   supplier_id: uuid("supplier_id").references(() => suppliers.id),
   // Consultoría fields
-  producto: text("producto"), // Póliza de crédito, Leasing, Préstamo, Confirming, Factoring
+  producto: text("producto"),
   importe: numeric("importe", { precision: 12, scale: 2 }),
   // Renting fields
-  renting_rol: rentingRoleEnum("renting_rol"), // proveedor | colaborador
-  equipo_tipo: equipoTipoEnum("equipo_tipo"), // industrial | tecnologico
+  renting_rol: rentingRoleEnum("renting_rol"),
+  equipo_tipo: equipoTipoEnum("equipo_tipo"),
   plazo_meses: integer("plazo_meses"),
   lugar_entrega: text("lugar_entrega"),
   // Common
-  nombre: text("nombre"), // nombre comercial de la operación, ej: "Empresa S.L. - Op01 - Banco Santander"
+  nombre: text("nombre"),
   fase: text("fase").notNull(),
   status: operationStatusEnum("status").notNull().default("pendiente_de_validar"),
   comision_colaborador: numeric("comision_colaborador", { precision: 12, scale: 2 }),
@@ -134,11 +168,11 @@ export const operations = pgTable("operations", {
   entidad_financiera: text("entidad_financiera"),
   honorarios_firmado: boolean("honorarios_firmado").default(false),
   descripcion: text("descripcion"),
-  // Communication preference
-  contacto_directo: boolean("contacto_directo").default(false), // true = BeGreat contacta al cliente
+  contacto_directo: boolean("contacto_directo").default(false),
   // Admin-only fields
+  entity_office_id: uuid("entity_office_id").references(() => entityOffices.id),
   notas_admin: text("notas_admin"),
-  facturacion_renting: text("facturacion_renting"), // "begreat" | "financiera" — solo renting
+  facturacion_renting: text("facturacion_renting"),
   onedrive_url: text("onedrive_url"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
@@ -165,23 +199,6 @@ export const customFields = pgTable("custom_fields", {
   etiqueta: text("etiqueta").notNull(),
   tipo: fieldTypeEnum("tipo").notNull(),
   orden: integer("orden").notNull().default(0),
-});
-
-// ─── Financial entities ───────────────────────────────────────────────────────
-export const financialEntities = pgTable("financial_entities", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  nombre: text("nombre").notNull(),
-  tipo: entityTypeEnum("tipo").notNull(),
-  email: text("email"),
-  telefono: text("telefono"),
-  web: text("web"),
-  linkedin: text("linkedin"),
-  persona_contacto: text("persona_contacto"),
-  contacto_email: text("contacto_email"),
-  contacto_telefono: text("contacto_telefono"),
-  notas: text("notas"),
-  logo_url: text("logo_url"),
-  created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
 // ─── Custom field values ──────────────────────────────────────────────────────
