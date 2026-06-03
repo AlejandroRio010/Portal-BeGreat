@@ -12,7 +12,9 @@ export default function EliminarEntidadBtn({ entidadId }: { entidadId: string })
     setDeleting(true);
     try {
       const res = await fetch(`/api/admin/entidades/${entidadId}`, { method: "DELETE" });
-      if (res.ok) router.push("/admin/entidades");
+      if (res.ok) {
+        window.location.href = "/admin/entidades";
+      }
     } finally {
       setDeleting(false);
       setConfirm(false);

@@ -56,7 +56,7 @@ export default function OficinaEditForm({ oficina }: { oficina: Oficina }) {
     setDeleting(true);
     try {
       const res = await fetch(`/api/admin/entidades/oficinas/${oficina.id}`, { method: "DELETE" });
-      if (res.ok) router.back();
+      if (res.ok) window.history.back();
     } finally {
       setDeleting(false);
       setConfirmDelete(false);
