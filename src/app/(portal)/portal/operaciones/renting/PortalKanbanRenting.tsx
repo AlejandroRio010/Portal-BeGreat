@@ -13,13 +13,21 @@ interface Op {
   facturacion_renting: string | null;
 }
 
-const FASE_COLORS: Record<string, { dot: string; top: string }> = {
-  "Pre-análisis":           { dot: "bg-gray-400",    top: "border-t-gray-300" },
-  "En estudio por entidad": { dot: "bg-amber-400",   top: "border-t-amber-400" },
-  "Operación aprobada":     { dot: "bg-blue-400",    top: "border-t-blue-400" },
-  "Condiciones aceptadas":  { dot: "bg-indigo-400",  top: "border-t-indigo-400" },
-  "Contrato firmado":       { dot: "bg-violet-500",  top: "border-t-violet-500" },
-  "Transferencia realizada":{ dot: "bg-emerald-500", top: "border-t-emerald-500" },
+const FASE_ACCENT: Record<string, string> = {
+  "Pre-análisis":           "border-l-gray-300",
+  "En estudio por entidad": "border-l-amber-400",
+  "Operación aprobada":     "border-l-blue-400",
+  "Condiciones aceptadas":  "border-l-indigo-400",
+  "Contrato firmado":       "border-l-violet-500",
+  "Transferencia realizada":"border-l-emerald-500",
+};
+const FASE_DOT: Record<string, string> = {
+  "Pre-análisis":           "bg-gray-300",
+  "En estudio por entidad": "bg-amber-400",
+  "Operación aprobada":     "bg-blue-400",
+  "Condiciones aceptadas":  "bg-indigo-400",
+  "Contrato firmado":       "bg-violet-500",
+  "Transferencia realizada":"bg-emerald-500",
 };
 
 export default function PortalKanbanRenting({ ops, fases }: { ops: Op[]; fases: string[] }) {
@@ -27,10 +35,22 @@ export default function PortalKanbanRenting({ ops, fases }: { ops: Op[]; fases: 
     acc[f] = ops.filter((o) => o.fase === f);
     return acc;
   }, {});
-  const pendientes = ops.filter((o) => o.status === "pendiente_de_validar");
+  const pendientes    = ops.filter((o) => o.status === "pendiente_de_validar");
+  const totalFeeColab = ops.reduce((s, o) => s + Number(o.comision_colaborador ?? 0), 0);
 
   return (
     <div>
+      {/* Cabecera */}
+      <div className="mb-5">
+        <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-widest">Renting de equipos</h2>
+        <div className="flex items-center gap-5 mt-1.5">
+          {totalFeeColab > 0 && (
+            <span className="text-xs text-gray-500">Mi fee: <span className="font-bold text-[#2E1A47]">{totalFeeColab.toLocaleString("es-ES")} €</span></span>
+          )}
+          <span className="text-xs text-gray-400">{ops.length} operaciones</span>
+        </div>
+      </div>
+
       {pendientes.length > 0 && (
         <div className="mb-5 bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-3">
           <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
@@ -40,62 +60,54 @@ export default function PortalKanbanRenting({ ops, fases }: { ops: Op[]; fases: 
         </div>
       )}
 
-      <div className="flex gap-3 overflow-x-auto pb-4">
-        {fases.map((fase) => {
+      <div className="flex overflow-x-auto pb-4">
+        {fases.map((fase, i) => {
           const colOps = opsByFase[fase] ?? [];
-          const colors = FASE_COLORS[fase] ?? { dot: "bg-[#2E1A47]", top: "border-t-[#2E1A47]" };
+          const dot    = FASE_DOT[fase] ?? "bg-[#2E1A47]";
+          const accent = FASE_ACCENT[fase] ?? "border-l-[#2E1A47]";
           const totalImporte = colOps.reduce((s, o) => s + Number(o.importe ?? 0), 0);
 
           return (
-            <div key={fase} className={`flex-shrink-0 w-56 flex flex-col border-t-[3px] ${colors.top} bg-[#f3f2f7]`}>
-              <div className="px-3 pt-3 pb-2.5">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${colors.dot}`} />
-                  <p className="text-[11px] font-bold text-[#2E1A47] uppercase tracking-wider leading-tight">{fase}</p>
+            <div key={fase} className="flex flex-shrink-0 items-stretch">
+              {i > 0 && <div className="w-px bg-[#2E1A47]/15 self-stretch mx-1" />}
+              <div className="flex-shrink-0 w-[200px] flex flex-col">
+                <div className="px-2 py-3 mb-1">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
+                    <p className="text-[10px] font-bold text-[#2E1A47] uppercase tracking-widest leading-tight truncate">{fase}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 pl-4">
+                    <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5">{colOps.length}</span>
+                    {totalImporte > 0 && <span className="text-[9px] text-gray-400">{totalImporte.toLocaleString("es-ES")} €</span>}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 pl-4">
-                  <span className="text-[10px] text-gray-400 font-semibold">{colOps.length} op{colOps.length !== 1 ? "s" : ""}</span>
-                  {totalImporte > 0 && (
-                    <>
-                      <span className="text-gray-300">·</span>
-                      <span className="text-[10px] text-gray-500 font-semibold">{totalImporte.toLocaleString("es-ES")} €</span>
-                    </>
-                  )}
+                <div className="flex-1 space-y-1.5 min-h-[300px] px-1">
+                  {colOps.map((op) => {
+                    const displayName = op.nombre ?? op.client_nombre ?? "Sin nombre";
+                    const fee = Number(op.comision_colaborador ?? 0);
+                    return (
+                      <Link key={op.id} href={`/portal/operaciones/${op.id}`}
+                        className={`block bg-white border border-gray-100 border-l-[3px] ${accent} shadow-sm hover:shadow-md hover:border-gray-200 transition-all p-2.5`}
+                      >
+                        <p className="text-[11px] font-semibold text-gray-800 hover:text-[#2E1A47] leading-tight line-clamp-2 mb-1.5">{displayName}</p>
+                        {op.client_nombre && op.nombre && (
+                          <p className="text-[9px] text-gray-400 mb-1.5 truncate">{op.client_nombre}</p>
+                        )}
+                        <div className="flex items-center flex-wrap gap-1">
+                          {fee > 0 && <span className="text-[10px] font-bold text-[#2E1A47] whitespace-nowrap">{fee.toLocaleString("es-ES")} €</span>}
+                          {op.facturacion_renting && (
+                            <span className={`text-[9px] font-bold px-1 py-0.5 uppercase ${op.facturacion_renting === "begreat" ? "bg-[#EEEBF3] text-[#2E1A47]" : "bg-amber-50 text-amber-700"}`}>
+                              {op.facturacion_renting === "begreat" ? "BG" : "Fin"}
+                            </span>
+                          )}
+                          {op.status === "pendiente_de_validar" && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
-              </div>
-
-              <div className="flex-1 px-2 pb-3 space-y-2 min-h-[260px]">
-                {colOps.map((op) => {
-                  const displayName = op.nombre ?? op.client_nombre ?? "Sin nombre";
-                  const fee = Number(op.comision_colaborador ?? 0);
-                  return (
-                    <Link
-                      key={op.id}
-                      href={`/portal/operaciones/${op.id}`}
-                      className="block bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-[#2E1A47]/40 transition-all p-2.5 group"
-                    >
-                      <p className="text-[12px] font-semibold text-gray-900 group-hover:text-[#2E1A47] leading-tight line-clamp-2 mb-1.5">
-                        {displayName}
-                      </p>
-                      {op.client_nombre && op.nombre && (
-                        <p className="text-[10px] text-gray-400 mb-1 truncate">{op.client_nombre}</p>
-                      )}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {fee > 0 && (
-                          <span className="text-[11px] font-bold text-[#2E1A47] whitespace-nowrap">{fee.toLocaleString("es-ES")} €</span>
-                        )}
-                        {op.facturacion_renting && (
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 uppercase ${op.facturacion_renting === "begreat" ? "bg-[#EEEBF3] text-[#2E1A47]" : "bg-amber-50 text-amber-700"}`}>
-                            {op.facturacion_renting === "begreat" ? "BeGreat" : "Financiera"}
-                          </span>
-                        )}
-                        {op.status === "pendiente_de_validar" && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-700 uppercase">Pendiente</span>
-                        )}
-                      </div>
-                    </Link>
-                  );
-                })}
               </div>
             </div>
           );

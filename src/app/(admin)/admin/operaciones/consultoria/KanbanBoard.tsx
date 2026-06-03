@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  DndContext, DragEndEvent, DragOverlay, DragStartEvent,
+  DndContext, DragEndEvent, DragOverlay,
   PointerSensor, useSensor, useSensors, useDroppable, useDraggable,
 } from "@dnd-kit/core";
 import Link from "next/link";
@@ -40,7 +40,6 @@ function DroppableColumn({ fase, ops, activeId }: { fase: string; ops: KanbanOp[
   const { setNodeRef, isOver } = useDroppable({ id: fase });
   const dot = FASE_DOT[fase] ?? "bg-[#2E1A47]";
   const totalImporte = ops.reduce((s, o) => s + Number(o.importe ?? 0), 0);
-
   return (
     <div ref={setNodeRef} className={`flex-shrink-0 w-[200px] flex flex-col transition-colors ${isOver ? "bg-[#EEEBF3]/60" : ""}`}>
       <div className="px-2 py-3 mb-1">
@@ -107,11 +106,15 @@ export default function KanbanBoard({ initialOps, fases }: { initialOps: KanbanO
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const activeOp = ops.find((o) => o.id === activeId) ?? null;
 
+  const totalFeeBegreat = ops.reduce((s, o) => s + Number(o.comision_begreat ?? 0), 0);
+  const totalFeeColab   = ops.reduce((s, o) => s + Number(o.comision_colaborador ?? 0), 0);
+
   async function handleDragEnd(e: DragEndEvent) {
     setActiveId(null);
     const { active, over } = e;
     if (!over) return;
-    const opId = String(active.id); const newFase = String(over.id);
+    const opId = String(active.id);
+    const newFase = String(over.id);
     const op = ops.find((o) => o.id === opId);
     if (!op || op.fase === newFase) return;
     setOps((prev) => prev.map((o) => o.id === opId ? { ...o, fase: newFase } : o));
@@ -122,20 +125,44 @@ export default function KanbanBoard({ initialOps, fases }: { initialOps: KanbanO
     }
   }
 
-  const opsByFase = fases.reduce<Record<string, KanbanOp[]>>((acc, f) => { acc[f] = ops.filter((o) => o.fase === f); return acc; }, {});
+  const opsByFase = fases.reduce<Record<string, KanbanOp[]>>((acc, f) => {
+    acc[f] = ops.filter((o) => o.fase === f);
+    return acc;
+  }, {});
 
   return (
-    <DndContext sensors={sensors} onDragStart={(e) => setActiveId(String(e.active.id))} onDragEnd={handleDragEnd}>
-      <div className="flex gap-2 overflow-x-auto pb-4">
-        {fases.map((fase) => <DroppableColumn key={fase} fase={fase} ops={opsByFase[fase]} activeId={activeId} />)}
+    <div>
+      {/* Cabecera */}
+      <div className="mb-5">
+        <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-widest">Consultoría financiera</h2>
+        <div className="flex items-center gap-5 mt-1.5">
+          {totalFeeBegreat > 0 && (
+            <span className="text-xs text-gray-500">Fee BeGreat: <span className="font-bold text-[#2E1A47]">{totalFeeBegreat.toLocaleString("es-ES")} €</span></span>
+          )}
+          {totalFeeColab > 0 && (
+            <span className="text-xs text-gray-500">Fee colaboradores: <span className="font-bold text-[#2E1A47]">{totalFeeColab.toLocaleString("es-ES")} €</span></span>
+          )}
+          <span className="text-xs text-gray-400">{ops.length} operaciones</span>
+        </div>
       </div>
-      <DragOverlay>
-        {activeOp && (
-          <div className={`bg-white border border-gray-100 border-l-[3px] ${FASE_ACCENT[activeOp.fase] ?? "border-l-[#2E1A47]"} shadow-xl w-[200px]`}>
-            <CardContent op={activeOp} />
-          </div>
-        )}
-      </DragOverlay>
-    </DndContext>
+
+      <DndContext sensors={sensors} onDragStart={(e) => setActiveId(String(e.active.id))} onDragEnd={handleDragEnd}>
+        <div className="flex overflow-x-auto pb-4">
+          {fases.map((fase, i) => (
+            <div key={fase} className="flex flex-shrink-0 items-stretch">
+              {i > 0 && <div className="w-px bg-[#2E1A47]/20 self-stretch mx-1" />}
+              <DroppableColumn fase={fase} ops={opsByFase[fase] ?? []} activeId={activeId} />
+            </div>
+          ))}
+        </div>
+        <DragOverlay>
+          {activeOp && (
+            <div className={`bg-white border border-gray-100 border-l-[3px] ${FASE_ACCENT[activeOp.fase] ?? "border-l-[#2E1A47]"} shadow-xl w-[200px]`}>
+              <CardContent op={activeOp} />
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
+    </div>
   );
 }

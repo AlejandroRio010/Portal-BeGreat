@@ -1,8 +1,9 @@
 import { db } from "@/db";
-import { clients, collaborators, contacts, operations } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { clients, collaborators, contacts, operations, customFields, customFieldValues } from "@/db/schema";
+import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import ClienteEditForm from "./ClienteEditForm";
 
 function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
@@ -67,6 +68,10 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
 
   const FASES_APROBADAS = ["Operación aprobada", "Contrato firmado", "Honorarios pagados", "Condiciones aceptadas", "Transferencia realizada"];
   const FASES_ESTUDIO = ["Pre-análisis", "Firma de honorarios", "En estudio por entidad"];
+
+  // Campos personalizados del cliente
+  const clienteCustomFields = await db.select().from(customFields).where(eq(customFields.entidad, "cliente")).orderBy(asc(customFields.orden));
+  const clienteCustomValues = await db.select().from(customFieldValues).where(eq(customFieldValues.entity_id, id));
 
   const inicial = client.nombre.charAt(0).toUpperCase();
 
@@ -140,7 +145,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
         {/* Col 1: Datos + Contactos */}
         <div className="flex flex-col gap-4">
           <div className="bg-white border border-gray-200">
-            <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
+            <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200 flex items-center justify-between">
               <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Datos de la empresa</h3>
             </div>
             <div className="px-5 py-4 divide-y divide-gray-50">
@@ -151,6 +156,13 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
                 ["Teléfono", client.telefono],
                 ["Web", client.web],
                 ["LinkedIn", client.linkedin],
+                // Campos personalizados rellenos
+                ...clienteCustomFields
+                  .filter((f) => {
+                    const v = clienteCustomValues.find((cv) => cv.field_id === f.id);
+                    return v && v.valor && v.valor.trim() !== "";
+                  })
+                  .map((f) => [f.etiqueta, clienteCustomValues.find((cv) => cv.field_id === f.id)?.valor ?? null] as [string, string | null]),
               ].map(([label, value]) =>
                 value ? (
                   <div key={label} className="py-2.5 flex flex-col gap-0.5">
@@ -163,6 +175,9 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
                   </div>
                 ) : null
               )}
+            </div>
+            <div className="px-5 pb-4">
+              <ClienteEditForm client={{ id, nombre: client.nombre, cif: client.cif ?? null, email: client.email ?? null, telefono: client.telefono ?? null, web: client.web ?? null, linkedin: client.linkedin ?? null }} />
             </div>
           </div>
 

@@ -53,8 +53,12 @@ const TIPO_LABELS: Record<string, string> = {
 };
 
 const ENTIDAD_LABELS: Record<string, string> = {
-  operacion: "Operación",
-  cliente: "Cliente",
+  operacion:          "Operación",
+  cliente:            "Cliente",
+  proveedor:          "Proveedor",
+  colaborador:        "Colaborador",
+  entidad_financiera: "Entidad financiera",
+  oficina:            "Oficina de entidad",
 };
 
 // ── Sortable fase item ────────────────────────────────────────────────────────
@@ -376,7 +380,7 @@ export default function ConfiguracionClient({ initialFields, pipelineConsultoria
   const [users, setUsers] = useState<UserRow[]>(initialUsers);
   const [fields, setFields] = useState<CustomField[]>(initialFields);
   const [etiqueta, setEtiqueta] = useState("");
-  const [entidad, setEntidad] = useState<"operacion" | "cliente">("operacion");
+  const [entidad, setEntidad] = useState<string>("operacion");
   const [tipo, setTipo] = useState<"texto" | "euros" | "porcentaje" | "enlace">("texto");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
@@ -490,9 +494,13 @@ export default function ConfiguracionClient({ initialFields, pipelineConsultoria
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Entidad</label>
-                  <select value={entidad} onChange={(e) => setEntidad(e.target.value as "operacion" | "cliente")} className="w-full border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#2E1A47]">
+                  <select value={entidad} onChange={(e) => setEntidad(e.target.value)} className="w-full border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#2E1A47]">
                     <option value="operacion">Operación</option>
                     <option value="cliente">Cliente</option>
+                    <option value="proveedor">Proveedor</option>
+                    <option value="colaborador">Colaborador</option>
+                    <option value="entidad_financiera">Entidad financiera</option>
+                    <option value="oficina">Oficina de entidad</option>
                   </select>
                 </div>
                 <div>

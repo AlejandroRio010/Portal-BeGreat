@@ -220,6 +220,16 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
                 ] : []),
                 { label: "Contacto directo", value: op.contacto_directo ? "Sí — BeGreat contacta al cliente" : null },
                 { label: "Descripción", value: op.descripcion },
+                // Campos personalizados rellenos
+                ...opCustomFields
+                  .filter((f) => {
+                    const v = opCustomValues.find((cv) => cv.field_id === f.id);
+                    return v && v.valor && v.valor.trim() !== "";
+                  })
+                  .map((f) => ({
+                    label: f.etiqueta,
+                    value: opCustomValues.find((cv) => cv.field_id === f.id)?.valor ?? null,
+                  })),
               ].map((field) => field && field.value != null && field.value !== "" ? (
                 <div key={field.label}>
                   <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">{field.label}</dt>
