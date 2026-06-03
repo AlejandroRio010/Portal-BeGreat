@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues } from "@/db/schema";
+import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues, financialEntities, entityOffices } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -52,6 +52,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       supplier_nombre: suppliers.nombre,
       colaborador_nombre: collaborators.nombre,
       colaborador_id: collaborators.id,
+      entity_office_id: operations.entity_office_id,
     })
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
@@ -61,6 +62,17 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
     .limit(1);
 
   if (!op) notFound();
+
+  // Entities + offices for the admin selector
+  const allEntities = await db
+    .select({ id: financialEntities.id, nombre: financialEntities.nombre, tipo: financialEntities.tipo })
+    .from(financialEntities)
+    .orderBy(financialEntities.nombre);
+
+  const allOffices = await db
+    .select({ id: entityOffices.id, entity_id: entityOffices.entity_id, nombre: entityOffices.nombre, ciudad: entityOffices.ciudad })
+    .from(entityOffices)
+    .orderBy(entityOffices.nombre);
 
   const opNotes = await db
     .select()
@@ -226,10 +238,20 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialComisionColab={op.comision_colaborador}
             initialComisionBegreat={op.comision_begreat}
             initialEntidad={op.entidad_financiera}
+            initialEntityOfficeId={op.entity_office_id ?? null}
             initialHonorarios={op.honorarios_firmado}
             initialNotasAdmin={op.notas_admin ?? null}
             initialFacturacionRenting={op.facturacion_renting ?? null}
             initialOnedriveUrl={op.onedrive_url ?? null}
+            initialNombre={op.nombre ?? null}
+            initialDescripcion={op.descripcion ?? null}
+            initialImporte={op.importe ?? null}
+            initialProducto={op.producto ?? null}
+            initialPlazoMeses={op.plazo_meses ?? null}
+            initialLugarEntrega={op.lugar_entrega ?? null}
+            initialEquipoTipo={op.equipo_tipo ?? null}
+            allEntities={allEntities}
+            allOffices={allOffices}
             customFieldDefs={opCustomFields}
             customFieldValues={opCustomValues.map((v) => ({ field_id: v.field_id, valor: v.valor ?? null }))}
           />

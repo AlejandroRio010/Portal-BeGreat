@@ -33,6 +33,9 @@ interface CustomFieldValue {
   valor: string | null;
 }
 
+interface EntityRow  { id: string; nombre: string; tipo: string }
+interface OfficeRow  { id: string; entity_id: string; nombre: string; ciudad: string | null }
+
 interface Props {
   opId: string;
   pipelineKey: string;
@@ -41,10 +44,22 @@ interface Props {
   initialComisionColab: string | null;
   initialComisionBegreat: string | null;
   initialEntidad: string | null;
+  initialEntityOfficeId: string | null;
   initialHonorarios: boolean | null;
   initialNotasAdmin: string | null;
   initialFacturacionRenting: string | null;
   initialOnedriveUrl: string | null;
+  // basic op fields
+  initialNombre: string | null;
+  initialDescripcion: string | null;
+  initialImporte: string | null;
+  initialProducto: string | null;
+  initialPlazoMeses: number | null;
+  initialLugarEntrega: string | null;
+  initialEquipoTipo: string | null;
+  // entity/office lists
+  allEntities: EntityRow[];
+  allOffices: OfficeRow[];
   customFieldDefs?: CustomField[];
   customFieldValues?: CustomFieldValue[];
 }
@@ -57,90 +72,132 @@ export default function AdminOpForm({
   initialComisionColab,
   initialComisionBegreat,
   initialEntidad,
+  initialEntityOfficeId,
   initialHonorarios,
   initialNotasAdmin,
   initialFacturacionRenting,
   initialOnedriveUrl,
+  initialNombre,
+  initialDescripcion,
+  initialImporte,
+  initialProducto,
+  initialPlazoMeses,
+  initialLugarEntrega,
+  initialEquipoTipo,
+  allEntities,
+  allOffices,
   customFieldDefs = [],
   customFieldValues: initialCustomFieldValues = [],
 }: Props) {
   const router = useRouter();
   const fases = pipelineKey === "consultoria" ? FASES_CONSULTORIA : FASES_RENTING;
 
+  // ── Admin-managed fields ──────────────────────────────────────────────────
   const [fase, setFase] = useState(initialFase);
   const [status, setStatus] = useState(initialStatus);
   const [comisionColab, setComisionColab] = useState(initialComisionColab ?? "");
   const [comisionBegreat, setComisionBegreat] = useState(initialComisionBegreat ?? "");
-  const [entidad, setEntidad] = useState(initialEntidad ?? "");
   const [honorarios, setHonorarios] = useState(initialHonorarios ?? false);
-  const [notasAdmin, setNotasAdmin] = useState(initialNotasAdmin ?? "");
   const [facturacionRenting, setFacturacionRenting] = useState(initialFacturacionRenting ?? "");
   const [onedriveUrl, setOnedriveUrl] = useState(initialOnedriveUrl ?? "");
+  const [notasAdmin, setNotasAdmin] = useState(initialNotasAdmin ?? "");
+
+  // ── Entity / office selector ──────────────────────────────────────────────
+  // Derive initial selected entity from office or entidad text
+  const initialEntityId = initialEntityOfficeId
+    ? (allOffices.find((o) => o.id === initialEntityOfficeId)?.entity_id ?? "")
+    : "";
+  const [selectedEntityId, setSelectedEntityId] = useState(initialEntityId);
+  const [selectedOfficeId, setSelectedOfficeId] = useState(initialEntityOfficeId ?? "");
+  const filteredOffices = allOffices.filter((o) => o.entity_id === selectedEntityId);
+
+  function handleEntityChange(entityId: string) {
+    setSelectedEntityId(entityId);
+    setSelectedOfficeId(""); // reset office when entity changes
+  }
+
+  // ── Basic op fields ───────────────────────────────────────────────────────
+  const [nombre, setNombre] = useState(initialNombre ?? "");
+  const [descripcion, setDescripcion] = useState(initialDescripcion ?? "");
+  const [importe, setImporte] = useState(initialImporte ?? "");
+  const [producto, setProducto] = useState(initialProducto ?? "");
+  const [plazoMeses, setPlazoMeses] = useState(initialPlazoMeses ? String(initialPlazoMeses) : "");
+  const [lugarEntrega, setLugarEntrega] = useState(initialLugarEntrega ?? "");
+  const [equipoTipo, setEquipoTipo] = useState(initialEquipoTipo ?? "");
+
+  // ── UI state ──────────────────────────────────────────────────────────────
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Custom field values state: map field_id -> valor
-  const [customValues, setCustomValues] = useState<Record<string, string>>(() => {
-    const m: Record<string, string> = {};
-    for (const v of initialCustomFieldValues) {
-      m[v.field_id] = v.valor ?? "";
-    }
-    return m;
-  });
-  const [savingCustom, setSavingCustom] = useState(false);
-  const [savedCustom, setSavedCustom] = useState(false);
-
-  // Saving notas admin separately
+  const [savingBasic, setSavingBasic] = useState(false);
+  const [savedBasic, setSavedBasic] = useState(false);
   const [savingNotas, setSavingNotas] = useState(false);
   const [savedNotas, setSavedNotas] = useState(false);
+  const [savingCustom, setSavingCustom] = useState(false);
+  const [savedCustom, setSavedCustom] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(true);
+
+  // ── Custom fields ─────────────────────────────────────────────────────────
+  const [customValues, setCustomValues] = useState<Record<string, string>>(() => {
+    const m: Record<string, string> = {};
+    for (const v of initialCustomFieldValues) m[v.field_id] = v.valor ?? "";
+    return m;
+  });
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  async function patch(data: Record<string, unknown>) {
+    const res = await fetch(`/api/admin/operations/${opId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Error al guardar");
+    router.refresh();
+  }
+
+  async function handleSaveBasic() {
+    setSavingBasic(true);
+    setSavedBasic(false);
+    setError(null);
+    try {
+      await patch({ nombre: nombre || null, descripcion: descripcion || null, importe: importe || null, producto: producto || null,
+        plazo_meses: plazoMeses || null, lugar_entrega: lugarEntrega || null, equipo_tipo: equipoTipo || null });
+      setSavedBasic(true);
+    } catch { setError("Error al guardar datos básicos."); }
+    finally { setSavingBasic(false); }
+  }
 
   async function handleSave() {
     setSaving(true);
     setError(null);
     setSaved(false);
     try {
-      const res = await fetch(`/api/admin/operations/${opId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fase,
-          status,
-          comision_colaborador: comisionColab || null,
-          comision_begreat: comisionBegreat || null,
-          entidad_financiera: entidad || null,
-          honorarios_firmado: honorarios,
-          facturacion_renting: facturacionRenting || null,
-          onedrive_url: onedriveUrl || null,
-        }),
+      const selectedEntity = allEntities.find((e) => e.id === selectedEntityId);
+      await patch({
+        fase,
+        status,
+        comision_colaborador: comisionColab || null,
+        comision_begreat: comisionBegreat || null,
+        entity_office_id: selectedOfficeId || null,
+        // sync entidad_financiera text for collaborator display
+        entidad_financiera: selectedEntity?.nombre ?? (initialEntidad || null),
+        honorarios_firmado: honorarios,
+        facturacion_renting: facturacionRenting || null,
+        onedrive_url: onedriveUrl || null,
       });
-      if (!res.ok) throw new Error("Error al guardar");
       setSaved(true);
-      router.refresh();
-    } catch {
-      setError("Error al guardar los cambios.");
-    } finally {
-      setSaving(false);
-    }
+    } catch { setError("Error al guardar los cambios."); }
+    finally { setSaving(false); }
   }
 
   async function handleSaveNotas() {
     setSavingNotas(true);
     setSavedNotas(false);
     try {
-      const res = await fetch(`/api/admin/operations/${opId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notas_admin: notasAdmin || null }),
-      });
-      if (!res.ok) throw new Error("Error");
+      await patch({ notas_admin: notasAdmin || null });
       setSavedNotas(true);
-      router.refresh();
-    } catch {
-      setError("Error al guardar las notas.");
-    } finally {
-      setSavingNotas(false);
-    }
+    } catch { setError("Error al guardar las notas."); }
+    finally { setSavingNotas(false); }
   }
 
   async function handleSaveCustomFields() {
@@ -148,218 +205,216 @@ export default function AdminOpForm({
     setSavingCustom(true);
     setSavedCustom(false);
     try {
-      await Promise.all(
-        customFieldDefs.map((f) =>
-          fetch("/api/admin/custom-field-values", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ field_id: f.id, entity_id: opId, valor: customValues[f.id] ?? "" }),
-          })
-        )
-      );
+      await Promise.all(customFieldDefs.map((f) =>
+        fetch("/api/admin/custom-field-values", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ field_id: f.id, entity_id: opId, valor: customValues[f.id] ?? "" }),
+        })
+      ));
       setSavedCustom(true);
       router.refresh();
-    } catch {
-      setError("Error al guardar campos adicionales.");
-    } finally {
-      setSavingCustom(false);
-    }
+    } catch { setError("Error al guardar campos adicionales."); }
+    finally { setSavingCustom(false); }
   }
 
   async function handleStatus(newStatus: string) {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/operations/${opId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!res.ok) throw new Error("Error");
+      await patch({ status: newStatus });
       setStatus(newStatus);
-      router.refresh();
-    } catch {
-      setError("Error al cambiar el estado.");
-    } finally {
-      setSaving(false);
-    }
+    } catch { setError("Error al cambiar el estado."); }
+    finally { setSaving(false); }
   }
 
   return (
     <>
-      {/* Main admin form */}
-      <div className="bg-white border border-gray-200 p-5 space-y-5">
+      {/* ── Datos básicos de la operación (editables por admin) ───────────── */}
+      <div className="bg-white border border-gray-200 p-5 space-y-4 mb-0">
         <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest pb-3 border-b border-gray-100">
-          Gestión admin
+          Editar datos de la operación
         </p>
 
-        {/* Status actions */}
-        {status === "pendiente_de_validar" && (
-          <div className="flex gap-3">
-            <button
-              onClick={() => handleStatus("activa")}
-              disabled={saving}
-              className="flex-1 py-2 bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50"
-            >
-              Aprobar →
-            </button>
-            <button
-              onClick={() => handleStatus("archivada")}
-              disabled={saving}
-              className="flex-1 py-2 bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
-            >
-              Archivar
-            </button>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2">
+            <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Nombre / referencia</label>
+            <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre de la operación"
+              className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
           </div>
-        )}
-        {status === "activa" && (
-          <div className="flex gap-3">
-            <button
-              onClick={() => handleStatus("archivada")}
-              disabled={saving}
-              className="flex-1 py-2 border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors disabled:opacity-50"
-            >
-              Archivar
-            </button>
-          </div>
-        )}
-        {status === "archivada" && (
           <div>
-            <button
-              onClick={() => handleStatus("activa")}
-              disabled={saving}
-              className="w-full py-2 border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50"
-            >
-              Reactivar
-            </button>
+            <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Importe (€)</label>
+            <input type="number" step="0.01" value={importe} onChange={(e) => setImporte(e.target.value)} placeholder="0.00"
+              className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
           </div>
-        )}
-
-        {/* Fase */}
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Fase</label>
-          <select
-            value={fase}
-            onChange={(e) => setFase(e.target.value)}
-            className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-[#2E1A47]"
-          >
-            {fases.map((f) => (
-              <option key={f} value={f}>{f}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Fee colaborador */}
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Fee colaborador (€)</label>
-          <input
-            type="number"
-            step="0.01"
-            value={comisionColab}
-            onChange={(e) => setComisionColab(e.target.value)}
-            placeholder="0.00"
-            className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
-          />
-        </div>
-
-        {/* Fee BeGreat */}
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Fee BeGreat (€)</label>
-          <input
-            type="number"
-            step="0.01"
-            value={comisionBegreat}
-            onChange={(e) => setComisionBegreat(e.target.value)}
-            placeholder="0.00"
-            className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
-          />
-        </div>
-
-        {/* Entidad financiera */}
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Entidad financiera</label>
-          <input
-            type="text"
-            value={entidad}
-            onChange={(e) => setEntidad(e.target.value)}
-            placeholder="Banco Santander, BBVA..."
-            className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
-          />
-        </div>
-
-        {/* Honorarios firmados */}
-        <div className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            id="honorarios"
-            checked={honorarios}
-            onChange={(e) => setHonorarios(e.target.checked)}
-            className="w-4 h-4 accent-[#2E1A47]"
-          />
-          <label htmlFor="honorarios" className="text-sm text-gray-700 cursor-pointer">
-            Honorarios firmados
-          </label>
-        </div>
-
-        {/* Modalidad facturación renting */}
-        {pipelineKey === "renting" && (
-          <div className="border-t border-gray-100 pt-4">
-            <div className="flex items-center gap-2 mb-1.5">
-              <label className="block text-xs text-gray-400 uppercase tracking-wider">Modalidad de facturación</label>
-              <span className="text-[10px] bg-[#EEEBF3] text-[#2E1A47] px-1.5 py-0.5 font-semibold">Solo admin</span>
-            </div>
-            <select
-              value={facturacionRenting}
-              onChange={(e) => setFacturacionRenting(e.target.value)}
-              className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-[#2E1A47]"
-            >
-              <option value="">Sin especificar</option>
-              <option value="begreat">BeGreat factura y paga al proveedor</option>
-              <option value="financiera">La financiera paga directamente al proveedor (solo comisionamos)</option>
-            </select>
+          <div>
+            <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Producto</label>
+            <input value={producto} onChange={(e) => setProducto(e.target.value)} placeholder="Línea ICO, leasing..."
+              className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
           </div>
-        )}
-
-        {/* OneDrive URL */}
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">📁 Enlace documentación (OneDrive)</label>
-          <input
-            type="text"
-            value={onedriveUrl}
-            onChange={(e) => setOnedriveUrl(e.target.value)}
-            placeholder="https://onedrive.live.com/..."
-            className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
-          />
-          {onedriveUrl && (
-            <a
-              href={onedriveUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block mt-1.5 text-xs text-[#2E1A47] hover:underline truncate"
-            >
-              Abrir enlace →
-            </a>
+          {pipelineKey === "renting" && (
+            <>
+              <div>
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Plazo (meses)</label>
+                <input type="number" value={plazoMeses} onChange={(e) => setPlazoMeses(e.target.value)} placeholder="24"
+                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Tipo de equipo</label>
+                <input value={equipoTipo} onChange={(e) => setEquipoTipo(e.target.value)} placeholder="Vehículos, maquinaria..."
+                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Lugar de entrega</label>
+                <input value={lugarEntrega} onChange={(e) => setLugarEntrega(e.target.value)} placeholder="Ciudad, dirección..."
+                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+              </div>
+            </>
           )}
+          <div className="col-span-2">
+            <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Descripción</label>
+            <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows={3} placeholder="Descripción de la operación..."
+              className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47] resize-none" />
+          </div>
         </div>
 
-        {/* Save */}
+        <button onClick={handleSaveBasic} disabled={savingBasic}
+          className="w-full py-2.5 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50">
+          {savingBasic ? "Guardando..." : "Guardar datos"}
+        </button>
+        {savedBasic && <p className="text-xs text-emerald-600 font-semibold text-center">Datos guardados.</p>}
+      </div>
+
+      {/* ── Gestión admin ────────────────────────────────────────────────────── */}
+      <div className="bg-white border border-gray-200 p-5 space-y-5">
         <button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full py-2.5 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50"
+          onClick={() => setAdminOpen((v) => !v)}
+          className="flex items-center justify-between w-full text-left"
         >
-          {saving ? "Guardando..." : "Guardar cambios"}
+          <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">Gestión admin</p>
+          <span className="text-gray-400 text-sm">{adminOpen ? "▲" : "▼"}</span>
         </button>
 
-        {saved && (
-          <p className="text-xs text-emerald-600 font-semibold text-center">Cambios guardados correctamente.</p>
-        )}
-        {error && (
-          <p className="text-xs text-red-600 font-semibold text-center">{error}</p>
+        {adminOpen && (
+          <>
+            <div className="border-t border-gray-100 pt-4 space-y-5">
+              {/* Status actions */}
+              {status === "pendiente_de_validar" && (
+                <div className="flex gap-3">
+                  <button onClick={() => handleStatus("activa")} disabled={saving}
+                    className="flex-1 py-2 bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
+                    Aprobar →
+                  </button>
+                  <button onClick={() => handleStatus("archivada")} disabled={saving}
+                    className="flex-1 py-2 bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50">
+                    Archivar
+                  </button>
+                </div>
+              )}
+              {status === "activa" && (
+                <button onClick={() => handleStatus("archivada")} disabled={saving}
+                  className="w-full py-2 border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 disabled:opacity-50">
+                  Archivar
+                </button>
+              )}
+              {status === "archivada" && (
+                <button onClick={() => handleStatus("activa")} disabled={saving}
+                  className="w-full py-2 border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 disabled:opacity-50">
+                  Reactivar
+                </button>
+              )}
+
+              {/* Fase */}
+              <div>
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Fase</label>
+                <select value={fase} onChange={(e) => setFase(e.target.value)}
+                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-[#2E1A47]">
+                  {fases.map((f) => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
+
+              {/* Fee colaborador */}
+              <div>
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Fee colaborador (€)</label>
+                <input type="number" step="0.01" value={comisionColab} onChange={(e) => setComisionColab(e.target.value)} placeholder="0.00"
+                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+              </div>
+
+              {/* Fee BeGreat */}
+              <div>
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Fee BeGreat (€)</label>
+                <input type="number" step="0.01" value={comisionBegreat} onChange={(e) => setComisionBegreat(e.target.value)} placeholder="0.00"
+                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+              </div>
+
+              {/* Entidad financiera → Oficina */}
+              <div className="space-y-2">
+                <label className="block text-xs text-gray-400 uppercase tracking-wider">Entidad financiera / Oficina</label>
+                <select value={selectedEntityId} onChange={(e) => handleEntityChange(e.target.value)}
+                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-[#2E1A47]">
+                  <option value="">— Seleccionar entidad —</option>
+                  {allEntities.map((e) => (
+                    <option key={e.id} value={e.id}>{e.nombre}</option>
+                  ))}
+                </select>
+                {selectedEntityId && (
+                  <select value={selectedOfficeId} onChange={(e) => setSelectedOfficeId(e.target.value)}
+                    className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-[#2E1A47]">
+                    <option value="">— Sin oficina específica —</option>
+                    {filteredOffices.map((o) => (
+                      <option key={o.id} value={o.id}>{o.nombre}{o.ciudad ? ` (${o.ciudad})` : ""}</option>
+                    ))}
+                  </select>
+                )}
+                <p className="text-[10px] text-gray-400">Los colaboradores solo ven el nombre del banco, no la oficina.</p>
+              </div>
+
+              {/* Honorarios firmados */}
+              <div className="flex items-center gap-3">
+                <input type="checkbox" id="honorarios" checked={honorarios} onChange={(e) => setHonorarios(e.target.checked)}
+                  className="w-4 h-4 accent-[#2E1A47]" />
+                <label htmlFor="honorarios" className="text-sm text-gray-700 cursor-pointer">Honorarios firmados</label>
+              </div>
+
+              {/* Modalidad facturación renting */}
+              {pipelineKey === "renting" && (
+                <div>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <label className="block text-xs text-gray-400 uppercase tracking-wider">Modalidad de facturación</label>
+                    <span className="text-[10px] bg-[#EEEBF3] text-[#2E1A47] px-1.5 py-0.5 font-semibold">Solo admin</span>
+                  </div>
+                  <select value={facturacionRenting} onChange={(e) => setFacturacionRenting(e.target.value)}
+                    className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-[#2E1A47]">
+                    <option value="">Sin especificar</option>
+                    <option value="begreat">BeGreat factura y paga al proveedor</option>
+                    <option value="financiera">La financiera paga directamente al proveedor</option>
+                  </select>
+                </div>
+              )}
+
+              {/* OneDrive URL */}
+              <div>
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">📁 Enlace documentación (OneDrive)</label>
+                <input type="text" value={onedriveUrl} onChange={(e) => setOnedriveUrl(e.target.value)} placeholder="https://onedrive.live.com/..."
+                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                {onedriveUrl && (
+                  <a href={onedriveUrl} target="_blank" rel="noopener noreferrer"
+                    className="block mt-1.5 text-xs text-[#2E1A47] hover:underline truncate">Abrir enlace →</a>
+                )}
+              </div>
+
+              <button onClick={handleSave} disabled={saving}
+                className="w-full py-2.5 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50">
+                {saving ? "Guardando..." : "Guardar gestión admin"}
+              </button>
+              {saved && <p className="text-xs text-emerald-600 font-semibold text-center">Cambios guardados correctamente.</p>}
+              {error && <p className="text-xs text-red-600 font-semibold text-center">{error}</p>}
+            </div>
+          </>
         )}
       </div>
 
-      {/* Campos adicionales */}
+      {/* ── Campos adicionales ───────────────────────────────────────────────── */}
       {customFieldDefs.length > 0 && (
         <div className="bg-white border border-gray-200 p-5 space-y-4">
           <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest pb-3 border-b border-gray-100">Campos adicionales</p>
@@ -376,42 +431,28 @@ export default function AdminOpForm({
               />
             </div>
           ))}
-          <button
-            onClick={handleSaveCustomFields}
-            disabled={savingCustom}
-            className="w-full py-2 border border-[#2E1A47] text-[#2E1A47] text-sm font-semibold hover:bg-[#EEEBF3] transition-colors disabled:opacity-50"
-          >
+          <button onClick={handleSaveCustomFields} disabled={savingCustom}
+            className="w-full py-2 border border-[#2E1A47] text-[#2E1A47] text-sm font-semibold hover:bg-[#EEEBF3] transition-colors disabled:opacity-50">
             {savingCustom ? "Guardando..." : "Guardar campos adicionales"}
           </button>
-          {savedCustom && (
-            <p className="text-xs text-emerald-600 font-semibold text-center">Campos guardados.</p>
-          )}
+          {savedCustom && <p className="text-xs text-emerald-600 font-semibold text-center">Campos guardados.</p>}
         </div>
       )}
 
-      {/* Notas internas (solo admin) */}
+      {/* ── Notas internas ───────────────────────────────────────────────────── */}
       <div className="bg-white border border-gray-200 p-5 space-y-4">
         <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
           <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">Notas internas</p>
           <span className="text-[10px] bg-[#EEEBF3] text-[#2E1A47] px-1.5 py-0.5 font-semibold">Solo admin</span>
         </div>
-        <textarea
-          value={notasAdmin}
-          onChange={(e) => setNotasAdmin(e.target.value)}
-          rows={4}
+        <textarea value={notasAdmin} onChange={(e) => setNotasAdmin(e.target.value)} rows={4}
           placeholder="Notas internas solo visibles por administradores..."
-          className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47] resize-none"
-        />
-        <button
-          onClick={handleSaveNotas}
-          disabled={savingNotas}
-          className="w-full py-2 border border-[#2E1A47] text-[#2E1A47] text-sm font-semibold hover:bg-[#EEEBF3] transition-colors disabled:opacity-50"
-        >
+          className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47] resize-none" />
+        <button onClick={handleSaveNotas} disabled={savingNotas}
+          className="w-full py-2 border border-[#2E1A47] text-[#2E1A47] text-sm font-semibold hover:bg-[#EEEBF3] transition-colors disabled:opacity-50">
           {savingNotas ? "Guardando..." : "Guardar notas internas"}
         </button>
-        {savedNotas && (
-          <p className="text-xs text-emerald-600 font-semibold text-center">Notas guardadas.</p>
-        )}
+        {savedNotas && <p className="text-xs text-emerald-600 font-semibold text-center">Notas guardadas.</p>}
       </div>
     </>
   );

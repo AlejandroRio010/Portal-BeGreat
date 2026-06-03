@@ -22,10 +22,19 @@ export async function PATCH(
     comision_colaborador,
     comision_begreat,
     entidad_financiera,
+    entity_office_id,
     honorarios_firmado,
     notas_admin,
     facturacion_renting,
     onedrive_url,
+    // basic op fields editable by admin
+    nombre,
+    descripcion,
+    importe,
+    producto,
+    plazo_meses,
+    lugar_entrega,
+    equipo_tipo,
   } = body;
 
   const updateData: Record<string, unknown> = {
@@ -40,10 +49,19 @@ export async function PATCH(
     updateData.comision_begreat = comision_begreat === "" ? null : comision_begreat;
   if (entidad_financiera !== undefined)
     updateData.entidad_financiera = entidad_financiera === "" ? null : entidad_financiera;
+  if (entity_office_id !== undefined)
+    updateData.entity_office_id = entity_office_id === "" ? null : entity_office_id;
   if (honorarios_firmado !== undefined) updateData.honorarios_firmado = honorarios_firmado;
   if (notas_admin !== undefined) updateData.notas_admin = notas_admin || null;
   if (facturacion_renting !== undefined) updateData.facturacion_renting = facturacion_renting || null;
   if (onedrive_url !== undefined) updateData.onedrive_url = onedrive_url || null;
+  if (nombre !== undefined) updateData.nombre = nombre || null;
+  if (descripcion !== undefined) updateData.descripcion = descripcion || null;
+  if (importe !== undefined) updateData.importe = importe === "" ? null : importe;
+  if (producto !== undefined) updateData.producto = producto || null;
+  if (plazo_meses !== undefined) updateData.plazo_meses = plazo_meses === "" ? null : plazo_meses ? Number(plazo_meses) : null;
+  if (lugar_entrega !== undefined) updateData.lugar_entrega = lugar_entrega || null;
+  if (equipo_tipo !== undefined) updateData.equipo_tipo = equipo_tipo || null;
 
   await db.update(operations).set(updateData).where(eq(operations.id, id));
 
