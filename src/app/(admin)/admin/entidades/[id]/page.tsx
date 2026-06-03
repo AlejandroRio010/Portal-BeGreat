@@ -1,11 +1,12 @@
 import { db } from "@/db";
-import { financialEntities, entityOffices } from "@/db/schema";
+import { financialEntities, entityOffices, entityContacts } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import EntidadEditForm from "./EntidadEditForm";
 import NuevaOficinaForm from "./NuevaOficinaForm";
 import EliminarEntidadBtn from "./EliminarEntidadBtn";
+import ContactosPanel from "./ContactosPanel";
 
 const TIPO_LABEL: Record<string, string> = {
   banco: "Banco",
@@ -25,6 +26,7 @@ export default async function EntidadFichaPage({ params }: { params: Promise<{ i
   if (!entidad) notFound();
 
   const oficinas = await db.select().from(entityOffices).where(eq(entityOffices.entity_id, id)).orderBy(entityOffices.nombre);
+  const contactos = await db.select().from(entityContacts).where(eq(entityContacts.entity_id, id)).orderBy(entityContacts.created_at);
 
   const inicial = entidad.nombre.charAt(0).toUpperCase();
 
@@ -113,10 +115,11 @@ export default async function EntidadFichaPage({ params }: { params: Promise<{ i
             </div>
           )}
 
+          <ContactosPanel contactos={contactos} entityId={id} />
+
           <EntidadEditForm entidad={entidad} />
         </div>
 
-        {/* Col 2-3: Oficinas vacío / placeholder si se necesita */}
         <div className="col-span-2" />
       </div>
 

@@ -129,6 +129,20 @@ export const financialEntities = pgTable("financial_entities", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── Entity contacts (persons linked to financial entities) ──────────────────
+export const entityContacts = pgTable("entity_contacts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entity_id: uuid("entity_id")
+    .notNull()
+    .references(() => financialEntities.id, { onDelete: "cascade" }),
+  nombre: text("nombre").notNull(),
+  rol: text("rol"),
+  email: text("email"),
+  telefono: text("telefono"),
+  linkedin: text("linkedin"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Entity offices (sub-offices of financial entities) ───────────────────────
 export const entityOffices = pgTable("entity_offices", {
   id: uuid("id").primaryKey().defaultRandom(),
