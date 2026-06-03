@@ -1,6 +1,8 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { clients, contacts, operations, collaborators, notes } from "@/db/schema";
+import ClienteEditFormPortal from "./ClienteEditFormPortal";
+import NuevoContactoForm from "./NuevoContactoForm";
 import { eq, and, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -22,6 +24,14 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
     .limit(1);
 
   if (!client) notFound();
+
+  // Check permissions
+  const [colabPerms] = await db
+    .select({ puede_editar_ops: collaborators.puede_editar_ops })
+    .from(collaborators)
+    .where(eq(collaborators.id, userId))
+    .limit(1);
+  const puedeEditar = colabPerms?.puede_editar_ops ?? false;
 
   // Colaborador que presentó el cliente
   const [colab] = await db
@@ -186,6 +196,14 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
                 )}
               </div>
             </dl>
+            {puedeEditar && (
+              <ClienteEditFormPortal client={{
+                id: client.id, nombre: client.nombre,
+                cif: client.cif ?? null, email: client.email ?? null,
+                telefono: client.telefono ?? null, web: client.web ?? null,
+                linkedin: (client as any).linkedin ?? null,
+              }} />
+            )}
           </div>
 
           {/* Contactos */}
@@ -196,19 +214,19 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
             {clientContacts.length === 0 ? (
               <p className="text-xs text-gray-300">Sin personas de contacto registradas.</p>
             ) : (
+
               <div className="space-y-4">
                 {clientContacts.map((c) => (
                   <div key={c.id} className="border-l-2 border-[#EEEBF3] pl-3">
                     <ContactoPanel contact={c} />
                     {c.rol && <p className="text-xs text-[#2E1A47] font-medium mt-0.5">{c.rol}</p>}
-                    {c.email && (
-                      <p className="text-xs text-gray-400 mt-1 truncate">{c.email}</p>
-                    )}
+                    {c.email && <p className="text-xs text-gray-400 mt-1 truncate">{c.email}</p>}
                     {c.telefono && <p className="text-xs text-gray-400 mt-0.5">{c.telefono}</p>}
                   </div>
                 ))}
               </div>
             )}
+            {puedeEditar && <NuevoContactoForm clientId={client.id} />}
           </div>
         </div>
 

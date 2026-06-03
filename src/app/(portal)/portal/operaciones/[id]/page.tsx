@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, customFields, customFieldValues } from "@/db/schema";
+import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import OpEditForm from "./OpEditForm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import AddNoteForm from "./AddNoteForm";
@@ -67,6 +68,14 @@ export default async function OperacionDetallePage({ params }: { params: Promise
     .limit(1);
 
   if (!op) notFound();
+
+  // Check collaborator permissions
+  const [colab] = await db
+    .select({ puede_editar_ops: collaborators.puede_editar_ops })
+    .from(collaborators)
+    .where(eq(collaborators.id, userId))
+    .limit(1);
+  const puedeEditar = colab?.puede_editar_ops ?? false;
 
   const opNotes = await db
     .select()
@@ -191,7 +200,9 @@ export default async function OperacionDetallePage({ params }: { params: Promise
         {/* Fields */}
         <div className="col-span-1 space-y-3">
           <div className="bg-white border border-gray-200 p-5">
-            <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Datos de la operación</p>
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+              <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">Datos de la operación</p>
+            </div>
             <dl className="space-y-3">
               {[
                 { label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/portal/clientes/${op.client_id}` : undefined },
@@ -217,12 +228,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                 <div>
                   <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">📁 Documentación</dt>
                   <dd className="text-sm">
-                    <a
-                      href={op.onedrive_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#2E1A47] hover:underline font-semibold"
-                    >
+                    <a href={op.onedrive_url} target="_blank" rel="noopener noreferrer" className="text-[#2E1A47] hover:underline font-semibold">
                       Abrir documentación →
                     </a>
                   </dd>
@@ -230,6 +236,18 @@ export default async function OperacionDetallePage({ params }: { params: Promise
               )}
             </dl>
           </div>
+          {puedeEditar && (
+            <OpEditForm
+              opId={op.id}
+              pipelineKey={op.pipeline_key}
+              initialProducto={op.producto ?? null}
+              initialImporte={op.importe ?? null}
+              initialDescripcion={op.descripcion ?? null}
+              initialPlazoMeses={null}
+              initialLugarEntrega={op.lugar_entrega ?? null}
+              initialEquipoTipo={null}
+            />
+          )}
         </div>
 
         {/* Notes */}
