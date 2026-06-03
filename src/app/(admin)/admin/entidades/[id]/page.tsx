@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import EntidadEditForm from "./EntidadEditForm";
 import NuevaOficinaForm from "./NuevaOficinaForm";
+import EliminarEntidadBtn from "./EliminarEntidadBtn";
 
 const TIPO_LABEL: Record<string, string> = {
   banco: "Banco",
@@ -58,6 +59,7 @@ export default async function EntidadFichaPage({ params }: { params: Promise<{ i
           <span className={`inline-block px-3 py-1 text-xs font-bold uppercase tracking-wide ${TIPO_COLOR[entidad.tipo]}`}>
             {TIPO_LABEL[entidad.tipo]}
           </span>
+          <EliminarEntidadBtn entidadId={entidad.id} />
         </div>
       </div>
 
