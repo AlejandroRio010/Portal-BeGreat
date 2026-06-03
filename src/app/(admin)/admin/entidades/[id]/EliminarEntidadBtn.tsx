@@ -9,7 +9,13 @@ export default function EliminarEntidadBtn({ entidadId }: { entidadId: string })
 
   async function handleDelete() {
     setDeleting(true);
-    await eliminarEntidad(entidadId);
+    try {
+      await eliminarEntidad(entidadId);
+      window.location.href = "/admin/entidades";
+    } catch {
+      setDeleting(false);
+      setConfirm(false);
+    }
   }
 
   if (!confirm) {
