@@ -12,36 +12,46 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const body = await req.json();
-  const { nombre, email, telefono, cif, web, razon_social, num_trabajadores, activo } = body;
+  const { nombre, email, telefono, cif, web, razon_social, num_trabajadores, activo,
+          puede_editar_ops, puede_ver_entidades } = body;
 
-  if (!nombre || !email) {
-    return NextResponse.json({ error: "Nombre y email son obligatorios" }, { status: 400 });
+  const updateData: Record<string, unknown> = {};
+
+  // Permisos-only update (no nombre/email required)
+  if (puede_editar_ops !== undefined) updateData.puede_editar_ops = puede_editar_ops;
+  if (puede_ver_entidades !== undefined) updateData.puede_ver_entidades = puede_ver_entidades;
+
+  // Full profile update
+  if (nombre !== undefined) {
+    if (!nombre || !email) {
+      return NextResponse.json({ error: "Nombre y email son obligatorios" }, { status: 400 });
+    }
+
+    const [existing] = await db
+      .select({ id: collaborators.id })
+      .from(collaborators)
+      .where(eq(collaborators.email, email))
+      .limit(1);
+
+    if (existing && existing.id !== id) {
+      return NextResponse.json({ error: "Ese email ya está en uso por otro colaborador" }, { status: 409 });
+    }
+
+    updateData.nombre = nombre;
+    updateData.email = email;
+    updateData.telefono = telefono ?? null;
+    updateData.cif = cif ?? null;
+    updateData.web = web ?? null;
+    updateData.razon_social = razon_social ?? null;
+    updateData.num_trabajadores = num_trabajadores ?? null;
+    if (activo !== undefined) updateData.activo = activo;
   }
 
-  // Check email uniqueness (exclude current user)
-  const [existing] = await db
-    .select({ id: collaborators.id })
-    .from(collaborators)
-    .where(eq(collaborators.email, email))
-    .limit(1);
-
-  if (existing && existing.id !== id) {
-    return NextResponse.json({ error: "Ese email ya está en uso por otro colaborador" }, { status: 409 });
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
   }
 
-  await db
-    .update(collaborators)
-    .set({
-      nombre,
-      email,
-      telefono: telefono ?? null,
-      cif: cif ?? null,
-      web: web ?? null,
-      razon_social: razon_social ?? null,
-      num_trabajadores: num_trabajadores ?? null,
-      ...(activo !== undefined ? { activo } : {}),
-    })
-    .where(eq(collaborators.id, id));
+  await db.update(collaborators).set(updateData).where(eq(collaborators.id, id));
 
   return NextResponse.json({ ok: true });
 }

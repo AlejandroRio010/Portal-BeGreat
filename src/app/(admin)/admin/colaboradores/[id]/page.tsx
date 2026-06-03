@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import NotasForm from "./NotasForm";
 import ColaboradorEditForm from "./ColaboradorEditForm";
+import PermisosForm from "./PermisosForm";
 
 const FASES_FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
 
@@ -280,6 +281,15 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* Permisos */}
+      <div className="mx-8 mb-6">
+        <PermisosForm
+          colaboradorId={colab.id}
+          puedeEditarOps={colab.puede_editar_ops ?? false}
+          puedeVerEntidades={colab.puede_ver_entidades ?? false}
+        />
       </div>
 
       {/* Notas internas */}
