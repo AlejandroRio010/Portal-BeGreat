@@ -23,18 +23,34 @@ export default function DocumentsSection({ docs, operationId }: { docs: Doc[]; o
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function uploadFile(file: File) {
     setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    await fetch(`/api/operations/${operationId}/documents`, {
-      method: "POST",
-      body: formData,
-    });
-    setUploading(false);
-    router.refresh();
+    setError(null);
+    setSuccess(false);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/operations/${operationId}/documents`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        setError(j.error ?? `Error ${res.status}`);
+      } else {
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+        router.refresh();
+      }
+    } catch (e) {
+      setError("Error de red al subir el archivo");
+    } finally {
+      setUploading(false);
+    }
   }
 
   function handleDrop(e: React.DragEvent) {
@@ -118,6 +134,16 @@ export default function DocumentsSection({ docs, operationId }: { docs: Doc[]; o
           </>
         )}
       </div>
+      {error && (
+        <div className="mt-2 bg-red-50 border border-red-200 px-4 py-2">
+          <p className="text-xs text-red-600 font-semibold">{error}</p>
+        </div>
+      )}
+      {success && (
+        <div className="mt-2 bg-emerald-50 border border-emerald-200 px-4 py-2">
+          <p className="text-xs text-emerald-600 font-semibold">Documento subido correctamente ✓</p>
+        </div>
+      )}
     </div>
   );
 }
