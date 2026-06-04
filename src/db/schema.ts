@@ -172,6 +172,7 @@ export const entityOfficeContacts = pgTable("entity_office_contacts", {
   email: text("email"),
   telefono: text("telefono"),
   linkedin: text("linkedin"),
+  notas: text("notas"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 

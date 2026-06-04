@@ -176,7 +176,11 @@ export default async function OficinaFichaPage({
               <p className="px-5 py-4 text-sm text-gray-700 whitespace-pre-wrap">{oficina.notas}</p>
             </div>
           )}
-          <ContactosOficinaPanel contactos={contactos} officeId={oficineId} />
+          <ContactosOficinaPanel
+            contactos={contactos.map(c => ({ ...c, entityId, officeId: oficineId }))}
+            officeId={oficineId}
+            entityId={entityId}
+          />
 
           <NotasForm officeId={oficineId} initialNotas={oficina.notas ?? null} />
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import ContactoAutocomplete from "@/components/ContactoAutocomplete";
 
 interface Contacto {
@@ -11,9 +12,11 @@ interface Contacto {
   email: string | null;
   telefono: string | null;
   linkedin: string | null;
+  entityId: string;
+  officeId: string;
 }
 
-function ContactoRow({ c }: { c: Contacto }) {
+function ContactoRow({ c }: { c: Contacto; }) {
   const router = useRouter();
   const [confirm, setConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -29,7 +32,10 @@ function ContactoRow({ c }: { c: Contacto }) {
   return (
     <div className="border-l-2 border-[#EEEBF3] pl-4 py-3 flex items-start justify-between gap-4 group">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-800">{c.nombre}</p>
+        <Link href={`/admin/entidades/${c.entityId}/oficinas/${c.officeId}/contactos/${c.id}`}
+          className="text-sm font-semibold text-gray-800 hover:text-[#2E1A47] hover:underline">
+          {c.nombre}
+        </Link>
         {c.rol && <p className="text-xs text-[#2E1A47] font-medium mt-0.5">{c.rol}</p>}
         <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
           {c.email && <a href={`mailto:${c.email}`} className="text-xs text-gray-500 hover:text-[#2E1A47]">{c.email}</a>}
@@ -119,7 +125,7 @@ function NuevoContactoForm({ officeId }: { officeId: string }) {
   );
 }
 
-export default function ContactosOficinaPanel({ contactos, officeId }: { contactos: Contacto[]; officeId: string }) {
+export default function ContactosOficinaPanel({ contactos, officeId, entityId }: { contactos: Contacto[]; officeId: string; entityId: string }) {
   return (
     <div className="bg-white border border-gray-200">
       <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
@@ -130,7 +136,7 @@ export default function ContactosOficinaPanel({ contactos, officeId }: { contact
           <p className="text-sm text-gray-400 py-2">Sin contactos registrados.</p>
         ) : (
           <div className="divide-y divide-gray-50">
-            {contactos.map(c => <ContactoRow key={c.id} c={c} />)}
+            {contactos.map(c => <ContactoRow key={c.id} c={{ ...c, entityId, officeId }} />)}
           </div>
         )}
         <NuevoContactoForm officeId={officeId} />
