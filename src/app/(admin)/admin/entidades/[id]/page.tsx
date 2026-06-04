@@ -7,6 +7,7 @@ import EntidadEditForm from "./EntidadEditForm";
 import NuevaOficinaForm from "./NuevaOficinaForm";
 import EliminarEntidadBtn from "./EliminarEntidadBtn";
 import ContactosPanel from "./ContactosPanel";
+import NotasForm from "../NotasForm";
 
 const TIPO_LABEL: Record<string, string> = {
   banco: "Banco",
@@ -116,6 +117,8 @@ export default async function EntidadFichaPage({ params }: { params: Promise<{ i
           )}
 
           <ContactosPanel contactos={contactos} entityId={id} />
+
+          <NotasForm entityId={id} initialNotas={entidad.notas ?? null} />
 
           <EntidadEditForm entidad={entidad} />
         </div>

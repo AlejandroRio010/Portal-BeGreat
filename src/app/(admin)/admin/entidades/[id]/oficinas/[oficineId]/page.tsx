@@ -1,9 +1,11 @@
 import { db } from "@/db";
-import { entityOffices, financialEntities, operations, clients } from "@/db/schema";
+import { entityOffices, financialEntities, operations, clients, entityOfficeContacts } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import OficinaEditForm from "./OficinaEditForm";
+import ContactosOficinaPanel from "./ContactosOficinaPanel";
+import NotasForm from "../../../NotasForm";
 
 function fmtEur(val: string | null | undefined) {
   if (!val) return "—";
@@ -32,6 +34,8 @@ export default async function OficinaFichaPage({
 
   const [entidad] = await db.select().from(financialEntities).where(eq(financialEntities.id, entityId)).limit(1);
   if (!entidad) notFound();
+
+  const contactos = await db.select().from(entityOfficeContacts).where(eq(entityOfficeContacts.office_id, oficineId)).orderBy(entityOfficeContacts.created_at);
 
   // Ops linked to this office
   const ops = await db
@@ -172,6 +176,10 @@ export default async function OficinaFichaPage({
               <p className="px-5 py-4 text-sm text-gray-700 whitespace-pre-wrap">{oficina.notas}</p>
             </div>
           )}
+          <ContactosOficinaPanel contactos={contactos} officeId={oficineId} />
+
+          <NotasForm officeId={oficineId} initialNotas={oficina.notas ?? null} />
+
           <OficinaEditForm oficina={oficina} />
         </div>
 

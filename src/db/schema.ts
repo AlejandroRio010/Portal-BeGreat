@@ -161,6 +161,20 @@ export const entityOffices = pgTable("entity_offices", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── Entity office contacts ───────────────────────────────────────────────────
+export const entityOfficeContacts = pgTable("entity_office_contacts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  office_id: uuid("office_id")
+    .notNull()
+    .references(() => entityOffices.id, { onDelete: "cascade" }),
+  nombre: text("nombre").notNull(),
+  rol: text("rol"),
+  email: text("email"),
+  telefono: text("telefono"),
+  linkedin: text("linkedin"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Operations ───────────────────────────────────────────────────────────────
 export const operations = pgTable("operations", {
   id: uuid("id").primaryKey().defaultRandom(),
