@@ -1,0 +1,103 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { db } from "@/db";
+import { operations, clients, suppliers, contacts } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+import { generateCodigoCLI, generateCodigoPRV, generateCodigoOP } from "@/lib/codigos";
+
+export async function POST(req: NextRequest) {
+  const session = await auth();
+  if (!session || (session.user as any).role !== "admin") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await req.json();
+  const {
+    collaborator_id, pipeline_key, nombre,
+    cliente_nombre, cliente_email, cliente_telefono, cliente_web,
+    contacto_nombre, contacto_email, contacto_telefono,
+    proveedor_nombre, proveedor_email, proveedor_telefono, proveedor_web,
+    producto, importe, equipo_tipo, plazo_meses, lugar_entrega, descripcion,
+    status,
+  } = body;
+
+  if (!pipeline_key || !cliente_nombre || !collaborator_id) {
+    return NextResponse.json({ error: "Faltan campos obligatorios" }, { status: 400 });
+  }
+
+  // Get or create client (under the selected collaborator)
+  let clientId: string | null = null;
+  const [existingClient] = await db
+    .select()
+    .from(clients)
+    .where(and(eq(clients.collaborator_id, collaborator_id), eq(clients.nombre, cliente_nombre)))
+    .limit(1);
+
+  if (existingClient) {
+    clientId = existingClient.id;
+  } else {
+    const clientCodigo = await generateCodigoCLI();
+    const [newClient] = await db
+      .insert(clients)
+      .values({
+        collaborator_id, nombre: cliente_nombre,
+        email: cliente_email || null, telefono: cliente_telefono || null,
+        web: cliente_web || null, codigo: clientCodigo,
+      })
+      .returning();
+    clientId = newClient.id;
+
+    if (contacto_nombre && clientId) {
+      await db.insert(contacts).values({
+        client_id: clientId, nombre: contacto_nombre,
+        email: contacto_email || null, telefono: contacto_telefono || null,
+      });
+    }
+  }
+
+  // Get or create supplier
+  let supplierId: string | null = null;
+  if (pipeline_key === "renting" && proveedor_nombre) {
+    const [existingSupplier] = await db
+      .select()
+      .from(suppliers)
+      .where(and(eq(suppliers.collaborator_id, collaborator_id), eq(suppliers.nombre, proveedor_nombre)))
+      .limit(1);
+
+    if (existingSupplier) {
+      supplierId = existingSupplier.id;
+    } else {
+      const prvCodigo = await generateCodigoPRV();
+      const [newSupplier] = await db
+        .insert(suppliers)
+        .values({
+          collaborator_id, nombre: proveedor_nombre,
+          email: proveedor_email || null, telefono: proveedor_telefono || null,
+          web: proveedor_web || null, codigo: prvCodigo,
+        })
+        .returning();
+      supplierId = newSupplier.id;
+    }
+  }
+
+  const opCodigo = await generateCodigoOP(clientId);
+
+  const [op] = await db
+    .insert(operations)
+    .values({
+      collaborator_id, pipeline_key,
+      nombre: nombre || null,
+      client_id: clientId, supplier_id: supplierId,
+      producto: producto || null, importe: importe || null,
+      equipo_tipo: equipo_tipo || null,
+      plazo_meses: plazo_meses ? parseInt(plazo_meses) : null,
+      lugar_entrega: lugar_entrega || null,
+      descripcion: descripcion || null,
+      fase: "Pre-análisis",
+      status: status || "activa",
+      codigo: opCodigo,
+    })
+    .returning();
+
+  return NextResponse.json(op, { status: 201 });
+}
