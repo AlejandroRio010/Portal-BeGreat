@@ -99,7 +99,7 @@ export default function ContactosSection({ contactos }: { contactos: any[] }) {
               className={input}
             />
             <input
-              placeholder="Rol / Cargo"
+              placeholder="Puesto en la empresa"
               value={form.rol}
               onChange={(e) => setForm({ ...form, rol: e.target.value })}
               className={input}

@@ -4,6 +4,7 @@ import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import ClienteEditForm from "./ClienteEditForm";
+import ContactosAdminPanel from "./ContactosAdminPanel";
 
 function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
@@ -184,28 +185,17 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200">
-            <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
-              <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Personas de contacto</h3>
-            </div>
-            {clientContacts.length === 0 ? (
-              <p className="px-5 py-4 text-sm text-gray-400">Sin contactos registrados</p>
-            ) : (
-              <div className="divide-y divide-gray-50">
-                {clientContacts.map((c) => (
-                  <div key={c.id} className="px-5 py-3">
-                    <p className="text-sm font-semibold text-gray-800">{c.nombre}</p>
-                    {c.rol && <p className="text-xs text-gray-400">{c.rol}</p>}
-                    {c.email && <p className="text-xs text-gray-500">{c.email}</p>}
-                    {c.telefono && <p className="text-xs text-gray-500">{c.telefono}</p>}
-                    {c.linkedin && (
-                      <a href={c.linkedin} target="_blank" rel="noopener noreferrer" className="text-xs text-[#2E1A47] hover:underline">LinkedIn →</a>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <ContactosAdminPanel
+            clientId={id}
+            contactos={clientContacts.map(c => ({
+              id: c.id,
+              nombre: c.nombre,
+              rol: c.rol ?? null,
+              email: c.email ?? null,
+              telefono: c.telefono ?? null,
+              linkedin: c.linkedin ?? null,
+            }))}
+          />
         </div>
 
         {/* Col 2-3: Operaciones */}

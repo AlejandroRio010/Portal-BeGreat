@@ -61,7 +61,7 @@ export default function NuevoContactoForm({ clientId }: { clientId: string }) {
             required
           />
         </div>
-        {[["Cargo / Rol", "rol"], ["Email", "email"], ["Teléfono", "telefono"]].map(([lbl, key]) => (
+        {[["Puesto en la empresa", "rol"], ["Email", "email"], ["Teléfono", "telefono"]].map(([lbl, key]) => (
           <div key={key}>
             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">{lbl}</label>
             <input value={(form as any)[key]} onChange={e => set(key, e.target.value)}
