@@ -1,10 +1,12 @@
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues, financialEntities, entityOffices } from "@/db/schema";
+import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues, financialEntities, entityOffices, operationDocuments } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import AdminOpForm from "./AdminOpForm";
 import AddNoteForm from "@/app/(portal)/portal/operaciones/[id]/AddNoteForm";
+import DocumentsSection from "@/components/DocumentsSection";
+import CelebrationBanner from "@/components/CelebrationBanner";
 
 const FASE_COLOR: Record<string, { bg: string; text: string; border: string }> = {
   "Pre-análisis":        { bg: "bg-gray-100",     text: "text-gray-600",    border: "border-gray-200" },
@@ -76,6 +78,8 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
     .from(entityOffices)
     .orderBy(entityOffices.nombre);
 
+  const opDocs = await db.select().from(operationDocuments).where(eq(operationDocuments.operation_id, id)).orderBy(operationDocuments.created_at);
+
   const opNotes = await db
     .select()
     .from(notes)
@@ -99,6 +103,8 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
 
   const isPendiente = op.status === "pendiente_de_validar";
   const isConsultoria = op.pipeline_key === "consultoria";
+  const FASES_GANADAS = ["Honorarios pagados", "Transferencia realizada"];
+  const isGanada = FASES_GANADAS.includes(op.fase ?? "");
 
   return (
     <div>
@@ -137,6 +143,9 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
           </span>
         )}
       </div>
+
+      {/* Celebration */}
+      {isGanada && <CelebrationBanner opNombre={op.nombre ?? op.codigo ?? "Operación"} clientNombre={op.client_nombre ?? "Cliente"} />}
 
       {/* Motivo denegación */}
       {op.status === "archivada" && op.motivo_denegacion && (
@@ -280,8 +289,9 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
           />
         </div>
 
-        {/* Notes */}
-        <div className="col-span-2 bg-white border border-gray-200 p-5">
+        {/* Notes + Docs */}
+        <div className="col-span-2 flex flex-col gap-5">
+        <div className="bg-white border border-gray-200 p-5">
           <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Notas e historial</p>
 
           <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
@@ -306,6 +316,9 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
           </div>
 
           <AddNoteForm operationId={id} />
+        </div>
+
+        <DocumentsSection docs={opDocs} operationId={id} />
         </div>
       </div>
     </div>

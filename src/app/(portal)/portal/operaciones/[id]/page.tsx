@@ -1,11 +1,13 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators } from "@/db/schema";
+import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import AddNoteForm from "./AddNoteForm";
 import OpEditForm from "./OpEditForm";
+import DocumentsSection from "@/components/DocumentsSection";
+import CelebrationBanner from "@/components/CelebrationBanner";
 
 const FASES_CONSULTORIA = ["Pre-análisis","Firma de honorarios","En estudio por entidad","Operación aprobada","Contrato firmado","Honorarios pagados"];
 const FASES_RENTING = ["Pre-análisis","En estudio por entidad","Operación aprobada","Condiciones aceptadas","Contrato firmado","Transferencia realizada"];
@@ -66,6 +68,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
   const puedeEditar = colab?.puede_editar_ops ?? false;
 
   const opNotes = await db.select().from(notes).where(eq(notes.operation_id, id)).orderBy(notes.created_at);
+  const opDocs = await db.select().from(operationDocuments).where(eq(operationDocuments.operation_id, id)).orderBy(operationDocuments.created_at);
 
   const opCustomFields = await db.select().from(customFields).where(eq(customFields.entidad, "operacion")).orderBy(asc(customFields.orden));
   const opCustomValues = await db.select().from(customFieldValues).where(eq(customFieldValues.entity_id, id));
@@ -77,6 +80,8 @@ export default async function OperacionDetallePage({ params }: { params: Promise
   const isPendiente = op.status === "pendiente_de_validar";
   const isArchivada = op.status === "archivada";
   const isConsultoria = op.pipeline_key === "consultoria";
+  const FASES_GANADAS = ["Honorarios pagados", "Transferencia realizada"];
+  const isGanada = FASES_GANADAS.includes(op.fase ?? "");
 
   return (
     <div>
@@ -114,6 +119,9 @@ export default async function OperacionDetallePage({ params }: { params: Promise
           </span>
         )}
       </div>
+
+      {/* Celebration */}
+      {isGanada && <CelebrationBanner opNombre={op.nombre ?? op.codigo ?? "Operación"} clientNombre={op.client_nombre ?? "Cliente"} />}
 
       {/* Motivo denegación */}
       {isArchivada && op.motivo_denegacion && (
@@ -236,8 +244,9 @@ export default async function OperacionDetallePage({ params }: { params: Promise
           )}
         </div>
 
-        {/* Col 2-3: Notas */}
-        <div className="col-span-2 bg-white border border-gray-200 p-5">
+        {/* Col 2-3: Notas + Docs */}
+        <div className="col-span-2 flex flex-col gap-5">
+        <div className="bg-white border border-gray-200 p-5">
           <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Notas e historial</p>
           <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
             {opNotes.length === 0 ? (
@@ -261,6 +270,9 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             )}
           </div>
           <AddNoteForm operationId={id} />
+        </div>
+
+        <DocumentsSection docs={opDocs} operationId={id} />
         </div>
       </div>
     </div>

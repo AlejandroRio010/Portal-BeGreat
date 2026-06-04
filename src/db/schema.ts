@@ -278,6 +278,17 @@ export const officeNotes = pgTable("office_notes", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── Operation documents ─────────────────────────────────────────────────────
+export const operationDocuments = pgTable("operation_documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  operation_id: uuid("operation_id").notNull().references(() => operations.id, { onDelete: "cascade" }),
+  filename: text("filename").notNull(),
+  url: text("url").notNull(),
+  size: integer("size"),
+  uploaded_by: text("uploaded_by").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Notes ───────────────────────────────────────────────────────────────────
 export const notes = pgTable("notes", {
   id: uuid("id").primaryKey().defaultRandom(),
