@@ -113,48 +113,46 @@ export default async function EntidadFichaPage({ params }: { params: Promise<{ i
           <EntidadEditForm entidad={entidad} />
         </div>
 
-        {/* Col 2-3: Notas e historial */}
-        <div className="col-span-2 flex flex-col gap-4">
+        {/* Col 2-3: Notas + Oficinas */}
+        <div className="col-span-2 flex flex-col gap-6">
           <NotesSection
             notes={notes}
             apiUrl={`/api/admin/entidades/${id}/notes`}
             placeholder="Añade una nota sobre esta entidad financiera..."
           />
-        </div>
-      </div>
 
-      {/* ── Oficinas ──────────────────────────────────────────────────────────── */}
-      <div className="mx-8 mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-widest">Oficinas / Sucursales</h2>
-          <span className="text-xs text-gray-400">{oficinas.length} oficina{oficinas.length !== 1 ? "s" : ""}</span>
-        </div>
+          {/* Oficinas */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-widest">Oficinas / Sucursales</h2>
+              <span className="text-xs text-gray-400">{oficinas.length} oficina{oficinas.length !== 1 ? "s" : ""}</span>
+            </div>
 
-        {/* Oficinas grid */}
-        {oficinas.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
-            {oficinas.map((o) => (
-              <Link
-                key={o.id}
-                href={`/admin/entidades/${id}/oficinas/${o.id}`}
-                className="bg-white border border-gray-200 p-4 hover:border-[#2E1A47]/40 hover:shadow-md transition-all group"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="w-8 h-8 bg-[#EEEBF3] flex items-center justify-center text-[#2E1A47] text-sm font-bold">
-                    {o.nombre.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-[#2E1A47] text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                </div>
-                <p className="text-sm font-semibold text-gray-900 group-hover:text-[#2E1A47] leading-tight mb-1">{o.nombre}</p>
-                {o.ciudad && <p className="text-xs text-gray-400">{o.ciudad}</p>}
-                {o.persona_contacto && <p className="text-xs text-gray-400 mt-0.5 truncate">{o.persona_contacto}</p>}
-              </Link>
-            ))}
+            {oficinas.length > 0 && (
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+                {oficinas.map((o) => (
+                  <Link
+                    key={o.id}
+                    href={`/admin/entidades/${id}/oficinas/${o.id}`}
+                    className="bg-white border border-gray-200 p-4 hover:border-[#2E1A47]/40 hover:shadow-md transition-all group"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="w-8 h-8 bg-[#EEEBF3] flex items-center justify-center text-[#2E1A47] text-sm font-bold">
+                        {o.nombre.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-[#2E1A47] text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-900 group-hover:text-[#2E1A47] leading-tight mb-1">{o.nombre}</p>
+                    {o.ciudad && <p className="text-xs text-gray-400">{o.ciudad}</p>}
+                    {o.persona_contacto && <p className="text-xs text-gray-400 mt-0.5 truncate">{o.persona_contacto}</p>}
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            <NuevaOficinaForm entityId={id} />
           </div>
-        )}
-
-        {/* Nueva oficina form */}
-        <NuevaOficinaForm entityId={id} />
+        </div>
       </div>
     </div>
   );
