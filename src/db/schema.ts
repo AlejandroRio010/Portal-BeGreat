@@ -213,6 +213,20 @@ export const operations = pgTable("operations", {
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// ─── Office notes (same concept as operation notes) ──────────────────────────
+export const officeNotes = pgTable("office_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  office_id: uuid("office_id")
+    .notNull()
+    .references(() => entityOffices.id, { onDelete: "cascade" }),
+  author_id: uuid("author_id")
+    .notNull()
+    .references(() => collaborators.id),
+  author_name: text("author_name").notNull(),
+  texto: text("texto").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Notes ───────────────────────────────────────────────────────────────────
 export const notes = pgTable("notes", {
   id: uuid("id").primaryKey().defaultRandom(),

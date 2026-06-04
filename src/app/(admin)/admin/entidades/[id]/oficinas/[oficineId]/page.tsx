@@ -1,11 +1,11 @@
 import { db } from "@/db";
-import { entityOffices, financialEntities, operations, clients, entityOfficeContacts } from "@/db/schema";
+import { entityOffices, financialEntities, operations, clients, entityOfficeContacts, officeNotes } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import OficinaEditForm from "./OficinaEditForm";
 import ContactosOficinaPanel from "./ContactosOficinaPanel";
-import NotasForm from "../../../NotasForm";
+import OfficeNotesSection from "./OfficeNotesSection";
 
 function fmtEur(val: string | null | undefined) {
   if (!val) return "—";
@@ -36,6 +36,7 @@ export default async function OficinaFichaPage({
   if (!entidad) notFound();
 
   const contactos = await db.select().from(entityOfficeContacts).where(eq(entityOfficeContacts.office_id, oficineId)).orderBy(entityOfficeContacts.created_at);
+  const notes = await db.select().from(officeNotes).where(eq(officeNotes.office_id, oficineId)).orderBy(officeNotes.created_at);
 
   // Ops linked to this office
   const ops = await db
@@ -182,12 +183,13 @@ export default async function OficinaFichaPage({
             entityId={entityId}
           />
 
-          <NotasForm officeId={oficineId} initialNotas={oficina.notas ?? null} />
-
           <OficinaEditForm oficina={oficina} />
         </div>
 
-        <div className="col-span-2" />
+        {/* Col 2-3: Notas (igual que operaciones) */}
+        <div className="col-span-2">
+          <OfficeNotesSection notes={notes} officeId={oficineId} />
+        </div>
       </div>
 
       {/* Operaciones */}
