@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ContactoAutocomplete from "@/components/ContactoAutocomplete";
 
 interface Contacto {
   id: string;
@@ -100,10 +101,27 @@ function NuevoContactoForm({ entityId }: { entityId: string }) {
         <button type="button" onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-700 text-lg leading-none">×</button>
       </div>
       <div className="px-4 py-3 space-y-2">
-        {[["Nombre *", "nombre"], ["Cargo / Rol", "rol"], ["Email", "email"], ["Teléfono", "telefono"], ["LinkedIn", "linkedin"]].map(([lbl, key]) => (
+        <div>
+          <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Nombre *</label>
+          <ContactoAutocomplete
+            value={form.nombre}
+            onChange={v => set("nombre", v)}
+            onSelect={p => setForm(f => ({
+              ...f,
+              nombre: p.nombre,
+              rol: p.rol ?? f.rol,
+              email: p.email ?? f.email,
+              telefono: p.telefono ?? f.telefono,
+              linkedin: p.linkedin ?? f.linkedin,
+            }))}
+            required
+            className="bg-white"
+          />
+        </div>
+        {[["Cargo / Rol", "rol"], ["Email", "email"], ["Teléfono", "telefono"], ["LinkedIn", "linkedin"]].map(([lbl, key]) => (
           <div key={key}>
             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{lbl}</label>
-            <input value={(form as any)[key]} onChange={e => set(key, e.target.value)} required={key === "nombre"}
+            <input value={(form as any)[key]} onChange={e => set(key, e.target.value)}
               className="w-full border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:border-[#2E1A47] bg-white" />
           </div>
         ))}
