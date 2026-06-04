@@ -108,22 +108,13 @@ export default async function EntidadFichaPage({ params }: { params: Promise<{ i
             </div>
           )}
 
-          {entidad.notas && (
-            <div className="bg-white border border-gray-200">
-              <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
-                <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Notas internas</h3>
-              </div>
-              <p className="px-5 py-4 text-sm text-gray-700 whitespace-pre-wrap">{entidad.notas}</p>
-            </div>
-          )}
-
           <ContactosPanel contactos={contactos} entityId={id} />
 
           <EntidadEditForm entidad={entidad} />
         </div>
 
-        {/* Col 2-3: Notas */}
-        <div className="col-span-2">
+        {/* Col 2-3: Notas e historial */}
+        <div className="col-span-2 flex flex-col gap-4">
           <NotesSection
             notes={notes}
             apiUrl={`/api/admin/entidades/${id}/notes`}
