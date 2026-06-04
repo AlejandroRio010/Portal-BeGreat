@@ -218,14 +218,24 @@ export default function AdminOpForm({
     finally { setSavingCustom(false); }
   }
 
-  async function handleStatus(newStatus: string) {
+  // ── Denegación con motivo ───────────────────────────────────────────────
+  const [showDenegar, setShowDenegar] = useState(false);
+  const [motivoDenegacion, setMotivoDenegacion] = useState("");
+
+  async function handleStatus(newStatus: string, extra?: Record<string, unknown>) {
     setSaving(true);
     setError(null);
     try {
-      await patch({ status: newStatus });
+      await patch({ status: newStatus, ...extra });
       setStatus(newStatus);
     } catch { setError("Error al cambiar el estado."); }
     finally { setSaving(false); }
+  }
+
+  async function handleDenegar() {
+    if (!motivoDenegacion.trim()) return;
+    await handleStatus("archivada", { motivo_denegacion: motivoDenegacion.trim() });
+    setShowDenegar(false);
   }
 
   return (
@@ -305,23 +315,50 @@ export default function AdminOpForm({
                     className="flex-1 py-2 bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
                     Aprobar →
                   </button>
-                  <button onClick={() => handleStatus("archivada")} disabled={saving}
+                  <button onClick={() => setShowDenegar(true)} disabled={saving}
                     className="flex-1 py-2 bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50">
-                    Archivar
+                    Denegar
                   </button>
                 </div>
               )}
               {status === "activa" && (
-                <button onClick={() => handleStatus("archivada")} disabled={saving}
-                  className="w-full py-2 border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 disabled:opacity-50">
-                  Archivar
-                </button>
+                <div className="space-y-2">
+                  <button onClick={() => setShowDenegar(true)} disabled={saving}
+                    className="w-full py-2 border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 disabled:opacity-50">
+                    Marcar como denegada
+                  </button>
+                </div>
               )}
               {status === "archivada" && (
                 <button onClick={() => handleStatus("activa")} disabled={saving}
                   className="w-full py-2 border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 disabled:opacity-50">
                   Reactivar
                 </button>
+              )}
+
+              {/* Modal motivo denegación */}
+              {showDenegar && (
+                <div className="bg-red-50 border border-red-200 p-4 space-y-3">
+                  <p className="text-xs font-bold text-red-600 uppercase tracking-wider">¿Por qué se deniega esta operación?</p>
+                  <textarea
+                    value={motivoDenegacion}
+                    onChange={e => setMotivoDenegacion(e.target.value)}
+                    rows={3}
+                    placeholder="El motivo será visible para el colaborador..."
+                    className="w-full border border-red-200 px-3 py-2 text-sm focus:outline-none focus:border-red-400 resize-none"
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={handleDenegar} disabled={saving || !motivoDenegacion.trim()}
+                      className="flex-1 py-2 bg-red-600 text-white text-sm font-bold hover:bg-red-700 disabled:opacity-50">
+                      {saving ? "Denegando..." : "Confirmar denegación"}
+                    </button>
+                    <button onClick={() => { setShowDenegar(false); setMotivoDenegacion(""); }}
+                      className="px-4 py-2 text-sm text-gray-600 border border-gray-200 hover:bg-gray-50">
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
               )}
 
               {/* Fase */}

@@ -45,6 +45,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       notas_admin: operations.notas_admin,
       facturacion_renting: operations.facturacion_renting,
       onedrive_url: operations.onedrive_url,
+      motivo_denegacion: operations.motivo_denegacion,
       codigo: operations.codigo,
       created_at: operations.created_at,
       updated_at: operations.updated_at,
@@ -136,6 +137,14 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
           </span>
         )}
       </div>
+
+      {/* Motivo denegación */}
+      {op.status === "archivada" && op.motivo_denegacion && (
+        <div className="mb-6 bg-red-50 border border-red-200 px-5 py-4">
+          <p className="text-xs font-bold text-red-600 uppercase tracking-wider mb-1">Motivo de la denegación</p>
+          <p className="text-sm text-red-700">{op.motivo_denegacion}</p>
+        </div>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-4 gap-4 mb-6">

@@ -81,6 +81,16 @@ export const clients = pgTable("clients", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── Client notes ────────────────────────────────────────────────────────────
+export const clientNotes = pgTable("client_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  client_id: uuid("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  author_id: uuid("author_id").notNull().references(() => collaborators.id),
+  author_name: text("author_name").notNull(),
+  texto: text("texto").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Contacts (of clients) ────────────────────────────────────────────────────
 export const contacts = pgTable("contacts", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -248,6 +258,7 @@ export const operations = pgTable("operations", {
   notas_admin: text("notas_admin"),
   facturacion_renting: text("facturacion_renting"),
   onedrive_url: text("onedrive_url"),
+  motivo_denegacion: text("motivo_denegacion"),
   codigo: text("codigo").unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),

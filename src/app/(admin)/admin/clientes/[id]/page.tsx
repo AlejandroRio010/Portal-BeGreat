@@ -1,10 +1,11 @@
 import { db } from "@/db";
-import { clients, collaborators, contacts, operations, customFields, customFieldValues } from "@/db/schema";
+import { clients, collaborators, contacts, operations, customFields, customFieldValues, clientNotes } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import ClienteEditForm from "./ClienteEditForm";
 import ContactosAdminPanel from "./ContactosAdminPanel";
+import NotesSection from "@/components/NotesSection";
 
 function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
@@ -73,6 +74,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
   // Campos personalizados del cliente
   const clienteCustomFields = await db.select().from(customFields).where(eq(customFields.entidad, "cliente")).orderBy(asc(customFields.orden));
   const clienteCustomValues = await db.select().from(customFieldValues).where(eq(customFieldValues.entity_id, id));
+  const notes = await db.select().from(clientNotes).where(eq(clientNotes.client_id, id)).orderBy(clientNotes.created_at);
 
   const inicial = client.nombre.charAt(0).toUpperCase();
 
@@ -199,7 +201,8 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
         </div>
 
         {/* Col 2-3: Operaciones */}
-        <div className="col-span-2 bg-white border border-gray-200">
+        <div className="col-span-2 flex flex-col gap-6">
+          <div className="bg-white border border-gray-200">
           <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
             <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Operaciones</h3>
           </div>
@@ -244,6 +247,14 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
               </tbody>
             </table>
           )}
+          </div>
+
+          {/* Notas del cliente (no de ops) */}
+          <NotesSection
+            notes={notes}
+            apiUrl={`/api/admin/clientes/${id}/notes`}
+            placeholder="Añade una nota general sobre este cliente..."
+          />
         </div>
       </div>
     </div>

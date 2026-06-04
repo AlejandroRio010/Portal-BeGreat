@@ -1,39 +1,23 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
-import OpEditForm from "./OpEditForm";
+import { eq, and, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import AddNoteForm from "./AddNoteForm";
+import OpEditForm from "./OpEditForm";
 
-const FASES_CONSULTORIA = [
-  "Pre-análisis",
-  "Firma de honorarios",
-  "En estudio por entidad",
-  "Operación aprobada",
-  "Contrato firmado",
-  "Honorarios pagados",
-];
-
-const FASES_RENTING = [
-  "Pre-análisis",
-  "En estudio por entidad",
-  "Operación aprobada",
-  "Condiciones aceptadas",
-  "Contrato firmado",
-  "Transferencia realizada",
-];
-
+const FASES_CONSULTORIA = ["Pre-análisis","Firma de honorarios","En estudio por entidad","Operación aprobada","Contrato firmado","Honorarios pagados"];
+const FASES_RENTING = ["Pre-análisis","En estudio por entidad","Operación aprobada","Condiciones aceptadas","Contrato firmado","Transferencia realizada"];
 const FASE_COLOR: Record<string, { bg: string; text: string; border: string }> = {
-  "Pre-análisis":        { bg: "bg-gray-100",     text: "text-gray-600",    border: "border-gray-200" },
-  "Firma de honorarios":       { bg: "bg-blue-50",      text: "text-blue-700",    border: "border-blue-200" },
-  "En estudio por entidad": { bg: "bg-amber-50",     text: "text-amber-700",   border: "border-amber-200" },
-  "Operación aprobada":  { bg: "bg-emerald-50",   text: "text-emerald-700", border: "border-emerald-200" },
-  "Condiciones aceptadas":      { bg: "bg-teal-50",      text: "text-teal-700",    border: "border-teal-200" },
-  "Contrato firmado":     { bg: "bg-violet-50",    text: "text-violet-700",  border: "border-violet-200" },
-  "Honorarios pagados":           { bg: "bg-emerald-100",  text: "text-emerald-800", border: "border-emerald-300" },
-  "Transferencia realizada":     { bg: "bg-emerald-100",  text: "text-emerald-800", border: "border-emerald-300" },
+  "Pre-análisis":             { bg: "bg-gray-100",     text: "text-gray-600",    border: "border-gray-200" },
+  "Firma de honorarios":      { bg: "bg-blue-50",      text: "text-blue-700",    border: "border-blue-200" },
+  "En estudio por entidad":   { bg: "bg-amber-50",     text: "text-amber-700",   border: "border-amber-200" },
+  "Operación aprobada":       { bg: "bg-emerald-50",   text: "text-emerald-700", border: "border-emerald-200" },
+  "Condiciones aceptadas":    { bg: "bg-teal-50",      text: "text-teal-700",    border: "border-teal-200" },
+  "Contrato firmado":         { bg: "bg-violet-50",    text: "text-violet-700",  border: "border-violet-200" },
+  "Honorarios pagados":       { bg: "bg-emerald-100",  text: "text-emerald-800", border: "border-emerald-300" },
+  "Transferencia realizada":  { bg: "bg-emerald-100",  text: "text-emerald-800", border: "border-emerald-300" },
 };
 
 export default async function OperacionDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -45,6 +29,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
     .select({
       id: operations.id,
       nombre: operations.nombre,
+      codigo: operations.codigo,
       pipeline_key: operations.pipeline_key,
       producto: operations.producto,
       importe: operations.importe,
@@ -55,11 +40,15 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       honorarios_firmado: operations.honorarios_firmado,
       descripcion: operations.descripcion,
       lugar_entrega: operations.lugar_entrega,
+      plazo_meses: operations.plazo_meses,
+      equipo_tipo: operations.equipo_tipo,
+      motivo_denegacion: operations.motivo_denegacion,
+      onedrive_url: operations.onedrive_url,
       created_at: operations.created_at,
       client_id: operations.client_id,
       client_nombre: clients.nombre,
+      supplier_id: operations.supplier_id,
       supplier_nombre: suppliers.nombre,
-      onedrive_url: operations.onedrive_url,
     })
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
@@ -69,7 +58,6 @@ export default async function OperacionDetallePage({ params }: { params: Promise
 
   if (!op) notFound();
 
-  // Check collaborator permissions
   const [colab] = await db
     .select({ puede_editar_ops: collaborators.puede_editar_ops })
     .from(collaborators)
@@ -77,36 +65,22 @@ export default async function OperacionDetallePage({ params }: { params: Promise
     .limit(1);
   const puedeEditar = colab?.puede_editar_ops ?? false;
 
-  const opNotes = await db
-    .select()
-    .from(notes)
-    .where(eq(notes.operation_id, id))
-    .orderBy(notes.created_at);
+  const opNotes = await db.select().from(notes).where(eq(notes.operation_id, id)).orderBy(notes.created_at);
 
-  // Custom fields for operations
-  const opCustomFields = await db
-    .select()
-    .from(customFields)
-    .where(eq(customFields.entidad, "operacion"))
-    .orderBy(customFields.orden);
-
-  const opCustomValues = await db
-    .select()
-    .from(customFieldValues)
-    .where(eq(customFieldValues.entity_id, id));
-
-  const customValueMap = new Map(opCustomValues.map((v) => [v.field_id, v.valor]));
+  const opCustomFields = await db.select().from(customFields).where(eq(customFields.entidad, "operacion")).orderBy(asc(customFields.orden));
+  const opCustomValues = await db.select().from(customFieldValues).where(eq(customFieldValues.entity_id, id));
+  const customValueMap = new Map(opCustomValues.map(v => [v.field_id, v.valor]));
 
   const fases = op.pipeline_key === "consultoria" ? FASES_CONSULTORIA : FASES_RENTING;
   const faseIdx = op.status === "pendiente_de_validar" ? -1 : fases.indexOf(op.fase ?? "");
   const faseStyle = op.fase ? (FASE_COLOR[op.fase] ?? FASE_COLOR["Pre-análisis"]) : FASE_COLOR["Pre-análisis"];
-
   const isPendiente = op.status === "pendiente_de_validar";
+  const isArchivada = op.status === "archivada";
   const isConsultoria = op.pipeline_key === "consultoria";
 
   return (
     <div>
-      {/* ── Breadcrumb ──────────────────────────────────────────────── */}
+      {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-xs text-gray-400 mb-6">
         <Link href={isConsultoria ? "/portal/operaciones/consultoria" : "/portal/operaciones/renting"} className="hover:text-[#2E1A47] transition-colors">
           {isConsultoria ? "Consultoría financiera" : "Renting de equipos"}
@@ -115,19 +89,24 @@ export default async function OperacionDetallePage({ params }: { params: Promise
         <span className="text-gray-600 font-medium">{op.nombre ?? op.client_nombre ?? "Operación"}</span>
       </div>
 
-      {/* ── Header ──────────────────────────────────────────────────── */}
+      {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div>
+          <div className="flex items-center gap-3 mb-1">
+            {op.codigo && <span className="text-xs font-bold font-mono bg-[#EEEBF3] text-[#2E1A47] px-2 py-0.5 tracking-wider">{op.codigo}</span>}
+          </div>
           <h1 className="text-2xl font-bold text-gray-900">{op.nombre ?? op.client_nombre ?? "Operación"}</h1>
-          {op.nombre && op.client_nombre && (
-            <p className="text-sm text-gray-400 mt-0.5">{op.client_nombre}</p>
-          )}
+          {op.nombre && op.client_nombre && <p className="text-sm text-gray-400 mt-0.5">{op.client_nombre}</p>}
           <p className="text-sm text-gray-400 mt-1">{isConsultoria ? "Consultoría financiera" : "Renting de equipos"}</p>
         </div>
         {isPendiente ? (
           <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
             Pendiente de validar
+          </span>
+        ) : isArchivada ? (
+          <span className="px-3 py-1.5 text-xs font-semibold border bg-red-50 border-red-200 text-red-600">
+            Denegada
           </span>
         ) : (
           <span className={`px-3 py-1.5 text-xs font-semibold border ${faseStyle.bg} ${faseStyle.text} ${faseStyle.border}`}>
@@ -136,8 +115,16 @@ export default async function OperacionDetallePage({ params }: { params: Promise
         )}
       </div>
 
-      {/* ── KPI cards ───────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      {/* Motivo denegación */}
+      {isArchivada && op.motivo_denegacion && (
+        <div className="mb-6 bg-red-50 border border-red-200 px-5 py-4">
+          <p className="text-xs font-bold text-red-600 uppercase tracking-wider mb-1">Motivo de la denegación</p>
+          <p className="text-sm text-red-700">{op.motivo_denegacion}</p>
+        </div>
+      )}
+
+      {/* KPIs */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-[#2E1A47] p-5">
           <p className="text-white/50 text-xs uppercase tracking-widest mb-2">Importe</p>
           <p className="text-2xl font-black text-white">
@@ -153,6 +140,10 @@ export default async function OperacionDetallePage({ params }: { params: Promise
           </p>
         </div>
         <div className="bg-white border border-gray-200 p-5">
+          <p className="text-gray-400 text-xs uppercase tracking-widest mb-2 font-semibold">Entidad financiera</p>
+          <p className="text-lg font-bold text-gray-800">{op.entidad_financiera ?? "Pendiente"}</p>
+        </div>
+        <div className="bg-white border border-gray-200 p-5">
           <p className="text-gray-400 text-xs uppercase tracking-widest mb-2 font-semibold">Fecha de alta</p>
           <p className="text-lg font-bold text-gray-800">
             {new Date(op.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}
@@ -160,8 +151,8 @@ export default async function OperacionDetallePage({ params }: { params: Promise
         </div>
       </div>
 
-      {/* ── Progress bar ────────────────────────────────────────────── */}
-      {!isPendiente && (
+      {/* Progress bar */}
+      {!isPendiente && !isArchivada && (
         <div className="bg-white border border-gray-200 p-5 mb-6">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Fase de la operación</p>
           <div className="flex items-center gap-0">
@@ -180,9 +171,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                       current ? "text-[10px] font-bold text-[#2E1A47]" :
                       done    ? "text-[10px] font-medium text-gray-500" :
                                 "text-[10px] text-gray-300"
-                    }`} style={{ maxWidth: 80 }}>
-                      {fase}
-                    </p>
+                    }`} style={{ maxWidth: 80 }}>{fase}</p>
                   </div>
                   {i < fases.length - 1 && (
                     <div className={`h-px flex-1 mx-1 -mt-5 ${i < faseIdx ? "bg-[#2E1A47]" : "bg-gray-200"}`} />
@@ -194,15 +183,12 @@ export default async function OperacionDetallePage({ params }: { params: Promise
         </div>
       )}
 
-      {/* ── Main grid ───────────────────────────────────────────────── */}
+      {/* Main grid */}
       <div className="grid grid-cols-3 gap-5">
-
-        {/* Fields */}
-        <div className="col-span-1 space-y-3">
+        {/* Col 1: Datos */}
+        <div className="col-span-1 space-y-4">
           <div className="bg-white border border-gray-200 p-5">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
-              <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">Datos de la operación</p>
-            </div>
+            <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Datos de la operación</p>
             <dl className="space-y-3">
               {[
                 { label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/portal/clientes/${op.client_id}` : undefined },
@@ -212,9 +198,15 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                 ...(op.pipeline_key === "renting" ? [
                   { label: "Proveedor", value: op.supplier_nombre },
                   { label: "Lugar de entrega", value: op.lugar_entrega },
+                  { label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null },
+                  { label: "Tipo equipo", value: op.equipo_tipo },
                 ] : []),
                 { label: "Descripción", value: op.descripcion },
-              ].map((field) => field && field.value != null && field.value !== "" ? (
+                // Campos personalizados rellenos
+                ...opCustomFields
+                  .filter(f => { const v = customValueMap.get(f.id); return v && v.trim() !== ""; })
+                  .map(f => ({ label: f.etiqueta, value: customValueMap.get(f.id) ?? null })),
+              ].map(field => field && field.value != null && field.value !== "" ? (
                 <div key={field.label}>
                   <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">{field.label}</dt>
                   <dd className="text-sm text-gray-800 font-medium">
@@ -226,7 +218,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
               ) : null)}
               {op.onedrive_url && (
                 <div>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">📁 Documentación</dt>
+                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Documentación</dt>
                   <dd className="text-sm">
                     <a href={op.onedrive_url} target="_blank" rel="noopener noreferrer" className="text-[#2E1A47] hover:underline font-semibold">
                       Abrir documentación →
@@ -237,23 +229,16 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             </dl>
           </div>
           {puedeEditar && (
-            <OpEditForm
-              opId={op.id}
-              pipelineKey={op.pipeline_key}
-              initialProducto={op.producto ?? null}
-              initialImporte={op.importe ?? null}
-              initialDescripcion={op.descripcion ?? null}
-              initialPlazoMeses={null}
-              initialLugarEntrega={op.lugar_entrega ?? null}
-              initialEquipoTipo={null}
-            />
+            <OpEditForm opId={op.id} pipelineKey={op.pipeline_key}
+              initialProducto={op.producto ?? null} initialImporte={op.importe ?? null}
+              initialDescripcion={op.descripcion ?? null} initialPlazoMeses={op.plazo_meses ?? null}
+              initialLugarEntrega={op.lugar_entrega ?? null} initialEquipoTipo={op.equipo_tipo ?? null} />
           )}
         </div>
 
-        {/* Notes */}
+        {/* Col 2-3: Notas */}
         <div className="col-span-2 bg-white border border-gray-200 p-5">
           <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Notas e historial</p>
-
           <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
             {opNotes.length === 0 ? (
               <div className="py-8 text-center border border-dashed border-gray-200">
@@ -261,7 +246,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                 <p className="text-xs text-gray-300 mt-1">BeGreat irá actualizando el estado aquí.</p>
               </div>
             ) : (
-              opNotes.map((n) => (
+              opNotes.map(n => (
                 <div key={n.id} className="border-l-2 border-[#2E1A47] pl-4 py-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-bold text-[#2E1A47]">{n.author_name}</span>
@@ -275,38 +260,9 @@ export default async function OperacionDetallePage({ params }: { params: Promise
               ))
             )}
           </div>
-
           <AddNoteForm operationId={id} />
         </div>
       </div>
-
-      {/* Custom fields */}
-      {opCustomFields.length > 0 && (
-        <div className="mt-5 bg-white border border-gray-200 p-5">
-          <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Información adicional</p>
-          <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            {opCustomFields.map((f) => {
-              const valor = customValueMap.get(f.id) ?? null;
-              return (
-                <div key={f.id}>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">{f.etiqueta}</dt>
-                  <dd className="text-sm text-gray-800 font-medium">
-                    {valor
-                      ? f.tipo === "enlace"
-                        ? <a href={valor} target="_blank" rel="noopener noreferrer" className="text-[#2E1A47] hover:underline">{valor}</a>
-                        : f.tipo === "euros"
-                          ? `${Number(valor).toLocaleString("es-ES")} €`
-                          : f.tipo === "porcentaje"
-                            ? `${valor}%`
-                            : valor
-                      : <span className="text-gray-300">—</span>}
-                  </dd>
-                </div>
-              );
-            })}
-          </dl>
-        </div>
-      )}
     </div>
   );
 }
