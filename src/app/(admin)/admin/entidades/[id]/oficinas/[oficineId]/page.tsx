@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import OficinaEditForm from "./OficinaEditForm";
 import ContactosOficinaPanel from "./ContactosOficinaPanel";
-import OfficeNotesSection from "./OfficeNotesSection";
+import NotesSection from "@/components/NotesSection";
 
 function fmtEur(val: string | null | undefined) {
   if (!val) return "—";
@@ -188,7 +188,11 @@ export default async function OficinaFichaPage({
 
         {/* Col 2-3: Notas (igual que operaciones) */}
         <div className="col-span-2">
-          <OfficeNotesSection notes={notes} officeId={oficineId} />
+          <NotesSection
+            notes={notes}
+            apiUrl={`/api/admin/entidades/oficinas/${oficineId}/notes`}
+            placeholder="Añade una nota sobre esta oficina..."
+          />
         </div>
       </div>
 

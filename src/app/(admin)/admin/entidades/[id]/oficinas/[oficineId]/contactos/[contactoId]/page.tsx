@@ -1,9 +1,9 @@
 import { db } from "@/db";
-import { entityOfficeContacts, entityOffices, financialEntities } from "@/db/schema";
+import { entityOfficeContacts, entityOffices, financialEntities, officeContactNotes } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import NotasContactoForm from "./NotasContactoForm";
+import NotesSection from "@/components/NotesSection";
 
 export default async function ContactoFichaPage({
   params,
@@ -19,6 +19,7 @@ export default async function ContactoFichaPage({
     .limit(1);
   if (!contacto) notFound();
 
+  const notes = await db.select().from(officeContactNotes).where(eq(officeContactNotes.contact_id, contactoId)).orderBy(officeContactNotes.created_at);
   const [oficina] = await db.select({ nombre: entityOffices.nombre }).from(entityOffices).where(eq(entityOffices.id, oficineId)).limit(1);
   const [entidad] = await db.select({ nombre: financialEntities.nombre }).from(financialEntities).where(eq(financialEntities.id, entityId)).limit(1);
 
@@ -90,7 +91,11 @@ export default async function ContactoFichaPage({
 
         {/* Col 2-3: Notas */}
         <div className="col-span-2">
-          <NotasContactoForm contactoId={contactoId} initialNotas={contacto.notas ?? null} />
+          <NotesSection
+            notes={notes}
+            apiUrl={`/api/admin/entidades/oficinas/contactos/${contactoId}/notes`}
+            placeholder="Añade una nota sobre esta persona de contacto..."
+          />
         </div>
       </div>
     </div>

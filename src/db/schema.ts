@@ -129,6 +129,16 @@ export const financialEntities = pgTable("financial_entities", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── Entity notes (notes feed for financial entities) ────────────────────────
+export const entityNotes = pgTable("entity_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entity_id: uuid("entity_id").notNull().references(() => financialEntities.id, { onDelete: "cascade" }),
+  author_id: uuid("author_id").notNull().references(() => collaborators.id),
+  author_name: text("author_name").notNull(),
+  texto: text("texto").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Entity contacts (persons linked to financial entities) ──────────────────
 export const entityContacts = pgTable("entity_contacts", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -161,6 +171,16 @@ export const entityOffices = pgTable("entity_offices", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── Entity contact notes (notes feed for entity contact persons) ────────────
+export const entityContactNotes = pgTable("entity_contact_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contact_id: uuid("contact_id").notNull().references(() => entityContacts.id, { onDelete: "cascade" }),
+  author_id: uuid("author_id").notNull().references(() => collaborators.id),
+  author_name: text("author_name").notNull(),
+  texto: text("texto").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Entity office contacts ───────────────────────────────────────────────────
 export const entityOfficeContacts = pgTable("entity_office_contacts", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -173,6 +193,26 @@ export const entityOfficeContacts = pgTable("entity_office_contacts", {
   telefono: text("telefono"),
   linkedin: text("linkedin"),
   notas: text("notas"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Office contact notes (notes feed for office contact persons) ─────────────
+export const officeContactNotes = pgTable("office_contact_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contact_id: uuid("contact_id").notNull().references(() => entityOfficeContacts.id, { onDelete: "cascade" }),
+  author_id: uuid("author_id").notNull().references(() => collaborators.id),
+  author_name: text("author_name").notNull(),
+  texto: text("texto").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Collaborator notes ───────────────────────────────────────────────────────
+export const collaboratorNotes = pgTable("collaborator_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  collaborator_id: uuid("collaborator_id").notNull().references(() => collaborators.id, { onDelete: "cascade" }),
+  author_id: uuid("author_id").notNull().references(() => collaborators.id),
+  author_name: text("author_name").notNull(),
+  texto: text("texto").notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { financialEntities, entityOffices, entityContacts } from "@/db/schema";
+import { financialEntities, entityOffices, entityContacts, entityNotes } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -7,7 +7,7 @@ import EntidadEditForm from "./EntidadEditForm";
 import NuevaOficinaForm from "./NuevaOficinaForm";
 import EliminarEntidadBtn from "./EliminarEntidadBtn";
 import ContactosPanel from "./ContactosPanel";
-import NotasForm from "../NotasForm";
+import NotesSection from "@/components/NotesSection";
 
 const TIPO_LABEL: Record<string, string> = {
   banco: "Banco",
@@ -28,6 +28,7 @@ export default async function EntidadFichaPage({ params }: { params: Promise<{ i
 
   const oficinas = await db.select().from(entityOffices).where(eq(entityOffices.entity_id, id)).orderBy(entityOffices.nombre);
   const contactos = await db.select().from(entityContacts).where(eq(entityContacts.entity_id, id)).orderBy(entityContacts.created_at);
+  const notes = await db.select().from(entityNotes).where(eq(entityNotes.entity_id, id)).orderBy(entityNotes.created_at);
 
   const inicial = entidad.nombre.charAt(0).toUpperCase();
 
@@ -118,12 +119,17 @@ export default async function EntidadFichaPage({ params }: { params: Promise<{ i
 
           <ContactosPanel contactos={contactos} entityId={id} />
 
-          <NotasForm entityId={id} initialNotas={entidad.notas ?? null} />
-
           <EntidadEditForm entidad={entidad} />
         </div>
 
-        <div className="col-span-2" />
+        {/* Col 2-3: Notas */}
+        <div className="col-span-2">
+          <NotesSection
+            notes={notes}
+            apiUrl={`/api/admin/entidades/${id}/notes`}
+            placeholder="Añade una nota sobre esta entidad financiera..."
+          />
+        </div>
       </div>
 
       {/* ── Oficinas ──────────────────────────────────────────────────────────── */}

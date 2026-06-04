@@ -1,11 +1,11 @@
 import { db } from "@/db";
-import { collaborators, operations, clients, collaboratorContacts } from "@/db/schema";
+import { collaborators, operations, clients, collaboratorContacts, collaboratorNotes } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import NotasForm from "./NotasForm";
 import ColaboradorEditForm from "./ColaboradorEditForm";
 import PermisosForm from "./PermisosForm";
+import NotesSection from "@/components/NotesSection";
 
 const FASES_FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
 
@@ -63,6 +63,12 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
     .from(collaboratorContacts)
     .where(eq(collaboratorContacts.collaborator_id, id))
     .orderBy(collaboratorContacts.nombre);
+
+  const notes = await db
+    .select()
+    .from(collaboratorNotes)
+    .where(eq(collaboratorNotes.collaborator_id, id))
+    .orderBy(collaboratorNotes.created_at);
 
   // KPIs
   const totalOps = ops.length;
@@ -296,13 +302,12 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
       </div>
 
       {/* Notas internas */}
-      <div className="mx-8 mb-10 bg-white border border-gray-200">
-        <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
-          <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Notas internas</h3>
-        </div>
-        <div className="p-5">
-          <NotasForm colaboradorId={colab.id} initialNotas={colab.notas_internas ?? null} />
-        </div>
+      <div className="mx-8 mb-10">
+        <NotesSection
+          notes={notes}
+          apiUrl={`/api/admin/colaboradores/${colab.id}/notes`}
+          placeholder="Añade una nota interna sobre este colaborador..."
+        />
       </div>
     </div>
   );
