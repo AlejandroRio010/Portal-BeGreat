@@ -122,16 +122,14 @@ export default async function EntidadFichaPage({ params }: { params: Promise<{ i
           <EntidadEditForm entidad={entidad} />
         </div>
 
-        <div className="col-span-2" />
-      </div>
-
-      {/* ── Notas ── */}
-      <div className="mx-8 mb-6">
-        <NotesSection
-          notes={notes}
-          apiUrl={`/api/admin/entidades/${id}/notes`}
-          placeholder="Añade una nota sobre esta entidad financiera..."
-        />
+        {/* Col 2-3: Notas */}
+        <div className="col-span-2">
+          <NotesSection
+            notes={notes}
+            apiUrl={`/api/admin/entidades/${id}/notes`}
+            placeholder="Añade una nota sobre esta entidad financiera..."
+          />
+        </div>
       </div>
 
       {/* ── Oficinas ──────────────────────────────────────────────────────────── */}
