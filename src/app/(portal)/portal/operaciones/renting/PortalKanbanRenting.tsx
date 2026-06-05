@@ -11,6 +11,7 @@ interface Op {
   importe: string | null;
   comision_colaborador: string | null;
   facturacion_renting: string | null;
+  plazo_meses: number | null;
 }
 
 const FASE_ACCENT: Record<string, string> = {
@@ -95,6 +96,11 @@ export default function PortalKanbanRenting({ ops, fases }: { ops: Op[]; fases: 
                         )}
                         <div className="flex items-center flex-wrap gap-1">
                           {fee > 0 && <span className="text-[10px] font-bold text-[#2E1A47] whitespace-nowrap">{fee.toLocaleString("es-ES")} €</span>}
+                          {op.importe && op.plazo_meses && (
+                            <span className="text-[9px] text-gray-400 whitespace-nowrap">
+                              {(Number(op.importe) / op.plazo_meses).toLocaleString("es-ES", { maximumFractionDigits: 0 })} €/mes
+                            </span>
+                          )}
                           {op.facturacion_renting && (
                             <span className={`text-[9px] font-bold px-1 py-0.5 uppercase ${op.facturacion_renting === "begreat" ? "bg-[#EEEBF3] text-[#2E1A47]" : "bg-amber-50 text-amber-700"}`}>
                               {op.facturacion_renting === "begreat" ? "BG" : "Fin"}

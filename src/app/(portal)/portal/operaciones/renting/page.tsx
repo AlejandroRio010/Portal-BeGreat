@@ -26,11 +26,12 @@ export default async function RentingPage() {
       importe: operations.importe,
       comision_colaborador: operations.comision_colaborador,
       facturacion_renting: operations.facturacion_renting,
+      plazo_meses: operations.plazo_meses,
       client_nombre: clients.nombre,
     })
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
-    .where(and(eq(operations.collaborator_id, userId), eq(operations.pipeline_key, "renting")))
+    .where(and(eq(operations.collaborator_id, userId), eq(operations.pipeline_key, "renting"), eq(operations.status, "activa")))
     .orderBy(operations.created_at);
 
   return (
@@ -57,7 +58,7 @@ export default async function RentingPage() {
         </div>
       ) : (
         <PortalKanbanRenting
-          ops={ops.map(o => ({ ...o, importe: o.importe ?? null, comision_colaborador: o.comision_colaborador ?? null, facturacion_renting: o.facturacion_renting ?? null }))}
+          ops={ops.map(o => ({ ...o, importe: o.importe ?? null, comision_colaborador: o.comision_colaborador ?? null, facturacion_renting: o.facturacion_renting ?? null, plazo_meses: o.plazo_meses ?? null }))}
           fases={fases}
         />
       )}

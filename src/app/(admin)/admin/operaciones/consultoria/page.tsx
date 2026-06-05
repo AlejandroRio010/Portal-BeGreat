@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { operations, clients, collaborators, pipelines } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import KanbanBoard from "./KanbanBoard";
 
 const FASES_CONSULTORIA_DEFAULT = [
@@ -27,7 +27,7 @@ export default async function AdminConsultoriaKanbanPage() {
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
     .leftJoin(collaborators, eq(operations.collaborator_id, collaborators.id))
-    .where(eq(operations.pipeline_key, "consultoria"))
+    .where(and(eq(operations.pipeline_key, "consultoria"), eq(operations.status, "activa")))
     .orderBy(operations.created_at);
 
   return (

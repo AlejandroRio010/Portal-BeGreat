@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments } from "@/db/schema";
+import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments, financialEntities } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -66,6 +66,12 @@ export default async function OperacionDetallePage({ params }: { params: Promise
     .where(eq(collaborators.id, userId))
     .limit(1);
   const puedeEditar = colab?.puede_editar_ops ?? false;
+
+  // Buscar entidad financiera por nombre para hacer link
+  const entidadLink = op.entidad_financiera
+    ? await db.select({ id: financialEntities.id }).from(financialEntities)
+        .where(eq(financialEntities.nombre, op.entidad_financiera)).limit(1).then(r => r[0]?.id ?? null)
+    : null;
 
   const opNotes = await db.select().from(notes).where(eq(notes.operation_id, id)).orderBy(notes.created_at);
   const opDocs = await db.select().from(operationDocuments).where(eq(operationDocuments.operation_id, id)).orderBy(operationDocuments.created_at);
@@ -149,7 +155,13 @@ export default async function OperacionDetallePage({ params }: { params: Promise
         </div>
         <div className="bg-white border border-gray-200 p-5">
           <p className="text-gray-400 text-xs uppercase tracking-widest mb-2 font-semibold">Entidad financiera</p>
-          <p className="text-lg font-bold text-gray-800">{op.entidad_financiera ?? "Pendiente"}</p>
+          {entidadLink ? (
+            <Link href={`/portal/entidades/${entidadLink}`} className="text-lg font-bold text-[#2E1A47] hover:underline">
+              {op.entidad_financiera} →
+            </Link>
+          ) : (
+            <p className="text-lg font-bold text-gray-800">{op.entidad_financiera ?? "Pendiente"}</p>
+          )}
         </div>
         <div className="bg-white border border-gray-200 p-5">
           <p className="text-gray-400 text-xs uppercase tracking-widest mb-2 font-semibold">Fecha de alta</p>

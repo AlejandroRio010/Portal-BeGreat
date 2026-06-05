@@ -29,7 +29,7 @@ export default async function ConsultoriaPage() {
     })
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
-    .where(and(eq(operations.collaborator_id, userId), eq(operations.pipeline_key, "consultoria")))
+    .where(and(eq(operations.collaborator_id, userId), eq(operations.pipeline_key, "consultoria"), eq(operations.status, "activa")))
     .orderBy(operations.created_at);
 
   return (
