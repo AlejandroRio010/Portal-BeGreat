@@ -19,6 +19,11 @@ function fmtSize(bytes: number | null) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function cloudinaryDownloadUrl(url: string, filename: string): string {
+  // Add fl_attachment to force download for raw files
+  return url.replace("/upload/", `/upload/fl_attachment:${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}/`);
+}
+
 export default function DocumentsSection({ docs, operationId }: { docs: Doc[]; operationId: string }) {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
@@ -106,7 +111,7 @@ export default function DocumentsSection({ docs, operationId }: { docs: Doc[]; o
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <span className="text-lg flex-shrink-0">📄</span>
                 <div className="min-w-0">
-                  <a href={d.url} target="_blank" rel="noopener noreferrer"
+                  <a href={cloudinaryDownloadUrl(d.url, d.filename)} target="_blank" rel="noopener noreferrer"
                     className="text-sm font-semibold text-gray-800 hover:text-[#2E1A47] hover:underline truncate block">
                     {d.filename}
                   </a>
