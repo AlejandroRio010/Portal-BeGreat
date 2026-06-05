@@ -30,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   console.log("[documents] file name:", file.name, "size:", file.size);
   let blob;
   try {
-    blob = await put(`ops/${id}/${file.name}`, file, { access: "public" });
+    blob = await put(`ops/${id}/${file.name}`, file, { access: "public", token: process.env.BLOB_READ_WRITE_TOKEN });
   } catch (err) {
     console.error("[documents] blob error:", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
