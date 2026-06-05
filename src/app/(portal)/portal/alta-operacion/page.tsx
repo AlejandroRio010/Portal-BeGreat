@@ -250,34 +250,13 @@ export default function AltaOperacionPage() {
             </Section>
 
             {rentingRol === "colaborador" && (
-              <Section title="Datos del proveedor">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className={label}>Nombre del proveedor</label>
-                    <input name="proveedor_nombre" className={inp} placeholder="Proveedor S.A." />
-                  </div>
-                  <div>
-                    <label className={label}>Email</label>
-                    <input name="proveedor_email" type="email" className={inp} placeholder="info@proveedor.es" />
-                  </div>
-                  <div>
-                    <label className={label}>Teléfono</label>
-                    <input name="proveedor_telefono" className={inp} placeholder="612 345 678" />
-                  </div>
-                  <div>
-                    <label className={label}>Web</label>
-                    <input name="proveedor_web" className={inp} placeholder="www.proveedor.es" />
-                  </div>
-                </div>
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Persona de contacto del proveedor</p>
-                  <div className="grid grid-cols-3 gap-3">
-                    <input name="proveedor_contacto_nombre" className={inp} placeholder="Nombre" />
-                    <input name="proveedor_contacto_email" type="email" className={inp} placeholder="Email" />
-                    <input name="proveedor_contacto_telefono" className={inp} placeholder="Teléfono" />
-                  </div>
-                </div>
-              </Section>
+              <div className="bg-[#EEEBF3]/50 border border-[#EEEBF3] px-5 py-4">
+                <p className="text-xs text-gray-600">
+                  Los proveedores se gestionan en la sección{" "}
+                  <a href="/portal/proveedores" className="text-[#2E1A47] font-semibold hover:underline">Mis proveedores</a>.
+                  Da de alta ahí al proveedor y BeGreat lo vinculará a esta operación.
+                </p>
+              </div>
             )}
           </>
         )}

@@ -1,5 +1,10 @@
 "use client";
 
+import { useState } from "react";
+import {
+  DndContext, DragEndEvent, DragOverlay,
+  PointerSensor, useSensor, useSensors, useDroppable, useDraggable,
+} from "@dnd-kit/core";
 import Link from "next/link";
 
 interface Op {
@@ -29,18 +34,121 @@ const FASE_DOT: Record<string, string> = {
   "Honorarios pagados":     "bg-emerald-500",
 };
 
-export default function PortalKanban({ ops, fases }: { ops: Op[]; fases: string[] }) {
+function CardContent({ op, dragListeners, dragAttributes, canEdit }: { op: Op; dragListeners?: any; dragAttributes?: any; canEdit?: boolean }) {
+  const displayName = op.nombre ?? op.client_nombre ?? "Sin nombre";
+  const fee = Number(op.comision_colaborador ?? 0);
+  return (
+    <div className="p-2.5 pt-2">
+      <div className="flex items-start gap-1 mb-1.5">
+        {canEdit && (
+          <button {...dragListeners} {...dragAttributes} className="mt-0.5 flex-shrink-0 text-gray-200 hover:text-gray-400 cursor-grab active:cursor-grabbing touch-none" tabIndex={-1}>
+            <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
+              <circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/>
+              <circle cx="2" cy="6" r="1.2"/><circle cx="6" cy="6" r="1.2"/>
+              <circle cx="2" cy="10" r="1.2"/><circle cx="6" cy="10" r="1.2"/>
+            </svg>
+          </button>
+        )}
+        <Link href={`/portal/operaciones/${op.id}`} className="text-[11px] font-semibold text-gray-800 hover:text-[#2E1A47] leading-tight line-clamp-2 flex-1">
+          {displayName}
+        </Link>
+      </div>
+      {op.client_nombre && op.nombre && <p className={`text-[9px] text-gray-400 mb-1.5 truncate ${canEdit ? "pl-4" : ""}`}>{op.client_nombre}</p>}
+      <div className={`flex items-center flex-wrap gap-1 ${canEdit ? "pl-4" : ""}`}>
+        {fee > 0 && <span className="text-[10px] font-bold text-[#2E1A47] whitespace-nowrap">{fee.toLocaleString("es-ES")} €</span>}
+        {op.status === "pendiente_de_validar" && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />}
+      </div>
+    </div>
+  );
+}
+
+function DraggableCard({ op, isDragging }: { op: Op; isDragging: boolean }) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: op.id });
+  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
+  const accent = FASE_ACCENT[op.fase] ?? "border-l-[#2E1A47]";
+  return (
+    <div ref={setNodeRef} style={style}
+      className={`bg-white border border-gray-100 border-l-[3px] ${accent} shadow-sm hover:shadow-md hover:border-gray-200 transition-all ${isDragging ? "opacity-40" : ""}`}>
+      <CardContent op={op} dragListeners={listeners} dragAttributes={attributes} canEdit />
+    </div>
+  );
+}
+
+function DroppableColumn({ fase, ops, activeId, canEdit }: { fase: string; ops: Op[]; activeId: string | null; canEdit: boolean }) {
+  const { setNodeRef, isOver } = useDroppable({ id: fase, disabled: !canEdit });
+  const dot = FASE_DOT[fase] ?? "bg-[#2E1A47]";
+  const accent = FASE_ACCENT[fase] ?? "border-l-[#2E1A47]";
+  const totalImporte = ops.reduce((s, o) => s + Number(o.importe ?? 0), 0);
+  return (
+    <div ref={setNodeRef} className={`flex-shrink-0 w-[200px] flex flex-col transition-colors ${isOver ? "bg-[#EEEBF3]/60" : ""}`}>
+      <div className="px-2 py-3 mb-1">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
+          <p className="text-[10px] font-bold text-[#2E1A47] uppercase tracking-widest leading-tight truncate">{fase}</p>
+        </div>
+        <div className="flex items-center gap-1.5 pl-4">
+          <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5">{ops.length}</span>
+          {totalImporte > 0 && <span className="text-[9px] text-gray-400">{totalImporte.toLocaleString("es-ES")} €</span>}
+        </div>
+      </div>
+      <div className="flex-1 space-y-1.5 min-h-[300px] px-1">
+        {ops.map(op => canEdit
+          ? <DraggableCard key={op.id} op={op} isDragging={activeId === op.id} />
+          : (
+            <Link key={op.id} href={`/portal/operaciones/${op.id}`}
+              className={`block bg-white border border-gray-100 border-l-[3px] ${accent} shadow-sm hover:shadow-md hover:border-gray-200 transition-all`}>
+              <CardContent op={op} />
+            </Link>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function PortalKanban({ ops: initialOps, fases, canEdit = false }: { ops: Op[]; fases: string[]; canEdit?: boolean }) {
+  const [ops, setOps] = useState(initialOps);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const activeOp = ops.find(o => o.id === activeId) ?? null;
+
+  const pendientes = ops.filter(o => o.status === "pendiente_de_validar");
+  const totalFeeColab = ops.reduce((s, o) => s + Number(o.comision_colaborador ?? 0), 0);
+
+  async function handleDragEnd(e: DragEndEvent) {
+    setActiveId(null);
+    const { active, over } = e;
+    if (!over) return;
+    const opId = String(active.id);
+    const newFase = String(over.id);
+    const op = ops.find(o => o.id === opId);
+    if (!op || op.fase === newFase) return;
+    setOps(prev => prev.map(o => o.id === opId ? { ...o, fase: newFase } : o));
+    try {
+      await fetch(`/api/operations/${opId}/fase`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fase: newFase }) });
+    } catch {
+      setOps(prev => prev.map(o => o.id === opId ? { ...o, fase: op.fase } : o));
+    }
+  }
+
   const opsByFase = fases.reduce<Record<string, Op[]>>((acc, f) => {
-    acc[f] = ops.filter((o) => o.fase === f);
+    acc[f] = ops.filter(o => o.fase === f);
     return acc;
   }, {});
 
-  const pendientes   = ops.filter((o) => o.status === "pendiente_de_validar");
-  const totalFeeColab = ops.reduce((s, o) => s + Number(o.comision_colaborador ?? 0), 0);
+  const board = (
+    <div className="flex overflow-x-auto pb-4">
+      {fases.map((fase, i) => (
+        <div key={fase} className="flex flex-shrink-0 items-stretch">
+          {i > 0 && <div className="w-px bg-[#2E1A47]/15 self-stretch mx-1" />}
+          <DroppableColumn fase={fase} ops={opsByFase[fase] ?? []} activeId={activeId} canEdit={canEdit} />
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div>
-      {/* Cabecera */}
       <div className="mb-5">
         <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-widest">Consultoría financiera</h2>
         <div className="flex items-center gap-5 mt-1.5">
@@ -48,6 +156,7 @@ export default function PortalKanban({ ops, fases }: { ops: Op[]; fases: string[
             <span className="text-xs text-gray-500">Mi fee: <span className="font-bold text-[#2E1A47]">{totalFeeColab.toLocaleString("es-ES")} €</span></span>
           )}
           <span className="text-xs text-gray-400">{ops.length} operaciones</span>
+          {canEdit && <span className="text-[10px] text-gray-400 italic">Arrastra las tarjetas para cambiar de fase</span>}
         </div>
       </div>
 
@@ -60,54 +169,18 @@ export default function PortalKanban({ ops, fases }: { ops: Op[]; fases: string[
         </div>
       )}
 
-      <div className="flex overflow-x-auto pb-4">
-        {fases.map((fase, i) => {
-          const colOps = opsByFase[fase] ?? [];
-          const dot    = FASE_DOT[fase] ?? "bg-[#2E1A47]";
-          const accent = FASE_ACCENT[fase] ?? "border-l-[#2E1A47]";
-          const totalImporte = colOps.reduce((s, o) => s + Number(o.importe ?? 0), 0);
-
-          return (
-            <div key={fase} className="flex flex-shrink-0 items-stretch">
-              {i > 0 && <div className="w-px bg-[#2E1A47]/15 self-stretch mx-1" />}
-              <div className="flex-shrink-0 w-[200px] flex flex-col">
-                <div className="px-2 py-3 mb-1">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
-                    <p className="text-[10px] font-bold text-[#2E1A47] uppercase tracking-widest leading-tight truncate">{fase}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 pl-4">
-                    <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5">{colOps.length}</span>
-                    {totalImporte > 0 && <span className="text-[9px] text-gray-400">{totalImporte.toLocaleString("es-ES")} €</span>}
-                  </div>
-                </div>
-                <div className="flex-1 space-y-1.5 min-h-[300px] px-1">
-                  {colOps.map((op) => {
-                    const displayName = op.nombre ?? op.client_nombre ?? "Sin nombre";
-                    const fee = Number(op.comision_colaborador ?? 0);
-                    return (
-                      <Link key={op.id} href={`/portal/operaciones/${op.id}`}
-                        className={`block bg-white border border-gray-100 border-l-[3px] ${accent} shadow-sm hover:shadow-md hover:border-gray-200 transition-all p-2.5`}
-                      >
-                        <p className="text-[11px] font-semibold text-gray-800 hover:text-[#2E1A47] leading-tight line-clamp-2 mb-1.5">{displayName}</p>
-                        {op.client_nombre && op.nombre && (
-                          <p className="text-[9px] text-gray-400 mb-1.5 truncate">{op.client_nombre}</p>
-                        )}
-                        <div className="flex items-center flex-wrap gap-1">
-                          {fee > 0 && <span className="text-[10px] font-bold text-[#2E1A47] whitespace-nowrap">{fee.toLocaleString("es-ES")} €</span>}
-                          {op.status === "pendiente_de_validar" && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
-                          )}
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
+      {canEdit ? (
+        <DndContext sensors={sensors} onDragStart={e => setActiveId(String(e.active.id))} onDragEnd={handleDragEnd}>
+          {board}
+          <DragOverlay>
+            {activeOp && (
+              <div className={`bg-white border border-gray-100 border-l-[3px] ${FASE_ACCENT[activeOp.fase] ?? "border-l-[#2E1A47]"} shadow-xl w-[200px]`}>
+                <CardContent op={activeOp} canEdit />
               </div>
-            </div>
-          );
-        })}
-      </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+      ) : board}
     </div>
   );
 }

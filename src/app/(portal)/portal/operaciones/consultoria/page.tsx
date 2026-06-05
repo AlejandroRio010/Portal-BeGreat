@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, clients, pipelines } from "@/db/schema";
+import { operations, clients, pipelines, collaborators } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import Link from "next/link";
 import PortalKanban from "./PortalKanban";
@@ -16,6 +16,9 @@ export default async function ConsultoriaPage() {
 
   const [pc] = await db.select().from(pipelines).where(eq(pipelines.key, "consultoria")).limit(1);
   const fases = (pc?.fases as string[]) ?? FASES_DEFAULT;
+
+  const [colab] = await db.select({ puede_editar_ops: collaborators.puede_editar_ops }).from(collaborators).where(eq(collaborators.id, userId)).limit(1);
+  const puedeEditar = colab?.puede_editar_ops ?? false;
 
   const ops = await db
     .select({
@@ -34,14 +37,14 @@ export default async function ConsultoriaPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900">Consultoría financiera</h1>
           <p className="text-sm text-gray-400 mt-1">{ops.length} operación{ops.length !== 1 ? "es" : ""}</p>
         </div>
         <Link
           href="/portal/alta-operacion"
-          className="inline-flex items-center gap-2 bg-[#2E1A47] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#3d2460] transition-colors"
+          className="inline-flex flex-shrink-0 items-center gap-2 bg-[#2E1A47] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#3d2460] transition-colors whitespace-nowrap"
         >
           + Nueva operación
         </Link>
@@ -55,7 +58,7 @@ export default async function ConsultoriaPage() {
           </Link>
         </div>
       ) : (
-        <PortalKanban ops={ops.map(o => ({ ...o, importe: o.importe ?? null, comision_colaborador: o.comision_colaborador ?? null }))} fases={fases} />
+        <PortalKanban ops={ops.map(o => ({ ...o, importe: o.importe ?? null, comision_colaborador: o.comision_colaborador ?? null }))} fases={fases} canEdit={puedeEditar} />
       )}
     </div>
   );
