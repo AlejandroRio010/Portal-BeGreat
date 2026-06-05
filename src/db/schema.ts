@@ -77,6 +77,10 @@ export const clients = pgTable("clients", {
   telefono: text("telefono"),
   web: text("web"),
   linkedin: text("linkedin"),
+  nombre_comercial: text("nombre_comercial"),
+  direccion: text("direccion"),
+  cnae: text("cnae"),
+  grupo_empresarial: text("grupo_empresarial"),
   codigo: text("codigo").unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
