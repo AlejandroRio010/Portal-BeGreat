@@ -33,6 +33,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   cloudForm.append("upload_preset", CLOUDINARY_PRESET);
   cloudForm.append("folder", `begreat/ops/${id}`);
   cloudForm.append("resource_type", "auto");
+  cloudForm.append("access_mode", "public");
 
   const cloudRes = await fetch(
     `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`,
