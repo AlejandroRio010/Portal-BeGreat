@@ -3,7 +3,9 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { operationDocuments, operations } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { put } from "@vercel/blob";
+
+const CLOUDINARY_CLOUD = "dgcbkeqw0";
+const CLOUDINARY_PRESET = "begreat_docs";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -25,25 +27,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const file = formData.get("file") as File | null;
   if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
-  // Upload to Vercel Blob
-  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
-  const blobKeys = Object.keys(process.env).filter(k => k.includes("BLOB"));
-  console.log("[documents] BLOB env keys:", blobKeys);
-  console.log("[documents] token present:", !!blobToken);
-  console.log("[documents] file name:", file.name, "size:", file.size);
-  let blob;
-  try {
-    if (!blobToken) return NextResponse.json({ error: `Token no encontrado. BLOB keys en runtime: ${blobKeys.join(", ") || "NINGUNA"}` }, { status: 500 });
-    blob = await put(`ops/${id}/${file.name}`, file, { access: "public", token: blobToken });
-  } catch (err) {
-    console.error("[documents] blob error:", err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+  // Upload to Cloudinary (unsigned preset — no server token needed)
+  const cloudForm = new FormData();
+  cloudForm.append("file", file);
+  cloudForm.append("upload_preset", CLOUDINARY_PRESET);
+  cloudForm.append("folder", `begreat/ops/${id}`);
+  cloudForm.append("resource_type", "auto");
+
+  const cloudRes = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`,
+    { method: "POST", body: cloudForm }
+  );
+
+  if (!cloudRes.ok) {
+    const err = await cloudRes.text();
+    console.error("[documents] cloudinary error:", err);
+    return NextResponse.json({ error: "Error al subir a Cloudinary: " + err }, { status: 500 });
   }
+
+  const cloud = await cloudRes.json();
+  const url: string = cloud.secure_url;
 
   const [doc] = await db.insert(operationDocuments).values({
     operation_id: id,
     filename: file.name,
-    url: blob.url,
+    url,
     size: file.size,
     uploaded_by: nombre,
   }).returning();

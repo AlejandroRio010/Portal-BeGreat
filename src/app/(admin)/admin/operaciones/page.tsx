@@ -47,7 +47,7 @@ export default async function AdminOperacionesPage({
     .orderBy(collaborators.nombre);
 
   // Fetch operations
-  let query = db
+  const query = db
     .select({
       id: operations.id,
       nombre: operations.nombre,
