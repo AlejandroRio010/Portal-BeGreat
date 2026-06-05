@@ -2,6 +2,9 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { operations, collaborators, clients } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
+
+const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const FIRMADAS = ["Contrato firmado","Honorarios pagados","Transferencia realizada"];
 import Link from "next/link";
 import Image from "next/image";
 
@@ -19,7 +22,12 @@ function fmt(n: number) {
   return n.toLocaleString("es-ES") + " €";
 }
 
-export default async function PortalHomePage() {
+export default async function PortalHomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ year?: string }>;
+}) {
+  const sp = await searchParams;
   const session = await auth();
   const userId = session!.user!.id as string;
 
@@ -29,34 +37,50 @@ export default async function PortalHomePage() {
     .where(eq(collaborators.id, userId))
     .limit(1);
 
-  // Últimas 4 ops para la tabla inferior
-  const recentOps = await db
+  const allOps = await db
     .select({
       id: operations.id,
       status: operations.status,
       fase: operations.fase,
       pipeline_key: operations.pipeline_key,
       comision_colaborador: operations.comision_colaborador,
+      importe: operations.importe,
       created_at: operations.created_at,
       client_nombre: clients.nombre,
     })
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
     .where(eq(operations.collaborator_id, userId))
-    .orderBy(desc(operations.created_at))
-    .limit(4);
+    .orderBy(desc(operations.created_at));
 
-  // Stats para KPIs
-  const allOps = await db
-    .select({ status: operations.status, fase: operations.fase, comision_colaborador: operations.comision_colaborador })
-    .from(operations)
-    .where(eq(operations.collaborator_id, userId));
+  const recentOps = allOps.slice(0, 5);
 
-  const firmadas = allOps.filter((o) => o.fase === "Contrato firmado" || o.fase === "Honorarios pagados" || o.fase === "Transferencia realizada");
-  const pendientes = allOps.filter((o) => o.status === "pendiente_de_validar");
-  const enCurso = allOps.filter((o) => o.status === "activa" && o.fase !== "Contrato firmado" && o.fase !== "Honorarios pagados" && o.fase !== "Transferencia realizada");
-  const totalComision = firmadas.reduce((s, o) => s + (o.comision_colaborador ? Number(o.comision_colaborador) : 0), 0);
-  const feePendiente = [...pendientes, ...enCurso].reduce((s, o) => s + (o.comision_colaborador ? Number(o.comision_colaborador) : 0), 0);
+  const firmadas = allOps.filter(o => FIRMADAS.includes(o.fase ?? ""));
+  const pendientes = allOps.filter(o => o.status === "pendiente_de_validar");
+  const enCurso = allOps.filter(o => o.status === "activa" && !FIRMADAS.includes(o.fase ?? ""));
+
+  const totalComision = firmadas.reduce((s, o) => s + Number(o.comision_colaborador ?? 0), 0);
+  const totalFinanciacion = firmadas.reduce((s, o) => s + Number(o.importe ?? 0), 0);
+  const feePendiente = [...pendientes, ...enCurso].reduce((s, o) => s + Number(o.comision_colaborador ?? 0), 0);
+
+  // Gráfico anual
+  const availableYears = Array.from(new Set(allOps.map(o => new Date(o.created_at).getFullYear()))).sort((a,b) => b-a);
+  const currentYear = new Date().getFullYear();
+  const selectedYear = sp.year ? parseInt(sp.year) : (availableYears[0] ?? currentYear);
+
+  const monthlyOps = Array(12).fill(0);
+  const monthlyFee = Array(12).fill(0);
+  for (const op of allOps) {
+    const d = new Date(op.created_at);
+    if (d.getFullYear() !== selectedYear) continue;
+    if (!FIRMADAS.includes(op.fase ?? "")) continue;
+    const m = d.getMonth();
+    monthlyOps[m] += 1;
+    monthlyFee[m] += Number(op.comision_colaborador ?? 0);
+  }
+  const maxOps = Math.max(...monthlyOps, 1);
+  const yearTotalOps = monthlyOps.reduce((s,v) => s+v, 0);
+  const yearTotalFee = monthlyFee.reduce((s,v) => s+v, 0);
 
   return (
     <div>
@@ -89,29 +113,94 @@ export default async function PortalHomePage() {
       </div>
 
       {/* ── KPIs ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        {/* Pareja 1: Firmadas — morado oscuro BeGreat */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        {/* Oscuro: ops firmadas + comisiones */}
         <div className="flex overflow-hidden">
           <div className="flex-1 bg-[#2E1A47] px-6 py-5">
-            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Ops. firmadas</p>
+            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Ops firmadas</p>
             <p className="text-3xl font-black text-white">{firmadas.length}</p>
+            <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">contratos cerrados</p>
           </div>
           <div className="w-px bg-white/20" />
           <div className="flex-1 bg-[#2E1A47] px-6 py-5">
-            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee generadas</p>
-            <p className="text-2xl font-black text-white leading-tight">{totalComision > 0 ? fmt(totalComision) : "—"}</p>
+            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Comisiones ganadas</p>
+            <p className="text-xl font-black text-white leading-tight">{totalComision > 0 ? fmt(totalComision) : "—"}</p>
+            <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">acumulado total</p>
           </div>
         </div>
-        {/* Pareja 2: En estudio — lila claro */}
+        {/* Financiación */}
+        <div className="flex overflow-hidden bg-[#2E1A47]">
+          <div className="flex-1 px-6 py-5">
+            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Financiación levantada</p>
+            <p className="text-xl font-black text-white leading-tight">{totalFinanciacion > 0 ? fmt(totalFinanciacion) : "—"}</p>
+            <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">volumen total cerrado</p>
+          </div>
+        </div>
+        {/* Claro: en curso */}
         <div className="flex overflow-hidden border border-[#EEEBF3]">
           <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
             <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">En estudio</p>
             <p className="text-3xl font-black text-[#2E1A47]">{enCurso.length + pendientes.length}</p>
+            <p className="text-[#2E1A47]/30 text-[9px] mt-1 uppercase tracking-wide">activas ahora</p>
           </div>
           <div className="w-px bg-[#2E1A47]/25" />
           <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
-            <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee pendiente</p>
-            <p className="text-2xl font-black text-[#2E1A47] leading-tight">{feePendiente > 0 ? fmt(feePendiente) : "—"}</p>
+            <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee potencial</p>
+            <p className="text-xl font-black text-[#2E1A47] leading-tight">{feePendiente > 0 ? fmt(feePendiente) : "—"}</p>
+            <p className="text-[#2E1A47]/30 text-[9px] mt-1 uppercase tracking-wide">en proceso</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Gráfico anual ── */}
+      <div className="bg-white border border-gray-200 mb-6">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">Ops firmadas por mes</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">Pasa el ratón para ver tu comisión de ese mes</p>
+          </div>
+          <form method="get" className="flex items-center gap-2">
+            <select name="year" defaultValue={String(selectedYear)}
+              className="border border-gray-200 px-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-[#2E1A47]">
+              {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+              {!availableYears.includes(currentYear) && <option value={currentYear}>{currentYear}</option>}
+            </select>
+            <button type="submit" className="px-3 py-1.5 bg-[#2E1A47] text-white text-xs font-semibold hover:bg-[#3d2460] transition-colors">Ver</button>
+          </form>
+        </div>
+        <div className="px-6 pt-6 pb-2">
+          <div className="flex items-end gap-1 h-[120px]">
+            {monthlyOps.map((opsCount, i) => {
+              const h = opsCount > 0 ? Math.max(8, Math.round((opsCount / maxOps) * 120)) : 0;
+              const feeMes = monthlyFee[i];
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
+                  <div className="relative flex-1 flex items-end w-full">
+                    {opsCount > 0 && (
+                      <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-[#2E1A47] text-white text-[9px] px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-lg">
+                        <span className="block font-bold">{opsCount} op{opsCount !== 1 ? "s" : ""}</span>
+                        {feeMes > 0 && <span className="block text-white/70">Comisión: {fmt(feeMes)}</span>}
+                      </div>
+                    )}
+                    <div className="w-full transition-all group-hover:opacity-80"
+                      style={{ height: h > 0 ? `${h}px` : "3px", backgroundColor: h > 0 ? "#2E1A47" : "#EEEBF3" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex gap-1 mt-2">
+            {MESES.map((m, i) => <div key={i} className="flex-1 text-center text-[9px] text-gray-400 font-medium">{m}</div>)}
+          </div>
+        </div>
+        <div className="px-6 pb-5 flex gap-8 border-t border-gray-100 pt-4">
+          <div>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Ops firmadas {selectedYear}</p>
+            <p className="text-lg font-black text-[#2E1A47]">{yearTotalOps}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Comisiones {selectedYear}</p>
+            <p className="text-lg font-black text-[#2E1A47]">{yearTotalFee > 0 ? fmt(yearTotalFee) : "—"}</p>
           </div>
         </div>
       </div>
