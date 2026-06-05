@@ -263,6 +263,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
             notes={notes}
             apiUrl={`/api/admin/clientes/${id}/notes`}
             placeholder="Añade una nota general sobre este cliente..."
+            isAdmin={true}
           />
         </div>
       </div>

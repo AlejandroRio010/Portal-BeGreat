@@ -192,6 +192,7 @@ export default async function OficinaFichaPage({
             notes={notes}
             apiUrl={`/api/admin/entidades/oficinas/${oficineId}/notes`}
             placeholder="Añade una nota sobre esta oficina..."
+            isAdmin={true}
           />
         </div>
       </div>

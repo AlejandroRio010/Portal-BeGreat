@@ -4,8 +4,9 @@ import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import AdminOpForm from "./AdminOpForm";
-import AddNoteForm from "@/app/(portal)/portal/operaciones/[id]/AddNoteForm";
+import NotesSection from "@/components/NotesSection";
 import DocumentsSection from "@/components/DocumentsSection";
+import { auth } from "@/lib/auth";
 import CelebrationBanner from "@/components/CelebrationBanner";
 
 const FASE_COLOR: Record<string, { bg: string; text: string; border: string }> = {
@@ -24,6 +25,8 @@ const FASES_RENTING = ["Pre-análisis","En estudio por entidad","Operación apro
 
 export default async function AdminOperacionDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const session = await auth();
+  const adminId = session?.user?.id as string;
 
   const [op] = await db
     .select({
@@ -291,32 +294,12 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
 
         {/* Notes + Docs */}
         <div className="col-span-2 flex flex-col gap-5">
-        <div className="bg-white border border-gray-200 p-5">
-          <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Notas e historial</p>
-
-          <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
-            {opNotes.length === 0 ? (
-              <div className="py-8 text-center border border-dashed border-gray-200">
-                <p className="text-sm text-gray-400">Sin notas todavía.</p>
-              </div>
-            ) : (
-              opNotes.map((n) => (
-                <div key={n.id} className="border-l-2 border-[#2E1A47] pl-4 py-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-bold text-[#2E1A47]">{n.author_name}</span>
-                    <span className="text-xs text-gray-300">·</span>
-                    <span className="text-xs text-gray-400">
-                      {new Date(n.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-700">{n.texto}</p>
-                </div>
-              ))
-            )}
-          </div>
-
-          <AddNoteForm operationId={id} />
-        </div>
+        <NotesSection
+          notes={opNotes}
+          apiUrl={`/api/operations/${id}/notes`}
+          currentUserId={adminId}
+          isAdmin={true}
+        />
 
         <DocumentsSection docs={opDocs} operationId={id} />
         </div>

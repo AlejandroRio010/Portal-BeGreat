@@ -47,3 +47,27 @@ export async function POST(
 
   return NextResponse.json(note, { status: 201 });
 }
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const userId = session.user!.id as string;
+  const userRole = (session.user as any).role;
+  const { noteId, texto } = await req.json();
+  if (!noteId || !texto?.trim()) return NextResponse.json({ error: "Datos requeridos" }, { status: 400 });
+
+  const [note] = await db.select().from(notes).where(eq(notes.id, noteId)).limit(1);
+  if (!note) return NextResponse.json({ error: "Nota no encontrada" }, { status: 404 });
+
+  // Solo el autor o el admin pueden editar
+  if (userRole !== "admin" && note.author_id !== userId) {
+    return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+  }
+
+  await db.update(notes).set({ texto: texto.trim() }).where(eq(notes.id, noteId));
+  return NextResponse.json({ ok: true });
+}

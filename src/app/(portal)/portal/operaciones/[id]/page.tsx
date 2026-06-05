@@ -4,7 +4,7 @@ import { operations, clients, suppliers, notes, customFields, customFieldValues,
 import { eq, and, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import AddNoteForm from "./AddNoteForm";
+import NotesSection from "@/components/NotesSection";
 import OpEditForm from "./OpEditForm";
 import DocumentsSection from "@/components/DocumentsSection";
 import CelebrationBanner from "@/components/CelebrationBanner";
@@ -246,31 +246,12 @@ export default async function OperacionDetallePage({ params }: { params: Promise
 
         {/* Col 2-3: Notas + Docs */}
         <div className="col-span-2 flex flex-col gap-5">
-        <div className="bg-white border border-gray-200 p-5">
-          <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Notas e historial</p>
-          <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
-            {opNotes.length === 0 ? (
-              <div className="py-8 text-center border border-dashed border-gray-200">
-                <p className="text-sm text-gray-400">Sin notas todavía.</p>
-                <p className="text-xs text-gray-300 mt-1">BeGreat irá actualizando el estado aquí.</p>
-              </div>
-            ) : (
-              opNotes.map(n => (
-                <div key={n.id} className="border-l-2 border-[#2E1A47] pl-4 py-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-bold text-[#2E1A47]">{n.author_name}</span>
-                    <span className="text-xs text-gray-300">·</span>
-                    <span className="text-xs text-gray-400">
-                      {new Date(n.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-700">{n.texto}</p>
-                </div>
-              ))
-            )}
-          </div>
-          <AddNoteForm operationId={id} />
-        </div>
+        <NotesSection
+          notes={opNotes}
+          apiUrl={`/api/operations/${id}/notes`}
+          currentUserId={userId}
+          placeholder="Añade una nota sobre esta operación..."
+        />
 
         <DocumentsSection docs={opDocs} operationId={id} />
         </div>
