@@ -26,11 +26,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
   // Upload to Vercel Blob
-  console.log("[documents] token present:", !!process.env.BLOB_READ_WRITE_TOKEN);
+  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+  console.log("[documents] token present:", !!blobToken, "| starts:", blobToken?.substring(0, 15) ?? "UNDEFINED");
   console.log("[documents] file name:", file.name, "size:", file.size);
   let blob;
   try {
-    blob = await put(`ops/${id}/${file.name}`, file, { access: "public", token: process.env.BLOB_READ_WRITE_TOKEN });
+    if (!blobToken) return NextResponse.json({ error: "BLOB_READ_WRITE_TOKEN no configurado en este entorno" }, { status: 500 });
+    blob = await put(`ops/${id}/${file.name}`, file, { access: "public", token: blobToken });
   } catch (err) {
     console.error("[documents] blob error:", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
