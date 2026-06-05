@@ -32,11 +32,29 @@ export default function DocumentsSection({ docs, operationId }: { docs: Doc[]; o
     setError(null);
     setSuccess(false);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      // 1. Upload directly to Cloudinary from the browser
+      const cloudForm = new FormData();
+      cloudForm.append("file", file);
+      cloudForm.append("upload_preset", "begreat_docs");
+      cloudForm.append("folder", `begreat/ops/${operationId}`);
+      cloudForm.append("resource_type", "auto");
+
+      const cloudRes = await fetch(
+        "https://api.cloudinary.com/v1_1/dgcbkeqw0/auto/upload",
+        { method: "POST", body: cloudForm }
+      );
+      if (!cloudRes.ok) {
+        const err = await cloudRes.json();
+        setError("Error Cloudinary: " + (err?.error?.message ?? cloudRes.status));
+        return;
+      }
+      const cloud = await cloudRes.json();
+
+      // 2. Save URL + metadata to our database
       const res = await fetch(`/api/operations/${operationId}/documents`, {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: cloud.secure_url, filename: file.name, size: file.size }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
