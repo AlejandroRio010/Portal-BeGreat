@@ -26,7 +26,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
   // Upload to Vercel Blob
-  const blob = await put(`ops/${id}/${file.name}`, file, { access: "public" });
+  console.log("[documents] token present:", !!process.env.BLOB_READ_WRITE_TOKEN);
+  console.log("[documents] file name:", file.name, "size:", file.size);
+  let blob;
+  try {
+    blob = await put(`ops/${id}/${file.name}`, file, { access: "public" });
+  } catch (err) {
+    console.error("[documents] blob error:", err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 
   const [doc] = await db.insert(operationDocuments).values({
     operation_id: id,
