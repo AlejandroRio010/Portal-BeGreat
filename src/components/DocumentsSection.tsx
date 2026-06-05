@@ -37,30 +37,18 @@ export default function DocumentsSection({ docs, operationId }: { docs: Doc[]; o
     setError(null);
     setSuccess(false);
     try {
-      // 1. Upload directly to Cloudinary from the browser
-      const cloudForm = new FormData();
-      cloudForm.append("file", file);
-      cloudForm.append("upload_preset", "begreat_docs");
-      cloudForm.append("folder", `begreat/ops/${operationId}`);
-      cloudForm.append("resource_type", "auto");
-      cloudForm.append("public_id", file.name);
+      // Leer archivo como base64 y guardar en la base de datos directamente
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
-      const cloudRes = await fetch(
-        "https://api.cloudinary.com/v1_1/dgcbkeqw0/auto/upload",
-        { method: "POST", body: cloudForm }
-      );
-      if (!cloudRes.ok) {
-        const err = await cloudRes.json();
-        setError("Error Cloudinary: " + (err?.error?.message ?? cloudRes.status));
-        return;
-      }
-      const cloud = await cloudRes.json();
-
-      // 2. Save URL + metadata to our database
       const res = await fetch(`/api/operations/${operationId}/documents`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: cloud.secure_url, filename: file.name, size: file.size }),
+        body: JSON.stringify({ url: base64, filename: file.name, size: file.size }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -112,7 +100,7 @@ export default function DocumentsSection({ docs, operationId }: { docs: Doc[]; o
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <span className="text-lg flex-shrink-0">📄</span>
                 <div className="min-w-0">
-                  <a href={d.url} target="_blank" rel="noopener noreferrer"
+                  <a href={`/api/download?docId=${d.id}`} target="_blank" rel="noopener noreferrer"
                     className="text-sm font-semibold text-gray-800 hover:text-[#2E1A47] hover:underline truncate block">
                     {d.filename}
                   </a>
