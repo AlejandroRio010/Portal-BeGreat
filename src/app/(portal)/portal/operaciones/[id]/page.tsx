@@ -47,6 +47,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       motivo_denegacion: operations.motivo_denegacion,
       entity_office_id: operations.entity_office_id,
       onedrive_url: operations.onedrive_url,
+      fecha_cierre: operations.fecha_cierre,
       created_at: operations.created_at,
       client_id: operations.client_id,
       client_nombre: clients.nombre,
@@ -221,63 +222,84 @@ export default async function OperacionDetallePage({ params }: { params: Promise
         <div className="col-span-1 space-y-4">
           <div className="bg-white border border-gray-200 p-5">
             <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Datos de la operación</p>
-            <dl className="space-y-3">
-              {[
+            {(() => {
+              const fmtFecha = (d: Date | string | null) => d ? new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }) : null;
+              const fmtEuro = (v: string | null) => v ? `${Number(v).toLocaleString("es-ES")} €` : null;
+              const cuota = op.importe && op.plazo_meses ? `${(Number(op.importe) / op.plazo_meses).toLocaleString("es-ES", { maximumFractionDigits: 0 })} €/mes` : null;
+              const isRenting = op.pipeline_key === "renting";
+
+              const campos: { label: string; value: string | null; href?: string }[] = isRenting ? [
+                { label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/portal/clientes/${op.client_id}` : undefined },
+                { label: "Proveedor", value: op.supplier_nombre },
+                { label: "Importe de la operación", value: fmtEuro(op.importe) },
+                { label: "Cuota", value: cuota },
+                { label: "Lugar de instalación", value: op.lugar_entrega },
+                { label: "Tipo de equipo a financiar", value: op.equipo_tipo },
+                { label: "Honorario colaborador", value: fmtEuro(op.comision_colaborador) },
+                { label: "Fecha de alta", value: fmtFecha(op.created_at) },
+                { label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) },
+              ] : [
                 { label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/portal/clientes/${op.client_id}` : undefined },
                 { label: "Producto", value: op.producto },
-                { label: "Entidad financiera", value: op.entidad_financiera },
-                { label: "Honorarios firmados", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null },
-                ...(op.pipeline_key === "renting" ? [
-                  { label: "Proveedor", value: op.supplier_nombre },
-                  { label: "Lugar de entrega", value: op.lugar_entrega },
-                  { label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null },
-                  { label: "Tipo equipo", value: op.equipo_tipo },
-                ] : []),
+                { label: "Honorario colaborador", value: fmtEuro(op.comision_colaborador) },
                 { label: "Descripción", value: op.descripcion },
-                // Campos personalizados rellenos
-                ...opCustomFields
-                  .filter(f => { const v = customValueMap.get(f.id); return v && v.trim() !== ""; })
-                  .map(f => ({ label: f.etiqueta, value: customValueMap.get(f.id) ?? null })),
-              ].map(field => field && field.value != null && field.value !== "" ? (
-                <div key={field.label}>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">{field.label}</dt>
-                  <dd className="text-sm text-gray-800 font-medium">
-                    {field.label === "Entidad financiera" && puedeVerEntidades && entidadRecord
-                      ? <Link href={`/portal/entidades/${entidadRecord.id}`} className="text-[#2E1A47] hover:underline font-semibold">{field.value} →</Link>
-                      : (field as any).href
-                        ? <Link href={(field as any).href} className="text-[#2E1A47] hover:underline font-semibold">{field.value}</Link>
-                        : field.value}
-                  </dd>
-                </div>
-              ) : null)}
-              {puedeVerEntidades && opOffice && (
-                <div>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Oficina entidad</dt>
-                  <dd className="text-sm text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</dd>
-                  {opOffice.email && <dd className="text-xs text-gray-500 mt-0.5">{opOffice.email}</dd>}
-                  {opOffice.telefono && <dd className="text-xs text-gray-500">{opOffice.telefono}</dd>}
-                </div>
-              )}
-              {puedeVerEntidades && officeContacts.map(c => (
-                <div key={c.id}>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Contacto entidad</dt>
-                  <dd className="text-sm text-gray-800 font-semibold">{c.nombre}</dd>
-                  {c.rol && <dd className="text-xs text-gray-400">{c.rol}</dd>}
-                  {c.email && <dd className="text-xs text-gray-500">{c.email}</dd>}
-                  {c.telefono && <dd className="text-xs text-gray-500">{c.telefono}</dd>}
-                </div>
-              ))}
-              {op.onedrive_url && (
-                <div>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Documentación</dt>
-                  <dd className="text-sm">
-                    <a href={op.onedrive_url} target="_blank" rel="noopener noreferrer" className="text-[#2E1A47] hover:underline font-semibold">
-                      Abrir documentación →
-                    </a>
-                  </dd>
-                </div>
-              )}
-            </dl>
+                { label: "Fecha de alta", value: fmtFecha(op.created_at) },
+                { label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) },
+                { label: "Honorario firmado", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null },
+              ];
+
+              return (
+                <dl className="space-y-3">
+                  {campos.map(field => field.value != null && field.value !== "" ? (
+                    <div key={field.label}>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">{field.label}</dt>
+                      <dd className="text-sm text-gray-800 font-medium">
+                        {field.href
+                          ? <Link href={field.href} className="text-[#2E1A47] hover:underline font-semibold">{field.value}</Link>
+                          : field.value}
+                      </dd>
+                    </div>
+                  ) : null)}
+
+                  {/* Entidad financiera — el banco siempre visible; el detalle solo con permiso */}
+                  {op.entidad_financiera && (
+                    <div>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Entidad financiera</dt>
+                      <dd className="text-sm text-gray-800 font-medium">
+                        {puedeVerEntidades && entidadRecord
+                          ? <Link href={`/portal/entidades/${entidadRecord.id}`} className="text-[#2E1A47] hover:underline font-semibold">{op.entidad_financiera} →</Link>
+                          : op.entidad_financiera}
+                      </dd>
+                    </div>
+                  )}
+                  {puedeVerEntidades && opOffice && (
+                    <div>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Oficina que la estudia</dt>
+                      <dd className="text-sm text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</dd>
+                      {opOffice.email && <dd className="text-xs text-gray-500 mt-0.5">{opOffice.email}</dd>}
+                      {opOffice.telefono && <dd className="text-xs text-gray-500">{opOffice.telefono}</dd>}
+                    </div>
+                  )}
+                  {puedeVerEntidades && officeContacts.map(c => (
+                    <div key={c.id}>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Persona de contacto en la entidad</dt>
+                      <dd className="text-sm text-gray-800 font-semibold">{c.nombre}</dd>
+                      {c.rol && <dd className="text-xs text-gray-400">{c.rol}</dd>}
+                      {c.email && <dd className="text-xs text-gray-500">{c.email}</dd>}
+                      {c.telefono && <dd className="text-xs text-gray-500">{c.telefono}</dd>}
+                    </div>
+                  ))}
+                  {op.onedrive_url && (
+                    <div>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Documentación</dt>
+                      <dd className="text-sm">
+                        <a href={op.onedrive_url} target="_blank" rel="noopener noreferrer" className="text-[#2E1A47] hover:underline font-semibold">Abrir documentación →</a>
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              );
+            })()}
           </div>
           {puedeEditar && (
             <OpEditForm opId={op.id} pipelineKey={op.pipeline_key}

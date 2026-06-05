@@ -16,9 +16,12 @@ type Client = {
   direccion: string | null;
   cnae: string | null;
   grupo_empresarial: string | null;
+  group_id: string | null;
 };
 
-export default function ClienteEditForm({ client }: { client: Client }) {
+type Grupo = { id: string; nombre: string };
+
+export default function ClienteEditForm({ client, grupos = [] }: { client: Client; grupos?: Grupo[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -33,7 +36,7 @@ export default function ClienteEditForm({ client }: { client: Client }) {
     linkedin: client.linkedin ?? "",
     direccion: client.direccion ?? "",
     cnae: client.cnae ?? "",
-    grupo_empresarial: client.grupo_empresarial ?? "",
+    group_id: client.group_id ?? "",
   });
 
   function set(k: string, v: string) { setForm((f) => ({ ...f, [k]: v })); }
@@ -124,9 +127,12 @@ export default function ClienteEditForm({ client }: { client: Client }) {
 
         <div className="col-span-2">
           <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Grupo empresarial</label>
-          <input value={form.grupo_empresarial} onChange={(e) => set("grupo_empresarial", e.target.value)}
-            placeholder="Ej: Grupo Cibernos, Grupo Inditex..."
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+          <select value={form.group_id} onChange={(e) => set("group_id", e.target.value)}
+            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47] bg-white">
+            <option value="">— Sin grupo —</option>
+            {grupos.map(g => <option key={g.id} value={g.id}>{g.nombre}</option>)}
+          </select>
+          <p className="text-[10px] text-gray-400 mt-1">Los grupos se gestionan en la sección &ldquo;Grupos empresariales&rdquo;.</p>
         </div>
 
         <div className="col-span-2">

@@ -66,6 +66,17 @@ export const pipelines = pgTable("pipelines", {
 });
 
 // ─── Clients ─────────────────────────────────────────────────────────────────
+// ─── Client groups (grupos empresariales) ────────────────────────────────────
+export const clientGroups = pgTable("client_groups", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nombre: text("nombre").notNull(),
+  descripcion: text("descripcion"),
+  web: text("web"),
+  cif_matriz: text("cif_matriz"),
+  codigo: text("codigo").unique(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const clients = pgTable("clients", {
   id: uuid("id").primaryKey().defaultRandom(),
   collaborator_id: uuid("collaborator_id")
@@ -81,6 +92,7 @@ export const clients = pgTable("clients", {
   direccion: text("direccion"),
   cnae: text("cnae"),
   grupo_empresarial: text("grupo_empresarial"),
+  group_id: uuid("group_id").references(() => clientGroups.id, { onDelete: "set null" }),
   codigo: text("codigo").unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
@@ -263,6 +275,7 @@ export const operations = pgTable("operations", {
   facturacion_renting: text("facturacion_renting"),
   onedrive_url: text("onedrive_url"),
   motivo_denegacion: text("motivo_denegacion"),
+  fecha_cierre: timestamp("fecha_cierre"),
   codigo: text("codigo").unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),

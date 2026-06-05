@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { clients, collaborators, contacts, operations, customFields, customFieldValues, clientNotes } from "@/db/schema";
+import { clients, collaborators, contacts, operations, customFields, customFieldValues, clientNotes, clientGroups } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -39,6 +39,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
       direccion: clients.direccion,
       cnae: clients.cnae,
       grupo_empresarial: clients.grupo_empresarial,
+      group_id: clients.group_id,
       created_at: clients.created_at,
       colaborador_nombre: collaborators.nombre,
       colaborador_id: collaborators.id,
@@ -80,6 +81,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
   const clienteCustomFields = await db.select().from(customFields).where(eq(customFields.entidad, "cliente")).orderBy(asc(customFields.orden));
   const clienteCustomValues = await db.select().from(customFieldValues).where(eq(customFieldValues.entity_id, id));
   const notes = await db.select().from(clientNotes).where(eq(clientNotes.client_id, id)).orderBy(clientNotes.created_at);
+  const grupos = await db.select({ id: clientGroups.id, nombre: clientGroups.nombre }).from(clientGroups).orderBy(clientGroups.nombre);
 
   const inicial = client.nombre.charAt(0).toUpperCase();
 
@@ -170,7 +172,6 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
                 ["LinkedIn", client.linkedin],
                 ["Dirección", client.direccion],
                 ["CNAE", client.cnae ? (getCnaeByCode(client.cnae) ? `${getCnaeByCode(client.cnae)!.codigo} — ${getCnaeByCode(client.cnae)!.titulo}` : client.cnae) : null],
-                ["Grupo empresarial", client.grupo_empresarial],
                 // Campos personalizados rellenos
                 ...clienteCustomFields
                   .filter((f) => {
@@ -190,9 +191,16 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
                   </div>
                 ) : null
               )}
+              {/* Grupo empresarial como link */}
+              {client.group_id && client.grupo_empresarial && (
+                <div className="py-2.5 flex flex-col gap-0.5">
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">Grupo empresarial</span>
+                  <Link href={`/admin/grupos/${client.group_id}`} className="text-sm text-[#2E1A47] font-semibold hover:underline">{client.grupo_empresarial} →</Link>
+                </div>
+              )}
             </div>
             <div className="px-5 pb-4">
-              <ClienteEditForm client={{ id, nombre: client.nombre, cif: client.cif ?? null, email: client.email ?? null, telefono: client.telefono ?? null, web: client.web ?? null, linkedin: client.linkedin ?? null, nombre_comercial: client.nombre_comercial ?? null, direccion: client.direccion ?? null, cnae: client.cnae ?? null, grupo_empresarial: client.grupo_empresarial ?? null }} />
+              <ClienteEditForm grupos={grupos} client={{ id, nombre: client.nombre, cif: client.cif ?? null, email: client.email ?? null, telefono: client.telefono ?? null, web: client.web ?? null, linkedin: client.linkedin ?? null, nombre_comercial: client.nombre_comercial ?? null, direccion: client.direccion ?? null, cnae: client.cnae ?? null, grupo_empresarial: client.grupo_empresarial ?? null, group_id: client.group_id ?? null }} />
             </div>
           </div>
 

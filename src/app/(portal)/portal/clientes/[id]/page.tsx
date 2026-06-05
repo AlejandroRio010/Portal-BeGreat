@@ -42,6 +42,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
       direccion: clients.direccion,
       cnae: clients.cnae,
       grupo_empresarial: clients.grupo_empresarial,
+      group_id: clients.group_id,
       codigo: clients.codigo,
       created_at: clients.created_at,
     })
@@ -167,7 +168,6 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
                 ["LinkedIn", client.linkedin],
                 ["Dirección", client.direccion],
                 ["CNAE", client.cnae ? (getCnaeByCode(client.cnae) ? `${getCnaeByCode(client.cnae)!.codigo} — ${getCnaeByCode(client.cnae)!.titulo}` : client.cnae) : null],
-                ["Grupo empresarial", client.grupo_empresarial],
                 ...clienteCustomFields
                   .filter(f => { const v = clienteCustomValues.find(cv => cv.field_id === f.id); return v && v.valor && v.valor.trim() !== ""; })
                   .map(f => [f.etiqueta, clienteCustomValues.find(cv => cv.field_id === f.id)?.valor ?? null] as [string, string | null]),
@@ -182,6 +182,15 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
                     )}
                   </div>
                 ) : null
+              )}
+              {/* Grupo empresarial como link */}
+              {client.grupo_empresarial && (
+                <div className="py-2.5 flex flex-col gap-0.5">
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">Grupo empresarial</span>
+                  {client.group_id
+                    ? <Link href={`/portal/grupos/${client.group_id}`} className="text-sm text-[#2E1A47] font-semibold hover:underline">{client.grupo_empresarial} →</Link>
+                    : <span className="text-sm text-gray-800 font-medium">{client.grupo_empresarial}</span>}
+                </div>
               )}
             </div>
             {puedeEditar && (

@@ -31,6 +31,7 @@ const adminNav = [
   { href: "/admin/operaciones/renting",     label: "→ Renting",     exact: false },
   { href: "/admin/colaboradores", label: "Colaboradores",  exact: false },
   { href: "/admin/clientes",      label: "Clientes",             exact: false },
+  { href: "/admin/grupos",        label: "Grupos empresariales", exact: false },
   { href: "/admin/proveedores",   label: "Proveedores",          exact: false },
   { href: "/admin/entidades",     label: "Entidades financieras",exact: false },
   { href: "/admin/configuracion", label: "Configuración",        exact: false },

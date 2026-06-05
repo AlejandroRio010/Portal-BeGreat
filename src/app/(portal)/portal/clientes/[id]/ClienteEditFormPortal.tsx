@@ -33,7 +33,6 @@ export default function ClienteEditFormPortal({ client }: { client: Client }) {
     linkedin: client.linkedin ?? "",
     direccion: client.direccion ?? "",
     cnae: client.cnae ?? "",
-    grupo_empresarial: client.grupo_empresarial ?? "",
   });
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })); }
@@ -118,13 +117,6 @@ export default function ClienteEditFormPortal({ client }: { client: Client }) {
         <div>
           <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">CNAE</label>
           <CnaeAutocomplete value={form.cnae} onChange={(v) => set("cnae", v)} />
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Grupo empresarial</label>
-          <input value={form.grupo_empresarial} onChange={e => set("grupo_empresarial", e.target.value)}
-            placeholder="Ej: Grupo Cibernos..."
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
         </div>
 
         <div>

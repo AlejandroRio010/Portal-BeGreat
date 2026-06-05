@@ -51,6 +51,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       facturacion_renting: operations.facturacion_renting,
       onedrive_url: operations.onedrive_url,
       motivo_denegacion: operations.motivo_denegacion,
+      fecha_cierre: operations.fecha_cierre,
       codigo: operations.codigo,
       created_at: operations.created_at,
       updated_at: operations.updated_at,
@@ -245,59 +246,82 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
         <div className="col-span-1 space-y-4">
           <div className="bg-white border border-gray-200 p-5">
             <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Datos de la operación</p>
-            <dl className="space-y-3">
-              {[
+            {(() => {
+              const fmtFecha = (d: Date | string | null) => d ? new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }) : null;
+              const fmtEuro = (v: string | null) => v ? `${Number(v).toLocaleString("es-ES")} €` : null;
+              const cuota = op.importe && op.plazo_meses ? `${(Number(op.importe) / op.plazo_meses).toLocaleString("es-ES", { maximumFractionDigits: 0 })} €/mes` : null;
+              const isRenting = op.pipeline_key === "renting";
+
+              const campos: { label: string; value: string | null }[] = isRenting ? [
+                { label: "Colaborador", value: op.colaborador_nombre },
+                { label: "Empresa cliente", value: op.client_nombre },
+                { label: "Proveedor", value: op.supplier_nombre },
+                { label: "Importe de la operación", value: fmtEuro(op.importe) },
+                { label: "Cuota", value: cuota },
+                { label: "Lugar de instalación", value: op.lugar_entrega },
+                { label: "Tipo de equipo a financiar", value: op.equipo_tipo },
+                { label: "Honorario colaborador", value: fmtEuro(op.comision_colaborador) },
+                { label: "Fecha de alta", value: fmtFecha(op.created_at) },
+                { label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) },
+              ] : [
                 { label: "Colaborador", value: op.colaborador_nombre },
                 { label: "Empresa cliente", value: op.client_nombre },
                 { label: "Producto", value: op.producto },
-                { label: "Entidad financiera", value: op.entidad_financiera },
-                { label: "Honorarios firmados", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null },
-                ...(op.pipeline_key === "renting" ? [
-                  { label: "Proveedor", value: op.supplier_nombre },
-                  { label: "Lugar de entrega", value: op.lugar_entrega },
-                  { label: "Plazo (meses)", value: op.plazo_meses ? String(op.plazo_meses) : null },
-                  { label: "Tipo equipo", value: op.equipo_tipo },
-                ] : []),
-                { label: "Contacto directo", value: op.contacto_directo ? "Sí — BeGreat contacta al cliente" : null },
+                { label: "Honorario colaborador", value: fmtEuro(op.comision_colaborador) },
                 { label: "Descripción", value: op.descripcion },
-                // Campos personalizados rellenos
-                ...opCustomFields
-                  .filter((f) => {
-                    const v = opCustomValues.find((cv) => cv.field_id === f.id);
-                    return v && v.valor && v.valor.trim() !== "";
-                  })
-                  .map((f) => ({
-                    label: f.etiqueta,
-                    value: opCustomValues.find((cv) => cv.field_id === f.id)?.valor ?? null,
-                  })),
-              ].map((field) => field && field.value != null && field.value !== "" ? (
-                <div key={field.label}>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">{field.label}</dt>
-                  {field.label === "Entidad financiera" && entidadFinanciera ? (
-                    <dd><Link href={`/admin/entidades/${entidadFinanciera.id}`} className="text-sm font-semibold text-[#2E1A47] hover:underline">{field.value} →</Link></dd>
-                  ) : (
-                    <dd className="text-sm text-gray-800 font-medium">{field.value}</dd>
+                { label: "Fecha de alta", value: fmtFecha(op.created_at) },
+                { label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) },
+                { label: "Honorario firmado", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null },
+              ];
+
+              return (
+                <dl className="space-y-3">
+                  {campos.map(field => field.value != null && field.value !== "" ? (
+                    <div key={field.label}>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">{field.label}</dt>
+                      <dd className="text-sm text-gray-800 font-medium">{field.value}</dd>
+                    </div>
+                  ) : null)}
+
+                  {op.entidad_financiera && (
+                    <div>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Entidad financiera</dt>
+                      <dd className="text-sm text-gray-800 font-medium">
+                        {entidadFinanciera
+                          ? <Link href={`/admin/entidades/${entidadFinanciera.id}`} className="text-[#2E1A47] hover:underline font-semibold">{op.entidad_financiera} →</Link>
+                          : op.entidad_financiera}
+                      </dd>
+                    </div>
                   )}
-                </div>
-              ) : null)}
-              {opOffice && (
-                <div>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Oficina entidad</dt>
-                  <dd className="text-sm text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</dd>
-                  {opOffice.email && <dd className="text-xs text-gray-500 mt-0.5">{opOffice.email}</dd>}
-                  {opOffice.telefono && <dd className="text-xs text-gray-500">{opOffice.telefono}</dd>}
-                </div>
-              )}
-              {officeContacts.map(c => (
-                <div key={c.id}>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Contacto entidad</dt>
-                  <dd className="text-sm text-gray-800 font-semibold">{c.nombre}</dd>
-                  {c.rol && <dd className="text-xs text-gray-400">{c.rol}</dd>}
-                  {c.email && <dd className="text-xs text-gray-500">{c.email}</dd>}
-                  {c.telefono && <dd className="text-xs text-gray-500">{c.telefono}</dd>}
-                </div>
-              ))}
-            </dl>
+                  {opOffice && (
+                    <div>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Oficina que la estudia</dt>
+                      <dd className="text-sm text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</dd>
+                      {opOffice.email && <dd className="text-xs text-gray-500 mt-0.5">{opOffice.email}</dd>}
+                      {opOffice.telefono && <dd className="text-xs text-gray-500">{opOffice.telefono}</dd>}
+                    </div>
+                  )}
+                  {officeContacts.map(c => (
+                    <div key={c.id}>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Persona de contacto en la entidad</dt>
+                      <dd className="text-sm text-gray-800 font-semibold">{c.nombre}</dd>
+                      {c.rol && <dd className="text-xs text-gray-400">{c.rol}</dd>}
+                      {c.email && <dd className="text-xs text-gray-500">{c.email}</dd>}
+                      {c.telefono && <dd className="text-xs text-gray-500">{c.telefono}</dd>}
+                    </div>
+                  ))}
+                  {/* Campos personalizados rellenos */}
+                  {opCustomFields
+                    .filter((f) => { const v = opCustomValues.find((cv) => cv.field_id === f.id); return v && v.valor && v.valor.trim() !== ""; })
+                    .map((f) => (
+                      <div key={f.id}>
+                        <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">{f.etiqueta}</dt>
+                        <dd className="text-sm text-gray-800 font-medium">{opCustomValues.find((cv) => cv.field_id === f.id)?.valor}</dd>
+                      </div>
+                    ))}
+                </dl>
+              );
+            })()}
           </div>
 
           {/* Admin form */}

@@ -173,18 +173,26 @@ export default async function PortalHomePage({
             {monthlyOps.map((opsCount, i) => {
               const h = opsCount > 0 ? Math.max(8, Math.round((opsCount / maxOps) * 120)) : 0;
               const feeMes = monthlyFee[i];
-              return (
+              const bar = (
+                <div className="relative flex-1 flex items-end w-full">
+                  {opsCount > 0 && (
+                    <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-[#2E1A47] text-white text-[9px] px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-lg">
+                      <span className="block font-bold">{opsCount} op{opsCount !== 1 ? "s" : ""}</span>
+                      {feeMes > 0 && <span className="block text-white/70">Comisión: {fmt(feeMes)}</span>}
+                      <span className="block text-white/40 mt-0.5">Click para ver detalle</span>
+                    </div>
+                  )}
+                  <div className="w-full transition-all group-hover:opacity-80"
+                    style={{ height: h > 0 ? `${h}px` : "3px", backgroundColor: h > 0 ? "#2E1A47" : "#EEEBF3" }} />
+                </div>
+              );
+              return opsCount > 0 ? (
+                <Link key={i} href={`/portal/firmadas/${selectedYear}/${i + 1}`} className="flex-1 flex flex-col items-center gap-1 group relative cursor-pointer">
+                  {bar}
+                </Link>
+              ) : (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
-                  <div className="relative flex-1 flex items-end w-full">
-                    {opsCount > 0 && (
-                      <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-[#2E1A47] text-white text-[9px] px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-lg">
-                        <span className="block font-bold">{opsCount} op{opsCount !== 1 ? "s" : ""}</span>
-                        {feeMes > 0 && <span className="block text-white/70">Comisión: {fmt(feeMes)}</span>}
-                      </div>
-                    )}
-                    <div className="w-full transition-all group-hover:opacity-80"
-                      style={{ height: h > 0 ? `${h}px` : "3px", backgroundColor: h > 0 ? "#2E1A47" : "#EEEBF3" }} />
-                  </div>
+                  {bar}
                 </div>
               );
             })}
