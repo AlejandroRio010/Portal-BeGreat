@@ -201,7 +201,11 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
                 id: client.id, nombre: client.nombre,
                 cif: client.cif ?? null, email: client.email ?? null,
                 telefono: client.telefono ?? null, web: client.web ?? null,
-                linkedin: (client as any).linkedin ?? null,
+                linkedin: client.linkedin ?? null,
+                nombre_comercial: client.nombre_comercial ?? null,
+                direccion: client.direccion ?? null,
+                cnae: client.cnae ?? null,
+                grupo_empresarial: client.grupo_empresarial ?? null,
               }} />
             )}
           </div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import CnaeAutocomplete from "@/components/CnaeAutocomplete";
 
 type Client = {
   id: string;
@@ -11,6 +12,10 @@ type Client = {
   telefono: string | null;
   web: string | null;
   linkedin: string | null;
+  nombre_comercial: string | null;
+  direccion: string | null;
+  cnae: string | null;
+  grupo_empresarial: string | null;
 };
 
 export default function ClienteEditForm({ client }: { client: Client }) {
@@ -20,11 +25,15 @@ export default function ClienteEditForm({ client }: { client: Client }) {
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({
     nombre: client.nombre ?? "",
+    nombre_comercial: client.nombre_comercial ?? "",
     cif: client.cif ?? "",
     email: client.email ?? "",
     telefono: client.telefono ?? "",
     web: client.web ?? "",
     linkedin: client.linkedin ?? "",
+    direccion: client.direccion ?? "",
+    cnae: client.cnae ?? "",
+    grupo_empresarial: client.grupo_empresarial ?? "",
   });
 
   function set(k: string, v: string) { setForm((f) => ({ ...f, [k]: v })); }
@@ -51,10 +60,8 @@ export default function ClienteEditForm({ client }: { client: Client }) {
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="text-xs text-[#2E1A47] font-semibold border border-[#2E1A47]/30 px-3 py-1.5 hover:bg-[#EEEBF3] transition-colors"
-      >
+      <button onClick={() => setOpen(true)}
+        className="text-xs text-[#2E1A47] font-semibold border border-[#2E1A47]/30 px-3 py-1.5 hover:bg-[#EEEBF3] transition-colors">
         Editar datos
       </button>
     );
@@ -67,36 +74,67 @@ export default function ClienteEditForm({ client }: { client: Client }) {
         <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-700 text-lg leading-none">×</button>
       </div>
       <form onSubmit={handleSubmit} className="px-5 py-4 grid grid-cols-2 gap-3">
+
         <div className="col-span-2">
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nombre <span className="text-red-500">*</span></label>
+          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nombre legal <span className="text-red-500">*</span></label>
           <input value={form.nombre} onChange={(e) => set("nombre", e.target.value)} required
             className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
         </div>
+
+        <div className="col-span-2">
+          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nombre comercial</label>
+          <input value={form.nombre_comercial} onChange={(e) => set("nombre_comercial", e.target.value)}
+            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+        </div>
+
         <div>
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">CIF</label>
+          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">CIF / NIF</label>
           <input value={form.cif} onChange={(e) => set("cif", e.target.value)}
             className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
         </div>
-        <div>
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Email</label>
-          <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)}
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
-        </div>
+
         <div>
           <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Teléfono</label>
           <input value={form.telefono} onChange={(e) => set("telefono", e.target.value)}
             className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
         </div>
+
+        <div>
+          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Email</label>
+          <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)}
+            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+        </div>
+
         <div>
           <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Web</label>
           <input value={form.web} onChange={(e) => set("web", e.target.value)}
             className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
         </div>
+
+        <div className="col-span-2">
+          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Dirección</label>
+          <input value={form.direccion} onChange={(e) => set("direccion", e.target.value)}
+            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+        </div>
+
+        <div className="col-span-2">
+          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">CNAE</label>
+          <CnaeAutocomplete value={form.cnae} onChange={(v) => set("cnae", v)} />
+        </div>
+
+        <div className="col-span-2">
+          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Grupo empresarial</label>
+          <input value={form.grupo_empresarial} onChange={(e) => set("grupo_empresarial", e.target.value)}
+            placeholder="Ej: Grupo Cibernos, Grupo Inditex..."
+            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+        </div>
+
         <div className="col-span-2">
           <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">LinkedIn</label>
           <input value={form.linkedin} onChange={(e) => set("linkedin", e.target.value)}
             className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
         </div>
+
         <div className="col-span-2 flex justify-end gap-2 pt-1">
           <button type="button" onClick={() => setOpen(false)}
             className="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">Cancelar</button>

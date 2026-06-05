@@ -26,7 +26,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!colab?.puede_editar_ops) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
 
   const body = await req.json();
-  const { nombre, cif, email, telefono, web, linkedin } = body;
+  const { nombre, cif, email, telefono, web, linkedin, nombre_comercial, direccion, cnae, grupo_empresarial } = body;
   if (!nombre?.trim()) return NextResponse.json({ error: "Nombre obligatorio" }, { status: 400 });
 
   await db.update(clients).set({
@@ -36,6 +36,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     telefono: telefono || null,
     web: web || null,
     linkedin: linkedin || null,
+    nombre_comercial: nombre_comercial || null,
+    direccion: direccion || null,
+    cnae: cnae || null,
+    grupo_empresarial: grupo_empresarial || null,
   }).where(eq(clients.id, id));
 
   return NextResponse.json({ ok: true });

@@ -34,6 +34,10 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
       telefono: clients.telefono,
       web: clients.web,
       linkedin: clients.linkedin,
+      nombre_comercial: clients.nombre_comercial,
+      direccion: clients.direccion,
+      cnae: clients.cnae,
+      grupo_empresarial: clients.grupo_empresarial,
       created_at: clients.created_at,
       colaborador_nombre: collaborators.nombre,
       colaborador_id: collaborators.id,
@@ -183,7 +187,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
               )}
             </div>
             <div className="px-5 pb-4">
-              <ClienteEditForm client={{ id, nombre: client.nombre, cif: client.cif ?? null, email: client.email ?? null, telefono: client.telefono ?? null, web: client.web ?? null, linkedin: client.linkedin ?? null }} />
+              <ClienteEditForm client={{ id, nombre: client.nombre, cif: client.cif ?? null, email: client.email ?? null, telefono: client.telefono ?? null, web: client.web ?? null, linkedin: client.linkedin ?? null, nombre_comercial: client.nombre_comercial ?? null, direccion: client.direccion ?? null, cnae: client.cnae ?? null, grupo_empresarial: client.grupo_empresarial ?? null }} />
             </div>
           </div>
 
