@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments, financialEntities } from "@/db/schema";
+import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments, financialEntities, entityOffices, entityOfficeContacts } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -45,6 +45,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       plazo_meses: operations.plazo_meses,
       equipo_tipo: operations.equipo_tipo,
       motivo_denegacion: operations.motivo_denegacion,
+      entity_office_id: operations.entity_office_id,
       onedrive_url: operations.onedrive_url,
       created_at: operations.created_at,
       client_id: operations.client_id,
@@ -61,17 +62,28 @@ export default async function OperacionDetallePage({ params }: { params: Promise
   if (!op) notFound();
 
   const [colab] = await db
-    .select({ puede_editar_ops: collaborators.puede_editar_ops })
+    .select({ puede_editar_ops: collaborators.puede_editar_ops, puede_ver_entidades: collaborators.puede_ver_entidades })
     .from(collaborators)
     .where(eq(collaborators.id, userId))
     .limit(1);
   const puedeEditar = colab?.puede_editar_ops ?? false;
+  const puedeVerEntidades = colab?.puede_ver_entidades ?? false;
 
   // Buscar entidad financiera por nombre para hacer link
-  const entidadLink = op.entidad_financiera
-    ? await db.select({ id: financialEntities.id }).from(financialEntities)
-        .where(eq(financialEntities.nombre, op.entidad_financiera)).limit(1).then(r => r[0]?.id ?? null)
+  const entidadRecord = op.entidad_financiera
+    ? await db.select({ id: financialEntities.id, nombre: financialEntities.nombre }).from(financialEntities)
+        .where(eq(financialEntities.nombre, op.entidad_financiera)).limit(1).then(r => r[0] ?? null)
     : null;
+  const entidadLink = entidadRecord?.id ?? null;
+
+  const opOffice = op.entity_office_id
+    ? await db.select({ id: entityOffices.id, nombre: entityOffices.nombre, ciudad: entityOffices.ciudad, email: entityOffices.email, telefono: entityOffices.telefono })
+        .from(entityOffices).where(eq(entityOffices.id, op.entity_office_id)).limit(1).then(r => r[0] ?? null)
+    : null;
+
+  const officeContacts = op.entity_office_id
+    ? await db.select().from(entityOfficeContacts).where(eq(entityOfficeContacts.office_id, op.entity_office_id))
+    : [];
 
   const opNotes = await db.select().from(notes).where(eq(notes.operation_id, id)).orderBy(notes.created_at);
   const opDocs = await db.select().from(operationDocuments).where(eq(operationDocuments.operation_id, id)).orderBy(operationDocuments.created_at);
@@ -213,7 +225,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
               {[
                 { label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/portal/clientes/${op.client_id}` : undefined },
                 { label: "Producto", value: op.producto },
-                { label: "Entidad financiera", value: op.entidad_financiera },
+                { label: "Entidad financiera", value: (puedeVerEntidades && entidadLink) ? null : op.entidad_financiera },
                 { label: "Honorarios firmados", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null },
                 ...(op.pipeline_key === "renting" ? [
                   { label: "Proveedor", value: op.supplier_nombre },
@@ -253,6 +265,44 @@ export default async function OperacionDetallePage({ params }: { params: Promise
               initialProducto={op.producto ?? null} initialImporte={op.importe ?? null}
               initialDescripcion={op.descripcion ?? null} initialPlazoMeses={op.plazo_meses ?? null}
               initialLugarEntrega={op.lugar_entrega ?? null} initialEquipoTipo={op.equipo_tipo ?? null} />
+          )}
+
+          {/* Entidad financiera + oficina + contactos (si tiene permiso) */}
+          {puedeVerEntidades && (entidadRecord || opOffice) && (
+            <div className="bg-white border border-gray-200 p-5">
+              <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Entidad financiera</p>
+              <div className="space-y-3">
+                {entidadRecord && (
+                  <div>
+                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Entidad</dt>
+                    <dd><Link href={`/portal/entidades/${entidadRecord.id}`} className="text-sm font-semibold text-[#2E1A47] hover:underline">{entidadRecord.nombre} →</Link></dd>
+                  </div>
+                )}
+                {opOffice && (
+                  <div>
+                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Oficina</dt>
+                    <dd className="text-sm text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</dd>
+                    {opOffice.email && <dd className="text-xs text-gray-500">{opOffice.email}</dd>}
+                    {opOffice.telefono && <dd className="text-xs text-gray-500">{opOffice.telefono}</dd>}
+                  </div>
+                )}
+                {officeContacts.length > 0 && (
+                  <div>
+                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">Contactos de la oficina</dt>
+                    <div className="space-y-2">
+                      {officeContacts.map(c => (
+                        <div key={c.id} className="bg-[#EEEBF3]/40 px-3 py-2">
+                          <p className="text-sm font-semibold text-gray-800">{c.nombre}</p>
+                          {c.rol && <p className="text-xs text-gray-400">{c.rol}</p>}
+                          {c.email && <p className="text-xs text-gray-500">{c.email}</p>}
+                          {c.telefono && <p className="text-xs text-gray-500">{c.telefono}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
 

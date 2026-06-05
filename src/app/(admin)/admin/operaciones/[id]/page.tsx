@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues, financialEntities, entityOffices, operationDocuments } from "@/db/schema";
+import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues, financialEntities, entityOffices, entityOfficeContacts, operationDocuments } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -99,6 +99,21 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
     .select()
     .from(customFieldValues)
     .where(eq(customFieldValues.entity_id, id));
+
+  // Entidad financiera + oficina + contactos de la oficina
+  const entidadFinanciera = op.entidad_financiera
+    ? await db.select({ id: financialEntities.id, nombre: financialEntities.nombre })
+        .from(financialEntities).where(eq(financialEntities.nombre, op.entidad_financiera)).limit(1).then(r => r[0] ?? null)
+    : null;
+
+  const opOffice = op.entity_office_id
+    ? await db.select({ id: entityOffices.id, nombre: entityOffices.nombre, ciudad: entityOffices.ciudad, email: entityOffices.email, telefono: entityOffices.telefono })
+        .from(entityOffices).where(eq(entityOffices.id, op.entity_office_id)).limit(1).then(r => r[0] ?? null)
+    : null;
+
+  const officeContacts = op.entity_office_id
+    ? await db.select().from(entityOfficeContacts).where(eq(entityOfficeContacts.office_id, op.entity_office_id))
+    : [];
 
   const fases = op.pipeline_key === "consultoria" ? FASES_CONSULTORIA : FASES_RENTING;
   const faseIdx = op.status === "pendiente_de_validar" ? -1 : fases.indexOf(op.fase ?? "");
@@ -235,7 +250,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
                 { label: "Colaborador", value: op.colaborador_nombre },
                 { label: "Empresa cliente", value: op.client_nombre },
                 { label: "Producto", value: op.producto },
-                { label: "Entidad financiera", value: op.entidad_financiera },
+                { label: "Entidad financiera", value: entidadFinanciera ? null : op.entidad_financiera },
                 { label: "Honorarios firmados", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null },
                 ...(op.pipeline_key === "renting" ? [
                   { label: "Proveedor", value: op.supplier_nombre },
@@ -263,6 +278,44 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
               ) : null)}
             </dl>
           </div>
+
+          {/* Entidad financiera info */}
+          {(entidadFinanciera || opOffice) && (
+            <div className="bg-white border border-gray-200 p-5">
+              <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Entidad financiera</p>
+              <div className="space-y-3">
+                {entidadFinanciera && (
+                  <div>
+                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Entidad</dt>
+                    <dd><Link href={`/admin/entidades/${entidadFinanciera.id}`} className="text-sm font-semibold text-[#2E1A47] hover:underline">{entidadFinanciera.nombre} →</Link></dd>
+                  </div>
+                )}
+                {opOffice && (
+                  <div>
+                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Oficina</dt>
+                    <dd className="text-sm text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</dd>
+                    {opOffice.email && <dd className="text-xs text-gray-500">{opOffice.email}</dd>}
+                    {opOffice.telefono && <dd className="text-xs text-gray-500">{opOffice.telefono}</dd>}
+                  </div>
+                )}
+                {officeContacts.length > 0 && (
+                  <div>
+                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">Contactos de la oficina</dt>
+                    <div className="space-y-2">
+                      {officeContacts.map(c => (
+                        <div key={c.id} className="bg-[#EEEBF3]/40 px-3 py-2">
+                          <p className="text-sm font-semibold text-gray-800">{c.nombre}</p>
+                          {c.rol && <p className="text-xs text-gray-400">{c.rol}</p>}
+                          {c.email && <p className="text-xs text-gray-500">{c.email}</p>}
+                          {c.telefono && <p className="text-xs text-gray-500">{c.telefono}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Admin form */}
           <AdminOpForm

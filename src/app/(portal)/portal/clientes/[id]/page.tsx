@@ -1,17 +1,29 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { clients, contacts, operations, collaborators, notes } from "@/db/schema";
+import { clients, contacts, operations, collaborators, clientNotes, customFields, customFieldValues } from "@/db/schema";
 import ClienteEditFormPortal from "./ClienteEditFormPortal";
 import NuevoContactoForm from "./NuevoContactoForm";
-import { eq, and, inArray } from "drizzle-orm";
+import NotesSection from "@/components/NotesSection";
+import { eq, and, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import ContactoPanel from "./ContactoPanel";
 import { getCnaeByCode } from "@/lib/cnaes";
 
-function fmt(d: Date) {
-  return new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+function fmtDate(d: Date | null | undefined) {
+  if (!d) return "—";
+  return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(d));
 }
+function fmtEur(val: string | null | undefined) {
+  if (!val) return "—";
+  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(val));
+}
+
+const STATUS_BADGE: Record<string, { bg: string; label: string }> = {
+  pendiente_de_validar: { bg: "bg-amber-50 text-amber-700 border border-amber-200", label: "Pendiente" },
+  activa:               { bg: "bg-blue-50 text-blue-700 border border-blue-200",    label: "En curso" },
+  archivada:            { bg: "bg-gray-100 text-gray-500 border border-gray-200",   label: "Archivada" },
+};
 
 export default async function ClienteDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,379 +31,244 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
   const userId = session!.user!.id as string;
 
   const [client] = await db
-    .select()
+    .select({
+      id: clients.id,
+      nombre: clients.nombre,
+      cif: clients.cif,
+      email: clients.email,
+      telefono: clients.telefono,
+      web: clients.web,
+      linkedin: clients.linkedin,
+      nombre_comercial: clients.nombre_comercial,
+      direccion: clients.direccion,
+      cnae: clients.cnae,
+      grupo_empresarial: clients.grupo_empresarial,
+      codigo: clients.codigo,
+      created_at: clients.created_at,
+    })
     .from(clients)
     .where(and(eq(clients.id, id), eq(clients.collaborator_id, userId)))
     .limit(1);
 
   if (!client) notFound();
 
-  // Check permissions
   const [colabPerms] = await db
-    .select({ puede_editar_ops: collaborators.puede_editar_ops })
+    .select({ puede_editar_ops: collaborators.puede_editar_ops, nombre: collaborators.nombre, identificador: collaborators.identificador })
     .from(collaborators)
     .where(eq(collaborators.id, userId))
     .limit(1);
+
   const puedeEditar = colabPerms?.puede_editar_ops ?? false;
 
-  // Colaborador que presentó el cliente
-  const [colab] = await db
-    .select({ nombre: collaborators.nombre, identificador: collaborators.identificador })
-    .from(collaborators)
-    .where(eq(collaborators.id, client.collaborator_id))
-    .limit(1);
+  const clientContacts = await db.select().from(contacts).where(eq(contacts.client_id, id)).orderBy(contacts.nombre);
 
-  const clientContacts = await db.select().from(contacts).where(eq(contacts.client_id, id));
-
-  const clientOps = await db
+  const ops = await db
     .select({
       id: operations.id,
+      nombre: operations.nombre,
       pipeline_key: operations.pipeline_key,
-      producto: operations.producto,
       fase: operations.fase,
       status: operations.status,
       importe: operations.importe,
-      comision_colaborador: operations.comision_colaborador,
+      entidad_financiera: operations.entidad_financiera,
       created_at: operations.created_at,
     })
     .from(operations)
-    .where(and(eq(operations.client_id, id), eq(operations.collaborator_id, userId)))
+    .where(eq(operations.client_id, id))
     .orderBy(operations.created_at);
 
-  // Notas de todas las operaciones del cliente
-  const opIds = clientOps.map((o) => o.id);
-  const clientNotes = opIds.length > 0
-    ? await db
-        .select()
-        .from(notes)
-        .where(inArray(notes.operation_id, opIds))
-        .orderBy(notes.created_at)
-    : [];
+  const clienteCustomFields = await db.select().from(customFields).where(eq(customFields.entidad, "cliente")).orderBy(asc(customFields.orden));
+  const clienteCustomValues = await db.select().from(customFieldValues).where(eq(customFieldValues.entity_id, id));
+  const notes = await db.select().from(clientNotes).where(eq(clientNotes.client_id, id)).orderBy(clientNotes.created_at);
 
-  const opTipoMap = Object.fromEntries(
-    clientOps.map((o) => [o.id, o.pipeline_key === "consultoria" ? "Consultoría" : "Renting"])
-  );
+  const FASES_APROBADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
+  const FASES_ESTUDIO = ["Pre-análisis", "Firma de honorarios", "En estudio por entidad", "Operación aprobada", "Condiciones aceptadas"];
 
-  const pendientesOps = clientOps.filter(
-    (o) =>
-      o.status === "pendiente_de_validar" ||
-      (o.status === "activa" &&
-        o.fase !== "Contrato firmado" &&
-        o.fase !== "Honorarios pagados" &&
-        o.fase !== "Transferencia realizada")
-  );
-  const firmadaOps = clientOps.filter(
-    (o) => o.fase === "Contrato firmado" || o.fase === "Honorarios pagados" || o.fase === "Transferencia realizada"
-  );
+  const opsAprobadas = ops.filter(o => FASES_APROBADAS.includes(o.fase));
+  const opsEstudio = ops.filter(o => FASES_ESTUDIO.includes(o.fase));
+  const totalFinanciado = opsAprobadas.reduce((s, o) => s + Number(o.importe ?? 0), 0);
+  const totalPendiente = opsEstudio.reduce((s, o) => s + Number(o.importe ?? 0), 0);
+
+  const inicial = client.nombre.charAt(0).toUpperCase();
 
   return (
-    <div>
+    <div className="min-h-screen bg-[#f8f7fb]">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs text-gray-400 mb-6">
-        <Link href="/portal/clientes" className="hover:text-[#2E1A47] transition-colors">
-          Mis clientes
-        </Link>
+      <div className="px-8 pt-6 pb-2 flex items-center gap-2 text-xs text-gray-500">
+        <Link href="/portal/clientes" className="hover:text-[#2E1A47] font-medium">Mis clientes</Link>
         <span>/</span>
-        <span className="text-gray-700 font-medium">{client.nombre}</span>
+        <span className="text-[#2E1A47] font-semibold">{client.nombre}</span>
       </div>
 
-      {/* Header */}
-      <div className="flex items-start justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-[#2E1A47] flex items-center justify-center text-white text-lg font-bold flex-shrink-0">
-            {client.nombre.charAt(0).toUpperCase()}
+      {/* Banner */}
+      <div className="mx-8 mb-6 bg-[#2E1A47] flex items-center justify-between px-8 py-6">
+        <div className="flex items-center gap-5">
+          <div className="h-14 w-14 bg-white/20 flex items-center justify-center text-white text-2xl font-bold select-none">
+            {inicial}
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{client.nombre}</h1>
-            {client.web && (
-              <a
-                href={client.web}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-gray-400 hover:text-[#2E1A47] transition-colors mt-0.5 block"
-              >
-                {client.web}
-              </a>
-            )}
+            <div className="flex items-center gap-2">
+              <p className="text-white text-xl font-bold">{client.nombre}</p>
+              {client.codigo && <span className="text-[10px] font-bold font-mono bg-white/20 text-white px-2 py-0.5 tracking-wider">{client.codigo}</span>}
+            </div>
+            {client.cif && <p className="text-white/60 text-xs mt-0.5 font-mono">{client.cif}</p>}
           </div>
         </div>
-        <Link
-          href="/portal/alta-operacion"
-          className="bg-[#2E1A47] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#5a3d80] transition-colors"
-        >
-          + Nueva operación
-        </Link>
+        <div className="flex flex-col items-end gap-1.5">
+          <span className="text-white/70 text-xs">Colaborador: <span className="text-white font-semibold">{colabPerms?.nombre}</span></span>
+          <span className="text-white/50 text-xs">Alta: {fmtDate(client.created_at)}</span>
+        </div>
       </div>
 
-      {/* ── Grid: datos + operaciones ───────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-6 mb-6">
-        {/* Left: datos empresa + contactos */}
-        <div className="space-y-4">
-          <div className="bg-white border border-gray-200 p-5">
-            <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">
-              Datos de la empresa
-            </p>
-            <dl className="space-y-3">
-              {client.email && (
-                <div>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Email</dt>
-                  <dd>
-                    <a href={`mailto:${client.email}`} className="text-sm text-gray-800 hover:text-[#2E1A47]">
-                      {client.email}
-                    </a>
-                  </dd>
-                </div>
+      {/* KPIs */}
+      <div className="mx-8 mb-6 grid grid-cols-2 gap-4">
+        <div className="flex overflow-hidden">
+          <div className="flex-1 bg-[#2E1A47] px-6 py-5">
+            <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Ops firmadas</p>
+            <p className="text-white text-3xl font-black">{opsAprobadas.length}</p>
+            <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">de {ops.length} totales</p>
+          </div>
+          <div className="w-px bg-white/20" />
+          <div className="flex-1 bg-[#2E1A47] px-6 py-5">
+            <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Financiación conseguida</p>
+            <p className="text-white text-2xl font-black leading-tight">{totalFinanciado > 0 ? fmtEur(String(totalFinanciado)) : "—"}</p>
+            <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">importe acumulado</p>
+          </div>
+        </div>
+        <div className="flex overflow-hidden border border-[#EEEBF3]">
+          <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
+            <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Ops en estudio</p>
+            <p className="text-[#2E1A47] text-3xl font-black">{opsEstudio.length}</p>
+            <p className="text-[#2E1A47]/40 text-[9px] mt-1 uppercase tracking-wide">pendientes de aprobar</p>
+          </div>
+          <div className="w-px bg-[#2E1A47]/25" />
+          <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
+            <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Financiación pendiente</p>
+            <p className="text-[#2E1A47] text-2xl font-black leading-tight">{totalPendiente > 0 ? fmtEur(String(totalPendiente)) : "—"}</p>
+            <p className="text-[#2E1A47]/40 text-[9px] mt-1 uppercase tracking-wide">en proceso</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-8 mb-6 grid grid-cols-3 gap-4 items-start">
+        {/* Col 1: Datos + Contactos */}
+        <div className="flex flex-col gap-4">
+          <div className="bg-white border border-gray-200">
+            <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
+              <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Datos de la empresa</h3>
+            </div>
+            <div className="px-5 py-4 divide-y divide-gray-50">
+              {[
+                ["Nombre", client.nombre],
+                ["Nombre comercial", client.nombre_comercial],
+                ["CIF", client.cif],
+                ["Email", client.email],
+                ["Teléfono", client.telefono],
+                ["Web", client.web],
+                ["LinkedIn", client.linkedin],
+                ["Dirección", client.direccion],
+                ["CNAE", client.cnae ? (getCnaeByCode(client.cnae) ? `${getCnaeByCode(client.cnae)!.codigo} — ${getCnaeByCode(client.cnae)!.titulo}` : client.cnae) : null],
+                ["Grupo empresarial", client.grupo_empresarial],
+                ...clienteCustomFields
+                  .filter(f => { const v = clienteCustomValues.find(cv => cv.field_id === f.id); return v && v.valor && v.valor.trim() !== ""; })
+                  .map(f => [f.etiqueta, clienteCustomValues.find(cv => cv.field_id === f.id)?.valor ?? null] as [string, string | null]),
+              ].map(([label, value]) =>
+                value ? (
+                  <div key={label} className="py-2.5 flex flex-col gap-0.5">
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">{label}</span>
+                    {label === "Web" || label === "LinkedIn" ? (
+                      <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm text-[#2E1A47] hover:underline break-all">{value}</a>
+                    ) : (
+                      <span className="text-sm text-gray-800 font-medium break-all">{value}</span>
+                    )}
+                  </div>
+                ) : null
               )}
-              {client.telefono && (
-                <div>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Teléfono</dt>
-                  <dd className="text-sm text-gray-800">{client.telefono}</dd>
-                </div>
-              )}
-              {client.cif && (
-                <div>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">CIF</dt>
-                  <dd className="text-sm text-gray-800">{client.cif}</dd>
-                </div>
-              )}
-              {client.web && (
-                <div>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Web</dt>
-                  <dd>
-                    <a
-                      href={client.web}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-gray-800 hover:text-[#2E1A47]"
-                    >
-                      {client.web}
-                    </a>
-                  </dd>
-                </div>
-              )}
-              {client.linkedin && (
-                <div>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">LinkedIn</dt>
-                  <dd>
-                    <a href={client.linkedin} target="_blank" rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline break-all">{client.linkedin}</a>
-                  </dd>
-                </div>
-              )}
-              {client.direccion && (
-                <div>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Dirección</dt>
-                  <dd className="text-sm text-gray-800">{client.direccion}</dd>
-                </div>
-              )}
-              {client.cnae && (
-                <div>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">CNAE</dt>
-                  <dd className="text-sm text-gray-800">
-                    {getCnaeByCode(client.cnae) ? `${client.cnae} — ${getCnaeByCode(client.cnae)!.titulo}` : client.cnae}
-                  </dd>
-                </div>
-              )}
-              {client.grupo_empresarial && (
-                <div>
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Grupo empresarial</dt>
-                  <dd className="text-sm text-gray-800">{client.grupo_empresarial}</dd>
-                </div>
-              )}
-              <div>
-                <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Alta en portal</dt>
-                <dd className="text-sm text-gray-800">{fmt(client.created_at)}</dd>
-              </div>
-              {/* Colaborador propietario */}
-              <div className="pt-3 mt-1 border-t border-gray-100">
-                <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">Presentado por</dt>
-                <dd className="text-sm font-semibold text-[#2E1A47]">{colab?.nombre ?? "—"}</dd>
-                {colab?.identificador && (
-                  <dd className="text-xs text-gray-400 mt-0.5">{colab.identificador}</dd>
-                )}
-              </div>
-            </dl>
+            </div>
             {puedeEditar && (
-              <ClienteEditFormPortal client={{
-                id: client.id, nombre: client.nombre,
-                cif: client.cif ?? null, email: client.email ?? null,
-                telefono: client.telefono ?? null, web: client.web ?? null,
-                linkedin: client.linkedin ?? null,
-                nombre_comercial: client.nombre_comercial ?? null,
-                direccion: client.direccion ?? null,
-                cnae: client.cnae ?? null,
-                grupo_empresarial: client.grupo_empresarial ?? null,
-              }} />
+              <div className="px-5 pb-4">
+                <ClienteEditFormPortal client={{
+                  id, nombre: client.nombre, cif: client.cif ?? null, email: client.email ?? null,
+                  telefono: client.telefono ?? null, web: client.web ?? null, linkedin: client.linkedin ?? null,
+                  nombre_comercial: client.nombre_comercial ?? null, direccion: client.direccion ?? null,
+                  cnae: client.cnae ?? null, grupo_empresarial: client.grupo_empresarial ?? null,
+                }} />
+              </div>
             )}
           </div>
 
           {/* Contactos */}
-          <div className="bg-white border border-gray-200 p-5">
-            <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">
-              Personas de contacto
-            </p>
-            {clientContacts.length === 0 ? (
-              <p className="text-xs text-gray-300">Sin personas de contacto registradas.</p>
-            ) : (
-
-              <div className="space-y-4">
-                {clientContacts.map((c) => (
-                  <div key={c.id} className="border-l-2 border-[#EEEBF3] pl-3">
-                    <ContactoPanel contact={c} />
-                    {c.rol && <p className="text-xs text-[#2E1A47] font-medium mt-0.5">{c.rol}</p>}
-                    {c.email && <p className="text-xs text-gray-400 mt-1 truncate">{c.email}</p>}
-                    {c.telefono && <p className="text-xs text-gray-400 mt-0.5">{c.telefono}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
-            {puedeEditar && <NuevoContactoForm clientId={client.id} />}
+          <div className="bg-white border border-gray-200">
+            <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Contactos ({clientContacts.length})</h3>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {clientContacts.map(c => (
+                <div key={c.id} className="px-5 py-3 border-b border-gray-50 last:border-0">
+                  <ContactoPanel contact={{ id: c.id, nombre: c.nombre, rol: c.rol ?? null, email: c.email ?? null, telefono: c.telefono ?? null }} />
+                </div>
+              ))}
+            </div>
+            {puedeEditar && <div className="px-5 py-4"><NuevoContactoForm clientId={id} /></div>}
           </div>
         </div>
 
-        {/* Right: operaciones */}
-        <div className="col-span-2 bg-white border border-gray-200 p-5">
-          <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">
-            Operaciones ({clientOps.length})
-          </p>
-          {clientOps.length === 0 ? (
-            <div className="py-8 text-center border border-dashed border-gray-200">
-              <p className="text-sm text-gray-400">Sin operaciones para este cliente.</p>
-              <Link
-                href="/portal/alta-operacion"
-                className="block mt-2 text-xs font-semibold text-[#2E1A47] hover:underline"
-              >
-                + Dar de alta operación
-              </Link>
+        {/* Col 2-3: Operaciones + Notas */}
+        <div className="col-span-2 flex flex-col gap-6">
+          <div className="bg-white border border-gray-200">
+            <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
+              <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Operaciones</h3>
             </div>
-          ) : (
-            <>
+            {ops.length === 0 ? (
+              <p className="px-5 py-8 text-sm text-gray-400 text-center">Sin operaciones registradas para este cliente.</p>
+            ) : (
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    <th className="text-left pb-3 text-xs font-bold text-gray-400 uppercase tracking-wider">Tipo / Producto</th>
-                    <th className="text-left pb-3 text-xs font-bold text-gray-400 uppercase tracking-wider">Estado</th>
-                    <th className="text-left pb-3 text-xs font-bold text-gray-400 uppercase tracking-wider">Importe</th>
-                    <th className="text-left pb-3 text-xs font-bold text-gray-400 uppercase tracking-wider">Fee</th>
-                    <th className="text-left pb-3 text-xs font-bold text-gray-400 uppercase tracking-wider">Alta</th>
-                    <th className="pb-3" />
+                    <th className="text-left px-5 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Nombre</th>
+                    <th className="text-left px-5 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Tipo</th>
+                    <th className="text-left px-5 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fase</th>
+                    <th className="text-left px-5 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Estado</th>
+                    <th className="text-left px-5 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Importe</th>
+                    <th className="text-left px-5 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fecha</th>
+                    <th className="px-5 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {clientOps.map((op) => (
-                    <tr key={op.id} className="hover:bg-[#EEEBF3]/20 transition-colors group">
-                      <td className="py-3.5">
-                        <p className="text-sm font-medium text-gray-900">
-                          {op.pipeline_key === "consultoria" ? "Consultoría" : "Renting"}
-                        </p>
-                        {op.producto && <p className="text-xs text-gray-400">{op.producto}</p>}
-                      </td>
-                      <td className="py-3.5">
-                        {op.status === "pendiente_de_validar" ? (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                            Pendiente
+                  {ops.map(op => {
+                    const badge = STATUS_BADGE[op.status] ?? STATUS_BADGE.activa;
+                    return (
+                      <tr key={op.id} className="hover:bg-[#EEEBF3]/30 transition-colors">
+                        <td className="px-5 py-3 text-sm text-gray-800 font-medium max-w-[160px] truncate">{op.nombre ?? "—"}</td>
+                        <td className="px-5 py-3 text-xs">
+                          <span className="bg-[#EEEBF3] text-[#2E1A47] px-1.5 py-0.5 text-[10px] font-semibold uppercase">
+                            {op.pipeline_key === "consultoria" ? "Consultoría" : "Renting"}
                           </span>
-                        ) : op.fase === "Contrato firmado" ||
-                          op.fase === "Honorarios pagados" ||
-                          op.fase === "Transferencia realizada" ? (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
-                            Firmada ✓
-                          </span>
-                        ) : op.status === "archivada" ? (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold">
-                            Denegada
-                          </span>
-                        ) : (
-                          <span className="inline-block px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600">
-                            {op.fase}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3.5 text-sm text-gray-600">
-                        {op.importe ? `${Number(op.importe).toLocaleString("es-ES")} €` : "—"}
-                      </td>
-                      <td className="py-3.5">
-                        {op.comision_colaborador ? (
-                          <span className="text-sm font-bold text-[#2E1A47]">
-                            {Number(op.comision_colaborador).toLocaleString("es-ES")} €
-                          </span>
-                        ) : (
-                          <span className="text-xs text-gray-300">—</span>
-                        )}
-                      </td>
-                      <td className="py-3.5 text-sm text-gray-400">{fmt(op.created_at)}</td>
-                      <td className="py-3.5">
-                        <Link
-                          href={`/portal/operaciones/${op.id}`}
-                          className="text-[#2E1A47] text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          Ver →
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-5 py-3 text-xs text-gray-500 max-w-[120px] truncate">{op.fase}</td>
+                        <td className="px-5 py-3">
+                          <span className={`inline-block px-2 py-0.5 text-xs font-semibold ${badge.bg}`}>{badge.label}</span>
+                        </td>
+                        <td className="px-5 py-3 text-sm text-gray-700 font-medium">{fmtEur(op.importe)}</td>
+                        <td className="px-5 py-3 text-xs text-gray-400">{fmtDate(op.created_at)}</td>
+                        <td className="px-5 py-3 text-right">
+                          <Link href={`/portal/operaciones/${op.id}`} className="text-xs text-[#2E1A47] font-semibold hover:underline">Ver →</Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
+            )}
+          </div>
 
-              {/* Resumen */}
-              <div className="flex gap-6 mt-5 pt-4 border-t border-gray-100">
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider">En estudio</p>
-                  <p className="text-xl font-black text-[#2E1A47]">{pendientesOps.length}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider">Firmadas</p>
-                  <p className="text-xl font-black text-emerald-600">{firmadaOps.length}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider">Total</p>
-                  <p className="text-xl font-black text-gray-700">{clientOps.length}</p>
-                </div>
-              </div>
-            </>
-          )}
+          <NotesSection
+            notes={notes}
+            apiUrl={`/api/admin/clientes/${id}/notes`}
+            currentUserId={userId}
+            placeholder="Añade una nota general sobre este cliente..."
+          />
         </div>
-      </div>
-
-      {/* ── Notas e historial ────────────────────────────────────────── */}
-      <div className="bg-white border border-gray-200 p-5">
-        <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">
-          Notas e historial{clientNotes.length > 0 ? ` (${clientNotes.length})` : ""}
-        </p>
-        {clientNotes.length === 0 ? (
-          <div className="py-6 text-center border border-dashed border-gray-200">
-            <p className="text-sm text-gray-400">Sin notas todavía para este cliente.</p>
-            <p className="text-xs text-gray-300 mt-1">Las notas se añaden desde el detalle de cada operación.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {clientNotes.map((n) => (
-              <div key={n.id} className="border-l-2 border-[#2E1A47] pl-4 py-2 bg-[#EEEBF3]/25">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="text-xs font-bold text-[#2E1A47]">{n.author_name}</span>
-                  <span className="text-xs text-gray-300">·</span>
-                  <span className="text-xs text-gray-400">
-                    {new Date(n.created_at).toLocaleDateString("es-ES", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                  {opTipoMap[n.operation_id] && (
-                    <>
-                      <span className="text-xs text-gray-300">·</span>
-                      <span className="text-xs bg-[#EEEBF3] text-[#2E1A47] font-semibold px-1.5 py-0.5">
-                        {opTipoMap[n.operation_id]}
-                      </span>
-                    </>
-                  )}
-                </div>
-                <p className="text-sm text-gray-700">{n.texto}</p>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
