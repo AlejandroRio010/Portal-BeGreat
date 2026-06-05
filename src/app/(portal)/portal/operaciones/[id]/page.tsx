@@ -225,7 +225,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
               {[
                 { label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/portal/clientes/${op.client_id}` : undefined },
                 { label: "Producto", value: op.producto },
-                { label: "Entidad financiera", value: (puedeVerEntidades && entidadLink) ? null : op.entidad_financiera },
+                { label: "Entidad financiera", value: op.entidad_financiera },
                 { label: "Honorarios firmados", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null },
                 ...(op.pipeline_key === "renting" ? [
                   { label: "Proveedor", value: op.supplier_nombre },
@@ -242,12 +242,31 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                 <div key={field.label}>
                   <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">{field.label}</dt>
                   <dd className="text-sm text-gray-800 font-medium">
-                    {(field as any).href
-                      ? <Link href={(field as any).href} className="text-[#2E1A47] hover:underline font-semibold">{field.value}</Link>
-                      : field.value}
+                    {field.label === "Entidad financiera" && puedeVerEntidades && entidadRecord
+                      ? <Link href={`/portal/entidades/${entidadRecord.id}`} className="text-[#2E1A47] hover:underline font-semibold">{field.value} →</Link>
+                      : (field as any).href
+                        ? <Link href={(field as any).href} className="text-[#2E1A47] hover:underline font-semibold">{field.value}</Link>
+                        : field.value}
                   </dd>
                 </div>
               ) : null)}
+              {puedeVerEntidades && opOffice && (
+                <div>
+                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Oficina entidad</dt>
+                  <dd className="text-sm text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</dd>
+                  {opOffice.email && <dd className="text-xs text-gray-500 mt-0.5">{opOffice.email}</dd>}
+                  {opOffice.telefono && <dd className="text-xs text-gray-500">{opOffice.telefono}</dd>}
+                </div>
+              )}
+              {puedeVerEntidades && officeContacts.map(c => (
+                <div key={c.id}>
+                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Contacto entidad</dt>
+                  <dd className="text-sm text-gray-800 font-semibold">{c.nombre}</dd>
+                  {c.rol && <dd className="text-xs text-gray-400">{c.rol}</dd>}
+                  {c.email && <dd className="text-xs text-gray-500">{c.email}</dd>}
+                  {c.telefono && <dd className="text-xs text-gray-500">{c.telefono}</dd>}
+                </div>
+              ))}
               {op.onedrive_url && (
                 <div>
                   <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Documentación</dt>
@@ -267,43 +286,6 @@ export default async function OperacionDetallePage({ params }: { params: Promise
               initialLugarEntrega={op.lugar_entrega ?? null} initialEquipoTipo={op.equipo_tipo ?? null} />
           )}
 
-          {/* Entidad financiera + oficina + contactos (si tiene permiso) */}
-          {puedeVerEntidades && (entidadRecord || opOffice) && (
-            <div className="bg-white border border-gray-200 p-5">
-              <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Entidad financiera</p>
-              <div className="space-y-3">
-                {entidadRecord && (
-                  <div>
-                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Entidad</dt>
-                    <dd><Link href={`/portal/entidades/${entidadRecord.id}`} className="text-sm font-semibold text-[#2E1A47] hover:underline">{entidadRecord.nombre} →</Link></dd>
-                  </div>
-                )}
-                {opOffice && (
-                  <div>
-                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Oficina</dt>
-                    <dd className="text-sm text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</dd>
-                    {opOffice.email && <dd className="text-xs text-gray-500">{opOffice.email}</dd>}
-                    {opOffice.telefono && <dd className="text-xs text-gray-500">{opOffice.telefono}</dd>}
-                  </div>
-                )}
-                {officeContacts.length > 0 && (
-                  <div>
-                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">Contactos de la oficina</dt>
-                    <div className="space-y-2">
-                      {officeContacts.map(c => (
-                        <div key={c.id} className="bg-[#EEEBF3]/40 px-3 py-2">
-                          <p className="text-sm font-semibold text-gray-800">{c.nombre}</p>
-                          {c.rol && <p className="text-xs text-gray-400">{c.rol}</p>}
-                          {c.email && <p className="text-xs text-gray-500">{c.email}</p>}
-                          {c.telefono && <p className="text-xs text-gray-500">{c.telefono}</p>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Col 2-3: Notas + Docs */}

@@ -250,7 +250,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
                 { label: "Colaborador", value: op.colaborador_nombre },
                 { label: "Empresa cliente", value: op.client_nombre },
                 { label: "Producto", value: op.producto },
-                { label: "Entidad financiera", value: entidadFinanciera ? null : op.entidad_financiera },
+                { label: "Entidad financiera", value: op.entidad_financiera },
                 { label: "Honorarios firmados", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null },
                 ...(op.pipeline_key === "renting" ? [
                   { label: "Proveedor", value: op.supplier_nombre },
@@ -273,49 +273,32 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
               ].map((field) => field && field.value != null && field.value !== "" ? (
                 <div key={field.label}>
                   <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">{field.label}</dt>
-                  <dd className="text-sm text-gray-800 font-medium">{field.value}</dd>
+                  {field.label === "Entidad financiera" && entidadFinanciera ? (
+                    <dd><Link href={`/admin/entidades/${entidadFinanciera.id}`} className="text-sm font-semibold text-[#2E1A47] hover:underline">{field.value} →</Link></dd>
+                  ) : (
+                    <dd className="text-sm text-gray-800 font-medium">{field.value}</dd>
+                  )}
                 </div>
               ) : null)}
+              {opOffice && (
+                <div>
+                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Oficina entidad</dt>
+                  <dd className="text-sm text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</dd>
+                  {opOffice.email && <dd className="text-xs text-gray-500 mt-0.5">{opOffice.email}</dd>}
+                  {opOffice.telefono && <dd className="text-xs text-gray-500">{opOffice.telefono}</dd>}
+                </div>
+              )}
+              {officeContacts.map(c => (
+                <div key={c.id}>
+                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Contacto entidad</dt>
+                  <dd className="text-sm text-gray-800 font-semibold">{c.nombre}</dd>
+                  {c.rol && <dd className="text-xs text-gray-400">{c.rol}</dd>}
+                  {c.email && <dd className="text-xs text-gray-500">{c.email}</dd>}
+                  {c.telefono && <dd className="text-xs text-gray-500">{c.telefono}</dd>}
+                </div>
+              ))}
             </dl>
           </div>
-
-          {/* Entidad financiera info */}
-          {(entidadFinanciera || opOffice) && (
-            <div className="bg-white border border-gray-200 p-5">
-              <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Entidad financiera</p>
-              <div className="space-y-3">
-                {entidadFinanciera && (
-                  <div>
-                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Entidad</dt>
-                    <dd><Link href={`/admin/entidades/${entidadFinanciera.id}`} className="text-sm font-semibold text-[#2E1A47] hover:underline">{entidadFinanciera.nombre} →</Link></dd>
-                  </div>
-                )}
-                {opOffice && (
-                  <div>
-                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Oficina</dt>
-                    <dd className="text-sm text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</dd>
-                    {opOffice.email && <dd className="text-xs text-gray-500">{opOffice.email}</dd>}
-                    {opOffice.telefono && <dd className="text-xs text-gray-500">{opOffice.telefono}</dd>}
-                  </div>
-                )}
-                {officeContacts.length > 0 && (
-                  <div>
-                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">Contactos de la oficina</dt>
-                    <div className="space-y-2">
-                      {officeContacts.map(c => (
-                        <div key={c.id} className="bg-[#EEEBF3]/40 px-3 py-2">
-                          <p className="text-sm font-semibold text-gray-800">{c.nombre}</p>
-                          {c.rol && <p className="text-xs text-gray-400">{c.rol}</p>}
-                          {c.email && <p className="text-xs text-gray-500">{c.email}</p>}
-                          {c.telefono && <p className="text-xs text-gray-500">{c.telefono}</p>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Admin form */}
           <AdminOpForm

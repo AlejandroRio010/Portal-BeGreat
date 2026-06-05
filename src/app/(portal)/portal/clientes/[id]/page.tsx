@@ -7,7 +7,6 @@ import NotesSection from "@/components/NotesSection";
 import { eq, and, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import ContactoPanel from "./ContactoPanel";
 import { getCnaeByCode } from "@/lib/cnaes";
 
 function fmtDate(d: Date | null | undefined) {
@@ -204,9 +203,12 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
             </div>
             <div className="divide-y divide-gray-50">
               {clientContacts.map(c => (
-                <div key={c.id} className="px-5 py-3 border-b border-gray-50 last:border-0">
-                  <ContactoPanel contact={{ id: c.id, nombre: c.nombre, rol: c.rol ?? null, email: c.email ?? null, telefono: c.telefono ?? null }} />
-                </div>
+                <Link key={c.id} href={`/portal/clientes/${id}/contactos/${c.id}`} className="block px-5 py-3 hover:bg-[#EEEBF3]/30 transition-colors group">
+                  <p className="text-sm font-semibold text-gray-800 group-hover:text-[#2E1A47]">{c.nombre}</p>
+                  {c.rol && <p className="text-xs text-gray-400">{c.rol}</p>}
+                  {c.email && <p className="text-xs text-gray-500">{c.email}</p>}
+                  {c.telefono && <p className="text-xs text-gray-500">{c.telefono}</p>}
+                </Link>
               ))}
             </div>
             {puedeEditar && <div className="px-5 py-4"><NuevoContactoForm clientId={id} /></div>}
