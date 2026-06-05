@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   console.log("[download] docId:", docId, "filename:", doc.filename, "url length:", doc.url.length, "url starts:", doc.url.substring(0, 30));
 
   // Parse base64 data URI: "data:<mime>;base64,<data>"
-  const match = doc.url.match(/^data:([^;]+);base64,(.+)$/s);
+  const match = doc.url.match(/^data:([^;]+);base64,([\s\S]+)$/);
   if (!match) {
     console.log("[download] no match — not a data URI, url starts with:", doc.url.substring(0, 50));
     return NextResponse.json({ error: "No es data URI", urlStart: doc.url.substring(0, 50), urlLen: doc.url.length }, { status: 500 });
