@@ -6,6 +6,7 @@ import Link from "next/link";
 import ClienteEditForm from "./ClienteEditForm";
 import ContactosAdminPanel from "./ContactosAdminPanel";
 import NotesSection from "@/components/NotesSection";
+import { getCnaeByCode } from "@/lib/cnaes";
 
 function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
@@ -161,11 +162,15 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
             <div className="px-5 py-4 divide-y divide-gray-50">
               {[
                 ["Nombre", client.nombre],
+                ["Nombre comercial", client.nombre_comercial],
                 ["CIF", client.cif],
                 ["Email", client.email],
                 ["Teléfono", client.telefono],
                 ["Web", client.web],
                 ["LinkedIn", client.linkedin],
+                ["Dirección", client.direccion],
+                ["CNAE", client.cnae ? (getCnaeByCode(client.cnae) ? `${getCnaeByCode(client.cnae)!.codigo} — ${getCnaeByCode(client.cnae)!.titulo}` : client.cnae) : null],
+                ["Grupo empresarial", client.grupo_empresarial],
                 // Campos personalizados rellenos
                 ...clienteCustomFields
                   .filter((f) => {

@@ -1,20 +1,32 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { buscarCnaes, formatCnae } from "@/lib/cnaes";
+import { buscarCnaes, getCnaeByCode } from "@/lib/cnaes";
 
 interface Props {
-  value: string;
+  value: string;       // código guardado, ej: "6209"
   onChange: (value: string) => void;
   placeholder?: string;
 }
 
+function getLabel(code: string): string {
+  if (!code) return "";
+  const cnae = getCnaeByCode(code);
+  return cnae ? `${cnae.codigo} — ${cnae.titulo}` : code;
+}
+
 export default function CnaeAutocomplete({ value, onChange, placeholder = "Buscar CNAE..." }: Props) {
-  const [query, setQuery] = useState(value || "");
+  // El input muestra el label completo, pero guardamos solo el código
+  const [query, setQuery] = useState(() => getLabel(value));
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const resultados = buscarCnaes(query);
+  const resultados = buscarCnaes(query.split(" — ")[0] || query);
+
+  // Sincronizar si el valor externo cambia (carga inicial)
+  useEffect(() => {
+    setQuery(getLabel(value));
+  }, [value]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -26,14 +38,9 @@ export default function CnaeAutocomplete({ value, onChange, placeholder = "Busca
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Si el valor externo cambia (ej. carga inicial), sincronizar el query
-  useEffect(() => {
-    if (value && value !== query) setQuery(value);
-  }, [value]);
-
   function handleSelect(cnae: { codigo: string; titulo: string }) {
-    const formatted = formatCnae(cnae);
-    setQuery(formatted);
+    const label = `${cnae.codigo} — ${cnae.titulo}`;
+    setQuery(label);
     onChange(cnae.codigo);
     setOpen(false);
   }
@@ -50,7 +57,7 @@ export default function CnaeAutocomplete({ value, onChange, placeholder = "Busca
         type="text"
         value={query}
         onChange={handleChange}
-        onFocus={() => query.length >= 2 && setOpen(true)}
+        onFocus={() => setOpen(true)}
         placeholder={placeholder}
         className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]"
       />
@@ -60,7 +67,7 @@ export default function CnaeAutocomplete({ value, onChange, placeholder = "Busca
             <button
               key={cnae.codigo}
               type="button"
-              onClick={() => handleSelect(cnae)}
+              onMouseDown={(e) => { e.preventDefault(); handleSelect(cnae); }}
               className="w-full text-left px-3 py-2 text-sm hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0"
             >
               <span className="font-bold text-[#2E1A47]">{cnae.codigo}</span>

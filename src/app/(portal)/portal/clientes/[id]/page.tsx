@@ -7,6 +7,7 @@ import { eq, and, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import ContactoPanel from "./ContactoPanel";
+import { getCnaeByCode } from "@/lib/cnaes";
 
 function fmt(d: Date) {
   return new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
@@ -168,19 +169,33 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
                   </dd>
                 </div>
               )}
-              {(client as any).linkedin && (
+              {client.linkedin && (
                 <div>
                   <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">LinkedIn</dt>
                   <dd>
-                    <a
-                      href={(client as any).linkedin}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline break-all"
-                    >
-                      {(client as any).linkedin}
-                    </a>
+                    <a href={client.linkedin} target="_blank" rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:underline break-all">{client.linkedin}</a>
                   </dd>
+                </div>
+              )}
+              {client.direccion && (
+                <div>
+                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Dirección</dt>
+                  <dd className="text-sm text-gray-800">{client.direccion}</dd>
+                </div>
+              )}
+              {client.cnae && (
+                <div>
+                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">CNAE</dt>
+                  <dd className="text-sm text-gray-800">
+                    {getCnaeByCode(client.cnae) ? `${client.cnae} — ${getCnaeByCode(client.cnae)!.titulo}` : client.cnae}
+                  </dd>
+                </div>
+              )}
+              {client.grupo_empresarial && (
+                <div>
+                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Grupo empresarial</dt>
+                  <dd className="text-sm text-gray-800">{client.grupo_empresarial}</dd>
                 </div>
               )}
               <div>
