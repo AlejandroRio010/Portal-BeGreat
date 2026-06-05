@@ -28,8 +28,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
   // Upload to Cloudinary (unsigned preset — no server token needed)
+  const fileBuffer = await file.arrayBuffer();
+  const fileBlob = new Blob([fileBuffer], { type: file.type || "application/octet-stream" });
+
   const cloudForm = new FormData();
-  cloudForm.append("file", file);
+  cloudForm.append("file", fileBlob, file.name);
   cloudForm.append("upload_preset", CLOUDINARY_PRESET);
   cloudForm.append("folder", `begreat/ops/${id}`);
   cloudForm.append("resource_type", "auto");
