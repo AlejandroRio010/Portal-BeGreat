@@ -27,14 +27,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const file = formData.get("file") as File | null;
   if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
-  // Upload to Cloudinary (unsigned preset — no server token needed)
+  // Upload to Cloudinary as base64 (more reliable from server-side)
   const fileBuffer = await file.arrayBuffer();
-  const fileBlob = new Blob([fileBuffer], { type: file.type || "application/octet-stream" });
+  const base64 = Buffer.from(fileBuffer).toString("base64");
+  const dataUri = `data:${file.type || "application/octet-stream"};base64,${base64}`;
 
   const cloudForm = new FormData();
-  cloudForm.append("file", fileBlob, file.name);
+  cloudForm.append("file", dataUri);
   cloudForm.append("upload_preset", CLOUDINARY_PRESET);
   cloudForm.append("folder", `begreat/ops/${id}`);
+  cloudForm.append("public_id", file.name.replace(/\.[^/.]+$/, ""));
   cloudForm.append("resource_type", "auto");
 
   const cloudRes = await fetch(
