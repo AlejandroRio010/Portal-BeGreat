@@ -43,6 +43,7 @@ export default function DocumentsSection({ docs, operationId }: { docs: Doc[]; o
       cloudForm.append("upload_preset", "begreat_docs");
       cloudForm.append("folder", `begreat/ops/${operationId}`);
       cloudForm.append("resource_type", "auto");
+      cloudForm.append("public_id", file.name);
 
       const cloudRes = await fetch(
         "https://api.cloudinary.com/v1_1/dgcbkeqw0/auto/upload",
