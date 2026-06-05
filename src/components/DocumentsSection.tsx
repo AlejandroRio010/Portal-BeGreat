@@ -88,7 +88,7 @@ export default function DocumentsSection({ docs, operationId }: { docs: Doc[]; o
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <span className="text-lg flex-shrink-0">📄</span>
                 <div className="min-w-0">
-                  <a href={`/api/download?url=${encodeURIComponent(d.url)}&filename=${encodeURIComponent(d.filename)}`}
+                  <a href={d.url} target="_blank" rel="noopener noreferrer"
                     className="text-sm font-semibold text-gray-800 hover:text-[#2E1A47] hover:underline truncate block">
                     {d.filename}
                   </a>
