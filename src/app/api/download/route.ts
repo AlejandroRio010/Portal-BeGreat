@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   }
 
   const fileRes = await fetch(url);
-  if (!fileRes.ok) return NextResponse.json({ error: "No se pudo obtener el archivo" }, { status: 502 });
+  if (!fileRes.ok) return NextResponse.json({ error: `Cloudinary ${fileRes.status}: ${await fileRes.text()}` }, { status: 502 });
 
   const contentType = fileRes.headers.get("content-type") ?? "application/octet-stream";
   const buffer = await fileRes.arrayBuffer();
