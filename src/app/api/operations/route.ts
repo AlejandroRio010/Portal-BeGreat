@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
     lugar_entrega,
     descripcion,
     contacto_directo,
+    es_renovacion,
+    operacion_original_codigo,
   } = body;
 
   if (!pipeline_key || !cliente_nombre) {
@@ -111,6 +113,17 @@ export async function POST(req: NextRequest) {
 
   const opCodigo = await generateCodigoOP(clientId);
 
+  // Resolver operacion_original_id si es renovación
+  let opOriginalId: string | null = null;
+  if (es_renovacion && operacion_original_codigo) {
+    const [opOriginal] = await db
+      .select({ id: operations.id })
+      .from(operations)
+      .where(eq(operations.codigo, operacion_original_codigo.trim().toUpperCase()))
+      .limit(1);
+    opOriginalId = opOriginal?.id ?? null;
+  }
+
   const [op] = await db
     .insert(operations)
     .values({
@@ -127,6 +140,8 @@ export async function POST(req: NextRequest) {
       lugar_entrega: lugar_entrega || null,
       descripcion: descripcion || null,
       contacto_directo: contacto_directo === "true",
+      es_renovacion: es_renovacion === true,
+      operacion_original_id: opOriginalId,
       fase: "Pre-análisis",
       status: "pendiente_de_validar",
       codigo: opCodigo,

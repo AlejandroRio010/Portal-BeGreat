@@ -38,6 +38,8 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       fase: operations.fase,
       status: operations.status,
       comision_colaborador: operations.comision_colaborador,
+      es_renovacion: operations.es_renovacion,
+      operacion_original_id: operations.operacion_original_id,
       entidad_financiera: operations.entidad_financiera,
       honorarios_firmado: operations.honorarios_firmado,
       descripcion: operations.descripcion,
@@ -76,6 +78,12 @@ export default async function OperacionDetallePage({ params }: { params: Promise
         .where(eq(financialEntities.nombre, op.entidad_financiera)).limit(1).then(r => r[0] ?? null)
     : null;
   const entidadLink = entidadRecord?.id ?? null;
+
+  // Si es renovación, buscar op original
+  const opOriginal = op.operacion_original_id
+    ? await db.select({ id: operations.id, codigo: operations.codigo, nombre: operations.nombre })
+        .from(operations).where(eq(operations.id, op.operacion_original_id)).limit(1).then(r => r[0] ?? null)
+    : null;
 
   const opOffice = op.entity_office_id
     ? await db.select({ id: entityOffices.id, nombre: entityOffices.nombre, ciudad: entityOffices.ciudad, email: entityOffices.email, telefono: entityOffices.telefono })
@@ -119,6 +127,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
         <div>
           <div className="flex items-center gap-3 mb-1">
             {op.codigo && <span className="text-xs font-bold font-mono bg-[#EEEBF3] text-[#2E1A47] px-2 py-0.5 tracking-wider">{op.codigo}</span>}
+            {op.es_renovacion && <span className="text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5">↻ Renovación</span>}
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{op.nombre ?? op.client_nombre ?? "Operación"}</h1>
           {op.nombre && op.client_nombre && <p className="text-sm text-gray-400 mt-0.5">{op.client_nombre}</p>}
@@ -294,6 +303,22 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                       {c.telefono && <dd className="text-xs text-gray-500">{c.telefono}</dd>}
                     </div>
                   ))}
+                  {op.es_renovacion && opOriginal && (
+                    <div>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Renovación de</dt>
+                      <dd className="text-sm">
+                        <Link href={`/portal/operaciones/${opOriginal.id}`} className="text-[#2E1A47] hover:underline font-semibold">
+                          {opOriginal.codigo} — {opOriginal.nombre} →
+                        </Link>
+                      </dd>
+                    </div>
+                  )}
+                  {op.es_renovacion && !opOriginal && (
+                    <div>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Tipo</dt>
+                      <dd className="text-sm font-medium text-amber-700">Renovación de operación anterior</dd>
+                    </div>
+                  )}
                   {op.onedrive_url && (
                     <div>
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Documentación</dt>

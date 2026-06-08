@@ -276,6 +276,8 @@ export const operations = pgTable("operations", {
   onedrive_url: text("onedrive_url"),
   motivo_denegacion: text("motivo_denegacion"),
   fecha_cierre: timestamp("fecha_cierre"),
+  es_renovacion: boolean("es_renovacion").default(false),
+  operacion_original_id: uuid("operacion_original_id"),
   codigo: text("codigo").unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),

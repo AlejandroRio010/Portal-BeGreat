@@ -25,6 +25,7 @@ export default function AltaOperacionPage() {
   const [pipeline, setPipeline] = useState<Pipeline>("consultoria");
   const rentingRol: RentingRol = "colaborador";
   const [producto, setProducto] = useState("");
+  const [esRenovacion, setEsRenovacion] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -39,7 +40,7 @@ export default function AltaOperacionPage() {
     const res = await fetch("/api/operations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...data, pipeline_key: pipeline, renting_rol: rentingRol }),
+      body: JSON.stringify({ ...data, pipeline_key: pipeline, renting_rol: rentingRol, es_renovacion: esRenovacion }),
     });
 
     setLoading(false);
@@ -132,6 +133,32 @@ export default function AltaOperacionPage() {
                     className={inp + " resize-none"}
                     placeholder="Describe brevemente el tipo de financiación o producto que busca tu cliente..."
                   />
+                </div>
+              )}
+            </Section>
+
+            <Section title="¿Es una renovación?">
+              <div className="border border-gray-200 divide-y divide-gray-100">
+                <label className="flex items-start gap-4 p-4 cursor-pointer hover:bg-gray-50">
+                  <input type="radio" name="renovacion_tipo" value="nueva" defaultChecked className="mt-0.5 accent-[#2E1A47]" onChange={() => setEsRenovacion(false)} />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">Nueva operación</p>
+                    <p className="text-xs text-gray-400 mt-0.5">El cliente no ha operado con nosotros anteriormente para este producto.</p>
+                  </div>
+                </label>
+                <label className="flex items-start gap-4 p-4 cursor-pointer hover:bg-gray-50">
+                  <input type="radio" name="renovacion_tipo" value="renovacion" className="mt-0.5 accent-[#2E1A47]" onChange={() => setEsRenovacion(true)} />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">Renovación de una operación anterior</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Ya trabajamos con este cliente para este producto y vamos a renovar o ampliar.</p>
+                  </div>
+                </label>
+              </div>
+              {esRenovacion && (
+                <div className="mt-4">
+                  <label className={label}>Código de la operación original</label>
+                  <input name="operacion_original_codigo" className={inp} placeholder="Ej: OP-009-01" />
+                  <p className="text-xs text-gray-400 mt-1.5">Introduce el código de la operación anterior que se renueva (lo encontrarás en el historial).</p>
                 </div>
               )}
             </Section>

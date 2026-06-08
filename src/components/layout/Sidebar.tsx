@@ -18,6 +18,7 @@ const colaboradorNav = [
   { href: "/portal/operaciones/consultoria",  label: "Consultoría financiera",exact: false },
   { href: "/portal/operaciones/renting",      label: "Renting de equipos",    exact: false },
   { href: "/portal/clientes",                 label: "Mis clientes",          exact: false },
+  { href: "/portal/grupos",                   label: "Grupos empresariales",  exact: false },
   { href: "/portal/proveedores",              label: "Mis proveedores",       exact: false },
   { href: "/portal/historial",                label: "Historial & Resumen",   exact: false },
   { href: "/portal/perfil",                   label: "Mi perfil",             exact: false },
