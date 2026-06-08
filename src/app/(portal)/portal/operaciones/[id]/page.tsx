@@ -104,6 +104,20 @@ export default async function OperacionDetallePage({ params }: { params: Promise
   const fases = op.pipeline_key === "consultoria" ? FASES_CONSULTORIA : FASES_RENTING;
   const faseIdx = op.status === "pendiente_de_validar" ? -1 : fases.indexOf(op.fase ?? "");
   const faseStyle = op.fase ? (FASE_COLOR[op.fase] ?? FASE_COLOR["Pre-análisis"]) : FASE_COLOR["Pre-análisis"];
+  // Duración apertura → cierre
+  function calcDuracion(inicio: Date, fin: Date | null): string | null {
+    if (!fin) return null;
+    const dias = Math.round((new Date(fin).getTime() - new Date(inicio).getTime()) / (1000 * 60 * 60 * 24));
+    if (dias < 0) return null;
+    if (dias === 0) return "mismo día";
+    if (dias < 30) return `${dias} días`;
+    const meses = Math.floor(dias / 30);
+    const resto = dias % 30;
+    if (resto === 0) return `${meses} mes${meses !== 1 ? "es" : ""}`;
+    return `${meses} mes${meses !== 1 ? "es" : ""} y ${resto} días`;
+  }
+  const duracion = calcDuracion(op.created_at, op.fecha_cierre ?? null);
+
   const isPendiente = op.status === "pendiente_de_validar";
   const isArchivada = op.status === "archivada";
   const isConsultoria = op.pipeline_key === "consultoria";
@@ -165,7 +179,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       )}
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className={`grid gap-4 mb-6 ${duracion ? "grid-cols-5" : "grid-cols-4"}`}>
         <div className="bg-[#2E1A47] p-5">
           <p className="text-white/50 text-xs uppercase tracking-widest mb-2">Importe</p>
           <p className="text-2xl font-black text-white">
@@ -196,6 +210,13 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             {new Date(op.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}
           </p>
         </div>
+        {duracion && (
+          <div className="bg-[#EEEBF3] border border-[#2E1A47]/10 p-5">
+            <p className="text-[#2E1A47]/60 text-xs uppercase tracking-widest mb-2 font-semibold">Tiempo de resolución</p>
+            <p className="text-lg font-black text-[#2E1A47]">{duracion}</p>
+            <p className="text-[#2E1A47]/40 text-[9px] mt-1 uppercase tracking-wide">apertura → cierre</p>
+          </div>
+        )}
       </div>
 
       {/* Progress bar */}

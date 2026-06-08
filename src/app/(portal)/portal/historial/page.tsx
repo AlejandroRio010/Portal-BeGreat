@@ -15,6 +15,16 @@ function formatDate(d: Date) {
   return new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function calcDuracion(inicio: Date, fin: Date | null): string | null {
+  if (!fin) return null;
+  const dias = Math.round((new Date(fin).getTime() - new Date(inicio).getTime()) / (1000 * 60 * 60 * 24));
+  if (dias <= 0) return null;
+  if (dias < 30) return `${dias}d`;
+  const meses = Math.floor(dias / 30);
+  const resto = dias % 30;
+  return resto > 0 ? `${meses}m ${resto}d` : `${meses}m`;
+}
+
 export default async function HistorialPage({
   searchParams,
 }: {
@@ -205,8 +215,12 @@ export default async function HistorialPage({
                       <span className="inline-block px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600">{op.fase}</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {formatDate(op.fecha_cierre ?? op.created_at)}
+                  <td className="px-6 py-4">
+                    <p className="text-sm text-gray-500">{formatDate(op.fecha_cierre ?? op.created_at)}</p>
+                    {op.fecha_cierre && (() => {
+                      const dur = calcDuracion(op.created_at, op.fecha_cierre);
+                      return dur ? <p className="text-[10px] text-gray-400 mt-0.5">{dur} de resolución</p> : null;
+                    })()}
                   </td>
                   <td className="px-6 py-4">
                     {op.comision_colaborador ? (
