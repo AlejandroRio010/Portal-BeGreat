@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import ContactoAutocomplete from "@/components/ContactoAutocomplete";
 
 const PRODUCTOS_CONSULTORIA = [
   "Póliza de crédito",
@@ -31,6 +32,9 @@ export default function AltaOperacionPage() {
   const [clienteSeleccionado, setClienteSeleccionado] = useState<any | null>(null);
   const [clienteDropdown, setClienteDropdown] = useState(false);
   const clienteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [contactoNombre, setContactoNombre] = useState("");
+  const [contactoEmail, setContactoEmail] = useState("");
+  const [contactoTelefono, setContactoTelefono] = useState("");
   const [clienteNombre, setClienteNombre] = useState("");
   const [clienteEmail, setClienteEmail] = useState("");
   const [clienteTelefono, setClienteTelefono] = useState("");
@@ -363,9 +367,19 @@ export default function AltaOperacionPage() {
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Persona de contacto</p>
                 <div className="grid grid-cols-3 gap-3">
-                  <input name="contacto_nombre" className={inp} placeholder="Nombre" />
-                  <input name="contacto_email" type="email" className={inp} placeholder="Email" />
-                  <input name="contacto_telefono" className={inp} placeholder="Teléfono" />
+                  <div>
+                    <ContactoAutocomplete
+                      value={contactoNombre}
+                      onChange={setContactoNombre}
+                      onSelect={p => { setContactoNombre(p.nombre); setContactoEmail(p.email ?? ""); setContactoTelefono(p.telefono ?? ""); }}
+                      searchUrl="/api/search/personas"
+                      placeholder="Nombre"
+                      className={inp.replace("w-full ", "")}
+                    />
+                    <input type="hidden" name="contacto_nombre" value={contactoNombre} />
+                  </div>
+                  <input name="contacto_email" type="email" value={contactoEmail} onChange={e => setContactoEmail(e.target.value)} className={inp} placeholder="Email" />
+                  <input name="contacto_telefono" value={contactoTelefono} onChange={e => setContactoTelefono(e.target.value)} className={inp} placeholder="Teléfono" />
                 </div>
               </div>
             </Section>
