@@ -234,7 +234,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
             {ops.length === 0 ? (
               <p className="px-5 py-8 text-sm text-gray-400 text-center">Sin operaciones registradas para este cliente.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <div style={{ zoom: 0.82 }}>
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-100">

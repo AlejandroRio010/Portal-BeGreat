@@ -88,24 +88,24 @@ function DroppableColumn({ fase, ops, activeId, canEdit }: { fase: string; ops: 
   const bar = FASE_BAR[fase] ?? "bg-[#2E1A47]";
   const totalImporte = ops.reduce((s, o) => s + Number(o.importe ?? 0), 0);
   return (
-    <div ref={setNodeRef} className={`flex flex-col transition-colors relative overflow-hidden ${isOver ? "bg-[#EEEBF3]/60" : "bg-white/50"}`}>
+    <div ref={setNodeRef} className={`flex flex-col transition-colors relative overflow-hidden ${isOver ? "bg-[#EEEBF3]/50" : "bg-[#fafafa]"}`}>
       {/* Barra de color superior */}
-      <div className={`h-1 w-full flex-shrink-0 ${bar}`} />
-      {/* Marca de agua BeGreat */}
+      <div className={`h-[3px] w-full flex-shrink-0 ${bar}`} />
+      {/* Marca de agua BeGreat — logo blanco invertido a oscuro */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/begreat-logo-blanco.png" alt="" className="w-16 opacity-[0.04] object-contain select-none" style={{ filter: "invert(0.15)" }} />
+        <img src="/begreat-logo-blanco.png" alt="" className="w-24 object-contain select-none" style={{ opacity: 0.055, filter: "invert(1) brightness(0.3)" }} />
       </div>
       {/* Header */}
-      <div className="px-2 py-2.5 border-b border-gray-200/80">
-        <p className="text-[9px] font-black text-[#2E1A47] uppercase tracking-widest leading-tight truncate mb-1.5">{fase}</p>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold text-white bg-[#2E1A47] px-1.5 py-0.5 min-w-[18px] text-center leading-none">{ops.length}</span>
-          {totalImporte > 0 && <span className="text-[9px] text-gray-400 font-medium">{(totalImporte/1000).toFixed(0)}k €</span>}
+      <div className="px-3 py-3 border-b border-gray-200">
+        <p className="text-[9px] font-black text-[#2E1A47] uppercase tracking-widest leading-tight mb-2">{fase}</p>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-black text-white bg-[#2E1A47] px-2 py-0.5 min-w-[20px] text-center">{ops.length}</span>
+          {totalImporte > 0 && <span className="text-[10px] text-gray-500 font-semibold">{totalImporte.toLocaleString("es-ES")} €</span>}
         </div>
       </div>
       {/* Cards */}
-      <div className="flex-1 space-y-1.5 min-h-[280px] px-1 pt-1.5 pb-2">
+      <div className="flex-1 space-y-2 min-h-[460px] px-1.5 pt-2 pb-3">
         {ops.map(op => canEdit
           ? <DraggableCard key={op.id} op={op} isDragging={activeId === op.id} />
           : (
