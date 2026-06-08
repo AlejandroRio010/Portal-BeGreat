@@ -38,6 +38,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       fase: operations.fase,
       status: operations.status,
       comision_colaborador: operations.comision_colaborador,
+      comision_begreat: operations.comision_begreat,
       entidad_financiera: operations.entidad_financiera,
       honorarios_firmado: operations.honorarios_firmado,
       descripcion: operations.descripcion,
@@ -101,6 +102,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
   const isConsultoria = op.pipeline_key === "consultoria";
   const FASES_GANADAS = ["Honorarios pagados", "Transferencia realizada"];
   const isGanada = FASES_GANADAS.includes(op.fase ?? "");
+  const isDenegada = isArchivada && !isGanada;
 
   return (
     <div>
@@ -128,9 +130,13 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
             Pendiente de validar
           </span>
-        ) : isArchivada ? (
+        ) : isDenegada ? (
           <span className="px-3 py-1.5 text-xs font-semibold border bg-red-50 border-red-200 text-red-600">
             Denegada
+          </span>
+        ) : isGanada ? (
+          <span className="px-3 py-1.5 text-xs font-semibold border bg-emerald-50 border-emerald-200 text-emerald-700">
+            Ganada ✓
           </span>
         ) : (
           <span className={`px-3 py-1.5 text-xs font-semibold border ${faseStyle.bg} ${faseStyle.text} ${faseStyle.border}`}>
@@ -143,7 +149,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       {isGanada && <CelebrationBanner opNombre={op.nombre ?? op.codigo ?? "Operación"} clientNombre={op.client_nombre ?? "Cliente"} />}
 
       {/* Motivo denegación */}
-      {isArchivada && op.motivo_denegacion && (
+      {isDenegada && op.motivo_denegacion && (
         <div className="mb-6 bg-red-50 border border-red-200 px-5 py-4">
           <p className="text-xs font-bold text-red-600 uppercase tracking-wider mb-1">Motivo de la denegación</p>
           <p className="text-sm text-red-700">{op.motivo_denegacion}</p>
@@ -158,12 +164,12 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             {op.importe ? `${Number(op.importe).toLocaleString("es-ES")} €` : "—"}
           </p>
         </div>
-        <div className={`p-5 border ${op.comision_colaborador ? "bg-emerald-50 border-emerald-200" : "bg-white border-gray-200"}`}>
-          <p className={`text-xs uppercase tracking-widest mb-2 font-semibold ${op.comision_colaborador ? "text-emerald-600" : "text-gray-400"}`}>
-            Fee / Comisión
+        <div className={`p-5 border ${op.comision_begreat ? "bg-emerald-50 border-emerald-200" : "bg-white border-gray-200"}`}>
+          <p className={`text-xs uppercase tracking-widest mb-2 font-semibold ${op.comision_begreat ? "text-emerald-600" : "text-gray-400"}`}>
+            Fee BeGreat
           </p>
-          <p className={`text-2xl font-black ${op.comision_colaborador ? "text-emerald-700" : "text-gray-300"}`}>
-            {op.comision_colaborador ? `${Number(op.comision_colaborador).toLocaleString("es-ES")} €` : "Por confirmar"}
+          <p className={`text-2xl font-black ${op.comision_begreat ? "text-emerald-700" : "text-gray-300"}`}>
+            {op.comision_begreat ? `${Number(op.comision_begreat).toLocaleString("es-ES")} €` : "Por confirmar"}
           </p>
         </div>
         <div className="bg-white border border-gray-200 p-5">
@@ -235,13 +241,13 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                 { label: "Cuota", value: cuota },
                 { label: "Lugar de instalación", value: op.lugar_entrega },
                 { label: "Tipo de equipo a financiar", value: op.equipo_tipo },
-                { label: "Honorario colaborador", value: fmtEuro(op.comision_colaborador) },
+                { label: "Fee BeGreat", value: fmtEuro(op.comision_begreat) },
                 { label: "Fecha de alta", value: fmtFecha(op.created_at) },
                 { label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) },
               ] : [
                 { label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/portal/clientes/${op.client_id}` : undefined },
                 { label: "Producto", value: op.producto },
-                { label: "Honorario colaborador", value: fmtEuro(op.comision_colaborador) },
+                { label: "Fee BeGreat", value: fmtEuro(op.comision_begreat) },
                 { label: "Descripción", value: op.descripcion },
                 { label: "Fecha de alta", value: fmtFecha(op.created_at) },
                 { label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) },

@@ -14,7 +14,7 @@ interface Op {
   fase: string;
   status: string;
   importe: string | null;
-  comision_colaborador: string | null;
+  comision_begreat: string | null;
   facturacion_renting: string | null;
   plazo_meses: number | null;
 }
@@ -38,7 +38,7 @@ const FASE_DOT: Record<string, string> = {
 
 function CardContent({ op, dragListeners, dragAttributes, canEdit }: { op: Op; dragListeners?: any; dragAttributes?: any; canEdit?: boolean }) {
   const displayName = op.nombre ?? op.client_nombre ?? "Sin nombre";
-  const fee = Number(op.comision_colaborador ?? 0);
+  const fee = Number(op.comision_begreat ?? 0);
   return (
     <div className="p-2.5 pt-2">
       <div className="flex items-start gap-1 mb-1.5">
@@ -125,7 +125,7 @@ export default function PortalKanbanRenting({ ops: initialOps, fases, canEdit = 
   const activeOp = ops.find(o => o.id === activeId) ?? null;
 
   const pendientes = ops.filter(o => o.status === "pendiente_de_validar");
-  const totalFeeColab = ops.reduce((s, o) => s + Number(o.comision_colaborador ?? 0), 0);
+  const totalFeeColab = ops.reduce((s, o) => s + Number(o.comision_begreat ?? 0), 0);
 
   async function handleDragEnd(e: DragEndEvent) {
     setActiveId(null);
