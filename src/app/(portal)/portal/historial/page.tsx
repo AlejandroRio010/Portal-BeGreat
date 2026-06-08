@@ -174,9 +174,8 @@ export default async function HistorialPage({
               {filtered.map((op) => (
                 <tr key={op.id} className="hover:bg-[#EEEBF3]/30 transition-colors group">
                   <td className="px-6 py-4">
-                    <p className="text-sm font-semibold text-gray-900">{op.client_nombre ?? "—"}</p>
-                    {op.nombre && <p className="text-xs text-[#2E1A47]/70 font-medium mt-0.5">{op.nombre}</p>}
-                    {!op.nombre && op.producto && <p className="text-xs text-gray-400">{op.producto}</p>}
+                    <p className="text-sm font-semibold text-gray-900">{op.nombre ?? op.client_nombre ?? "—"}</p>
+                    {op.client_nombre && <p className="text-xs text-gray-400 mt-0.5">{op.client_nombre}</p>}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-block px-2.5 py-0.5 rounded text-xs font-semibold ${
