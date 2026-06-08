@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const PRODUCTOS_CONSULTORIA = [
@@ -26,8 +26,26 @@ export default function AltaOperacionPage() {
   const rentingRol: RentingRol = "colaborador";
   const [producto, setProducto] = useState("");
   const [esRenovacion, setEsRenovacion] = useState(false);
+  const [renovBusqueda, setRenovBusqueda] = useState("");
+  const [renovResultados, setRenovResultados] = useState<any[]>([]);
+  const [renovSeleccionada, setRenovSeleccionada] = useState<any | null>(null);
+  const [renovDropdown, setRenovDropdown] = useState(false);
+  const renovTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Autocompletar búsqueda de renovación
+  useEffect(() => {
+    if (!esRenovacion) return;
+    if (renovTimer.current) clearTimeout(renovTimer.current);
+    if (renovBusqueda.length < 2) { setRenovResultados([]); return; }
+    renovTimer.current = setTimeout(async () => {
+      const res = await fetch(`/api/operations/search?q=${encodeURIComponent(renovBusqueda)}`);
+      const data = await res.json();
+      setRenovResultados(data);
+      setRenovDropdown(true);
+    }, 300);
+  }, [renovBusqueda, esRenovacion]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -40,7 +58,15 @@ export default function AltaOperacionPage() {
     const res = await fetch("/api/operations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...data, pipeline_key: pipeline, renting_rol: rentingRol, es_renovacion: esRenovacion }),
+      body: JSON.stringify({
+        ...data,
+        pipeline_key: pipeline,
+        renting_rol: rentingRol,
+        es_renovacion: esRenovacion,
+        operacion_original_id: renovSeleccionada?.id ?? null,
+        // Si es renovación y hay cliente seleccionado, aseguramos que se envía el nombre
+        ...(esRenovacion && renovSeleccionada?.client_nombre ? { cliente_nombre: renovSeleccionada.client_nombre } : {}),
+      }),
     });
 
     setLoading(false);
@@ -140,47 +166,105 @@ export default function AltaOperacionPage() {
             <Section title="¿Es una renovación?">
               <div className="border border-gray-200 divide-y divide-gray-100">
                 <label className="flex items-start gap-4 p-4 cursor-pointer hover:bg-gray-50">
-                  <input type="radio" name="renovacion_tipo" value="nueva" defaultChecked className="mt-0.5 accent-[#2E1A47]" onChange={() => setEsRenovacion(false)} />
+                  <input type="radio" name="renovacion_tipo" value="nueva" defaultChecked className="mt-0.5 accent-[#2E1A47]"
+                    onChange={() => { setEsRenovacion(false); setRenovSeleccionada(null); setRenovBusqueda(""); }} />
                   <div>
                     <p className="text-sm font-semibold text-gray-800">Nueva operación</p>
                     <p className="text-xs text-gray-400 mt-0.5">El cliente no ha operado con nosotros anteriormente para este producto.</p>
                   </div>
                 </label>
                 <label className="flex items-start gap-4 p-4 cursor-pointer hover:bg-gray-50">
-                  <input type="radio" name="renovacion_tipo" value="renovacion" className="mt-0.5 accent-[#2E1A47]" onChange={() => setEsRenovacion(true)} />
+                  <input type="radio" name="renovacion_tipo" value="renovacion" className="mt-0.5 accent-[#2E1A47]"
+                    onChange={() => setEsRenovacion(true)} />
                   <div>
                     <p className="text-sm font-semibold text-gray-800">Renovación de una operación anterior</p>
                     <p className="text-xs text-gray-400 mt-0.5">Ya trabajamos con este cliente para este producto y vamos a renovar o ampliar.</p>
                   </div>
                 </label>
               </div>
+
               {esRenovacion && (
-                <div className="mt-4">
-                  <label className={label}>Código de la operación original</label>
-                  <input name="operacion_original_codigo" className={inp} placeholder="Ej: OP-009-01" />
-                  <p className="text-xs text-gray-400 mt-1.5">Introduce el código de la operación anterior que se renueva (lo encontrarás en el historial).</p>
+                <div className="mt-4 relative">
+                  <label className={label}>Buscar operación original</label>
+                  {renovSeleccionada ? (
+                    <div className="flex items-center justify-between border border-[#2E1A47] bg-[#EEEBF3] px-3 py-2.5">
+                      <div>
+                        <p className="text-sm font-semibold text-[#2E1A47]">{renovSeleccionada.nombre ?? renovSeleccionada.client_nombre}</p>
+                        <p className="text-xs text-gray-500">{renovSeleccionada.codigo} · {renovSeleccionada.client_nombre}</p>
+                      </div>
+                      <button type="button" onClick={() => { setRenovSeleccionada(null); setRenovBusqueda(""); }}
+                        className="text-xs text-gray-400 hover:text-red-500 ml-3">✕ Cambiar</button>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        value={renovBusqueda}
+                        onChange={e => setRenovBusqueda(e.target.value)}
+                        onFocus={() => renovResultados.length > 0 && setRenovDropdown(true)}
+                        onBlur={() => setTimeout(() => setRenovDropdown(false), 150)}
+                        className={inp}
+                        placeholder="Escribe el nombre del cliente o de la operación..."
+                        autoComplete="off"
+                      />
+                      {renovDropdown && renovResultados.length > 0 && (
+                        <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-gray-200 shadow-lg max-h-64 overflow-y-auto">
+                          {renovResultados.map((op: any) => (
+                            <button key={op.id} type="button"
+                              onMouseDown={() => {
+                                setRenovSeleccionada(op);
+                                setRenovBusqueda("");
+                                setRenovDropdown(false);
+                              }}
+                              className="w-full text-left px-4 py-3 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
+                              <p className="text-sm font-semibold text-gray-800">{op.nombre ?? op.client_nombre}</p>
+                              <p className="text-xs text-gray-400 mt-0.5">{op.codigo} · {op.client_nombre} · {op.pipeline_key === "consultoria" ? "Consultoría" : "Renting"}</p>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {renovBusqueda.length >= 2 && renovResultados.length === 0 && (
+                        <p className="text-xs text-gray-400 mt-1.5">No se encontraron operaciones con ese nombre.</p>
+                      )}
+                    </>
+                  )}
+                  {/* Campo oculto con el ID de la op original */}
+                  <input type="hidden" name="operacion_original_id" value={renovSeleccionada?.id ?? ""} />
                 </div>
               )}
             </Section>
 
             <Section title="Datos del cliente">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={label}>Nombre de la empresa *</label>
-                  <input name="cliente_nombre" required className={inp} placeholder="Empresa S.L." />
+              {esRenovacion && renovSeleccionada?.client_nombre ? (
+                <div className="bg-[#EEEBF3]/60 border border-[#2E1A47]/15 px-4 py-3 mb-3 flex items-center gap-2">
+                  <span className="text-xs text-[#2E1A47]/60">Cliente vinculado automáticamente:</span>
+                  <span className="text-sm font-semibold text-[#2E1A47]">{renovSeleccionada.client_nombre}</span>
                 </div>
+              ) : null}
+              <input type="hidden" name="cliente_nombre"
+                value={esRenovacion && renovSeleccionada?.client_nombre ? renovSeleccionada.client_nombre : undefined} />
+              <div className="grid grid-cols-2 gap-4">
+                {!(esRenovacion && renovSeleccionada?.client_nombre) && (
+                  <div>
+                    <label className={label}>Nombre de la empresa *</label>
+                    <input name="cliente_nombre" required className={inp} placeholder="Empresa S.L." />
+                  </div>
+                )}
                 <div>
                   <label className={label}>Importe (€)</label>
                   <input name="importe" type="number" step="1000" className={inp} placeholder="50.000" />
                 </div>
-                <div>
-                  <label className={label}>Email</label>
-                  <input name="cliente_email" type="email" className={inp} placeholder="contacto@empresa.es" />
-                </div>
-                <div>
-                  <label className={label}>Teléfono</label>
-                  <input name="cliente_telefono" className={inp} placeholder="612 345 678" />
-                </div>
+                {!(esRenovacion && renovSeleccionada?.client_nombre) && (
+                  <>
+                    <div>
+                      <label className={label}>Email</label>
+                      <input name="cliente_email" type="email" className={inp} placeholder="contacto@empresa.es" />
+                    </div>
+                    <div>
+                      <label className={label}>Teléfono</label>
+                      <input name="cliente_telefono" className={inp} placeholder="612 345 678" />
+                    </div>
+                  </>
+                )}
               </div>
             </Section>
           </>

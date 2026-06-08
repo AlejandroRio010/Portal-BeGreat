@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
     contacto_directo,
     es_renovacion,
     operacion_original_codigo,
+    operacion_original_id: operacion_original_id_body,
   } = body;
 
   if (!pipeline_key || !cliente_nombre) {
@@ -113,9 +114,9 @@ export async function POST(req: NextRequest) {
 
   const opCodigo = await generateCodigoOP(clientId);
 
-  // Resolver operacion_original_id si es renovación
-  let opOriginalId: string | null = null;
-  if (es_renovacion && operacion_original_codigo) {
+  // Resolver operacion_original_id (directo desde form o por código)
+  let opOriginalId: string | null = operacion_original_id_body || null;
+  if (!opOriginalId && es_renovacion && operacion_original_codigo) {
     const [opOriginal] = await db
       .select({ id: operations.id })
       .from(operations)

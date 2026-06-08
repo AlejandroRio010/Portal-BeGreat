@@ -28,9 +28,9 @@ function calcDuracion(inicio: Date, fin: Date | null): string | null {
 export default async function HistorialPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tipo?: string; estado?: string; desde?: string; hasta?: string }>;
+  searchParams: Promise<{ tipo?: string; estado?: string; desde?: string; hasta?: string; q?: string }>;
 }) {
-  const { tipo, estado, desde, hasta } = await searchParams;
+  const { tipo, estado, desde, hasta, q } = await searchParams;
   const session = await auth();
   const userId = session!.user!.id as string;
 
@@ -55,7 +55,12 @@ export default async function HistorialPage({
     .orderBy(operations.fecha_cierre, operations.created_at);
 
   // Filters
+  const qLower = q?.toLowerCase().trim() ?? "";
   const filtered = allOps.filter((op) => {
+    if (qLower && !(
+      (op.nombre ?? "").toLowerCase().includes(qLower) ||
+      (op.client_nombre ?? "").toLowerCase().includes(qLower)
+    )) return false;
     if (tipo && tipo !== "todas" && op.pipeline_key !== tipo) return false;
     if (estado && estado !== "todas") {
       const esFirmada = op.fase === "Contrato firmado" || op.fase === "Honorarios pagados" || op.fase === "Transferencia realizada";
@@ -124,6 +129,10 @@ export default async function HistorialPage({
       {/* Filters */}
       <div className="bg-white rounded-sm border border-gray-100 p-5 mb-6">
         <form className="flex items-end gap-4 flex-wrap">
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Buscar</label>
+            <input name="q" defaultValue={q ?? ""} placeholder="Nombre de operación o cliente..." className="w-full px-3 py-2 border border-gray-200 text-sm focus:outline-none focus:border-[#2E1A47] bg-gray-50" />
+          </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Tipo</label>
             <select name="tipo" defaultValue={tipo ?? "todas"} className="px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-[#2E1A47]/30 focus:border-[#2E1A47] bg-gray-50">
