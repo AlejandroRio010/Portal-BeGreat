@@ -4,12 +4,9 @@ import { eq, isNull, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import EmpresasGrupoPanel from "./EmpresasGrupoPanel";
+import { fmtEur } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-
-function fmtEur(n: number) {
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
-}
 
 const FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
 
@@ -153,7 +150,6 @@ export default async function AdminGrupoFichaPage({ params }: { params: Promise<
                     : op.status === "pendiente_de_validar"
                       ? { bg: "bg-amber-50 text-amber-700 border border-amber-200", label: "Pendiente" }
                       : { bg: "bg-blue-50 text-blue-700 border border-blue-200", label: "En curso" };
-                  const fmtE = (v: string | null) => v ? new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(v)) : "—";
                   return (
                     <tr key={op.id} className="hover:bg-[#EEEBF3]/30 transition-colors group">
                       <td className="px-5 py-3 text-sm font-medium text-gray-800 max-w-[180px] truncate">{op.nombre ?? "—"}</td>
@@ -166,9 +162,9 @@ export default async function AdminGrupoFichaPage({ params }: { params: Promise<
                       <td className="px-5 py-3">
                         <span className={`inline-block px-2 py-0.5 text-xs font-semibold ${badge.bg}`}>{badge.label}</span>
                       </td>
-                      <td className="px-5 py-3 text-sm text-gray-700 font-medium whitespace-nowrap">{fmtE(op.importe)}</td>
-                      <td className="px-5 py-3 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtE(op.comision_begreat)}</td>
-                      <td className="px-5 py-3 text-sm text-gray-500 whitespace-nowrap">{fmtE(op.comision_colaborador)}</td>
+                      <td className="px-5 py-3 text-sm text-gray-700 font-medium whitespace-nowrap">{fmtEur(op.importe)}</td>
+                      <td className="px-5 py-3 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(op.comision_begreat)}</td>
+                      <td className="px-5 py-3 text-sm text-gray-500 whitespace-nowrap">{fmtEur(op.comision_colaborador)}</td>
                       <td className="px-5 py-3 text-sm text-gray-400 whitespace-nowrap">{fmtFecha(op.fecha_cierre ?? op.created_at)}</td>
                       <td className="px-5 py-3 text-right whitespace-nowrap">
                         <Link href={`/admin/operaciones/${op.id}`} className="text-xs text-[#2E1A47] font-semibold opacity-0 group-hover:opacity-100 transition-opacity hover:underline">Ver →</Link>

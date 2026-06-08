@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { operations, collaborators, clients } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { fmtEur, fmtNum } from "@/lib/format";
 
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const FIRMADAS = ["Contrato firmado","Honorarios pagados","Transferencia realizada"];
@@ -19,10 +20,6 @@ const tiles = [
   { href: "/portal/perfil",                  label: "Mi perfil",               sub: "Datos de tu empresa" },
   { href: "/portal/contacto",                label: "Contacto BeGreat",        sub: "Rita & Alejandro" },
 ];
-
-function fmt(n: number) {
-  return n.toLocaleString("es-ES") + " €";
-}
 
 export default async function PortalHomePage({
   searchParams,
@@ -125,7 +122,7 @@ export default async function PortalHomePage({
           <div className="w-px bg-white/20 flex-shrink-0" />
           <div className="flex-1 bg-[#2E1A47] px-6 py-5">
             <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Comisiones Ganadas</p>
-            <p className="text-xl font-black text-white leading-tight">{totalComision > 0 ? fmt(totalComision) : "—"}</p>
+            <p className="text-xl font-black text-white leading-tight">{fmtEur(totalComision)}</p>
             <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">acumulado total</p>
           </div>
         </div>
@@ -138,7 +135,7 @@ export default async function PortalHomePage({
           <div className="w-px bg-white/20 flex-shrink-0" />
           <div className="flex-1 bg-[#2E1A47] px-6 py-5">
             <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee Potencial</p>
-            <p className="text-xl font-black text-white leading-tight">{feePendiente > 0 ? fmt(feePendiente) : "—"}</p>
+            <p className="text-xl font-black text-white leading-tight">{fmtEur(feePendiente)}</p>
             <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">En proceso</p>
           </div>
         </div>
@@ -170,7 +167,7 @@ export default async function PortalHomePage({
                   {opsCount > 0 && (
                     <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-[#2E1A47] text-white text-[9px] px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-lg">
                       <span className="block font-bold">{opsCount} op{opsCount !== 1 ? "s" : ""}</span>
-                      {feeMes > 0 && <span className="block text-white/70">Comisión: {fmt(feeMes)}</span>}
+                      {feeMes > 0 && <span className="block text-white/70">Comisión: {fmtEur(feeMes)}</span>}
                       <span className="block text-white/40 mt-0.5">Click para ver detalle</span>
                     </div>
                   )}
@@ -200,7 +197,7 @@ export default async function PortalHomePage({
           </div>
           <div>
             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Comisiones {selectedYear}</p>
-            <p className="text-lg font-black text-[#2E1A47]">{yearTotalFee > 0 ? fmt(yearTotalFee) : "—"}</p>
+            <p className="text-lg font-black text-[#2E1A47]">{fmtEur(yearTotalFee)}</p>
           </div>
         </div>
       </div>
@@ -281,7 +278,7 @@ export default async function PortalHomePage({
                   </td>
                   <td className="px-6 py-3.5">
                     {op.comision_colaborador
-                      ? <span className="text-sm font-bold text-[#2E1A47]">{Number(op.comision_colaborador).toLocaleString("es-ES")} €</span>
+                      ? <span className="text-sm font-bold text-[#2E1A47]">{fmtEur(op.comision_colaborador)}</span>
                       : <span className="text-xs text-gray-300">—</span>}
                   </td>
                   <td className="px-6 py-3.5 text-sm text-gray-400">

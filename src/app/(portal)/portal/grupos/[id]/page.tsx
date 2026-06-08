@@ -4,12 +4,9 @@ import { clientGroups, clients, operations } from "@/db/schema";
 import { eq, and, inArray, sql } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { fmtEur } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-
-function fmtEur(n: number) {
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
-}
 
 const FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
 
@@ -209,7 +206,7 @@ export default async function PortalGrupoFichaPage({ params }: { params: Promise
                         <span className={`inline-block px-2 py-0.5 text-xs font-semibold ${badge.bg}`}>{badge.label}</span>
                       </td>
                       <td className="px-5 py-3 text-sm text-gray-700 font-medium">
-                        {op.importe ? new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(op.importe)) : "—"}
+                        {fmtEur(op.importe)}
                       </td>
                       <td className="px-5 py-3 text-sm text-gray-400">{fmtFecha(op.fecha_cierre ?? op.created_at)}</td>
                       <td className="px-5 py-3 text-right whitespace-nowrap">

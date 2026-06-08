@@ -7,14 +7,11 @@ import ClienteEditForm from "./ClienteEditForm";
 import ContactosAdminPanel from "./ContactosAdminPanel";
 import NotesSection from "@/components/NotesSection";
 import { getCnaeByCode } from "@/lib/cnaes";
+import { fmtEur } from "@/lib/format";
 
 function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
   return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(d));
-}
-function fmtEur(val: string | null | undefined) {
-  if (!val) return "—";
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(val));
 }
 
 const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> = {

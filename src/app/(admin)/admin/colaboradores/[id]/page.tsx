@@ -6,6 +6,7 @@ import Link from "next/link";
 import ColaboradorEditForm from "./ColaboradorEditForm";
 import PermisosForm from "./PermisosForm";
 import NotesSection from "@/components/NotesSection";
+import { fmtEur } from "@/lib/format";
 
 const FASES_FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
 
@@ -14,11 +15,6 @@ const STATUS_BADGE: Record<string, { bg: string; text: string; border: string; l
   activa:               { bg: "bg-gray-100",    text: "text-gray-600",    border: "border-gray-200",    label: "En curso" },
   archivada:            { bg: "bg-red-50",      text: "text-red-700",     border: "border-red-200",     label: "Archivada" },
 };
-
-function fmtEur(val: string | null | undefined) {
-  if (!val) return "—";
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(val));
-}
 
 function fmtDate(d: Date | null) {
   if (!d) return "—";

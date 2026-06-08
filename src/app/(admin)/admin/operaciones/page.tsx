@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { operations, clients, collaborators } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import Link from "next/link";
+import { fmtNum } from "@/lib/format";
 
 function StatusBadge({ status, fase }: { status: string; fase: string | null }) {
   if (status === "pendiente_de_validar") {
@@ -189,7 +190,7 @@ export default async function AdminOperacionesPage({
                     </td>
                     <td className="px-6 py-3.5 text-sm whitespace-nowrap">
                       {fee > 0
-                        ? <span className="font-bold text-[#2E1A47]">{fee.toLocaleString("es-ES")} €</span>
+                        ? <span className="font-bold text-[#2E1A47]">{fmtNum(fee)} €</span>
                         : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="px-6 py-3.5 text-sm text-gray-400">

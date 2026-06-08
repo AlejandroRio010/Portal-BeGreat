@@ -2,10 +2,7 @@ import { db } from "@/db";
 import { operations, clients, collaborators } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import Link from "next/link";
-
-function fmt(n: number) {
-  return n.toLocaleString("es-ES") + " €";
-}
+import { fmtEur } from "@/lib/format";
 
 const MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const FIRMADAS      = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
@@ -106,7 +103,7 @@ export default async function AdminHomePage({
           <div className="w-px bg-white/20" />
           <div className="flex-1 bg-[#2E1A47] px-6 py-5">
             <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee BeGreat cobrada</p>
-            <p className="text-2xl font-black text-white leading-tight">{feeBegreat > 0 ? fmt(feeBegreat) : "—"}</p>
+            <p className="text-2xl font-black text-white leading-tight">{feeBegreat > 0 ? fmtEur(feeBegreat) : "—"}</p>
             <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">acumulado total</p>
           </div>
         </div>
@@ -114,7 +111,7 @@ export default async function AdminHomePage({
         <div className="flex overflow-hidden border border-[#EEEBF3]">
           <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
             <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee colaboradores cobrada</p>
-            <p className="text-2xl font-black text-[#2E1A47] leading-tight">{feeColab > 0 ? fmt(feeColab) : "—"}</p>
+            <p className="text-2xl font-black text-[#2E1A47] leading-tight">{feeColab > 0 ? fmtEur(feeColab) : "—"}</p>
             <p className="text-[#2E1A47]/30 text-[9px] mt-1 uppercase tracking-wide">valor generado</p>
           </div>
           <div className="w-px bg-[#2E1A47]/25" />
@@ -166,7 +163,7 @@ export default async function AdminHomePage({
                     {opsCount > 0 && (
                       <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-[#2E1A47] text-white text-[9px] px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-lg">
                         <span className="block font-bold">{opsCount} op{opsCount !== 1 ? "s" : ""}</span>
-                        {feeMes > 0 && <span className="block text-white/70">Fee: {fmt(feeMes)}</span>}
+                        {feeMes > 0 && <span className="block text-white/70">Fee: {fmtEur(feeMes)}</span>}
                       </div>
                     )}
                     <div
@@ -195,7 +192,7 @@ export default async function AdminHomePage({
           </div>
           <div>
             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Fee BeGreat {selectedYear}</p>
-            <p className="text-lg font-black text-[#2E1A47]">{yearTotalFeeBegreat > 0 ? fmt(yearTotalFeeBegreat) : "—"}</p>
+            <p className="text-lg font-black text-[#2E1A47]">{yearTotalFeeBegreat > 0 ? fmtEur(yearTotalFeeBegreat) : "—"}</p>
           </div>
         </div>
       </div>
@@ -216,7 +213,7 @@ export default async function AdminHomePage({
           <p className="text-gray-400 text-[9px] uppercase tracking-wide mb-4">en fase de aprobación</p>
           <div className="border-t border-gray-100 pt-3">
             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Fee BeGreat</p>
-            <p className="text-sm font-black text-[#2E1A47]">{sumBegreat(opsAprob) > 0 ? fmt(sumBegreat(opsAprob)) : "—"}</p>
+            <p className="text-sm font-black text-[#2E1A47]">{sumBegreat(opsAprob) > 0 ? fmtEur(sumBegreat(opsAprob)) : "—"}</p>
           </div>
         </div>
 
@@ -227,7 +224,7 @@ export default async function AdminHomePage({
           <p className="text-[#2E1A47]/40 text-[9px] uppercase tracking-wide mb-4">pre-aprobación</p>
           <div className="border-t border-[#2E1A47]/15 pt-3">
             <p className="text-[10px] text-[#2E1A47]/50 uppercase tracking-wider mb-0.5">Fee BeGreat potencial</p>
-            <p className="text-sm font-black text-[#2E1A47]">{sumBegreat(opsEstudio) > 0 ? fmt(sumBegreat(opsEstudio)) : "—"}</p>
+            <p className="text-sm font-black text-[#2E1A47]">{sumBegreat(opsEstudio) > 0 ? fmtEur(sumBegreat(opsEstudio)) : "—"}</p>
           </div>
         </div>
       </div>
@@ -312,7 +309,7 @@ export default async function AdminHomePage({
                   <td className="px-6 py-3 text-xs font-bold text-gray-400">{i + 1}</td>
                   <td className="px-6 py-3 text-sm font-medium text-gray-900">{c.nombre}</td>
                   <td className="px-6 py-3 text-sm text-gray-600">{c.ops}</td>
-                  <td className="px-6 py-3 text-sm font-bold text-[#2E1A47]">{c.fee > 0 ? fmt(c.fee) : "—"}</td>
+                  <td className="px-6 py-3 text-sm font-bold text-[#2E1A47]">{c.fee > 0 ? fmtEur(c.fee) : "—"}</td>
                 </tr>
               ))}
             </tbody>

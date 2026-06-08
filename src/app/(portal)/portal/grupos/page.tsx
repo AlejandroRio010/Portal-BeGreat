@@ -4,14 +4,11 @@ import { clients, clientGroups, operations } from "@/db/schema";
 import { eq, and, isNotNull, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { fmtEur } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 const FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
-
-function fmtEur(n: number) {
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
-}
 
 export default async function PortalGruposPage() {
   const session = await auth();

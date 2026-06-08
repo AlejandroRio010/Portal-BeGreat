@@ -6,6 +6,7 @@ import {
   PointerSensor, useSensor, useSensors, useDroppable, useDraggable,
 } from "@dnd-kit/core";
 import Link from "next/link";
+import { fmtNum } from "@/lib/format";
 
 export interface KanbanOp {
   id: string;
@@ -49,7 +50,7 @@ function DroppableColumn({ fase, ops, activeId }: { fase: string; ops: KanbanOp[
         </div>
         <div className="flex items-center gap-1.5 pl-4">
           <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5">{ops.length}</span>
-          {totalImporte > 0 && <span className="text-[9px] text-gray-400">{totalImporte.toLocaleString("es-ES")} €</span>}
+          {totalImporte > 0 && <span className="text-[9px] text-gray-400">{fmtNum(totalImporte)} €</span>}
         </div>
       </div>
       <div className="flex-1 space-y-1.5 min-h-[400px] px-1">
@@ -93,7 +94,7 @@ export function CardContent({ op, dragListeners, dragAttributes }: { op: KanbanO
       </div>
       {op.colaborador_nombre && <p className="text-[9px] text-gray-400 pl-4 mb-1.5 truncate">{op.colaborador_nombre}</p>}
       <div className="pl-4 flex items-center flex-wrap gap-1">
-        {fee > 0 && <span className="text-[10px] font-bold text-[#2E1A47] whitespace-nowrap">{fee.toLocaleString("es-ES")} €</span>}
+        {fee > 0 && <span className="text-[10px] font-bold text-[#2E1A47] whitespace-nowrap">{fmtNum(fee)} €</span>}
         {op.status === "pendiente_de_validar" && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />}
       </div>
     </div>
@@ -137,10 +138,10 @@ export default function KanbanBoard({ initialOps, fases }: { initialOps: KanbanO
         <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-widest">Consultoría financiera</h2>
         <div className="flex items-center gap-5 mt-1.5">
           {totalFeeBegreat > 0 && (
-            <span className="text-xs text-gray-500">Fee BeGreat: <span className="font-bold text-[#2E1A47]">{totalFeeBegreat.toLocaleString("es-ES")} €</span></span>
+            <span className="text-xs text-gray-500">Fee BeGreat: <span className="font-bold text-[#2E1A47]">{fmtNum(totalFeeBegreat)} €</span></span>
           )}
           {totalFeeColab > 0 && (
-            <span className="text-xs text-gray-500">Fee colaboradores: <span className="font-bold text-[#2E1A47]">{totalFeeColab.toLocaleString("es-ES")} €</span></span>
+            <span className="text-xs text-gray-500">Fee colaboradores: <span className="font-bold text-[#2E1A47]">{fmtNum(totalFeeColab)} €</span></span>
           )}
           <span className="text-xs text-gray-400">{ops.length} operaciones</span>
         </div>

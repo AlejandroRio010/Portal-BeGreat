@@ -3,13 +3,9 @@ import { db } from "@/db";
 import { operations, clients } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
+import { fmtEur } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-
-function fmt(n: number | null | undefined) {
-  if (!n) return "0 €";
-  return `${n.toLocaleString("es-ES")} €`;
-}
 
 function formatDate(d: Date) {
   return new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
@@ -109,7 +105,7 @@ export default async function HistorialPage({
           <div className="w-px bg-white/20" />
           <div className="flex-1 bg-[#2E1A47] px-6 py-5">
             <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee generadas</p>
-            <p className="text-2xl font-black text-white leading-tight">{fmt(totalGanado)}</p>
+            <p className="text-2xl font-black text-white leading-tight">{fmtEur(totalGanado)}</p>
           </div>
         </div>
         {/* Pareja 2: clara */}
@@ -121,7 +117,7 @@ export default async function HistorialPage({
           <div className="w-px bg-[#2E1A47]/25" />
           <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
             <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee pendiente</p>
-            <p className="text-2xl font-black text-[#2E1A47] leading-tight">{fmt(feePendiente)}</p>
+            <p className="text-2xl font-black text-[#2E1A47] leading-tight">{fmtEur(feePendiente)}</p>
           </div>
         </div>
       </div>
@@ -234,7 +230,7 @@ export default async function HistorialPage({
                   <td className="px-6 py-4">
                     {op.comision_colaborador ? (
                       <span className="text-sm font-bold text-[#2E1A47]">
-                        {Number(op.comision_colaborador).toLocaleString("es-ES")} €
+                        {fmtEur(op.comision_colaborador)}
                       </span>
                     ) : (
                       <span className="text-xs text-gray-300">—</span>

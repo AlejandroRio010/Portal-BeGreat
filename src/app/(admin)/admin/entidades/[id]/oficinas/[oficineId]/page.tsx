@@ -6,11 +6,8 @@ import Link from "next/link";
 import OficinaEditForm from "./OficinaEditForm";
 import ContactosOficinaPanel from "./ContactosOficinaPanel";
 import NotesSection from "@/components/NotesSection";
+import { fmtEur } from "@/lib/format";
 
-function fmtEur(val: string | null | undefined) {
-  if (!val) return "—";
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(val));
-}
 function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
   return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(d));

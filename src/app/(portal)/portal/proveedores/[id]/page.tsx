@@ -5,14 +5,11 @@ import { eq, and } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import ProveedorEditFormPortal from "./ProveedorEditFormPortal";
+import { fmtEur } from "@/lib/format";
 
 function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
   return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(d));
-}
-function fmtEur(val: string | null | undefined) {
-  if (!val) return "—";
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(val));
 }
 const STATUS_BADGE: Record<string, string> = {
   pendiente_de_validar: "bg-amber-50 text-amber-700 border border-amber-200",

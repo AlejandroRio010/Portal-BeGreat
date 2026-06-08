@@ -8,6 +8,7 @@ import NotesSection from "@/components/NotesSection";
 import DocumentsSection from "@/components/DocumentsSection";
 import { auth } from "@/lib/auth";
 import CelebrationBanner from "@/components/CelebrationBanner";
+import { fmtEur, fmtNum } from "@/lib/format";
 
 const FASE_COLOR: Record<string, { bg: string; text: string; border: string }> = {
   "Pre-análisis":        { bg: "bg-gray-100",     text: "text-gray-600",    border: "border-gray-200" },
@@ -193,7 +194,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
         <div className="bg-[#2E1A47] p-5">
           <p className="text-white/50 text-xs uppercase tracking-widest mb-2">Importe</p>
           <p className="text-2xl font-black text-white">
-            {op.importe ? `${Number(op.importe).toLocaleString("es-ES")} €` : "—"}
+            {fmtEur(op.importe)}
           </p>
         </div>
         <div className={`p-5 border ${op.comision_colaborador ? "bg-emerald-50 border-emerald-200" : "bg-white border-gray-200"}`}>
@@ -201,7 +202,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             Fee colaborador
           </p>
           <p className={`text-2xl font-black ${op.comision_colaborador ? "text-emerald-700" : "text-gray-300"}`}>
-            {op.comision_colaborador ? `${Number(op.comision_colaborador).toLocaleString("es-ES")} €` : "—"}
+            {fmtEur(op.comision_colaborador)}
           </p>
         </div>
         <div className={`p-5 border ${op.comision_begreat ? "bg-[#EEEBF3] border-[#2E1A47]/20" : "bg-white border-gray-200"}`}>
@@ -209,7 +210,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             Fee BeGreat
           </p>
           <p className={`text-2xl font-black ${op.comision_begreat ? "text-[#2E1A47]" : "text-gray-300"}`}>
-            {op.comision_begreat ? `${Number(op.comision_begreat).toLocaleString("es-ES")} €` : "—"}
+            {fmtEur(op.comision_begreat)}
           </p>
         </div>
         <div className="bg-white border border-gray-200 p-5">
@@ -269,8 +270,8 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Datos de la operación</p>
             {(() => {
               const fmtFecha = (d: Date | string | null) => d ? new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }) : null;
-              const fmtEuro = (v: string | null) => v ? `${Number(v).toLocaleString("es-ES")} €` : null;
-              const cuota = op.importe && op.plazo_meses ? `${(Number(op.importe) / op.plazo_meses).toLocaleString("es-ES", { maximumFractionDigits: 0 })} €/mes` : null;
+              const fmtEuro = (v: string | null) => { const r = fmtEur(v); return r === "-" ? null : r; };
+              const cuota = op.importe && op.plazo_meses ? `${fmtNum(Number(op.importe) / op.plazo_meses)} €/mes` : null;
               const isRenting = op.pipeline_key === "renting";
 
               const campos: { label: string; value: string | null }[] = isRenting ? [

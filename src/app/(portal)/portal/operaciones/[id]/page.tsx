@@ -5,6 +5,7 @@ import { eq, and, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import NotesSection from "@/components/NotesSection";
+import { fmtEur, fmtNum } from "@/lib/format";
 import OpEditForm from "./OpEditForm";
 import DocumentsSection from "@/components/DocumentsSection";
 import CelebrationBanner from "@/components/CelebrationBanner";
@@ -183,7 +184,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
         <div className="bg-[#2E1A47] p-5">
           <p className="text-white/50 text-xs uppercase tracking-widest mb-2">Importe</p>
           <p className="text-2xl font-black text-white">
-            {op.importe ? `${Number(op.importe).toLocaleString("es-ES")} €` : "—"}
+            {fmtEur(op.importe)}
           </p>
         </div>
         <div className={`p-5 border ${op.comision_colaborador ? "bg-emerald-50 border-emerald-200" : "bg-white border-gray-200"}`}>
@@ -191,7 +192,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             Fee / Comisión
           </p>
           <p className={`text-2xl font-black ${op.comision_colaborador ? "text-emerald-700" : "text-gray-300"}`}>
-            {op.comision_colaborador ? `${Number(op.comision_colaborador).toLocaleString("es-ES")} €` : "Por confirmar"}
+            {op.comision_colaborador ? fmtEur(op.comision_colaborador) : "Por confirmar"}
           </p>
         </div>
         <div className="bg-white border border-gray-200 p-5">
@@ -259,8 +260,8 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">Datos de la operación</p>
             {(() => {
               const fmtFecha = (d: Date | string | null) => d ? new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }) : null;
-              const fmtEuro = (v: string | null) => v ? `${Number(v).toLocaleString("es-ES")} €` : null;
-              const cuota = op.importe && op.plazo_meses ? `${(Number(op.importe) / op.plazo_meses).toLocaleString("es-ES", { maximumFractionDigits: 0 })} €/mes` : null;
+              const fmtEuro = (v: string | null) => { const r = fmtEur(v); return r === "-" ? null : r; };
+              const cuota = op.importe && op.plazo_meses ? `${fmtNum(Number(op.importe) / op.plazo_meses)} €/mes` : null;
               const isRenting = op.pipeline_key === "renting";
 
               const campos: { label: string; value: string | null; href?: string }[] = isRenting ? [

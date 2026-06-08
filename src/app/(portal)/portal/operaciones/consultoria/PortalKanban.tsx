@@ -6,6 +6,7 @@ import {
   PointerSensor, useSensor, useSensors, useDroppable, useDraggable,
 } from "@dnd-kit/core";
 import Link from "next/link";
+import { fmtEur, fmtNum } from "@/lib/format";
 
 interface Op {
   id: string;
@@ -63,7 +64,7 @@ function CardContent({ op, dragListeners, dragAttributes, canEdit }: { op: Op; d
       </div>
       {op.client_nombre && op.nombre && <p className={`text-[9px] text-gray-400 mb-1.5 truncate ${canEdit ? "pl-4" : ""}`}>{op.client_nombre}</p>}
       <div className={`flex items-center flex-wrap gap-1 ${canEdit ? "pl-4" : ""}`}>
-        {fee > 0 && <span className="text-[10px] font-bold text-[#2E1A47] whitespace-nowrap">{fee.toLocaleString("es-ES")} €</span>}
+        {fee > 0 && <span className="text-[10px] font-bold text-[#2E1A47] whitespace-nowrap">{fmtNum(fee)} €</span>}
         {op.status === "pendiente_de_validar" && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />}
       </div>
     </div>
@@ -101,7 +102,7 @@ function DroppableColumn({ fase, ops, activeId, canEdit }: { fase: string; ops: 
         <p className="text-[9px] font-black text-[#2E1A47] uppercase tracking-widest leading-tight mb-2">{fase}</p>
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-black text-white bg-[#2E1A47] px-2 py-0.5 min-w-[20px] text-center">{ops.length}</span>
-          {totalImporte > 0 && <span className="text-[10px] text-gray-500 font-semibold">{totalImporte.toLocaleString("es-ES")} €</span>}
+          {totalImporte > 0 && <span className="text-[10px] text-gray-500 font-semibold">{fmtNum(totalImporte)} €</span>}
         </div>
       </div>
       {/* Cards */}
@@ -176,7 +177,7 @@ export default function PortalKanban({ ops: initialOps, fases, canEdit = false }
         <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-widest">Consultoría financiera</h2>
         <div className="flex items-center gap-5 mt-1.5">
           {totalFeeColab > 0 && (
-            <span className="text-xs text-gray-500">Mi fee: <span className="font-bold text-[#2E1A47]">{totalFeeColab.toLocaleString("es-ES")} €</span></span>
+            <span className="text-xs text-gray-500">Mi fee: <span className="font-bold text-[#2E1A47]">{fmtNum(totalFeeColab)} €</span></span>
           )}
           <span className="text-xs text-gray-400">{ops.length} operaciones</span>
           {canEdit && <span className="text-[10px] text-gray-400 italic">Arrastra las tarjetas para cambiar de fase</span>}

@@ -4,13 +4,10 @@ import { operations, clients } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { fmtEur } from "@/lib/format";
 
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
-
-function fmtEur(n: number) {
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
-}
 
 export default async function FirmadasMesPage({ params }: { params: Promise<{ year: string; month: string }> }) {
   const { year, month } = await params;
