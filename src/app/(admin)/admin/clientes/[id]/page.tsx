@@ -221,13 +221,14 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
 
         {/* Col 2-3: Operaciones */}
         <div className="col-span-2 flex flex-col gap-6">
-          <div className="bg-white border border-gray-200">
+          <div className="bg-white border border-gray-200 overflow-hidden">
           <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
             <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Operaciones</h3>
           </div>
           {ops.length === 0 ? (
             <p className="px-5 py-8 text-sm text-gray-400 text-center">Sin operaciones registradas para este cliente.</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
@@ -242,7 +243,13 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {ops.map((op) => {
-                  const badge = STATUS_BADGE[op.status] ?? STATUS_BADGE.activa;
+                  const badge = op.status === "archivada"
+                    ? FASES_APROBADAS.includes(op.fase)
+                      ? { bg: "bg-emerald-50 text-emerald-700 border border-emerald-200", label: "Ganada ✓" }
+                      : { bg: "bg-red-50 text-red-600 border border-red-200", label: "Denegada" }
+                    : op.status === "pendiente_de_validar"
+                      ? { bg: "bg-amber-50 text-amber-700 border border-amber-200", label: "Pendiente" }
+                      : { bg: "bg-blue-50 text-blue-700 border border-blue-200", label: "En curso" };
                   return (
                     <tr key={op.id} className="hover:bg-[#EEEBF3]/30 transition-colors">
                       <td className="px-5 py-3 text-sm text-gray-800 font-medium max-w-[160px] truncate">{op.nombre ?? "—"}</td>
@@ -257,7 +264,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
                       </td>
                       <td className="px-5 py-3 text-sm text-gray-700 font-medium">{fmtEur(op.importe)}</td>
                       <td className="px-5 py-3 text-xs text-gray-400">{fmtDate(op.created_at)}</td>
-                      <td className="px-5 py-3 text-right">
+                      <td className="px-5 py-3 text-right whitespace-nowrap">
                         <Link href={`/admin/operaciones/${op.id}`} className="text-xs text-[#2E1A47] font-semibold hover:underline">Ver →</Link>
                       </td>
                     </tr>
@@ -265,6 +272,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
                 })}
               </tbody>
             </table>
+            </div>
           )}
           </div>
 

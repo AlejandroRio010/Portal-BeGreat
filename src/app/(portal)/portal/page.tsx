@@ -113,26 +113,32 @@ export default async function PortalHomePage({
       </div>
 
       {/* ── KPIs ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-0 mb-6">
-        <div className="bg-[#2E1A47] px-6 py-5 border-r border-white/15">
-          <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Operaciones Firmadas</p>
-          <p className="text-3xl font-black text-white">{firmadas.length}</p>
-          <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">desde 2024</p>
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="flex overflow-hidden">
+          <div className="flex-1 bg-[#2E1A47] px-6 py-5">
+            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Operaciones Firmadas</p>
+            <p className="text-3xl font-black text-white">{firmadas.length}</p>
+            <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">desde 2024</p>
+          </div>
+          <div className="w-px bg-white/20 flex-shrink-0" />
+          <div className="flex-1 bg-[#2E1A47] px-6 py-5">
+            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Comisiones Ganadas</p>
+            <p className="text-xl font-black text-white leading-tight">{totalComision > 0 ? fmt(totalComision) : "—"}</p>
+            <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">acumulado total</p>
+          </div>
         </div>
-        <div className="bg-[#2E1A47] px-6 py-5 border-r border-white/15">
-          <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Comisiones Ganadas</p>
-          <p className="text-xl font-black text-white leading-tight">{totalComision > 0 ? fmt(totalComision) : "—"}</p>
-          <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">acumulado total</p>
-        </div>
-        <div className="bg-[#2E1A47] px-6 py-5 border-r border-white/15">
-          <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Operaciones Activas</p>
-          <p className="text-3xl font-black text-white">{enCurso.length + pendientes.length}</p>
-          <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">activas</p>
-        </div>
-        <div className="bg-[#2E1A47] px-6 py-5">
-          <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee Potencial</p>
-          <p className="text-xl font-black text-white leading-tight">{feePendiente > 0 ? fmt(feePendiente) : "—"}</p>
-          <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">En proceso</p>
+        <div className="flex overflow-hidden">
+          <div className="flex-1 bg-[#2E1A47] px-6 py-5">
+            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Operaciones Activas</p>
+            <p className="text-3xl font-black text-white">{enCurso.length + pendientes.length}</p>
+            <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">activas</p>
+          </div>
+          <div className="w-px bg-white/20 flex-shrink-0" />
+          <div className="flex-1 bg-[#2E1A47] px-6 py-5">
+            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee Potencial</p>
+            <p className="text-xl font-black text-white leading-tight">{feePendiente > 0 ? fmt(feePendiente) : "—"}</p>
+            <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">En proceso</p>
+          </div>
         </div>
       </div>
 

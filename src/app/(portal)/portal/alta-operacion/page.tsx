@@ -196,6 +196,15 @@ export default function AltaOperacionPage() {
                   <label className={label}>Lugar de instalación / entrega</label>
                   <input name="lugar_entrega" className={inp} placeholder="Dirección completa" />
                 </div>
+                <div className="col-span-2">
+                  <label className={label}>Descripción del equipo a arrendar</label>
+                  <textarea
+                    name="descripcion"
+                    rows={3}
+                    className={inp + " resize-none"}
+                    placeholder="Describe brevemente el tipo de equipo, marca, modelo, características técnicas..."
+                  />
+                </div>
               </div>
             </Section>
 
@@ -238,15 +247,17 @@ export default function AltaOperacionPage() {
           </>
         )}
 
-        {/* Notas y comunicación */}
-        <Section title="Notas adicionales">
-          <textarea
-            name="descripcion"
-            rows={4}
-            className={inp + " resize-none"}
-            placeholder="Cuéntanos el contexto de la operación, situación del cliente, urgencia, condiciones especiales..."
-          />
-        </Section>
+        {/* Notas y comunicación - solo consultoría (renting usa descripcion en equipo) */}
+        {pipeline === "consultoria" && (
+          <Section title="Notas adicionales">
+            <textarea
+              name="descripcion"
+              rows={4}
+              className={inp + " resize-none"}
+              placeholder="Cuéntanos el contexto de la operación, situación del cliente, urgencia, condiciones especiales..."
+            />
+          </Section>
+        )}
 
         <Section title="Preferencia de comunicación con el cliente">
           <div className="border border-gray-200 divide-y divide-gray-100">

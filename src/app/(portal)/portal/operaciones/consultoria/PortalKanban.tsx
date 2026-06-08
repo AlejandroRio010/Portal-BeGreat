@@ -80,7 +80,11 @@ function DroppableColumn({ fase, ops, activeId, canEdit }: { fase: string; ops: 
   const accent = FASE_ACCENT[fase] ?? "border-l-[#2E1A47]";
   const totalImporte = ops.reduce((s, o) => s + Number(o.importe ?? 0), 0);
   return (
-    <div ref={setNodeRef} className={`flex-shrink-0 w-[185px] flex flex-col transition-colors ${isOver ? "bg-[#EEEBF3]/80" : ""}`}>
+    <div ref={setNodeRef} className={`flex-shrink-0 w-[185px] flex flex-col transition-colors relative overflow-hidden ${isOver ? "bg-[#EEEBF3]/80" : ""}`}>
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/begreat-logo-blanco.png" alt="" className="w-20 opacity-[0.035] object-contain select-none" />
+      </div>
       <div className="px-2 py-2.5 mb-1 border-b-2" style={{ borderColor: dot.replace("bg-", "").includes("-") ? undefined : "#2E1A47" }}>
         <div className="flex items-center gap-1.5 mb-1">
           <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
@@ -137,10 +141,19 @@ export default function PortalKanban({ ops: initialOps, fases, canEdit = false }
   }, {});
 
   const board = (
-    <div style={{ zoom: 0.88 }} className="flex pb-4 gap-1">
-      {fases.map((fase) => (
-        <div key={fase} className="flex-1 min-w-0">
-          <DroppableColumn fase={fase} ops={opsByFase[fase] ?? []} activeId={activeId} canEdit={canEdit} />
+    <div style={{ zoom: 0.88 }} className="flex pb-4 gap-0 items-stretch">
+      {fases.map((fase, i) => (
+        <div key={fase} className="flex items-stretch flex-1 min-w-0">
+          <div className="flex-1 min-w-0">
+            <DroppableColumn fase={fase} ops={opsByFase[fase] ?? []} activeId={activeId} canEdit={canEdit} />
+          </div>
+          {i < fases.length - 1 && (
+            <div className="flex-shrink-0 flex items-start pt-3 px-0.5 z-10">
+              <svg width="12" height="20" viewBox="0 0 12 20" fill="none" className="text-[#2E1A47]/20">
+                <path d="M1 0 L11 10 L1 20" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+              </svg>
+            </div>
+          )}
         </div>
       ))}
     </div>
