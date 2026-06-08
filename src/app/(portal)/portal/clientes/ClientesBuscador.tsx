@@ -65,7 +65,7 @@ export default function ClientesBuscador({ clientes }: { clientes: Cliente[] }) 
                     </div>
                     {c.web && <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[220px]">{c.web}</p>}
                   </td>
-                  <td className="px-6 py-3.5 text-sm text-gray-500 font-mono">{c.cif ?? "—"}</td>
+                  <td className="px-6 py-3.5 text-sm text-gray-500 font-mono whitespace-nowrap">{c.cif ?? "—"}</td>
                   <td className="px-6 py-3.5 text-sm text-gray-500">{c.email ?? "—"}</td>
                   <td className="px-6 py-3.5">
                     <span className={`inline-block px-2 py-0.5 text-xs font-bold ${c.ops_activas > 0 ? "bg-blue-50 text-blue-700" : "text-gray-300"}`}>
