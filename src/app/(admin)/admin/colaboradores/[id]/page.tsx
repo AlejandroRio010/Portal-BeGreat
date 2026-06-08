@@ -298,6 +298,7 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
           colaboradorId={colab.id}
           puedeEditarOps={colab.puede_editar_ops ?? false}
           puedeVerEntidades={colab.puede_ver_entidades ?? false}
+          puedePublicarSinValidar={colab.puede_publicar_sin_validar ?? false}
         />
       </div>
 

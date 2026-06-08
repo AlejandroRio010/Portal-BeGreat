@@ -40,6 +40,7 @@ export const collaborators = pgTable("collaborators", {
   notas_internas: text("notas_internas"),
   puede_editar_ops: boolean("puede_editar_ops").notNull().default(false),
   puede_ver_entidades: boolean("puede_ver_entidades").notNull().default(false),
+  puede_publicar_sin_validar: boolean("puede_publicar_sin_validar").notNull().default(false),
   codigo: text("codigo").unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });

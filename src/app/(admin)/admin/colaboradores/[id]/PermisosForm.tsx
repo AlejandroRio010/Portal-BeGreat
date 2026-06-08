@@ -7,18 +7,21 @@ interface Props {
   colaboradorId: string;
   puedeEditarOps: boolean;
   puedeVerEntidades: boolean;
+  puedePublicarSinValidar: boolean;
 }
 
-export default function PermisosForm({ colaboradorId, puedeEditarOps, puedeVerEntidades }: Props) {
+export default function PermisosForm({ colaboradorId, puedeEditarOps, puedeVerEntidades, puedePublicarSinValidar }: Props) {
   const router = useRouter();
   const [editarOps, setEditarOps] = useState(puedeEditarOps);
   const [verEntidades, setVerEntidades] = useState(puedeVerEntidades);
+  const [publicarSinValidar, setPublicarSinValidar] = useState(puedePublicarSinValidar);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  async function toggle(field: "puede_editar_ops" | "puede_ver_entidades", value: boolean) {
+  async function toggle(field: "puede_editar_ops" | "puede_ver_entidades" | "puede_publicar_sin_validar", value: boolean) {
     if (field === "puede_editar_ops") setEditarOps(value);
-    else setVerEntidades(value);
+    else if (field === "puede_ver_entidades") setVerEntidades(value);
+    else setPublicarSinValidar(value);
 
     setSaving(true);
     setSaved(false);
@@ -84,6 +87,29 @@ export default function PermisosForm({ colaboradorId, puedeEditarOps, puedeVerEn
             <span
               className={`inline-block h-4 w-4 bg-white transition-transform ${
                 verEntidades ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className="border-t border-gray-100" />
+
+        {/* Puede publicar sin validar */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-gray-800">Publicar operaciones sin validación</p>
+            <p className="text-xs text-gray-400 mt-0.5">Las operaciones que suba este colaborador se activan directamente sin pasar por "Pendiente de validar". Solo para colaboradores de confianza.</p>
+          </div>
+          <button
+            onClick={() => toggle("puede_publicar_sin_validar", !publicarSinValidar)}
+            disabled={saving}
+            className={`flex-shrink-0 relative inline-flex h-6 w-11 items-center transition-colors focus:outline-none disabled:opacity-50 ${
+              publicarSinValidar ? "bg-[#2E1A47]" : "bg-gray-200"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 bg-white transition-transform ${
+                publicarSinValidar ? "translate-x-6" : "translate-x-1"
               }`}
             />
           </button>

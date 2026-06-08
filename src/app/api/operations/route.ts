@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, clients, suppliers, contacts } from "@/db/schema";
+import { operations, clients, suppliers, contacts, collaborators } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { generateCodigoCLI, generateCodigoPRV, generateCodigoOP } from "@/lib/codigos";
 
@@ -112,6 +112,14 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Comprobar si el colaborador puede publicar sin validar
+  const [colabPerms] = await db
+    .select({ puede_publicar_sin_validar: collaborators.puede_publicar_sin_validar })
+    .from(collaborators)
+    .where(eq(collaborators.id, userId))
+    .limit(1);
+  const statusInicial = colabPerms?.puede_publicar_sin_validar ? "activa" : "pendiente_de_validar";
+
   const opCodigo = await generateCodigoOP(clientId);
 
   // Resolver operacion_original_id (directo desde form o por código)
@@ -144,7 +152,7 @@ export async function POST(req: NextRequest) {
       es_renovacion: es_renovacion === true,
       operacion_original_id: opOriginalId,
       fase: "Pre-análisis",
-      status: "pendiente_de_validar",
+      status: statusInicial,
       codigo: opCodigo,
     })
     .returning();
