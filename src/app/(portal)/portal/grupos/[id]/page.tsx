@@ -1,9 +1,10 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { clientGroups, clients, operations } from "@/db/schema";
-import { eq, and, inArray, sql } from "drizzle-orm";
+import { eq, and, inArray, isNull, sql } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import PortalEmpresasGrupoPanel from "./PortalEmpresasGrupoPanel";
 import { fmtEur } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +27,14 @@ export default async function PortalGrupoFichaPage({ params }: { params: Promise
     .where(and(eq(clients.group_id, id), eq(clients.collaborator_id, userId)))
     .orderBy(clients.nombre);
 
-  if (empresas.length === 0) notFound();
+  // Mis clientes sin grupo (para poder añadir)
+  const disponibles = await db
+    .select({ id: clients.id, nombre: clients.nombre, codigo: clients.codigo, cif: clients.cif })
+    .from(clients)
+    .where(and(eq(clients.collaborator_id, userId), isNull(clients.group_id)))
+    .orderBy(clients.nombre);
+
+  if (empresas.length === 0 && disponibles.length === 0) notFound();
 
   const empresaIds = empresas.map(e => e.id);
   const ops = await db
@@ -134,31 +142,11 @@ export default async function PortalGrupoFichaPage({ params }: { params: Promise
 
         {/* Col 2-3: Empresas */}
         <div className="col-span-2">
-          <div className="bg-white border border-gray-200">
-            <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
-              <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">
-                Mis empresas en este grupo ({empresas.length})
-              </h3>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {empresas.map(c => (
-                <Link
-                  key={c.id}
-                  href={`/portal/clientes/${c.id}`}
-                  className="flex items-center justify-between px-5 py-3.5 hover:bg-[#EEEBF3]/30 transition-colors group"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800 group-hover:text-[#2E1A47]">{c.nombre}</p>
-                    <div className="flex items-center gap-3 mt-0.5">
-                      {c.codigo && <span className="text-[10px] font-mono text-gray-400">{c.codigo}</span>}
-                      {c.cif && <span className="text-[10px] text-gray-400">{c.cif}</span>}
-                    </div>
-                  </div>
-                  <span className="text-[#2E1A47] text-sm opacity-0 group-hover:opacity-100 transition-opacity">Ver →</span>
-                </Link>
-              ))}
-            </div>
-          </div>
+          <PortalEmpresasGrupoPanel
+            grupoId={id}
+            empresas={empresas}
+            disponibles={disponibles}
+          />
         </div>
       </div>
 
