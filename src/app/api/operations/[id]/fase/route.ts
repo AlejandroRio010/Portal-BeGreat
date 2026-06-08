@@ -5,7 +5,6 @@ import { operations, collaborators } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 const FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
-const GANADAS = ["Honorarios pagados", "Transferencia realizada"];
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -35,10 +34,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (FIRMADAS.includes(fase) && !op.fecha_cierre) {
     updateData.fecha_cierre = new Date();
   }
-  if (GANADAS.includes(fase)) {
-    updateData.status = "archivada";
-  }
-
   await db.update(operations).set(updateData).where(eq(operations.id, id));
   return NextResponse.json({ ok: true });
 }

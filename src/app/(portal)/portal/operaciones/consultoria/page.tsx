@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { operations, clients, pipelines, collaborators } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, notInArray } from "drizzle-orm";
 import Link from "next/link";
 import PortalKanban from "./PortalKanban";
 
@@ -32,7 +32,7 @@ export default async function ConsultoriaPage() {
     })
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
-    .where(and(eq(operations.collaborator_id, userId), eq(operations.pipeline_key, "consultoria"), eq(operations.status, "activa")))
+    .where(and(eq(operations.collaborator_id, userId), eq(operations.pipeline_key, "consultoria"), eq(operations.status, "activa"), notInArray(operations.fase, ["Honorarios pagados"])))
     .orderBy(operations.created_at);
 
   return (
