@@ -25,6 +25,7 @@ export default async function HistorialPage({
   const allOps = await db
     .select({
       id: operations.id,
+      nombre: operations.nombre,
       pipeline_key: operations.pipeline_key,
       producto: operations.producto,
       equipo_tipo: operations.equipo_tipo,
@@ -157,10 +158,11 @@ export default async function HistorialPage({
             <p className="text-gray-400 text-sm">No hay operaciones con los filtros aplicados.</p>
           </div>
         ) : (
-          <table className="w-full">
+          <div style={{ zoom: 0.88 }}>
+        <table className="w-full">
             <thead>
               <tr className="bg-[#EEEBF3] border-b border-gray-100">
-                <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Cliente</th>
+                <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Cliente / Operación</th>
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Tipo</th>
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Estado</th>
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fecha</th>
@@ -173,7 +175,8 @@ export default async function HistorialPage({
                 <tr key={op.id} className="hover:bg-[#EEEBF3]/30 transition-colors group">
                   <td className="px-6 py-4">
                     <p className="text-sm font-semibold text-gray-900">{op.client_nombre ?? "—"}</p>
-                    {op.producto && <p className="text-xs text-gray-400">{op.producto}</p>}
+                    {op.nombre && <p className="text-xs text-[#2E1A47]/70 font-medium mt-0.5">{op.nombre}</p>}
+                    {!op.nombre && op.producto && <p className="text-xs text-gray-400">{op.producto}</p>}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-block px-2.5 py-0.5 rounded text-xs font-semibold ${
@@ -219,6 +222,7 @@ export default async function HistorialPage({
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

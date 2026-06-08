@@ -105,7 +105,7 @@ function DroppableColumn({ fase, ops, activeId, canEdit }: { fase: string; ops: 
         </div>
       </div>
       {/* Cards */}
-      <div className="flex-1 space-y-2 min-h-[460px] px-1.5 pt-2 pb-3">
+      <div className="flex-1 space-y-2 min-h-[640px] px-1.5 pt-2 pb-3">
         {ops.map(op => canEdit
           ? <DraggableCard key={op.id} op={op} isDragging={activeId === op.id} />
           : (
