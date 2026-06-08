@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { operations, clients, pipelines, collaborators } from "@/db/schema";
-import { eq, and, notInArray } from "drizzle-orm";
+import { eq, and, notInArray, inArray } from "drizzle-orm";
 import Link from "next/link";
 import PortalKanbanRenting from "./PortalKanbanRenting";
 
@@ -36,7 +36,7 @@ export default async function RentingPage() {
     })
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
-    .where(and(eq(operations.collaborator_id, userId), eq(operations.pipeline_key, "renting"), eq(operations.status, "activa"), notInArray(operations.fase, ["Transferencia realizada"])))
+    .where(and(eq(operations.collaborator_id, userId), eq(operations.pipeline_key, "renting"), inArray(operations.status, ["activa", "pendiente_de_validar"]), notInArray(operations.fase, ["Transferencia realizada"])))
     .orderBy(operations.created_at);
 
   return (
