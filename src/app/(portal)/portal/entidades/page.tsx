@@ -1,15 +1,11 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { collaborators, financialEntities, entityOffices, entityContacts } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { collaborators, financialEntities, entityOffices, operations } from "@/db/schema";
+import { eq, sql } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
+import PortalEntidadesClient from "./PortalEntidadesClient";
 
-const TIPO_LABEL: Record<string, string> = {
-  banco: "Banco",
-  alternativa_financiera: "Financiación alternativa",
-  renting: "Entidad de renting",
-};
+export const dynamic = "force-dynamic";
 
 export default async function PortalEntidadesPage() {
   const session = await auth();
@@ -29,36 +25,38 @@ export default async function PortalEntidadesPage() {
     .from(financialEntities)
     .orderBy(financialEntities.nombre);
 
-  return (
-    <div className="max-w-5xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#2E1A47]">Entidades financieras</h1>
-        <p className="text-sm text-gray-500 mt-1">Directorio de entidades con las que trabaja BeGreat Consulting</p>
-      </div>
+  const officeCounts = await db
+    .select({ entity_id: entityOffices.entity_id, count: sql<number>`COUNT(*)` })
+    .from(entityOffices)
+    .groupBy(entityOffices.entity_id);
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {entidades.map(e => (
-          <Link key={e.id} href={`/portal/entidades/${e.id}`}
-            className="bg-white border border-gray-200 p-5 hover:border-[#2E1A47]/30 hover:shadow-sm transition-all group">
-            <div className="flex items-start gap-4">
-              {e.logo_url ? (
-                <img src={e.logo_url} alt={e.nombre} className="w-10 h-10 object-contain flex-shrink-0" />
-              ) : (
-                <div className="w-10 h-10 bg-[#EEEBF3] flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-bold text-[#2E1A47]">{e.nombre.charAt(0)}</span>
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-gray-900 group-hover:text-[#2E1A47] truncate">{e.nombre}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{TIPO_LABEL[e.tipo] ?? e.tipo}</p>
-                {e.web && (
-                  <p className="text-xs text-gray-400 mt-1 truncate">{e.web}</p>
-                )}
-              </div>
-            </div>
-          </Link>
-        ))}
+  const officeMap = Object.fromEntries(officeCounts.map(r => [r.entity_id, Number(r.count)]));
+
+  const opCounts = await db
+    .select({ entity_id: entityOffices.entity_id, count: sql<number>`COUNT(DISTINCT ${operations.id})` })
+    .from(entityOffices)
+    .leftJoin(operations, eq(operations.entity_office_id, entityOffices.id))
+    .groupBy(entityOffices.entity_id);
+
+  const opsMap = Object.fromEntries(opCounts.map(r => [r.entity_id, Number(r.count)]));
+
+  const data = entidades.map(e => ({
+    id: e.id,
+    nombre: e.nombre,
+    tipo: e.tipo,
+    logo_url: e.logo_url ?? null,
+    web: e.web ?? null,
+    officesCount: officeMap[e.id] ?? 0,
+    opsCount: opsMap[e.id] ?? 0,
+  }));
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Entidades financieras</h1>
+        <p className="text-sm text-gray-400 mt-1">{entidades.length} entidades registradas</p>
       </div>
+      <PortalEntidadesClient entidades={data} />
     </div>
   );
 }
