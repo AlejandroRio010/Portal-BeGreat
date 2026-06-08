@@ -26,6 +26,15 @@ export default function AltaOperacionPage() {
   const rentingRol: RentingRol = "colaborador";
   const [producto, setProducto] = useState("");
   const [esRenovacion, setEsRenovacion] = useState(false);
+  const [clienteBusqueda, setClienteBusqueda] = useState("");
+  const [clienteResultados, setClienteResultados] = useState<any[]>([]);
+  const [clienteSeleccionado, setClienteSeleccionado] = useState<any | null>(null);
+  const [clienteDropdown, setClienteDropdown] = useState(false);
+  const clienteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [clienteNombre, setClienteNombre] = useState("");
+  const [clienteEmail, setClienteEmail] = useState("");
+  const [clienteTelefono, setClienteTelefono] = useState("");
+  const [clienteWeb, setClienteWeb] = useState("");
   const [renovBusqueda, setRenovBusqueda] = useState("");
   const [renovResultados, setRenovResultados] = useState<any[]>([]);
   const [renovSeleccionada, setRenovSeleccionada] = useState<any | null>(null);
@@ -33,6 +42,18 @@ export default function AltaOperacionPage() {
   const renovTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Autocompletar búsqueda de cliente existente
+  useEffect(() => {
+    if (clienteTimer.current) clearTimeout(clienteTimer.current);
+    if (clienteBusqueda.length < 2) { setClienteResultados([]); return; }
+    clienteTimer.current = setTimeout(async () => {
+      const res = await fetch(`/api/search/clientes?q=${encodeURIComponent(clienteBusqueda)}`);
+      const data = await res.json();
+      setClienteResultados(data);
+      setClienteDropdown(true);
+    }, 300);
+  }, [clienteBusqueda]);
 
   // Autocompletar búsqueda de renovación
   useEffect(() => {
@@ -234,37 +255,31 @@ export default function AltaOperacionPage() {
             </Section>
 
             <Section title="Datos del cliente">
-              {esRenovacion && renovSeleccionada?.client_nombre ? (
-                <div className="bg-[#EEEBF3]/60 border border-[#2E1A47]/15 px-4 py-3 mb-3 flex items-center gap-2">
-                  <span className="text-xs text-[#2E1A47]/60">Cliente vinculado automáticamente:</span>
-                  <span className="text-sm font-semibold text-[#2E1A47]">{renovSeleccionada.client_nombre}</span>
+              <ClienteBuscadorInline
+                seleccionado={esRenovacion && renovSeleccionada?.client_nombre ? { nombre: renovSeleccionada.client_nombre } : clienteSeleccionado}
+                onSelect={c => { setClienteSeleccionado(c); setClienteNombre(c.nombre); setClienteEmail(c.email ?? ""); setClienteTelefono(c.telefono ?? ""); setClienteWeb(c.web ?? ""); setClienteBusqueda(""); }}
+                onClear={() => { setClienteSeleccionado(null); setClienteNombre(""); setClienteEmail(""); setClienteTelefono(""); setClienteWeb(""); }}
+                busqueda={clienteBusqueda} setBusqueda={setClienteBusqueda}
+                resultados={clienteResultados} dropdown={clienteDropdown} setDropdown={setClienteDropdown}
+                disabled={!!(esRenovacion && renovSeleccionada?.client_nombre)}
+              />
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label className={label}>Nombre de la empresa *</label>
+                  <input name="cliente_nombre" required value={clienteNombre} onChange={e => { setClienteNombre(e.target.value); setClienteSeleccionado(null); }} className={inp} placeholder="Empresa S.L." />
                 </div>
-              ) : null}
-              <input type="hidden" name="cliente_nombre"
-                value={esRenovacion && renovSeleccionada?.client_nombre ? renovSeleccionada.client_nombre : undefined} />
-              <div className="grid grid-cols-2 gap-4">
-                {!(esRenovacion && renovSeleccionada?.client_nombre) && (
-                  <div>
-                    <label className={label}>Nombre de la empresa *</label>
-                    <input name="cliente_nombre" required className={inp} placeholder="Empresa S.L." />
-                  </div>
-                )}
                 <div>
                   <label className={label}>Importe (€)</label>
                   <input name="importe" type="number" step="1000" className={inp} placeholder="50.000" />
                 </div>
-                {!(esRenovacion && renovSeleccionada?.client_nombre) && (
-                  <>
-                    <div>
-                      <label className={label}>Email</label>
-                      <input name="cliente_email" type="email" className={inp} placeholder="contacto@empresa.es" />
-                    </div>
-                    <div>
-                      <label className={label}>Teléfono</label>
-                      <input name="cliente_telefono" className={inp} placeholder="612 345 678" />
-                    </div>
-                  </>
-                )}
+                <div>
+                  <label className={label}>Email</label>
+                  <input name="cliente_email" type="email" value={clienteEmail} onChange={e => setClienteEmail(e.target.value)} className={inp} placeholder="contacto@empresa.es" />
+                </div>
+                <div>
+                  <label className={label}>Teléfono</label>
+                  <input name="cliente_telefono" value={clienteTelefono} onChange={e => setClienteTelefono(e.target.value)} className={inp} placeholder="612 345 678" />
+                </div>
               </div>
             </Section>
           </>
@@ -320,22 +335,29 @@ export default function AltaOperacionPage() {
             </Section>
 
             <Section title="Datos del cliente">
-              <div className="grid grid-cols-2 gap-4">
+              <ClienteBuscadorInline
+                seleccionado={clienteSeleccionado}
+                onSelect={c => { setClienteSeleccionado(c); setClienteNombre(c.nombre); setClienteEmail(c.email ?? ""); setClienteTelefono(c.telefono ?? ""); setClienteWeb(c.web ?? ""); setClienteBusqueda(""); }}
+                onClear={() => { setClienteSeleccionado(null); setClienteNombre(""); setClienteEmail(""); setClienteTelefono(""); setClienteWeb(""); }}
+                busqueda={clienteBusqueda} setBusqueda={setClienteBusqueda}
+                resultados={clienteResultados} dropdown={clienteDropdown} setDropdown={setClienteDropdown}
+              />
+              <div className="grid grid-cols-2 gap-4 mt-4">
                 <div>
                   <label className={label}>Nombre de la empresa *</label>
-                  <input name="cliente_nombre" required className={inp} placeholder="Empresa S.L." />
+                  <input name="cliente_nombre" required value={clienteNombre} onChange={e => { setClienteNombre(e.target.value); setClienteSeleccionado(null); }} className={inp} placeholder="Empresa S.L." />
                 </div>
                 <div>
                   <label className={label}>Email</label>
-                  <input name="cliente_email" type="email" className={inp} placeholder="info@empresa.es" />
+                  <input name="cliente_email" type="email" value={clienteEmail} onChange={e => setClienteEmail(e.target.value)} className={inp} placeholder="info@empresa.es" />
                 </div>
                 <div>
                   <label className={label}>Teléfono</label>
-                  <input name="cliente_telefono" className={inp} placeholder="612 345 678" />
+                  <input name="cliente_telefono" value={clienteTelefono} onChange={e => setClienteTelefono(e.target.value)} className={inp} placeholder="612 345 678" />
                 </div>
                 <div>
                   <label className={label}>Web</label>
-                  <input name="cliente_web" className={inp} placeholder="www.empresa.es" />
+                  <input name="cliente_web" value={clienteWeb} onChange={e => setClienteWeb(e.target.value)} className={inp} placeholder="www.empresa.es" />
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-100">
@@ -408,6 +430,67 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     <div className="bg-white border border-gray-200 p-6">
       <h2 className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-5 pb-3 border-b border-gray-100">{title}</h2>
       {children}
+    </div>
+  );
+}
+
+function ClienteBuscadorInline({ seleccionado, onSelect, onClear, busqueda, setBusqueda, resultados, dropdown, setDropdown, disabled }: {
+  seleccionado: any | null;
+  onSelect: (c: any) => void;
+  onClear: () => void;
+  busqueda: string;
+  setBusqueda: (v: string) => void;
+  resultados: any[];
+  dropdown: boolean;
+  setDropdown: (v: boolean) => void;
+  disabled?: boolean;
+}) {
+  if (disabled && seleccionado) {
+    return (
+      <div className="bg-[#EEEBF3]/60 border border-[#2E1A47]/15 px-4 py-3 mb-1 flex items-center gap-2">
+        <span className="text-xs text-[#2E1A47]/60">Cliente vinculado automáticamente:</span>
+        <span className="text-sm font-semibold text-[#2E1A47]">{seleccionado.nombre}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="relative mb-1">
+      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+        Buscar cliente existente <span className="text-gray-300 font-normal normal-case">(opcional — escribe si ya trabajasteis antes)</span>
+      </label>
+      {seleccionado ? (
+        <div className="flex items-center justify-between border border-[#2E1A47] bg-[#EEEBF3] px-3 py-2.5">
+          <div>
+            <p className="text-sm font-semibold text-[#2E1A47]">{seleccionado.nombre}</p>
+            {seleccionado.codigo && <p className="text-xs text-gray-500">{seleccionado.codigo}{seleccionado.cif ? ` · ${seleccionado.cif}` : ""}</p>}
+          </div>
+          <button type="button" onClick={onClear} className="text-xs text-gray-400 hover:text-red-500 ml-3">✕ Cambiar</button>
+        </div>
+      ) : (
+        <>
+          <input
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            onFocus={() => resultados.length > 0 && setDropdown(true)}
+            onBlur={() => setTimeout(() => setDropdown(false), 150)}
+            className="w-full px-3 py-2.5 border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#2E1A47] focus:border-[#2E1A47] bg-white"
+            placeholder="Escribe el nombre de la empresa..."
+            autoComplete="off"
+          />
+          {dropdown && resultados.length > 0 && (
+            <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-gray-200 shadow-lg max-h-48 overflow-y-auto">
+              {resultados.map((c: any) => (
+                <button key={c.id} type="button"
+                  onMouseDown={() => { onSelect(c); setDropdown(false); }}
+                  className="w-full text-left px-4 py-2.5 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
+                  <p className="text-sm font-semibold text-gray-800">{c.nombre}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{[c.codigo, c.cif, c.email].filter(Boolean).join(" · ")}</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
