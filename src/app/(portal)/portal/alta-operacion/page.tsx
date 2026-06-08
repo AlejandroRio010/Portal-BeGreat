@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import ContactoAutocomplete from "@/components/ContactoAutocomplete";
 
 const PRODUCTOS_CONSULTORIA = [
   "Póliza de crédito",
@@ -366,21 +365,12 @@ export default function AltaOperacionPage() {
               </div>
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Persona de contacto</p>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <ContactoAutocomplete
-                      value={contactoNombre}
-                      onChange={setContactoNombre}
-                      onSelect={p => { setContactoNombre(p.nombre); setContactoEmail(p.email ?? ""); setContactoTelefono(p.telefono ?? ""); }}
-                      searchUrl="/api/search/personas"
-                      placeholder="Nombre"
-                      className={inp.replace("w-full ", "")}
-                    />
-                    <input type="hidden" name="contacto_nombre" value={contactoNombre} />
-                  </div>
-                  <input name="contacto_email" type="email" value={contactoEmail} onChange={e => setContactoEmail(e.target.value)} className={inp} placeholder="Email" />
-                  <input name="contacto_telefono" value={contactoTelefono} onChange={e => setContactoTelefono(e.target.value)} className={inp} placeholder="Teléfono" />
-                </div>
+                <ContactoInline
+                  nombre={contactoNombre} setNombre={setContactoNombre}
+                  email={contactoEmail} setEmail={setContactoEmail}
+                  telefono={contactoTelefono} setTelefono={setContactoTelefono}
+                  inp={inp}
+                />
               </div>
             </Section>
 
@@ -435,6 +425,67 @@ export default function AltaOperacionPage() {
           {loading ? "Enviando operación..." : "Enviar operación a BeGreat"}
         </button>
       </form>
+    </div>
+  );
+}
+
+function ContactoInline({ nombre, setNombre, email, setEmail, telefono, setTelefono, inp }: {
+  nombre: string; setNombre: (v: string) => void;
+  email: string; setEmail: (v: string) => void;
+  telefono: string; setTelefono: (v: string) => void;
+  inp: string;
+}) {
+  const [resultados, setResultados] = useState<any[]>([]);
+  const [open, setOpen] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function buscar(q: string) {
+    setNombre(q);
+    if (timer.current) clearTimeout(timer.current);
+    if (q.length < 2) { setResultados([]); setOpen(false); return; }
+    timer.current = setTimeout(async () => {
+      const res = await fetch(`/api/search/personas?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      setResultados(data);
+      setOpen(data.length > 0);
+    }, 250);
+  }
+
+  function seleccionar(p: any) {
+    setNombre(p.nombre);
+    setEmail(p.email ?? "");
+    setTelefono(p.telefono ?? "");
+    setResultados([]);
+    setOpen(false);
+  }
+
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      <div className="relative">
+        <input
+          name="contacto_nombre"
+          value={nombre}
+          onChange={e => buscar(e.target.value)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          className={inp}
+          placeholder="Nombre"
+          autoComplete="off"
+        />
+        {open && resultados.length > 0 && (
+          <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-gray-200 shadow-lg max-h-48 overflow-y-auto">
+            {resultados.map((p: any, i: number) => (
+              <button key={i} type="button"
+                onMouseDown={() => seleccionar(p)}
+                className="w-full text-left px-3 py-2.5 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
+                <p className="text-sm font-semibold text-gray-800">{p.nombre}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{[p.rol, p.email, p.telefono].filter(Boolean).join(" · ")}</p>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <input name="contacto_email" type="email" value={email} onChange={e => setEmail(e.target.value)} className={inp} placeholder="Email" />
+      <input name="contacto_telefono" value={telefono} onChange={e => setTelefono(e.target.value)} className={inp} placeholder="Teléfono" />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { contacts, collaboratorContacts, clients } from "@/db/schema";
-import { ilike, eq, and } from "drizzle-orm";
+import { ilike, eq, and, inArray } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -20,15 +20,14 @@ export async function GET(req: NextRequest) {
 
   const results: Array<{ nombre: string; rol: string | null; email: string | null; telefono: string | null }> = [];
 
-  // Contacts from my clients
+  // Contacts from my clients — una sola query con inArray
   if (myClientIds.length > 0) {
-    for (const clientId of myClientIds) {
-      const cc = await db.select({ nombre: contacts.nombre, rol: contacts.rol, email: contacts.email, telefono: contacts.telefono })
-        .from(contacts)
-        .where(and(eq(contacts.client_id, clientId), ilike(contacts.nombre, pattern)))
-        .limit(5);
-      results.push(...cc);
-    }
+    const cc = await db
+      .select({ nombre: contacts.nombre, rol: contacts.rol, email: contacts.email, telefono: contacts.telefono })
+      .from(contacts)
+      .where(and(inArray(contacts.client_id, myClientIds), ilike(contacts.nombre, pattern)))
+      .limit(10);
+    results.push(...cc);
   }
 
   // My own collaborator contacts
