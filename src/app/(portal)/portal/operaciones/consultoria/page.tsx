@@ -27,7 +27,7 @@ export default async function ConsultoriaPage() {
       fase: operations.fase,
       status: operations.status,
       importe: operations.importe,
-      comision_begreat: operations.comision_begreat,
+      comision_colaborador: operations.comision_colaborador,
       client_nombre: clients.nombre,
     })
     .from(operations)
@@ -58,7 +58,7 @@ export default async function ConsultoriaPage() {
           </Link>
         </div>
       ) : (
-        <PortalKanban ops={ops.map(o => ({ ...o, importe: o.importe ?? null, comision_begreat: o.comision_begreat ?? null }))} fases={fases} canEdit={puedeEditar} />
+        <PortalKanban ops={ops.map(o => ({ ...o, importe: o.importe ?? null, comision_colaborador: o.comision_colaborador ?? null }))} fases={fases} canEdit={puedeEditar} />
       )}
     </div>
   );

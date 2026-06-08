@@ -183,7 +183,9 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
                 value ? (
                   <div key={label} className="py-2.5 flex flex-col gap-0.5">
                     <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">{label}</span>
-                    {label === "Web" || label === "LinkedIn" ? (
+                    {label === "LinkedIn" ? (
+                      <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm text-[#2E1A47] hover:underline font-semibold">LinkedIn →</a>
+                    ) : label === "Web" ? (
                       <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm text-[#2E1A47] hover:underline break-all">{value}</a>
                     ) : (
                       <span className="text-sm text-gray-800 font-medium break-all">{value}</span>

@@ -23,7 +23,7 @@ const label = "block text-xs font-semibold text-gray-500 uppercase tracking-wide
 export default function AltaOperacionPage() {
   const router = useRouter();
   const [pipeline, setPipeline] = useState<Pipeline>("consultoria");
-  const [rentingRol, setRentingRol] = useState<RentingRol>("proveedor");
+  const rentingRol: RentingRol = "colaborador";
   const [producto, setProducto] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -162,27 +162,6 @@ export default function AltaOperacionPage() {
         {/* ── RENTING ──────────────────────────────────────────────────── */}
         {pipeline === "renting" && (
           <>
-            <Section title="Tu rol en esta operación">
-              <div className="grid grid-cols-2 gap-0 border border-gray-300">
-                {([
-                  { val: "proveedor", label: "Soy el proveedor", desc: "Suministro los equipos y necesito financiación para mi cliente" },
-                  { val: "colaborador", label: "Soy intermediario", desc: "Conozco al cliente o al proveedor y facilito la operación" },
-                ] as const).map((r, i) => (
-                  <button
-                    key={r.val}
-                    type="button"
-                    onClick={() => setRentingRol(r.val)}
-                    className={`p-4 text-left transition-all ${i === 0 ? "border-r border-gray-300" : ""} ${
-                      rentingRol === r.val ? "bg-[#2E1A47] text-white" : "bg-white text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    <p className="text-sm font-semibold">{r.label}</p>
-                    <p className={`text-xs mt-1 ${rentingRol === r.val ? "text-white/60" : "text-gray-400"}`}>{r.desc}</p>
-                  </button>
-                ))}
-              </div>
-            </Section>
-
             <Section title="Datos del equipo">
               <div className="grid grid-cols-2 gap-0 border border-gray-300 mb-4">
                 {[
@@ -249,15 +228,13 @@ export default function AltaOperacionPage() {
               </div>
             </Section>
 
-            {rentingRol === "colaborador" && (
-              <div className="bg-[#EEEBF3]/50 border border-[#EEEBF3] px-5 py-4">
-                <p className="text-xs text-gray-600">
-                  Los proveedores se gestionan en la sección{" "}
-                  <a href="/portal/proveedores" className="text-[#2E1A47] font-semibold hover:underline">Mis proveedores</a>.
-                  Da de alta ahí al proveedor y BeGreat lo vinculará a esta operación.
-                </p>
-              </div>
-            )}
+            <div className="bg-[#EEEBF3]/50 border border-[#EEEBF3] px-5 py-4">
+              <p className="text-xs text-gray-600">
+                Los proveedores se gestionan en la sección{" "}
+                <a href="/portal/proveedores" className="text-[#2E1A47] font-semibold hover:underline">Mis proveedores</a>.
+                Da de alta ahí al proveedor y BeGreat lo vinculará a esta operación.
+              </p>
+            </div>
           </>
         )}
 

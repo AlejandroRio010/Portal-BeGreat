@@ -135,17 +135,16 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
             <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">importe acumulado</p>
           </div>
         </div>
-        <div className="flex overflow-hidden border border-[#EEEBF3]">
-          <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
-            <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Ops en estudio</p>
-            <p className="text-[#2E1A47] text-3xl font-black">{opsEstudio.length}</p>
-            <p className="text-[#2E1A47]/40 text-[9px] mt-1 uppercase tracking-wide">pendientes de aprobar</p>
+        <div className="flex overflow-hidden">
+          <div className="flex-1 bg-[#2E1A47] px-6 py-5 border-r border-white/15">
+            <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Ops en estudio</p>
+            <p className="text-white text-3xl font-black">{opsEstudio.length}</p>
+            <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">pendientes de aprobar</p>
           </div>
-          <div className="w-px bg-[#2E1A47]/25" />
-          <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
-            <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Financiación pendiente</p>
-            <p className="text-[#2E1A47] text-2xl font-black leading-tight">{totalPendiente > 0 ? fmtEur(String(totalPendiente)) : "—"}</p>
-            <p className="text-[#2E1A47]/40 text-[9px] mt-1 uppercase tracking-wide">en proceso</p>
+          <div className="flex-1 bg-[#2E1A47] px-6 py-5">
+            <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Financiación pendiente</p>
+            <p className="text-white text-2xl font-black leading-tight">{totalPendiente > 0 ? fmtEur(String(totalPendiente)) : "—"}</p>
+            <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">en proceso</p>
           </div>
         </div>
       </div>
@@ -175,7 +174,9 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
                 value ? (
                   <div key={label} className="py-2.5 flex flex-col gap-0.5">
                     <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">{label}</span>
-                    {label === "Web" || label === "LinkedIn" ? (
+                    {label === "LinkedIn" ? (
+                      <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm text-[#2E1A47] hover:underline font-semibold">LinkedIn →</a>
+                    ) : label === "Web" ? (
                       <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm text-[#2E1A47] hover:underline break-all">{value}</a>
                     ) : (
                       <span className="text-sm text-gray-800 font-medium break-all">{value}</span>
@@ -262,7 +263,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
                         </td>
                         <td className="px-5 py-3 text-sm text-gray-700 font-medium">{fmtEur(op.importe)}</td>
                         <td className="px-5 py-3 text-xs text-gray-400">{fmtDate(op.created_at)}</td>
-                        <td className="px-5 py-3 text-right">
+                        <td className="px-5 py-3 text-right whitespace-nowrap">
                           <Link href={`/portal/operaciones/${op.id}`} className="text-xs text-[#2E1A47] font-semibold hover:underline">Ver →</Link>
                         </td>
                       </tr>

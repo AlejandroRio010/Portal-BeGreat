@@ -14,7 +14,7 @@ interface Op {
   fase: string;
   status: string;
   importe: string | null;
-  comision_begreat: string | null;
+  comision_colaborador: string | null;
 }
 
 const FASE_ACCENT: Record<string, string> = {
@@ -36,7 +36,7 @@ const FASE_DOT: Record<string, string> = {
 
 function CardContent({ op, dragListeners, dragAttributes, canEdit }: { op: Op; dragListeners?: any; dragAttributes?: any; canEdit?: boolean }) {
   const displayName = op.nombre ?? op.client_nombre ?? "Sin nombre";
-  const fee = Number(op.comision_begreat ?? 0);
+  const fee = Number(op.comision_colaborador ?? 0);
   return (
     <div className="p-2.5 pt-2">
       <div className="flex items-start gap-1 mb-1.5">
@@ -80,23 +80,23 @@ function DroppableColumn({ fase, ops, activeId, canEdit }: { fase: string; ops: 
   const accent = FASE_ACCENT[fase] ?? "border-l-[#2E1A47]";
   const totalImporte = ops.reduce((s, o) => s + Number(o.importe ?? 0), 0);
   return (
-    <div ref={setNodeRef} className={`flex-shrink-0 w-[200px] flex flex-col transition-colors ${isOver ? "bg-[#EEEBF3]/60" : ""}`}>
-      <div className="px-2 py-3 mb-1">
-        <div className="flex items-center gap-2 mb-0.5">
+    <div ref={setNodeRef} className={`flex-shrink-0 w-[185px] flex flex-col transition-colors ${isOver ? "bg-[#EEEBF3]/80" : ""}`}>
+      <div className="px-2 py-2.5 mb-1 border-b-2" style={{ borderColor: dot.replace("bg-", "").includes("-") ? undefined : "#2E1A47" }}>
+        <div className="flex items-center gap-1.5 mb-1">
           <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
-          <p className="text-[10px] font-bold text-[#2E1A47] uppercase tracking-widest leading-tight truncate">{fase}</p>
+          <p className="text-[9.5px] font-black text-[#2E1A47] uppercase tracking-widest leading-tight truncate">{fase}</p>
         </div>
-        <div className="flex items-center gap-1.5 pl-4">
-          <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5">{ops.length}</span>
-          {totalImporte > 0 && <span className="text-[9px] text-gray-400">{totalImporte.toLocaleString("es-ES")} €</span>}
+        <div className="flex items-center gap-1.5 pl-3.5">
+          <span className="text-[10px] font-bold text-white bg-[#2E1A47] px-1.5 py-0.5 min-w-[18px] text-center">{ops.length}</span>
+          {totalImporte > 0 && <span className="text-[9px] text-gray-500 font-medium">{(totalImporte/1000).toFixed(0)}k €</span>}
         </div>
       </div>
-      <div className="flex-1 space-y-1.5 min-h-[300px] px-1">
+      <div className="flex-1 space-y-1.5 min-h-[280px] px-1 pt-1">
         {ops.map(op => canEdit
           ? <DraggableCard key={op.id} op={op} isDragging={activeId === op.id} />
           : (
             <Link key={op.id} href={`/portal/operaciones/${op.id}`}
-              className={`block bg-white border border-gray-100 border-l-[3px] ${accent} shadow-sm hover:shadow-md hover:border-gray-200 transition-all`}>
+              className={`block bg-white border border-gray-100 border-l-[3px] ${accent} shadow-sm hover:shadow-md hover:border-[#2E1A47]/30 transition-all`}>
               <CardContent op={op} />
             </Link>
           )
@@ -113,7 +113,7 @@ export default function PortalKanban({ ops: initialOps, fases, canEdit = false }
   const activeOp = ops.find(o => o.id === activeId) ?? null;
 
   const pendientes = ops.filter(o => o.status === "pendiente_de_validar");
-  const totalFeeColab = ops.reduce((s, o) => s + Number(o.comision_begreat ?? 0), 0);
+  const totalFeeColab = ops.reduce((s, o) => s + Number(o.comision_colaborador ?? 0), 0);
 
   async function handleDragEnd(e: DragEndEvent) {
     setActiveId(null);
@@ -137,10 +137,9 @@ export default function PortalKanban({ ops: initialOps, fases, canEdit = false }
   }, {});
 
   const board = (
-    <div className="flex overflow-x-auto pb-4">
-      {fases.map((fase, i) => (
-        <div key={fase} className="flex flex-shrink-0 items-stretch">
-          {i > 0 && <div className="w-px bg-[#2E1A47]/15 self-stretch mx-1" />}
+    <div style={{ zoom: 0.88 }} className="flex pb-4 gap-1">
+      {fases.map((fase) => (
+        <div key={fase} className="flex-1 min-w-0">
           <DroppableColumn fase={fase} ops={opsByFase[fase] ?? []} activeId={activeId} canEdit={canEdit} />
         </div>
       ))}

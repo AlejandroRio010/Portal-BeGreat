@@ -113,42 +113,26 @@ export default async function PortalHomePage({
       </div>
 
       {/* ── KPIs ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        {/* Oscuro: ops firmadas + comisiones */}
-        <div className="flex overflow-hidden">
-          <div className="flex-1 bg-[#2E1A47] px-6 py-5">
-            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Ops firmadas</p>
-            <p className="text-3xl font-black text-white">{firmadas.length}</p>
-            <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">contratos cerrados</p>
-          </div>
-          <div className="w-px bg-white/20" />
-          <div className="flex-1 bg-[#2E1A47] px-6 py-5">
-            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Comisiones ganadas</p>
-            <p className="text-xl font-black text-white leading-tight">{totalComision > 0 ? fmt(totalComision) : "—"}</p>
-            <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">acumulado total</p>
-          </div>
+      <div className="grid grid-cols-4 gap-0 mb-6">
+        <div className="bg-[#2E1A47] px-6 py-5 border-r border-white/15">
+          <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Operaciones Firmadas</p>
+          <p className="text-3xl font-black text-white">{firmadas.length}</p>
+          <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">desde 2024</p>
         </div>
-        {/* Financiación */}
-        <div className="flex overflow-hidden bg-[#2E1A47]">
-          <div className="flex-1 px-6 py-5">
-            <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Financiación levantada</p>
-            <p className="text-xl font-black text-white leading-tight">{totalFinanciacion > 0 ? fmt(totalFinanciacion) : "—"}</p>
-            <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">volumen total cerrado</p>
-          </div>
+        <div className="bg-[#2E1A47] px-6 py-5 border-r border-white/15">
+          <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Comisiones Ganadas</p>
+          <p className="text-xl font-black text-white leading-tight">{totalComision > 0 ? fmt(totalComision) : "—"}</p>
+          <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">acumulado total</p>
         </div>
-        {/* Claro: en curso */}
-        <div className="flex overflow-hidden border border-[#EEEBF3]">
-          <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
-            <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">En estudio</p>
-            <p className="text-3xl font-black text-[#2E1A47]">{enCurso.length + pendientes.length}</p>
-            <p className="text-[#2E1A47]/30 text-[9px] mt-1 uppercase tracking-wide">activas ahora</p>
-          </div>
-          <div className="w-px bg-[#2E1A47]/25" />
-          <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
-            <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee potencial</p>
-            <p className="text-xl font-black text-[#2E1A47] leading-tight">{feePendiente > 0 ? fmt(feePendiente) : "—"}</p>
-            <p className="text-[#2E1A47]/30 text-[9px] mt-1 uppercase tracking-wide">en proceso</p>
-          </div>
+        <div className="bg-[#2E1A47] px-6 py-5 border-r border-white/15">
+          <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Operaciones Activas</p>
+          <p className="text-3xl font-black text-white">{enCurso.length + pendientes.length}</p>
+          <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">activas</p>
+        </div>
+        <div className="bg-[#2E1A47] px-6 py-5">
+          <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Fee Potencial</p>
+          <p className="text-xl font-black text-white leading-tight">{feePendiente > 0 ? fmt(feePendiente) : "—"}</p>
+          <p className="text-white/30 text-[9px] mt-1 uppercase tracking-wide">En proceso</p>
         </div>
       </div>
 

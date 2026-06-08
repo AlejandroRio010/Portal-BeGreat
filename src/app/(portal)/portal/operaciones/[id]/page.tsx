@@ -38,7 +38,6 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       fase: operations.fase,
       status: operations.status,
       comision_colaborador: operations.comision_colaborador,
-      comision_begreat: operations.comision_begreat,
       entidad_financiera: operations.entidad_financiera,
       honorarios_firmado: operations.honorarios_firmado,
       descripcion: operations.descripcion,
@@ -64,7 +63,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
   if (!op) notFound();
 
   const [colab] = await db
-    .select({ puede_editar_ops: collaborators.puede_editar_ops, puede_ver_entidades: collaborators.puede_ver_entidades })
+    .select({ puede_editar_ops: collaborators.puede_editar_ops, puede_ver_entidades: collaborators.puede_ver_entidades, logo_url: collaborators.logo_url })
     .from(collaborators)
     .where(eq(collaborators.id, userId))
     .limit(1);
@@ -146,7 +145,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       </div>
 
       {/* Celebration */}
-      {isGanada && <CelebrationBanner opNombre={op.nombre ?? op.codigo ?? "Operación"} clientNombre={op.client_nombre ?? "Cliente"} />}
+      {isGanada && <CelebrationBanner opNombre={op.nombre ?? op.codigo ?? "Operación"} clientNombre={op.client_nombre ?? "Cliente"} colaboradorLogoUrl={colab?.logo_url ?? null} />}
 
       {/* Motivo denegación */}
       {isDenegada && op.motivo_denegacion && (
@@ -164,12 +163,12 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             {op.importe ? `${Number(op.importe).toLocaleString("es-ES")} €` : "—"}
           </p>
         </div>
-        <div className={`p-5 border ${op.comision_begreat ? "bg-emerald-50 border-emerald-200" : "bg-white border-gray-200"}`}>
-          <p className={`text-xs uppercase tracking-widest mb-2 font-semibold ${op.comision_begreat ? "text-emerald-600" : "text-gray-400"}`}>
-            Fee BeGreat
+        <div className={`p-5 border ${op.comision_colaborador ? "bg-emerald-50 border-emerald-200" : "bg-white border-gray-200"}`}>
+          <p className={`text-xs uppercase tracking-widest mb-2 font-semibold ${op.comision_colaborador ? "text-emerald-600" : "text-gray-400"}`}>
+            Fee / Comisión
           </p>
-          <p className={`text-2xl font-black ${op.comision_begreat ? "text-emerald-700" : "text-gray-300"}`}>
-            {op.comision_begreat ? `${Number(op.comision_begreat).toLocaleString("es-ES")} €` : "Por confirmar"}
+          <p className={`text-2xl font-black ${op.comision_colaborador ? "text-emerald-700" : "text-gray-300"}`}>
+            {op.comision_colaborador ? `${Number(op.comision_colaborador).toLocaleString("es-ES")} €` : "Por confirmar"}
           </p>
         </div>
         <div className="bg-white border border-gray-200 p-5">
@@ -241,13 +240,13 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                 { label: "Cuota", value: cuota },
                 { label: "Lugar de instalación", value: op.lugar_entrega },
                 { label: "Tipo de equipo a financiar", value: op.equipo_tipo },
-                { label: "Fee BeGreat", value: fmtEuro(op.comision_begreat) },
+                { label: "Fee / Comisión", value: fmtEuro(op.comision_colaborador) },
                 { label: "Fecha de alta", value: fmtFecha(op.created_at) },
                 { label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) },
               ] : [
                 { label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/portal/clientes/${op.client_id}` : undefined },
                 { label: "Producto", value: op.producto },
-                { label: "Fee BeGreat", value: fmtEuro(op.comision_begreat) },
+                { label: "Fee / Comisión", value: fmtEuro(op.comision_colaborador) },
                 { label: "Descripción", value: op.descripcion },
                 { label: "Fecha de alta", value: fmtFecha(op.created_at) },
                 { label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) },

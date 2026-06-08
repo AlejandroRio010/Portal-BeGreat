@@ -27,7 +27,7 @@ export default async function RentingPage() {
       fase: operations.fase,
       status: operations.status,
       importe: operations.importe,
-      comision_begreat: operations.comision_begreat,
+      comision_colaborador: operations.comision_colaborador,
       facturacion_renting: operations.facturacion_renting,
       plazo_meses: operations.plazo_meses,
       client_nombre: clients.nombre,
@@ -61,7 +61,7 @@ export default async function RentingPage() {
         </div>
       ) : (
         <PortalKanbanRenting
-          ops={ops.map(o => ({ ...o, importe: o.importe ?? null, comision_begreat: o.comision_begreat ?? null, facturacion_renting: o.facturacion_renting ?? null, plazo_meses: o.plazo_meses ?? null }))}
+          ops={ops.map(o => ({ ...o, importe: o.importe ?? null, comision_colaborador: o.comision_colaborador ?? null, facturacion_renting: o.facturacion_renting ?? null, plazo_meses: o.plazo_meses ?? null }))}
           fases={fases}
           canEdit={puedeEditar}
         />

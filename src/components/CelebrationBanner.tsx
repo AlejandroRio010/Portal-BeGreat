@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export default function CelebrationBanner({ opNombre, clientNombre }: { opNombre: string; clientNombre: string }) {
+export default function CelebrationBanner({ opNombre, clientNombre, colaboradorLogoUrl }: { opNombre: string; clientNombre: string; colaboradorLogoUrl?: string | null }) {
   const [show, setShow] = useState(true);
 
   useEffect(() => {
@@ -34,16 +34,20 @@ export default function CelebrationBanner({ opNombre, clientNombre }: { opNombre
       <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/5" style={{ borderRadius: "50%" }} />
 
       <div className="flex items-center gap-5 relative z-10">
-        <div className="flex items-center gap-3">
-          {/* BeGreat logo placeholder */}
-          <div className="h-14 w-14 bg-white/20 flex items-center justify-center text-white text-xl font-black flex-shrink-0">
-            BG
-          </div>
-          <span className="text-white text-3xl">×</span>
-          {/* Client initial */}
-          <div className="h-14 w-14 bg-white/20 flex items-center justify-center text-white text-xl font-black flex-shrink-0">
-            {clientNombre.charAt(0).toUpperCase()}
-          </div>
+        <div className="flex items-center gap-4">
+          {/* BeGreat logo */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/begreat-logo-blanco.png" alt="BeGreat" className="h-10 object-contain flex-shrink-0" />
+          <span className="text-white/60 text-2xl font-thin">×</span>
+          {/* Colaborador logo */}
+          {colaboradorLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={colaboradorLogoUrl} alt="Colaborador" className="h-10 object-contain bg-white/10 px-2 flex-shrink-0" />
+          ) : (
+            <div className="h-10 w-10 bg-white/20 flex items-center justify-center text-white text-lg font-black flex-shrink-0">
+              {clientNombre.charAt(0).toUpperCase()}
+            </div>
+          )}
         </div>
         <div>
           <p className="text-white text-xl font-black">¡Operación cerrada!</p>

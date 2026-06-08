@@ -31,7 +31,6 @@ export default async function HistorialPage({
       fase: operations.fase,
       status: operations.status,
       comision_colaborador: operations.comision_colaborador,
-      comision_begreat: operations.comision_begreat,
       importe: operations.importe,
       created_at: operations.created_at,
       client_nombre: clients.nombre,
@@ -68,8 +67,8 @@ export default async function HistorialPage({
   // Stats (always on all ops, not filtered)
   const firmadas = allOps.filter((o) => o.fase === "Contrato firmado" || o.fase === "Honorarios pagados" || o.fase === "Transferencia realizada");
   const pendientes = allOps.filter((o) => o.status === "pendiente_de_validar" || (o.status === "activa" && o.fase !== "Contrato firmado" && o.fase !== "Honorarios pagados" && o.fase !== "Transferencia realizada"));
-  const totalGanado = firmadas.reduce((sum, o) => sum + (o.comision_begreat ? Number(o.comision_begreat) : 0), 0);
-  const feePendiente = pendientes.reduce((sum, o) => sum + (o.comision_begreat ? Number(o.comision_begreat) : 0), 0);
+  const totalGanado = firmadas.reduce((sum, o) => sum + (o.comision_colaborador ? Number(o.comision_colaborador) : 0), 0);
+  const feePendiente = pendientes.reduce((sum, o) => sum + (o.comision_colaborador ? Number(o.comision_colaborador) : 0), 0);
 
   // stats array kept for reference but replaced with custom render below
 
@@ -203,9 +202,9 @@ export default async function HistorialPage({
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">{formatDate(op.created_at)}</td>
                   <td className="px-6 py-4">
-                    {op.comision_begreat ? (
+                    {op.comision_colaborador ? (
                       <span className="text-sm font-bold text-[#2E1A47]">
-                        {Number(op.comision_begreat).toLocaleString("es-ES")} €
+                        {Number(op.comision_colaborador).toLocaleString("es-ES")} €
                       </span>
                     ) : (
                       <span className="text-xs text-gray-300">—</span>
