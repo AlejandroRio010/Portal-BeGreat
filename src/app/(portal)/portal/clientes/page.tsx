@@ -4,6 +4,8 @@ import { clients, contacts, operations } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export default async function ClientesPage() {
   const session = await auth();
   const userId = session!.user!.id as string;

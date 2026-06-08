@@ -5,6 +5,8 @@ import { eq, and, notInArray } from "drizzle-orm";
 import Link from "next/link";
 import PortalKanbanRenting from "./PortalKanbanRenting";
 
+export const dynamic = "force-dynamic";
+
 const FASES_DEFAULT = [
   "Pre-análisis", "En estudio por entidad", "Operación aprobada",
   "Condiciones aceptadas", "Contrato firmado", "Transferencia realizada",

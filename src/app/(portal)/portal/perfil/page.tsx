@@ -5,6 +5,8 @@ import { eq } from "drizzle-orm";
 import PerfilForm from "./PerfilForm";
 import ContactosSection from "./ContactosSection";
 
+export const dynamic = "force-dynamic";
+
 export default async function PerfilPage() {
   const session = await auth();
   const userId = session!.user!.id as string;

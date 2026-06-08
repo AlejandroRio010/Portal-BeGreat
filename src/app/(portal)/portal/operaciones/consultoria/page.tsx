@@ -5,6 +5,8 @@ import { eq, and, notInArray } from "drizzle-orm";
 import Link from "next/link";
 import PortalKanban from "./PortalKanban";
 
+export const dynamic = "force-dynamic";
+
 const FASES_DEFAULT = [
   "Pre-análisis", "Firma de honorarios", "En estudio por entidad",
   "Operación aprobada", "Contrato firmado", "Honorarios pagados",

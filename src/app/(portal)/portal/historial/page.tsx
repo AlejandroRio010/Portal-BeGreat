@@ -4,6 +4,8 @@ import { operations, clients } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 function fmt(n: number | null | undefined) {
   if (!n) return "0 €";
   return `${n.toLocaleString("es-ES")} €`;

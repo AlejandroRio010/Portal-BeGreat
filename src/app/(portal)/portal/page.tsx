@@ -8,6 +8,8 @@ const FIRMADAS = ["Contrato firmado","Honorarios pagados","Transferencia realiza
 import Link from "next/link";
 import Image from "next/image";
 
+export const dynamic = "force-dynamic";
+
 const tiles = [
   { href: "/portal/alta-operacion",          label: "Alta nueva operación",    sub: "Registra una nueva operación" },
   { href: "/portal/operaciones/consultoria", label: "Consultoría financiera",  sub: "Pólizas, leasing, préstamos..." },
