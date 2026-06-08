@@ -15,21 +15,31 @@ export default function EmpresasGrupoPanel({
 }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
-  const [selected, setSelected] = useState("");
+  const [busqueda, setBusqueda] = useState("");
+  const [selected, setSelected] = useState<Empresa | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const filtradas = busqueda.length < 1
+    ? disponibles
+    : disponibles.filter(c =>
+        c.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+        (c.codigo ?? "").toLowerCase().includes(busqueda.toLowerCase()) ||
+        (c.cif ?? "").toLowerCase().includes(busqueda.toLowerCase())
+      );
 
   async function asignar() {
     if (!selected) return;
     setSaving(true);
     await fetch(`/api/admin/grupos/${grupoId}/empresas`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ client_id: selected }),
+      body: JSON.stringify({ client_id: selected.id }),
     });
-    setSaving(false); setSelected(""); setAdding(false);
+    setSaving(false); setSelected(null); setBusqueda(""); setAdding(false);
     router.refresh();
   }
 
   async function quitar(clientId: string) {
+    if (!confirm("¿Quitar esta empresa del grupo?")) return;
     await fetch(`/api/admin/grupos/${grupoId}/empresas`, {
       method: "DELETE", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ client_id: clientId }),
@@ -41,20 +51,56 @@ export default function EmpresasGrupoPanel({
     <div className="bg-white border border-gray-200">
       <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200 flex items-center justify-between">
         <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Empresas del grupo ({empresas.length})</h3>
-        {!adding && <button onClick={() => setAdding(true)} className="text-xs text-[#2E1A47] font-semibold hover:underline">+ Añadir empresa</button>}
+        {!adding && (
+          <button onClick={() => setAdding(true)} className="text-xs text-[#2E1A47] font-semibold hover:underline">
+            + Añadir empresa
+          </button>
+        )}
       </div>
 
       {adding && (
-        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
-          <select value={selected} onChange={e => setSelected(e.target.value)}
-            className="flex-1 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47] bg-white">
-            <option value="">Selecciona una empresa...</option>
-            {disponibles.map(c => <option key={c.id} value={c.id}>{c.nombre}{c.codigo ? ` (${c.codigo})` : ""}</option>)}
-          </select>
-          <button onClick={asignar} disabled={saving || !selected} className="px-4 py-2 text-xs font-bold text-white bg-[#2E1A47] hover:bg-[#3d2460] disabled:opacity-50">
-            {saving ? "..." : "Añadir"}
-          </button>
-          <button onClick={() => { setAdding(false); setSelected(""); }} className="text-gray-400 hover:text-gray-700 text-lg leading-none px-2">×</button>
+        <div className="px-5 py-4 border-b border-gray-100 bg-gray-50 space-y-3">
+          <div className="flex items-center gap-2">
+            <input
+              value={busqueda}
+              onChange={e => { setBusqueda(e.target.value); setSelected(null); }}
+              placeholder="Buscar empresa por nombre, código o CIF..."
+              className="flex-1 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47] bg-white"
+              autoFocus
+            />
+            <button onClick={() => { setAdding(false); setBusqueda(""); setSelected(null); }}
+              className="text-gray-400 hover:text-gray-700 text-xl leading-none px-2">×</button>
+          </div>
+
+          {selected ? (
+            <div className="flex items-center justify-between bg-[#EEEBF3] border border-[#2E1A47]/20 px-3 py-2">
+              <div>
+                <p className="text-sm font-semibold text-[#2E1A47]">{selected.nombre}</p>
+                <p className="text-xs text-gray-400">{[selected.codigo, selected.cif].filter(Boolean).join(" · ")}</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setSelected(null)} className="text-xs text-gray-400 hover:text-gray-600">Cambiar</button>
+                <button onClick={asignar} disabled={saving}
+                  className="text-xs font-bold text-white bg-[#2E1A47] px-4 py-1.5 hover:bg-[#3d2460] disabled:opacity-50">
+                  {saving ? "..." : "Añadir al grupo"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="border border-gray-200 bg-white max-h-48 overflow-y-auto">
+              {filtradas.length === 0 ? (
+                <p className="px-4 py-3 text-xs text-gray-400 text-center">
+                  {busqueda ? "No se encontraron empresas con ese criterio." : "Todas las empresas ya tienen grupo asignado."}
+                </p>
+              ) : filtradas.map(c => (
+                <button key={c.id} type="button" onClick={() => setSelected(c)}
+                  className="w-full text-left px-4 py-2.5 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0 transition-colors">
+                  <p className="text-sm font-semibold text-gray-800">{c.nombre}</p>
+                  <p className="text-xs text-gray-400">{[c.codigo, c.cif].filter(Boolean).join(" · ")}</p>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
