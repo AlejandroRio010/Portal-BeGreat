@@ -42,7 +42,7 @@ export default async function HistorialPage({
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
     .where(eq(operations.collaborator_id, userId))
-    .orderBy(operations.created_at);
+    .orderBy(operations.fecha_cierre, operations.created_at);
 
   // Filters
   const filtered = allOps.filter((op) => {
