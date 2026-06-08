@@ -36,6 +36,7 @@ export default async function HistorialPage({
       comision_colaborador: operations.comision_colaborador,
       importe: operations.importe,
       created_at: operations.created_at,
+      fecha_cierre: operations.fecha_cierre,
       client_nombre: clients.nombre,
     })
     .from(operations)
@@ -167,7 +168,7 @@ export default async function HistorialPage({
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Cliente / Operación</th>
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Tipo</th>
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Estado</th>
-                <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fecha</th>
+                <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fecha cierre</th>
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Comisión</th>
                 <th className="px-6 py-3.5"></th>
               </tr>
@@ -204,7 +205,9 @@ export default async function HistorialPage({
                       <span className="inline-block px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600">{op.fase}</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{formatDate(op.created_at)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {formatDate(op.fecha_cierre ?? op.created_at)}
+                  </td>
                   <td className="px-6 py-4">
                     {op.comision_colaborador ? (
                       <span className="text-sm font-bold text-[#2E1A47]">
