@@ -25,7 +25,7 @@ const TIPO_ACCENT: Record<string, string> = {
   renting:                "border-t-violet-500",
 };
 
-export default function EntidadesClient({ entidades }: { entidades: Entidad[] }) {
+export default function PortalEntidadesClient({ entidades }: { entidades: Entidad[] }) {
   const [tab, setTab] = useState<string>("banco");
 
   const filtered = entidades.filter(e => e.tipo === tab);
