@@ -35,6 +35,14 @@ const FASE_DOT: Record<string, string> = {
   "Contrato firmado":       "bg-violet-500",
   "Transferencia realizada":"bg-emerald-500",
 };
+const FASE_BAR: Record<string, string> = {
+  "Pre-análisis":           "bg-gray-300",
+  "En estudio por entidad": "bg-amber-400",
+  "Operación aprobada":     "bg-blue-400",
+  "Condiciones aceptadas":  "bg-indigo-400",
+  "Contrato firmado":       "bg-violet-500",
+  "Transferencia realizada":"bg-emerald-500",
+};
 
 function CardContent({ op, dragListeners, dragAttributes, canEdit }: { op: Op; dragListeners?: any; dragAttributes?: any; canEdit?: boolean }) {
   const displayName = op.nombre ?? op.client_nombre ?? "Sin nombre";
@@ -88,26 +96,24 @@ function DraggableCard({ op, isDragging }: { op: Op; isDragging: boolean }) {
 
 function DroppableColumn({ fase, ops, activeId, canEdit }: { fase: string; ops: Op[]; activeId: string | null; canEdit: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id: fase, disabled: !canEdit });
-  const dot = FASE_DOT[fase] ?? "bg-[#2E1A47]";
   const accent = FASE_ACCENT[fase] ?? "border-l-[#2E1A47]";
+  const bar = FASE_BAR[fase] ?? "bg-[#2E1A47]";
   const totalImporte = ops.reduce((s, o) => s + Number(o.importe ?? 0), 0);
   return (
-    <div ref={setNodeRef} className={`flex-shrink-0 w-[185px] flex flex-col transition-colors relative overflow-hidden ${isOver ? "bg-[#EEEBF3]/80" : ""}`}>
+    <div ref={setNodeRef} className={`flex flex-col transition-colors relative overflow-hidden ${isOver ? "bg-[#EEEBF3]/60" : "bg-white/50"}`}>
+      <div className={`h-1 w-full flex-shrink-0 ${bar}`} />
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/begreat-logo-blanco.png" alt="" className="w-20 opacity-[0.035] object-contain select-none" />
+        <img src="/begreat-logo-blanco.png" alt="" className="w-16 opacity-[0.04] object-contain select-none" style={{ filter: "invert(0.15)" }} />
       </div>
-      <div className="px-2 py-2.5 mb-1 border-b-2 border-[#2E1A47]/20">
-        <div className="flex items-center gap-1.5 mb-1">
-          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
-          <p className="text-[9.5px] font-black text-[#2E1A47] uppercase tracking-widest leading-tight truncate">{fase}</p>
-        </div>
-        <div className="flex items-center gap-1.5 pl-3.5">
-          <span className="text-[10px] font-bold text-white bg-[#2E1A47] px-1.5 py-0.5 min-w-[18px] text-center">{ops.length}</span>
-          {totalImporte > 0 && <span className="text-[9px] text-gray-500 font-medium">{(totalImporte/1000).toFixed(0)}k €</span>}
+      <div className="px-2 py-2.5 border-b border-gray-200/80">
+        <p className="text-[9px] font-black text-[#2E1A47] uppercase tracking-widest leading-tight truncate mb-1.5">{fase}</p>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-bold text-white bg-[#2E1A47] px-1.5 py-0.5 min-w-[18px] text-center leading-none">{ops.length}</span>
+          {totalImporte > 0 && <span className="text-[9px] text-gray-400 font-medium">{(totalImporte/1000).toFixed(0)}k €</span>}
         </div>
       </div>
-      <div className="flex-1 space-y-1.5 min-h-[280px] px-1 pt-1">
+      <div className="flex-1 space-y-1.5 min-h-[280px] px-1 pt-1.5 pb-2">
         {ops.map(op => canEdit
           ? <DraggableCard key={op.id} op={op} isDragging={activeId === op.id} />
           : (
@@ -153,16 +159,17 @@ export default function PortalKanbanRenting({ ops: initialOps, fases, canEdit = 
   }, {});
 
   const board = (
-    <div style={{ zoom: 0.88 }} className="flex pb-4 gap-0 items-stretch">
+    <div style={{ zoom: 0.9 }} className="flex pb-4 gap-0 border border-gray-200 bg-[#f8f7fb] overflow-hidden">
       {fases.map((fase, i) => (
         <div key={fase} className="flex items-stretch flex-1 min-w-0">
           <div className="flex-1 min-w-0">
             <DroppableColumn fase={fase} ops={opsByFase[fase] ?? []} activeId={activeId} canEdit={canEdit} />
           </div>
           {i < fases.length - 1 && (
-            <div className="flex-shrink-0 flex items-start pt-3 px-0.5 z-10">
-              <svg width="12" height="20" viewBox="0 0 12 20" fill="none" className="text-[#2E1A47]/20">
-                <path d="M1 0 L11 10 L1 20" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+            <div className="flex-shrink-0 self-stretch flex items-center justify-center w-5 relative z-10">
+              <div className="absolute inset-y-0 left-0 w-px bg-gray-200" />
+              <svg width="10" height="18" viewBox="0 0 10 18" fill="none">
+                <path d="M1 0 L9 9 L1 18" stroke="#2E1A47" strokeOpacity="0.25" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
               </svg>
             </div>
           )}

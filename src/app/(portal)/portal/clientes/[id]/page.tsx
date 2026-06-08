@@ -226,7 +226,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
         </div>
 
         {/* Col 2-3: Operaciones + Notas */}
-        <div className="col-span-2 flex flex-col gap-6">
+        <div className="col-span-2 flex flex-col gap-6 min-w-0">
           <div className="bg-white border border-gray-200 overflow-hidden">
             <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
               <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Operaciones</h3>

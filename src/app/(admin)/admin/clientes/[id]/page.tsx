@@ -138,18 +138,16 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
             <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">importe acumulado</p>
           </div>
         </div>
-        {/* Claro: en estudio / pendiente */}
-        <div className="flex overflow-hidden border border-[#EEEBF3]">
-          <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
-            <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Ops en estudio</p>
-            <p className="text-[#2E1A47] text-3xl font-black">{opsEstudio.length}</p>
-            <p className="text-[#2E1A47]/40 text-[9px] mt-1 uppercase tracking-wide">pendientes de aprobar</p>
+        <div className="flex overflow-hidden">
+          <div className="flex-1 bg-[#2E1A47] px-6 py-5 border-r border-white/15">
+            <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Ops en estudio</p>
+            <p className="text-white text-3xl font-black">{opsEstudio.length}</p>
+            <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">pendientes de aprobar</p>
           </div>
-          <div className="w-px bg-[#2E1A47]/25" />
-          <div className="flex-1 bg-[#EEEBF3] px-6 py-5">
-            <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Financiación pendiente</p>
-            <p className="text-[#2E1A47] text-2xl font-black leading-tight">{totalPendiente > 0 ? fmtEur(String(totalPendiente)) : "—"}</p>
-            <p className="text-[#2E1A47]/40 text-[9px] mt-1 uppercase tracking-wide">en proceso</p>
+          <div className="flex-1 bg-[#2E1A47] px-6 py-5">
+            <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Financiación pendiente</p>
+            <p className="text-white text-2xl font-black leading-tight">{totalPendiente > 0 ? fmtEur(String(totalPendiente)) : "—"}</p>
+            <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">en proceso</p>
           </div>
         </div>
       </div>
@@ -220,7 +218,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
         </div>
 
         {/* Col 2-3: Operaciones */}
-        <div className="col-span-2 flex flex-col gap-6">
+        <div className="col-span-2 flex flex-col gap-6 min-w-0">
           <div className="bg-white border border-gray-200 overflow-hidden">
           <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
             <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Operaciones</h3>
