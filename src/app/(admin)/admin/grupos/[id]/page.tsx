@@ -28,18 +28,35 @@ export default async function AdminGrupoFichaPage({ params }: { params: Promise<
     .select({ id: clients.id, nombre: clients.nombre, codigo: clients.codigo, cif: clients.cif })
     .from(clients).where(isNull(clients.group_id)).orderBy(clients.nombre);
 
-  // Métricas agregadas de todas las empresas del grupo
+  // Métricas + listado completo de ops
   const empresaIds = empresas.map(e => e.id);
   const ops = empresaIds.length > 0
     ? await db.select({
-        id: operations.id, fase: operations.fase, importe: operations.importe,
+        id: operations.id,
+        nombre: operations.nombre,
+        pipeline_key: operations.pipeline_key,
+        fase: operations.fase,
+        status: operations.status,
+        importe: operations.importe,
         comision_begreat: operations.comision_begreat,
-      }).from(operations).where(inArray(operations.client_id, empresaIds))
+        comision_colaborador: operations.comision_colaborador,
+        fecha_cierre: operations.fecha_cierre,
+        created_at: operations.created_at,
+        client_nombre: clients.nombre,
+      }).from(operations)
+        .leftJoin(clients, eq(operations.client_id, clients.id))
+        .where(inArray(operations.client_id, empresaIds))
+        .orderBy(operations.fecha_cierre, operations.created_at)
     : [];
 
   const firmadas = ops.filter(o => FIRMADAS.includes(o.fase ?? ""));
   const totalFinanciado = firmadas.reduce((s, o) => s + Number(o.importe ?? 0), 0);
   const feeBegreat = firmadas.reduce((s, o) => s + Number(o.comision_begreat ?? 0), 0);
+
+  function fmtFecha(d: Date | null | undefined) {
+    if (!d) return "—";
+    return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(d));
+  }
 
   return (
     <div className="min-h-screen bg-[#f8f7fb]">
@@ -100,6 +117,69 @@ export default async function AdminGrupoFichaPage({ params }: { params: Promise<
         {/* Empresas */}
         <div className="col-span-2">
           <EmpresasGrupoPanel grupoId={id} empresas={empresas} disponibles={disponibles} />
+        </div>
+      </div>
+
+      {/* Operaciones del grupo */}
+      <div className="mx-8 mb-8">
+        <div className="bg-white border border-gray-200 overflow-hidden">
+          <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
+            <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Operaciones del grupo ({ops.length})</h3>
+          </div>
+          {ops.length === 0 ? (
+            <p className="px-5 py-8 text-sm text-gray-400 text-center">Sin operaciones registradas para las empresas de este grupo.</p>
+          ) : (
+            <div style={{ zoom: 0.9 }}>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left px-5 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Operación</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Empresa</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Tipo</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Estado</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Importe</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fee BeGreat</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fee Colaborador</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fecha cierre</th>
+                  <th className="px-5 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {ops.map(op => {
+                  const badge = op.status === "archivada"
+                    ? FIRMADAS.includes(op.fase ?? "")
+                      ? { bg: "bg-emerald-50 text-emerald-700 border border-emerald-200", label: "Ganada ✓" }
+                      : { bg: "bg-red-50 text-red-600 border border-red-200", label: "Denegada" }
+                    : op.status === "pendiente_de_validar"
+                      ? { bg: "bg-amber-50 text-amber-700 border border-amber-200", label: "Pendiente" }
+                      : { bg: "bg-blue-50 text-blue-700 border border-blue-200", label: "En curso" };
+                  const fmtE = (v: string | null) => v ? new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(v)) : "—";
+                  return (
+                    <tr key={op.id} className="hover:bg-[#EEEBF3]/30 transition-colors group">
+                      <td className="px-5 py-3 text-sm font-medium text-gray-800 max-w-[180px] truncate">{op.nombre ?? "—"}</td>
+                      <td className="px-5 py-3 text-sm text-gray-500 max-w-[130px] truncate">{op.client_nombre ?? "—"}</td>
+                      <td className="px-5 py-3">
+                        <span className="bg-[#EEEBF3] text-[#2E1A47] px-1.5 py-0.5 text-[10px] font-semibold uppercase">
+                          {op.pipeline_key === "consultoria" ? "Consultoría" : "Renting"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={`inline-block px-2 py-0.5 text-xs font-semibold ${badge.bg}`}>{badge.label}</span>
+                      </td>
+                      <td className="px-5 py-3 text-sm text-gray-700 font-medium whitespace-nowrap">{fmtE(op.importe)}</td>
+                      <td className="px-5 py-3 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtE(op.comision_begreat)}</td>
+                      <td className="px-5 py-3 text-sm text-gray-500 whitespace-nowrap">{fmtE(op.comision_colaborador)}</td>
+                      <td className="px-5 py-3 text-sm text-gray-400 whitespace-nowrap">{fmtFecha(op.fecha_cierre ?? op.created_at)}</td>
+                      <td className="px-5 py-3 text-right whitespace-nowrap">
+                        <Link href={`/admin/operaciones/${op.id}`} className="text-xs text-[#2E1A47] font-semibold opacity-0 group-hover:opacity-100 transition-opacity hover:underline">Ver →</Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
