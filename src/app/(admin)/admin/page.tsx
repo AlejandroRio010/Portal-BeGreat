@@ -43,16 +43,20 @@ export default async function AdminHomePage({
 
   const pendientes8 = pendientes.slice(0, 8);
 
-  // Ranking
-  const colabMap = new Map<string, { nombre: string; ops: number; fee: number }>();
+  // Ranking: total ops, aprobadas (firmadas), fee colaborador cobrado, fee begreat generado
+  const colabMap = new Map<string, { nombre: string; ops: number; aprobadas: number; feeColab: number; feeBegreat: number }>();
   for (const op of allOps) {
     if (!op.colaborador_id) continue;
-    const entry = colabMap.get(op.colaborador_id) ?? { nombre: op.colaborador_nombre ?? "—", ops: 0, fee: 0 };
+    const entry = colabMap.get(op.colaborador_id) ?? { nombre: op.colaborador_nombre ?? "—", ops: 0, aprobadas: 0, feeColab: 0, feeBegreat: 0 };
     entry.ops += 1;
-    entry.fee += Number(op.comision_colaborador ?? 0) + Number(op.comision_begreat ?? 0);
+    if (FIRMADAS.includes(op.fase ?? "")) {
+      entry.aprobadas += 1;
+      entry.feeColab += Number(op.comision_colaborador ?? 0);
+      entry.feeBegreat += Number(op.comision_begreat ?? 0);
+    }
     colabMap.set(op.colaborador_id, entry);
   }
-  const ranking = Array.from(colabMap.values()).sort((a, b) => b.fee - a.fee).slice(0, 10);
+  const ranking = Array.from(colabMap.values()).sort((a, b) => b.feeBegreat - a.feeBegreat).slice(0, 10);
 
   // Year filter
   const availableYears = Array.from(
@@ -157,24 +161,25 @@ export default async function AdminHomePage({
             {monthlyOps.map((opsCount, i) => {
               const h = opsCount > 0 ? Math.max(8, Math.round((opsCount / maxOps) * 120)) : 0;
               const feeMes = monthlyFeeBegreat[i];
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
-                  <div className="relative flex-1 flex items-end w-full">
-                    {opsCount > 0 && (
-                      <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-[#2E1A47] text-white text-[9px] px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-lg">
-                        <span className="block font-bold">{opsCount} op{opsCount !== 1 ? "s" : ""}</span>
-                        {feeMes > 0 && <span className="block text-white/70">Fee: {fmtEur(feeMes)}</span>}
-                      </div>
-                    )}
-                    <div
-                      className="w-full transition-all group-hover:opacity-80"
-                      style={{
-                        height: h > 0 ? `${h}px` : "3px",
-                        backgroundColor: h > 0 ? "#2E1A47" : "#EEEBF3",
-                      }}
-                    />
-                  </div>
+              const bar = (
+                <div className="relative flex-1 flex items-end w-full">
+                  {opsCount > 0 && (
+                    <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-[#2E1A47] text-white text-[9px] px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-lg">
+                      <span className="block font-bold">{opsCount} op{opsCount !== 1 ? "s" : ""}</span>
+                      {feeMes > 0 && <span className="block text-white/70">Fee: {fmtEur(feeMes)}</span>}
+                      <span className="block text-white/40 mt-0.5">Click para ver detalle</span>
+                    </div>
+                  )}
+                  <div className="w-full transition-all group-hover:opacity-80"
+                    style={{ height: h > 0 ? `${h}px` : "3px", backgroundColor: h > 0 ? "#2E1A47" : "#EEEBF3" }} />
                 </div>
+              );
+              return opsCount > 0 ? (
+                <Link key={i} href={`/admin/firmadas/${selectedYear}/${i + 1}`} className="flex-1 flex flex-col items-center gap-1 group relative cursor-pointer">
+                  {bar}
+                </Link>
+              ) : (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">{bar}</div>
               );
             })}
           </div>
@@ -200,32 +205,30 @@ export default async function AdminHomePage({
       {/* ── Bloques ops en marcha ── */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {/* Total activas */}
-        <div className="bg-[#2E1A47] p-6">
-          <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-4">Ops en marcha</p>
-          <p className="text-4xl font-black text-white mb-1">{activas.length}</p>
-          <p className="text-white/40 text-[9px] uppercase tracking-wide">en ambos funnels</p>
+        <div className="bg-[#2E1A47] px-5 py-4 flex items-center justify-between">
+          <div>
+            <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-1">Ops en marcha</p>
+            <p className="text-white/40 text-[9px] uppercase tracking-wide">en ambos funnels</p>
+          </div>
+          <p className="text-3xl font-black text-white">{activas.length}</p>
         </div>
 
         {/* Aprobadas / pendientes de firmar */}
-        <div className="bg-white border border-gray-200 p-6">
-          <p className="text-[10px] font-bold text-[#2E1A47] uppercase tracking-widest mb-4">Aprobadas / pendientes firmar</p>
-          <p className="text-4xl font-black text-[#2E1A47] mb-1">{opsAprob.length}</p>
-          <p className="text-gray-400 text-[9px] uppercase tracking-wide mb-4">en fase de aprobación</p>
-          <div className="border-t border-gray-100 pt-3">
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Fee BeGreat</p>
-            <p className="text-sm font-black text-[#2E1A47]">{sumBegreat(opsAprob) > 0 ? fmtEur(sumBegreat(opsAprob)) : "—"}</p>
+        <div className="bg-white border border-gray-200 px-5 py-4 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-bold text-[#2E1A47] uppercase tracking-widest mb-1">Aprobadas / pte. firmar</p>
+            <p className="text-[10px] text-gray-400">Fee BeGreat: <span className="font-bold text-[#2E1A47]">{sumBegreat(opsAprob) > 0 ? fmtEur(sumBegreat(opsAprob)) : "—"}</span></p>
           </div>
+          <p className="text-3xl font-black text-[#2E1A47]">{opsAprob.length}</p>
         </div>
 
         {/* En estudio */}
-        <div className="bg-[#EEEBF3] border border-[#EEEBF3] p-6">
-          <p className="text-[10px] font-bold text-[#2E1A47] uppercase tracking-widest mb-4">Ops en estudio</p>
-          <p className="text-4xl font-black text-[#2E1A47] mb-1">{opsEstudio.length}</p>
-          <p className="text-[#2E1A47]/40 text-[9px] uppercase tracking-wide mb-4">pre-aprobación</p>
-          <div className="border-t border-[#2E1A47]/15 pt-3">
-            <p className="text-[10px] text-[#2E1A47]/50 uppercase tracking-wider mb-0.5">Fee BeGreat potencial</p>
-            <p className="text-sm font-black text-[#2E1A47]">{sumBegreat(opsEstudio) > 0 ? fmtEur(sumBegreat(opsEstudio)) : "—"}</p>
+        <div className="bg-[#EEEBF3] border border-[#EEEBF3] px-5 py-4 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-bold text-[#2E1A47] uppercase tracking-widest mb-1">Ops en estudio</p>
+            <p className="text-[10px] text-[#2E1A47]/50">Fee potencial: <span className="font-bold text-[#2E1A47]">{sumBegreat(opsEstudio) > 0 ? fmtEur(sumBegreat(opsEstudio)) : "—"}</span></p>
           </div>
+          <p className="text-3xl font-black text-[#2E1A47]">{opsEstudio.length}</p>
         </div>
       </div>
 
@@ -299,8 +302,10 @@ export default async function AdminHomePage({
               <tr className="bg-[#EEEBF3] border-b border-gray-100">
                 <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">#</th>
                 <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Colaborador</th>
-                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Nº ops</th>
-                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fee generada</th>
+                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Ops enviadas</th>
+                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Aprobadas</th>
+                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fee colaborador</th>
+                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fee BeGreat</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -309,7 +314,9 @@ export default async function AdminHomePage({
                   <td className="px-6 py-3 text-xs font-bold text-gray-400">{i + 1}</td>
                   <td className="px-6 py-3 text-sm font-medium text-gray-900">{c.nombre}</td>
                   <td className="px-6 py-3 text-sm text-gray-600">{c.ops}</td>
-                  <td className="px-6 py-3 text-sm font-bold text-[#2E1A47]">{c.fee > 0 ? fmtEur(c.fee) : "—"}</td>
+                  <td className="px-6 py-3 text-sm text-gray-600">{c.aprobadas}</td>
+                  <td className="px-6 py-3 text-sm text-gray-500">{fmtEur(c.feeColab)}</td>
+                  <td className="px-6 py-3 text-sm font-bold text-[#2E1A47]">{fmtEur(c.feeBegreat)}</td>
                 </tr>
               ))}
             </tbody>
