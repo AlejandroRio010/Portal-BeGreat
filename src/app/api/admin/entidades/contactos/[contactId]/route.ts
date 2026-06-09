@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { canManageEntidades } from "@/lib/entidadesAuth";
 import { db } from "@/db";
 import { entityContacts } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ contactId: string }> }) {
   const session = await auth();
-  if (!session || (session.user as any).role !== "admin") {
+  if (!(await canManageEntidades(session))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { contactId } = await params;
@@ -16,7 +17,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ c
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ contactId: string }> }) {
   const session = await auth();
-  if (!session || (session.user as any).role !== "admin") {
+  if (!(await canManageEntidades(session))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { contactId } = await params;

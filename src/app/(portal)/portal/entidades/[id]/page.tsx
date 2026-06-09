@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import NotesSection from "@/components/NotesSection";
+import ContactosPanel from "@/app/(admin)/admin/entidades/[id]/ContactosPanel";
 
 const TIPO_LABEL: Record<string, string> = {
   banco: "Banco",
@@ -114,24 +115,8 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
             </div>
           )}
 
-          {/* Contactos de la entidad */}
-          {contactos.length > 0 && (
-            <div className="bg-white border border-gray-200">
-              <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
-                <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Personas de contacto ({contactos.length})</h3>
-              </div>
-              <div className="divide-y divide-gray-50">
-                {contactos.map(c => (
-                  <Link key={c.id} href={`/portal/entidades/${id}/contactos/${c.id}`} className="block px-5 py-3 hover:bg-[#EEEBF3]/30 transition-colors group">
-                    <p className="text-sm font-semibold text-gray-800 group-hover:text-[#2E1A47]">{c.nombre}</p>
-                    {c.rol && <p className="text-xs text-gray-400">{c.rol}</p>}
-                    {c.email && <p className="text-xs text-gray-500">{c.email}</p>}
-                    {c.telefono && <p className="text-xs text-gray-500">{c.telefono}</p>}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Contactos de la entidad — mismo panel que admin (añadir con buscador) */}
+          <ContactosPanel contactos={contactos} entityId={id} />
         </div>
 
         {/* Col 2-3: Notas + Oficinas */}

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { canManageEntidades } from "@/lib/entidadesAuth";
 import { db } from "@/db";
 import { entityOfficeContacts } from "@/db/schema";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session || (session.user as any).role !== "admin") {
+  if (!(await canManageEntidades(session))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id: office_id } = await params;
