@@ -15,22 +15,22 @@ interface SidebarProps {
 const colaboradorNav = [
   { href: "/portal",                          label: "Inicio",                exact: true },
   { href: "/portal/alta-operacion",           label: "Alta nueva operación",  exact: false },
-  { href: "/portal/operaciones/consultoria",  label: "Consultoría financiera",exact: false },
-  { href: "/portal/operaciones/renting",      label: "Renting de equipos",    exact: false },
+  { href: "/portal/historial",                label: "Historial & Resumen",   exact: false },
+  { href: "/portal/operaciones/consultoria",  label: "Consultoría financiera",exact: false, sub: true },
+  { href: "/portal/operaciones/renting",      label: "Renting de equipos",    exact: false, sub: true },
   { href: "/portal/clientes",                 label: "Mis clientes",          exact: false },
   { href: "/portal/grupos",                   label: "Grupos empresariales",  exact: false },
   { href: "/portal/proveedores",              label: "Mis proveedores",       exact: false },
-  { href: "/portal/historial",                label: "Historial & Resumen",   exact: false },
   { href: "/portal/perfil",                   label: "Mi perfil",             exact: false },
   { href: "/portal/contacto",                 label: "Contacto",              exact: false },
 ];
 
 const adminNav = [
-  { href: "/admin",               label: "Inicio",         exact: true },
-  { href: "/admin/alta-operacion",         label: "+ Alta operación", exact: false },
-  { href: "/admin/operaciones",   label: "Operaciones",    exact: false },
-  { href: "/admin/operaciones/consultoria", label: "→ Consultoría", exact: false },
-  { href: "/admin/operaciones/renting",     label: "→ Renting",     exact: false },
+  { href: "/admin",                         label: "Inicio",                exact: true },
+  { href: "/admin/alta-operacion",          label: "Alta nueva operación",  exact: false },
+  { href: "/admin/historial",               label: "Historial & Resumen",   exact: false },
+  { href: "/admin/operaciones/consultoria", label: "Consultoría financiera", exact: false, sub: true },
+  { href: "/admin/operaciones/renting",     label: "Renting de equipos",     exact: false, sub: true },
   { href: "/admin/colaboradores", label: "Colaboradores",  exact: false },
   { href: "/admin/clientes",      label: "Clientes",             exact: false },
   { href: "/admin/grupos",        label: "Grupos empresariales", exact: false },
@@ -77,6 +77,7 @@ export default function Sidebar({ nombre, identificador, role, puedeVerEntidades
       {/* Nav */}
       <nav className="flex-1 py-3 overflow-y-auto">
         {nav.map((item) => {
+          const sub = (item as any).sub;
           const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
           return (
             <Link
@@ -88,7 +89,9 @@ export default function Sidebar({ nombre, identificador, role, puedeVerEntidades
                   : "text-white/55 hover:bg-white/7 hover:text-white/90 border-l-2 border-transparent"
               }`}
             >
-              <span className="px-5 py-2.5 flex-1 truncate">{item.label}</span>
+              <span className={`py-2.5 flex-1 truncate ${sub ? "pl-9 pr-5 text-[13px]" : "px-5"}`}>
+                {sub && <span className="text-white/35 mr-1.5">→</span>}{item.label}
+              </span>
             </Link>
           );
         })}
