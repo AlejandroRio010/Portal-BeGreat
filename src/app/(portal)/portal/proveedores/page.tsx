@@ -3,9 +3,8 @@ import { db } from "@/db";
 import { suppliers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import NuevoProveedorForm from "./NuevoProveedorForm";
-import ProveedoresBuscador from "./ProveedoresBuscador";
+import ProveedoresTabla from "@/components/ProveedoresTabla";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +38,7 @@ export default async function PortalProveedoresPage() {
           <p className="text-gray-400 text-sm">Todavía no has dado de alta ningún proveedor.</p>
         </div>
       ) : (
-        <ProveedoresBuscador proveedores={proveedores} />
+        <ProveedoresTabla esAdmin={false} hrefBase="/portal/proveedores" proveedores={proveedores.map(p => ({ ...p, colaborador_id: null, colaborador_nombre: null }))} />
       )}
     </div>
   );
