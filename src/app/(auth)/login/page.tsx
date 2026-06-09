@@ -28,7 +28,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-white">
       {/* ── Panel izquierdo (marca) ── */}
-      <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-[#2E1A47] px-12 py-12">
+      <div className="relative hidden lg:flex flex-col overflow-hidden bg-[#2E1A47] px-12 py-12">
         {/* Imagen de fondo — más clara */}
         <Image src="/cabecera-corporate.jpg" alt="" fill className="object-cover object-center opacity-70" priority />
         <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(46,26,71,0.78) 0%, rgba(46,26,71,0.42) 55%, rgba(46,26,71,0.82) 100%)" }} />
@@ -38,15 +38,17 @@ export default function LoginPage() {
           <Image src="/begreat-logo-blanco.png" alt="BeGreat Consulting" width={170} height={50} className="object-contain" priority />
         </div>
 
-        {/* Mensaje */}
-        <div className="relative z-10 max-w-md">
-          <p className="text-white/45 text-xs uppercase tracking-[0.25em] mb-4">Portal privado</p>
-          <h2 className="text-white text-3xl font-bold leading-tight">
-            Bienvenido al portal de<br />colaboradores de BeGreat
-          </h2>
-          <p className="text-white/55 text-sm mt-4 leading-relaxed">
-            Gestiona tus operaciones, clientes y comisiones en un único lugar. Consultoría financiera y renting de equipos.
-          </p>
+        {/* Mensaje — centrado verticalmente */}
+        <div className="relative z-10 flex-1 flex items-center">
+          <div className="max-w-md">
+            <p className="text-white/45 text-xs uppercase tracking-[0.25em] mb-4">Portal privado</p>
+            <h2 className="text-white text-3xl font-bold leading-tight">
+              Bienvenido al portal de<br />colaboradores de BeGreat
+            </h2>
+            <p className="text-white/55 text-sm mt-4 leading-relaxed">
+              Gestiona tus operaciones, clientes y comisiones en un único lugar. Consultoría financiera y renting de equipos.
+            </p>
+          </div>
         </div>
 
         {/* Footer */}
@@ -57,24 +59,25 @@ export default function LoginPage() {
 
       {/* ── Panel derecho (formulario) ── */}
       <div className="relative flex items-center justify-center px-6 py-12 bg-[#f8f7fb] overflow-hidden">
-        {/* Marca de agua morada del logo */}
-        <div
-          className="absolute -right-16 top-1/2 -translate-y-1/2 pointer-events-none select-none hidden lg:block"
-          style={{
-            width: "650px",
-            height: "200px",
-            backgroundColor: "#2E1A47",
-            opacity: 0.05,
-            WebkitMaskImage: "url(/begreat-logo-blanco.png)",
-            maskImage: "url(/begreat-logo-blanco.png)",
-            WebkitMaskRepeat: "no-repeat",
-            maskRepeat: "no-repeat",
-            WebkitMaskSize: "contain",
-            maskSize: "contain",
-            WebkitMaskPosition: "center",
-            maskPosition: "center",
-          }}
-        />
+        {/* Marca de agua morada del logo — grande y centrada */}
+        <div className="absolute inset-0 hidden lg:flex items-center justify-center pointer-events-none select-none">
+          <div
+            style={{
+              width: "92%",
+              height: "55%",
+              backgroundColor: "#2E1A47",
+              opacity: 0.06,
+              WebkitMaskImage: "url(/begreat-logo-blanco.png)",
+              maskImage: "url(/begreat-logo-blanco.png)",
+              WebkitMaskRepeat: "no-repeat",
+              maskRepeat: "no-repeat",
+              WebkitMaskSize: "contain",
+              maskSize: "contain",
+              WebkitMaskPosition: "center",
+              maskPosition: "center",
+            }}
+          />
+        </div>
         <div className="relative z-10 w-full max-w-sm">
           {/* Logo móvil */}
           <div className="lg:hidden flex justify-center mb-8">
