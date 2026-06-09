@@ -38,8 +38,8 @@ export default function LoginPage() {
           <Image src="/begreat-logo-blanco.png" alt="BeGreat Consulting" width={170} height={50} className="object-contain" priority />
         </div>
 
-        {/* Mensaje — centrado verticalmente */}
-        <div className="relative z-10 flex-1 flex items-center">
+        {/* Mensaje — parte alta */}
+        <div className="relative z-10 flex-1 flex items-start pt-16">
           <div className="max-w-md">
             <p className="text-white/45 text-xs uppercase tracking-[0.25em] mb-4">Portal privado</p>
             <h2 className="text-white text-3xl font-bold leading-tight">
@@ -63,8 +63,8 @@ export default function LoginPage() {
         <div className="absolute inset-0 hidden lg:flex items-center justify-center pointer-events-none select-none">
           <div
             style={{
-              width: "92%",
-              height: "55%",
+              width: "118%",
+              height: "78%",
               backgroundColor: "#2E1A47",
               opacity: 0.06,
               WebkitMaskImage: "url(/begreat-logo-blanco.png)",
