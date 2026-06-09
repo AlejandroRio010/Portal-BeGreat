@@ -2,13 +2,27 @@ import { db } from "@/db";
 import { collaborators, clients, suppliers, operations } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 
-/** Genera COL-001, COL-002… */
+/** Genera COL-001, COL-002… (colaboradores) */
 export async function generateCodigoCOL(): Promise<string> {
   const [{ max }] = await db
     .select({ max: sql<number>`COALESCE(MAX(CAST(SUBSTRING(codigo FROM 5) AS INTEGER)), 0)` })
     .from(collaborators)
     .where(sql`codigo IS NOT NULL AND codigo LIKE 'COL-%'`);
   return `COL-${String((max ?? 0) + 1).padStart(3, "0")}`;
+}
+
+/** Genera ADM-001, ADM-002… (administradores) */
+export async function generateCodigoADM(): Promise<string> {
+  const [{ max }] = await db
+    .select({ max: sql<number>`COALESCE(MAX(CAST(SUBSTRING(codigo FROM 5) AS INTEGER)), 0)` })
+    .from(collaborators)
+    .where(sql`codigo IS NOT NULL AND codigo LIKE 'ADM-%'`);
+  return `ADM-${String((max ?? 0) + 1).padStart(3, "0")}`;
+}
+
+/** Código según rol: admin → ADM-xxx, colaborador → COL-xxx */
+export async function generateCodigoUsuario(role: string): Promise<string> {
+  return role === "admin" ? generateCodigoADM() : generateCodigoCOL();
 }
 
 /** Genera CLI-001, CLI-042… */
