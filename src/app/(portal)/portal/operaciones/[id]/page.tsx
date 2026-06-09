@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments, financialEntities, entityOffices, entityOfficeContacts } from "@/db/schema";
+import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments, financialEntities, entityOffices, entityOfficeContacts, contacts } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -47,6 +47,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       lugar_entrega: operations.lugar_entrega,
       plazo_meses: operations.plazo_meses,
       equipo_tipo: operations.equipo_tipo,
+      facturacion_renting: operations.facturacion_renting,
       motivo_denegacion: operations.motivo_denegacion,
       entity_office_id: operations.entity_office_id,
       onedrive_url: operations.onedrive_url,
@@ -94,6 +95,14 @@ export default async function OperacionDetallePage({ params }: { params: Promise
   const officeContacts = op.entity_office_id
     ? await db.select().from(entityOfficeContacts).where(eq(entityOfficeContacts.office_id, op.entity_office_id))
     : [];
+
+  // Persona de contacto del cliente y del proveedor (para la ficha de renting)
+  const clienteContacto = op.client_id
+    ? await db.select({ id: contacts.id, nombre: contacts.nombre }).from(contacts).where(eq(contacts.client_id, op.client_id)).limit(1).then(r => r[0] ?? null)
+    : null;
+  const proveedorData = op.supplier_id
+    ? await db.select({ id: suppliers.id, persona_contacto: suppliers.persona_contacto }).from(suppliers).where(eq(suppliers.id, op.supplier_id)).limit(1).then(r => r[0] ?? null)
+    : null;
 
   const opNotes = await db.select().from(notes).where(eq(notes.operation_id, id)).orderBy(notes.created_at);
   const opDocs = await db.select().from(operationDocuments).where(eq(operationDocuments.operation_id, id)).orderBy(operationDocuments.created_at);
@@ -264,14 +273,21 @@ export default async function OperacionDetallePage({ params }: { params: Promise
               const cuota = op.importe && op.plazo_meses ? `${fmtNum(Number(op.importe) / op.plazo_meses)} €/mes` : null;
               const isRenting = op.pipeline_key === "renting";
 
+              const puedeVerComision = puedeVerEntidades; // comisión/oficina solo admin o colaboradores con derecho
+              const facturaLabel = op.facturacion_renting === "begreat" ? "BeGreat factura la operación" : op.facturacion_renting === "financiera" ? "BeGreat comisiona" : null;
               const campos: { label: string; value: string | null; href?: string }[] = isRenting ? [
                 { label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/portal/clientes/${op.client_id}` : undefined },
-                { label: "Proveedor", value: op.supplier_nombre },
-                { label: "Importe de la operación", value: fmtEuro(op.importe) },
-                { label: "Cuota", value: cuota },
+                { label: "Persona de contacto (cliente)", value: clienteContacto?.nombre ?? null, href: clienteContacto && op.client_id ? `/portal/clientes/${op.client_id}/contactos/${clienteContacto.id}` : undefined },
+                { label: "Proveedor", value: op.supplier_nombre, href: op.supplier_id ? `/portal/proveedores/${op.supplier_id}` : undefined },
+                { label: "Persona de contacto (proveedor)", value: proveedorData?.persona_contacto ?? null, href: op.supplier_id ? `/portal/proveedores/${op.supplier_id}` : undefined },
+                { label: "Importe (sin IVA)", value: fmtEuro(op.importe) },
+                { label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null },
+                { label: "Cuota (sin IVA)", value: cuota },
+                { label: "Tipo de equipo", value: op.equipo_tipo },
+                { label: "Descripción del equipo", value: op.descripcion },
                 { label: "Lugar de instalación", value: op.lugar_entrega },
-                { label: "Tipo de equipo a financiar", value: op.equipo_tipo },
-                { label: "Fee / Comisión", value: fmtEuro(op.comision_colaborador) },
+                { label: "Facturación", value: facturaLabel },
+                ...(puedeVerComision ? [{ label: "Fee / Comisión", value: fmtEuro(op.comision_colaborador) }] : []),
                 { label: "Fecha de alta", value: fmtFecha(op.created_at) },
                 { label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) },
               ] : [

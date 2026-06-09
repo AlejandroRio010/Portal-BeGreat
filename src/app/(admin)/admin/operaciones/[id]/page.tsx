@@ -50,6 +50,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       plazo_meses: operations.plazo_meses,
       notas_admin: operations.notas_admin,
       facturacion_renting: operations.facturacion_renting,
+      es_renovacion: operations.es_renovacion,
       onedrive_url: operations.onedrive_url,
       motivo_denegacion: operations.motivo_denegacion,
       fecha_cierre: operations.fecha_cierre,
@@ -287,15 +288,19 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
               const cuota = op.importe && op.plazo_meses ? `${fmtNum(Number(op.importe) / op.plazo_meses)} €/mes` : null;
               const isRenting = op.pipeline_key === "renting";
 
+              const facturaLabel = op.facturacion_renting === "begreat" ? "BeGreat factura la operación" : op.facturacion_renting === "financiera" ? "BeGreat comisiona" : null;
               const campos: { label: string; value: string | null }[] = isRenting ? [
                 { label: "Colaborador", value: op.colaborador_nombre },
                 { label: "Empresa cliente", value: op.client_nombre },
                 { label: "Proveedor", value: op.supplier_nombre },
-                { label: "Importe de la operación", value: fmtEuro(op.importe) },
-                { label: "Cuota", value: cuota },
+                { label: "Importe (sin IVA)", value: fmtEuro(op.importe) },
+                { label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null },
+                { label: "Cuota (sin IVA)", value: cuota },
+                { label: "Tipo de equipo", value: op.equipo_tipo },
+                { label: "Descripción del equipo", value: op.descripcion },
                 { label: "Lugar de instalación", value: op.lugar_entrega },
-                { label: "Tipo de equipo a financiar", value: op.equipo_tipo },
-                { label: "Honorario colaborador", value: fmtEuro(op.comision_colaborador) },
+                { label: "Facturación", value: facturaLabel },
+                { label: "Fee colaborador", value: fmtEuro(op.comision_colaborador) },
                 { label: "Fecha de alta", value: fmtFecha(op.created_at) },
                 { label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) },
               ] : [
@@ -372,6 +377,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialHonorarios={op.honorarios_firmado}
             initialNotasAdmin={op.notas_admin ?? null}
             initialFacturacionRenting={op.facturacion_renting ?? null}
+            initialEsRenovacion={op.es_renovacion ?? false}
             initialOnedriveUrl={op.onedrive_url ?? null}
             initialNombre={op.nombre ?? null}
             initialDescripcion={op.descripcion ?? null}

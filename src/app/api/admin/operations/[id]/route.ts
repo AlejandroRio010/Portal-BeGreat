@@ -27,6 +27,7 @@ export async function PATCH(
     notas_admin,
     facturacion_renting,
     onedrive_url,
+    es_renovacion,
     // basic op fields editable by admin
     nombre,
     descripcion,
@@ -56,6 +57,7 @@ export async function PATCH(
   if (notas_admin !== undefined) updateData.notas_admin = notas_admin || null;
   if (facturacion_renting !== undefined) updateData.facturacion_renting = facturacion_renting || null;
   if (onedrive_url !== undefined) updateData.onedrive_url = onedrive_url || null;
+  if (es_renovacion !== undefined) updateData.es_renovacion = es_renovacion === true;
   if (nombre !== undefined) updateData.nombre = nombre || null;
   if (descripcion !== undefined) updateData.descripcion = descripcion || null;
   if (importe !== undefined) updateData.importe = importe === "" ? null : importe;

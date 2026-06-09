@@ -49,6 +49,7 @@ interface Props {
   initialNotasAdmin: string | null;
   initialFacturacionRenting: string | null;
   initialOnedriveUrl: string | null;
+  initialEsRenovacion?: boolean | null;
   // basic op fields
   initialNombre: string | null;
   initialDescripcion: string | null;
@@ -76,6 +77,7 @@ export default function AdminOpForm({
   initialHonorarios,
   initialNotasAdmin,
   initialFacturacionRenting,
+  initialEsRenovacion,
   initialOnedriveUrl,
   initialNombre,
   initialDescripcion,
@@ -99,6 +101,7 @@ export default function AdminOpForm({
   const [comisionBegreat, setComisionBegreat] = useState(initialComisionBegreat ?? "");
   const [honorarios, setHonorarios] = useState(initialHonorarios ?? false);
   const [facturacionRenting, setFacturacionRenting] = useState(initialFacturacionRenting ?? "");
+  const [esRenovacion, setEsRenovacion] = useState(initialEsRenovacion ?? false);
   const [onedriveUrl, setOnedriveUrl] = useState(initialOnedriveUrl ?? "");
   const [notasAdmin, setNotasAdmin] = useState(initialNotasAdmin ?? "");
 
@@ -184,6 +187,7 @@ export default function AdminOpForm({
         honorarios_firmado: honorarios,
         facturacion_renting: facturacionRenting || null,
         onedrive_url: onedriveUrl || null,
+        es_renovacion: esRenovacion,
       });
       setSaved(true);
     } catch { setError("Error al guardar los cambios."); }
@@ -411,6 +415,13 @@ export default function AdminOpForm({
                 <input type="checkbox" id="honorarios" checked={honorarios} onChange={(e) => setHonorarios(e.target.checked)}
                   className="w-4 h-4 accent-[#2E1A47]" />
                 <label htmlFor="honorarios" className="text-sm text-gray-700 cursor-pointer">Honorarios firmados</label>
+              </div>
+
+              {/* Es renovación */}
+              <div className="flex items-center gap-3">
+                <input type="checkbox" id="renovacion" checked={esRenovacion} onChange={(e) => setEsRenovacion(e.target.checked)}
+                  className="w-4 h-4 accent-[#2E1A47]" />
+                <label htmlFor="renovacion" className="text-sm text-gray-700 cursor-pointer">Es una renovación de una operación anterior</label>
               </div>
 
               {/* Modalidad facturación renting */}
