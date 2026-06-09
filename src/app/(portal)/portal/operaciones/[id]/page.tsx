@@ -281,7 +281,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                 { label: "Descripción", value: op.descripcion },
                 { label: "Fecha de alta", value: fmtFecha(op.created_at) },
                 { label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) },
-                { label: "Honorario firmado", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null },
+                { label: "Honorarios firmados", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null },
               ];
 
               return (

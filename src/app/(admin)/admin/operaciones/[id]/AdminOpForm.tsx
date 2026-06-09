@@ -429,17 +429,6 @@ export default function AdminOpForm({
                 </div>
               )}
 
-              {/* OneDrive URL */}
-              <div>
-                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">📁 Enlace documentación (OneDrive)</label>
-                <input type="text" value={onedriveUrl} onChange={(e) => setOnedriveUrl(e.target.value)} placeholder="https://onedrive.live.com/..."
-                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                {onedriveUrl && (
-                  <a href={onedriveUrl} target="_blank" rel="noopener noreferrer"
-                    className="block mt-1.5 text-xs text-[#2E1A47] hover:underline truncate">Abrir enlace →</a>
-                )}
-              </div>
-
               <button onClick={handleSave} disabled={saving}
                 className="w-full py-2.5 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50">
                 {saving ? "Guardando..." : "Guardar gestión admin"}

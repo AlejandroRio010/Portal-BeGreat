@@ -127,6 +127,11 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
         .from(entityOffices).where(eq(entityOffices.id, op.entity_office_id)).limit(1).then(r => r[0] ?? null)
     : null;
 
+  // Logo del colaborador para la celebración
+  const colabLogo = op.colaborador_id
+    ? await db.select({ logo_url: collaborators.logo_url }).from(collaborators).where(eq(collaborators.id, op.colaborador_id)).limit(1).then(r => r[0]?.logo_url ?? null)
+    : null;
+
   const officeContacts = op.entity_office_id
     ? await db.select().from(entityOfficeContacts).where(eq(entityOfficeContacts.office_id, op.entity_office_id))
     : [];
@@ -179,7 +184,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       </div>
 
       {/* Celebration */}
-      {isGanada && <CelebrationBanner opNombre={op.nombre ?? op.codigo ?? "Operación"} clientNombre={op.client_nombre ?? "Cliente"} />}
+      {isGanada && <CelebrationBanner opNombre={op.nombre ?? op.codigo ?? "Operación"} clientNombre={op.client_nombre ?? "Cliente"} colaboradorLogoUrl={colabLogo} />}
 
       {/* Motivo denegación */}
       {op.status === "archivada" && op.motivo_denegacion && (
@@ -190,7 +195,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       )}
 
       {/* KPIs */}
-      <div className={`grid gap-4 mb-6 ${duracion ? "grid-cols-5" : "grid-cols-4"}`}>
+      <div className={`grid gap-4 mb-6 ${duracion ? "grid-cols-6" : "grid-cols-5"}`}>
         <div className="bg-[#2E1A47] p-5">
           <p className="text-white/50 text-xs uppercase tracking-widest mb-2">Importe</p>
           <p className="text-2xl font-black text-white">
@@ -212,6 +217,14 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
           <p className={`text-2xl font-black ${op.comision_begreat ? "text-[#2E1A47]" : "text-gray-300"}`}>
             {fmtEur(op.comision_begreat)}
           </p>
+        </div>
+        <div className="bg-white border border-gray-200 p-5">
+          <p className="text-gray-400 text-xs uppercase tracking-widest mb-2 font-semibold">Entidad financiera</p>
+          {entidadFinanciera ? (
+            <Link href={`/admin/entidades/${entidadFinanciera.id}`} className="text-lg font-bold text-[#2E1A47] hover:underline">{op.entidad_financiera} →</Link>
+          ) : (
+            <p className="text-lg font-bold text-gray-800">{op.entidad_financiera ?? "Pendiente"}</p>
+          )}
         </div>
         <div className="bg-white border border-gray-200 p-5">
           <p className="text-gray-400 text-xs uppercase tracking-widest mb-2 font-semibold">Fecha de alta</p>
@@ -293,7 +306,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
                 { label: "Descripción", value: op.descripcion },
                 { label: "Fecha de alta", value: fmtFecha(op.created_at) },
                 { label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) },
-                { label: "Honorario firmado", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null },
+                { label: "Honorarios firmados", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null },
               ];
 
               return (
