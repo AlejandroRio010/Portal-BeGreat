@@ -26,70 +26,34 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-white">
-      {/* ── Panel izquierdo (marca) ── */}
-      <div className="relative hidden lg:flex flex-col overflow-hidden bg-[#2E1A47] px-12 py-12">
-        {/* Imagen de fondo — más clara */}
-        <Image src="/cabecera-corporate.jpg" alt="" fill className="object-cover object-center opacity-70" priority />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(46,26,71,0.78) 0%, rgba(46,26,71,0.42) 55%, rgba(46,26,71,0.82) 100%)" }} />
+    <div className="relative min-h-screen flex flex-col items-center justify-center px-6 py-12 overflow-hidden bg-[#2E1A47]">
+      {/* Fondo a pantalla completa */}
+      <Image src="/cabecera-corporate.jpg" alt="" fill className="object-cover object-center opacity-60" priority />
+      <div className="absolute inset-0" style={{ background: "linear-gradient(160deg, rgba(46,26,71,0.82) 0%, rgba(46,26,71,0.55) 45%, rgba(46,26,71,0.88) 100%)" }} />
 
-        {/* Logo arriba */}
-        <div className="relative z-10">
-          <Image src="/begreat-logo-blanco.png" alt="BeGreat Consulting" width={170} height={50} className="object-contain" priority />
+      {/* Contenido */}
+      <div className="relative z-10 w-full max-w-md">
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <Image src="/begreat-logo-blanco.png" alt="BeGreat Consulting" width={190} height={56} className="object-contain" priority />
         </div>
 
-        {/* Mensaje — parte alta */}
-        <div className="relative z-10 flex-1 flex items-start pt-16">
-          <div className="max-w-md">
-            <p className="text-white/45 text-xs uppercase tracking-[0.25em] mb-4">Portal privado</p>
-            <h2 className="text-white text-3xl font-bold leading-tight">
-              Bienvenido al portal de<br />colaboradores de BeGreat
-            </h2>
-            <p className="text-white/55 text-sm mt-4 leading-relaxed">
-              Gestiona tus operaciones, clientes y comisiones en un único lugar. Consultoría financiera y renting de equipos.
-            </p>
-          </div>
+        {/* Texto superior */}
+        <div className="text-center mb-8">
+          <p className="text-white/50 text-xs uppercase tracking-[0.28em] mb-3">Portal privado</p>
+          <h1 className="text-white text-3xl font-bold leading-tight">Bienvenido al portal de BeGreat</h1>
+          <p className="text-white/65 text-sm mt-4 leading-relaxed">
+            Gestiona tus operaciones y haz seguimiento desde un mismo lugar.
+          </p>
+          <p className="text-white/45 text-xs uppercase tracking-[0.15em] mt-2">
+            Consultoría financiera y renting de equipos
+          </p>
         </div>
 
-        {/* Footer */}
-        <div className="relative z-10">
-          <p className="text-white/30 text-xs">© {new Date().getFullYear()} BeGreat Consulting · Acceso reservado</p>
-        </div>
-      </div>
-
-      {/* ── Panel derecho (formulario) ── */}
-      <div className="relative flex items-center justify-center px-6 py-12 bg-[#f8f7fb] overflow-hidden">
-        {/* Marca de agua morada del logo — grande y centrada */}
-        <div className="absolute inset-0 hidden lg:flex items-center justify-center pointer-events-none select-none">
-          <div
-            style={{
-              width: "118%",
-              height: "78%",
-              backgroundColor: "#2E1A47",
-              opacity: 0.06,
-              WebkitMaskImage: "url(/begreat-logo-blanco.png)",
-              maskImage: "url(/begreat-logo-blanco.png)",
-              WebkitMaskRepeat: "no-repeat",
-              maskRepeat: "no-repeat",
-              WebkitMaskSize: "contain",
-              maskSize: "contain",
-              WebkitMaskPosition: "center",
-              maskPosition: "center",
-            }}
-          />
-        </div>
-        <div className="relative z-10 w-full max-w-sm">
-          {/* Logo móvil */}
-          <div className="lg:hidden flex justify-center mb-8">
-            <div className="bg-[#2E1A47] px-6 py-4">
-              <Image src="/begreat-logo-blanco.png" alt="BeGreat Consulting" width={150} height={44} className="object-contain" priority />
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Iniciar sesión</h1>
-            <p className="text-sm text-gray-400 mt-1.5">Introduce tus credenciales para acceder a tu portal.</p>
-          </div>
+        {/* Tarjeta de credenciales */}
+        <div className="bg-white shadow-2xl p-8">
+          <h2 className="text-lg font-bold text-gray-900 mb-1">Iniciar sesión</h2>
+          <p className="text-xs text-gray-400 mb-6">Introduce tus credenciales para acceder.</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
@@ -132,13 +96,13 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <p className="text-center text-xs text-gray-400">
-              ¿Problemas para acceder?{" "}
-              <a href="mailto:hola@begreatconsulting.es" className="text-[#2E1A47] font-semibold hover:underline">Contacta con BeGreat</a>
-            </p>
-          </div>
+          <p className="text-center text-xs text-gray-400 mt-6 pt-5 border-t border-gray-100">
+            ¿Problemas para acceder?{" "}
+            <a href="mailto:hola@begreatconsulting.es" className="text-[#2E1A47] font-semibold hover:underline">Contacta con BeGreat</a>
+          </p>
         </div>
+
+        <p className="text-center text-white/30 text-xs mt-6">© {new Date().getFullYear()} BeGreat Consulting · Acceso reservado</p>
       </div>
     </div>
   );
