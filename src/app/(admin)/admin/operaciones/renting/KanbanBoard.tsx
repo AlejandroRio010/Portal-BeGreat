@@ -29,7 +29,7 @@ const FASE_ACCENT: Record<string, string> = {
   "Contrato firmado":       "border-l-violet-500",
   "Transferencia realizada":"border-l-emerald-500",
 };
-const FASE_DOT: Record<string, string> = {
+const FASE_BAR: Record<string, string> = {
   "Pre-análisis":           "bg-gray-300",
   "En estudio por entidad": "bg-amber-400",
   "Operación aprobada":     "bg-blue-400",
@@ -40,21 +40,23 @@ const FASE_DOT: Record<string, string> = {
 
 function DroppableColumn({ fase, ops, activeId }: { fase: string; ops: KanbanOp[]; activeId: string | null }) {
   const { setNodeRef, isOver } = useDroppable({ id: fase });
-  const dot = FASE_DOT[fase] ?? "bg-[#2E1A47]";
+  const bar = FASE_BAR[fase] ?? "bg-[#2E1A47]";
   const totalImporte = ops.reduce((s, o) => s + Number(o.importe ?? 0), 0);
   return (
-    <div ref={setNodeRef} className={`flex-shrink-0 w-[200px] flex flex-col transition-colors ${isOver ? "bg-[#EEEBF3]/60" : ""}`}>
-      <div className="px-2 py-3 mb-1">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
-          <p className="text-[10px] font-bold text-[#2E1A47] uppercase tracking-widest leading-tight truncate">{fase}</p>
-        </div>
-        <div className="flex items-center gap-1.5 pl-4">
-          <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5">{ops.length}</span>
-          {totalImporte > 0 && <span className="text-[9px] text-gray-400">{fmtNum(totalImporte)} €</span>}
+    <div ref={setNodeRef} className={`flex flex-col transition-colors relative overflow-hidden ${isOver ? "bg-[#EEEBF3]/50" : "bg-[#fafafa]"}`}>
+      <div className={`h-[3px] w-full flex-shrink-0 ${bar}`} />
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/begreat-logo-blanco.png" alt="" className="w-24 object-contain select-none" style={{ opacity: 0.055, filter: "invert(1) brightness(0.3)" }} />
+      </div>
+      <div className="px-3 py-3 border-b border-gray-200">
+        <p className="text-[9px] font-black text-[#2E1A47] uppercase tracking-widest leading-tight truncate mb-2">{fase}</p>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-black text-white bg-[#2E1A47] px-2 py-0.5 min-w-[20px] text-center">{ops.length}</span>
+          {totalImporte > 0 && <span className="text-[10px] text-gray-500 font-semibold">{fmtNum(totalImporte)} €</span>}
         </div>
       </div>
-      <div className="flex-1 space-y-1.5 min-h-[400px] px-1">
+      <div className="flex-1 space-y-2 min-h-[640px] px-1.5 pt-2 pb-3">
         {ops.map((op) => (
           <DraggableCard key={op.id} op={op} isDragging={activeId === op.id} />
         ))}
@@ -154,11 +156,20 @@ export default function KanbanBoard({ initialOps, fases }: { initialOps: KanbanO
       </div>
 
       <DndContext sensors={sensors} onDragStart={(e) => setActiveId(String(e.active.id))} onDragEnd={handleDragEnd}>
-        <div className="flex overflow-x-auto pb-4">
+        <div style={{ zoom: 0.9 }} className="flex pb-4 gap-0 border border-gray-200 bg-[#f8f7fb] overflow-hidden">
           {fases.map((fase, i) => (
-            <div key={fase} className="flex flex-shrink-0 items-stretch">
-              {i > 0 && <div className="w-px bg-[#2E1A47]/20 self-stretch mx-1" />}
-              <DroppableColumn fase={fase} ops={opsByFase[fase] ?? []} activeId={activeId} />
+            <div key={fase} className="flex items-stretch flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <DroppableColumn fase={fase} ops={opsByFase[fase] ?? []} activeId={activeId} />
+              </div>
+              {i < fases.length - 1 && (
+                <div className="flex-shrink-0 self-stretch flex items-center justify-center w-5 relative z-10">
+                  <div className="absolute inset-y-0 left-0 w-px bg-gray-200" />
+                  <svg width="10" height="18" viewBox="0 0 10 18" fill="none">
+                    <path d="M1 0 L9 9 L1 18" stroke="#2E1A47" strokeOpacity="0.25" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                  </svg>
+                </div>
+              )}
             </div>
           ))}
         </div>
