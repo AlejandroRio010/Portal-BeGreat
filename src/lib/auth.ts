@@ -36,10 +36,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
+        // Normalizamos el email (minúsculas + sin espacios) para que el login no falle
+        // por mayúsculas accidentales del teclado del móvil.
+        const emailNorm = (credentials.email as string).toLowerCase().trim();
+
         const [user] = await db
           .select()
           .from(collaborators)
-          .where(eq(collaborators.email, credentials.email as string))
+          .where(eq(collaborators.email, emailNorm))
           .limit(1);
 
         if (!user || !user.activo) return null;
