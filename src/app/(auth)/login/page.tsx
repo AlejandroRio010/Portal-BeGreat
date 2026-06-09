@@ -93,7 +93,7 @@ export default function LoginPage() {
 
         <p className="text-center text-xs text-white/45 mt-7">
           ¿Problemas para acceder?{" "}
-          <a href="mailto:hola@begreatconsulting.es" className="text-white font-semibold hover:underline">Contacta con BeGreat</a>
+          <a href="mailto:alejandro.rio@begreatconsulting.es" className="text-white font-semibold hover:underline">Contacta con BeGreat</a>
         </p>
 
         <p className="text-center text-white/25 text-xs mt-6">© {new Date().getFullYear()} BeGreat Consulting · Acceso reservado</p>
