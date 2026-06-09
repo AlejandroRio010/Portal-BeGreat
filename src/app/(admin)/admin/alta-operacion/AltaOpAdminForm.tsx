@@ -28,7 +28,10 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
   const [contactoEmail, setContactoEmail] = useState("");
   const [contactoTelefono, setContactoTelefono] = useState("");
   const [proveedorNombre, setProveedorNombre] = useState("");
-  const [proveedorSeleccionado, setProveedorSeleccionado] = useState<any | null>(null);
+  const [proveedorEmail, setProveedorEmail] = useState("");
+  const [proveedorTelefono, setProveedorTelefono] = useState("");
+  const [proveedorWeb, setProveedorWeb] = useState("");
+  const [proveedorContacto, setProveedorContacto] = useState("");
   const [renovBusqueda, setRenovBusqueda] = useState("");
   const [renovResultados, setRenovResultados] = useState<any[]>([]);
   const [renovSeleccionada, setRenovSeleccionada] = useState<any | null>(null);
@@ -43,6 +46,19 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
     setClienteEmail(c.email ?? "");
     setClienteTelefono(c.telefono ?? "");
     setClienteWeb(c.web ?? "");
+    if (c.contacto_nombre) {
+      setContactoNombre(c.contacto_nombre);
+      setContactoEmail(c.contacto_email ?? "");
+      setContactoTelefono(c.contacto_telefono ?? "");
+    }
+  }
+
+  function fillProveedor(p: any) {
+    setProveedorNombre(p.nombre);
+    setProveedorEmail(p.email ?? "");
+    setProveedorTelefono(p.telefono ?? "");
+    setProveedorWeb(p.web ?? "");
+    setProveedorContacto(p.persona_contacto ?? "");
   }
 
   useEffect(() => {
@@ -327,10 +343,28 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
             </Section>
 
             <Section title="Proveedor de los equipos">
-              <ProveedorBuscadorField nombre={proveedorNombre} setNombre={setProveedorNombre}
-                onSelect={setProveedorSeleccionado} onClearLink={() => setProveedorSeleccionado(null)} label={label} inp={inp} />
+              <div className="grid grid-cols-2 gap-4">
+                <ProveedorBuscadorField nombre={proveedorNombre} setNombre={setProveedorNombre}
+                  onSelect={fillProveedor} onClearLink={() => {}} label={label} inp={inp} />
+                <div>
+                  <label className={label}>Email</label>
+                  <input name="proveedor_email" type="email" value={proveedorEmail} onChange={e => setProveedorEmail(e.target.value)} className={inp} placeholder="info@proveedor.es" />
+                </div>
+                <div>
+                  <label className={label}>Teléfono</label>
+                  <input name="proveedor_telefono" value={proveedorTelefono} onChange={e => setProveedorTelefono(e.target.value)} className={inp} placeholder="612 345 678" />
+                </div>
+                <div>
+                  <label className={label}>Web</label>
+                  <input name="proveedor_web" value={proveedorWeb} onChange={e => setProveedorWeb(e.target.value)} className={inp} placeholder="www.proveedor.es" />
+                </div>
+                <div className="col-span-2">
+                  <label className={label}>Persona de contacto</label>
+                  <input name="proveedor_contacto_nombre" value={proveedorContacto} onChange={e => setProveedorContacto(e.target.value)} className={inp} placeholder="Nombre del contacto en el proveedor" />
+                </div>
+              </div>
               <p className="text-xs text-gray-400 mt-2">
-                Si el proveedor ya está registrado, búscalo por su nombre. Si es nuevo, escríbelo y se dará de alta automáticamente.
+                Si el proveedor ya está registrado, búscalo por su nombre y se rellenará solo. Si es nuevo, escríbelo y se dará de alta automáticamente.
               </p>
             </Section>
           </>

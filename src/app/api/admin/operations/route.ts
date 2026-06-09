@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     collaborator_id, pipeline_key, nombre,
     cliente_nombre, cliente_email, cliente_telefono, cliente_web,
     contacto_nombre, contacto_email, contacto_telefono,
-    proveedor_nombre, proveedor_email, proveedor_telefono, proveedor_web,
+    proveedor_nombre, proveedor_email, proveedor_telefono, proveedor_web, proveedor_contacto_nombre,
     producto, producto_otro, importe, equipo_tipo, plazo_meses, lugar_entrega, descripcion,
     status, es_renovacion, operacion_original_id,
   } = body;
@@ -74,7 +74,8 @@ export async function POST(req: NextRequest) {
         .values({
           collaborator_id, nombre: proveedor_nombre,
           email: proveedor_email || null, telefono: proveedor_telefono || null,
-          web: proveedor_web || null, codigo: prvCodigo,
+          web: proveedor_web || null, persona_contacto: proveedor_contacto_nombre || null,
+          codigo: prvCodigo,
         })
         .returning();
       supplierId = newSupplier.id;
