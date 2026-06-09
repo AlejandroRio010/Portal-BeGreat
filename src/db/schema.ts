@@ -45,6 +45,16 @@ export const collaborators = pgTable("collaborators", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── Password reset tokens ────────────────────────────────────────────────────
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  user_id: uuid("user_id").notNull().references(() => collaborators.id, { onDelete: "cascade" }),
+  token_hash: text("token_hash").notNull(),
+  expires_at: timestamp("expires_at").notNull(),
+  used: boolean("used").notNull().default(false),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Collaborator contact persons ─────────────────────────────────────────────
 export const collaboratorContacts = pgTable("collaborator_contacts", {
   id: uuid("id").primaryKey().defaultRandom(),

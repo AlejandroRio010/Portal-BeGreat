@@ -21,6 +21,11 @@ export default auth((req) => {
     return clearSessionAndRedirect(new URL("/login", req.url));
   }
 
+  // Rutas públicas de recuperación de contraseña (siempre accesibles)
+  if (pathname === "/forgot-password" || pathname === "/reset-password") {
+    return NextResponse.next();
+  }
+
   // Public routes
   if (pathname === "/login" || pathname === "/") {
     if (session && role) {

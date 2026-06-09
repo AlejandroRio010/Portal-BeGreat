@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -89,6 +90,12 @@ export default function LoginPage() {
             {loading ? "Accediendo…" : "Entrar al portal"}
             {!loading && <span className="text-white/70">→</span>}
           </button>
+
+          <div className="text-center">
+            <Link href="/forgot-password" className="text-xs text-white/55 hover:text-white hover:underline">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
         </form>
 
         <p className="text-center text-xs text-white/45 mt-7">
