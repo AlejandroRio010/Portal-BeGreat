@@ -4,29 +4,16 @@ import { operations, clients } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { fmtEur } from "@/lib/format";
+import HistorialTabla from "@/components/HistorialTabla";
 
 export const dynamic = "force-dynamic";
-
-function formatDate(d: Date) {
-  return new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
-}
-
-function calcDuracion(inicio: Date, fin: Date | null): string | null {
-  if (!fin) return null;
-  const dias = Math.round((new Date(fin).getTime() - new Date(inicio).getTime()) / (1000 * 60 * 60 * 24));
-  if (dias <= 0) return null;
-  if (dias < 30) return `${dias}d`;
-  const meses = Math.floor(dias / 30);
-  const resto = dias % 30;
-  return resto > 0 ? `${meses}m ${resto}d` : `${meses}m`;
-}
 
 export default async function HistorialPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tipo?: string; estado?: string; desde?: string; hasta?: string; q?: string }>;
+  searchParams: Promise<{ tipo?: string; estado?: string; desde?: string; hasta?: string }>;
 }) {
-  const { tipo, estado, desde, hasta, q } = await searchParams;
+  const { tipo, estado, desde, hasta } = await searchParams;
   const session = await auth();
   const userId = session!.user!.id as string;
 
@@ -51,12 +38,7 @@ export default async function HistorialPage({
     .orderBy(operations.fecha_cierre, operations.created_at);
 
   // Filters
-  const qLower = q?.toLowerCase().trim() ?? "";
   const filtered = allOps.filter((op) => {
-    if (qLower && !(
-      (op.nombre ?? "").toLowerCase().includes(qLower) ||
-      (op.client_nombre ?? "").toLowerCase().includes(qLower)
-    )) return false;
     if (tipo && tipo !== "todas" && op.pipeline_key !== tipo) return false;
     if (estado && estado !== "todas") {
       const esFirmada = op.fase === "Contrato firmado" || op.fase === "Honorarios pagados" || op.fase === "Transferencia realizada";
@@ -125,10 +107,6 @@ export default async function HistorialPage({
       {/* Filters */}
       <div className="bg-white rounded-sm border border-gray-100 p-5 mb-6">
         <form className="flex items-end gap-4 flex-wrap">
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Buscar</label>
-            <input name="q" defaultValue={q ?? ""} placeholder="Nombre de operación o cliente..." className="w-full px-3 py-2 border border-gray-200 text-sm focus:outline-none focus:border-[#2E1A47] bg-gray-50" />
-          </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Tipo</label>
             <select name="tipo" defaultValue={tipo ?? "todas"} className="px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-[#2E1A47]/30 focus:border-[#2E1A47] bg-gray-50">
@@ -166,88 +144,11 @@ export default async function HistorialPage({
         </form>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-sm border border-gray-100 overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <p className="text-sm font-semibold text-gray-700">{filtered.length} operación{filtered.length !== 1 ? "es" : ""}</p>
-        </div>
-        {filtered.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="text-gray-400 text-sm">No hay operaciones con los filtros aplicados.</p>
-          </div>
-        ) : (
-          <div style={{ zoom: 0.88 }}>
-        <table className="w-full">
-            <thead>
-              <tr className="bg-[#EEEBF3] border-b border-gray-100">
-                <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Cliente / Operación</th>
-                <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Tipo</th>
-                <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Estado</th>
-                <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fecha cierre</th>
-                <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Comisión</th>
-                <th className="px-6 py-3.5"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filtered.map((op) => (
-                <tr key={op.id} className="hover:bg-[#EEEBF3]/30 transition-colors group">
-                  <td className="px-6 py-4">
-                    <p className="text-sm font-semibold text-gray-900">{op.nombre ?? op.client_nombre ?? "—"}</p>
-                    {op.client_nombre && <p className="text-xs text-gray-400 mt-0.5">{op.client_nombre}</p>}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-block px-2.5 py-0.5 rounded text-xs font-semibold ${
-                      op.pipeline_key === "consultoria" ? "bg-[#EEEBF3] text-[#2E1A47]" : "bg-blue-50 text-blue-700"
-                    }`}>
-                      {op.pipeline_key === "consultoria" ? "Consultoría" : "Renting"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    {op.status === "pendiente_de_validar" ? (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold bg-amber-50 border border-amber-200 text-amber-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                        Pendiente
-                      </span>
-                    ) : op.fase === "Contrato firmado" || op.fase === "Honorarios pagados" || op.fase === "Transferencia realizada" ? (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700">
-                        Firmada ✓
-                      </span>
-                    ) : op.status === "archivada" ? (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold bg-red-50 border border-red-200 text-red-600">
-                        Denegada
-                      </span>
-                    ) : (
-                      <span className="inline-block px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600">{op.fase}</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm text-gray-500">{formatDate(op.fecha_cierre ?? op.created_at)}</p>
-                    {op.fecha_cierre && (() => {
-                      const dur = calcDuracion(op.created_at, op.fecha_cierre);
-                      return dur ? <p className="text-[10px] text-gray-400 mt-0.5">{dur} de resolución</p> : null;
-                    })()}
-                  </td>
-                  <td className="px-6 py-4">
-                    {op.comision_colaborador ? (
-                      <span className="text-sm font-bold text-[#2E1A47]">
-                        {fmtEur(op.comision_colaborador)}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <Link href={`/portal/operaciones/${op.id}`} className="text-[#2E1A47] text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity hover:underline">
-                      Ver →
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
-        )}
-      </div>
+      <HistorialTabla esAdmin={false} hrefBase="/portal/operaciones" ops={filtered.map(o => ({
+        id: o.id, nombre: o.nombre, client_nombre: o.client_nombre, pipeline_key: o.pipeline_key,
+        fase: o.fase, status: o.status, fecha_cierre: o.fecha_cierre, created_at: o.created_at,
+        comision_colaborador: o.comision_colaborador, comision_begreat: null,
+      }))} />
     </div>
   );
 }
