@@ -17,9 +17,10 @@ export async function POST(req: NextRequest) {
     cliente_nombre, cliente_email, cliente_telefono, cliente_web,
     contacto_nombre, contacto_email, contacto_telefono,
     proveedor_nombre, proveedor_email, proveedor_telefono, proveedor_web,
-    producto, importe, equipo_tipo, plazo_meses, lugar_entrega, descripcion,
-    status,
+    producto, producto_otro, importe, equipo_tipo, plazo_meses, lugar_entrega, descripcion,
+    status, es_renovacion, operacion_original_id,
   } = body;
+  const productoFinal = producto === "Otro" && producto_otro ? producto_otro : producto;
 
   if (!pipeline_key || !cliente_nombre || !collaborator_id) {
     return NextResponse.json({ error: "Faltan campos obligatorios" }, { status: 400 });
@@ -88,11 +89,13 @@ export async function POST(req: NextRequest) {
       collaborator_id, pipeline_key,
       nombre: nombre || null,
       client_id: clientId, supplier_id: supplierId,
-      producto: producto || null, importe: importe || null,
+      producto: productoFinal || null, importe: importe || null,
       equipo_tipo: equipo_tipo || null,
       plazo_meses: plazo_meses ? parseInt(plazo_meses) : null,
       lugar_entrega: lugar_entrega || null,
       descripcion: descripcion || null,
+      es_renovacion: es_renovacion === true,
+      operacion_original_id: operacion_original_id || null,
       fase: "Pre-análisis",
       status: status || "activa",
       codigo: opCodigo,
