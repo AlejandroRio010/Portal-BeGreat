@@ -1,9 +1,10 @@
 import { db } from "@/db";
-import { clientGroups, clients, operations } from "@/db/schema";
+import { clientGroups, clients, operations, clientGroupContacts } from "@/db/schema";
 import { eq, isNull, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import EmpresasGrupoPanel from "./EmpresasGrupoPanel";
+import ContactosGrupoPanel from "@/components/ContactosGrupoPanel";
 import { fmtEur } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,8 @@ export default async function AdminGrupoFichaPage({ params }: { params: Promise<
   const disponibles = await db
     .select({ id: clients.id, nombre: clients.nombre, codigo: clients.codigo, cif: clients.cif })
     .from(clients).where(isNull(clients.group_id)).orderBy(clients.nombre);
+
+  const contactosGrupo = await db.select().from(clientGroupContacts).where(eq(clientGroupContacts.group_id, id)).orderBy(clientGroupContacts.created_at);
 
   // Métricas + listado completo de ops
   const empresaIds = empresas.map(e => e.id);
@@ -95,20 +98,23 @@ export default async function AdminGrupoFichaPage({ params }: { params: Promise<
       </div>
 
       <div className="mx-8 mb-6 grid grid-cols-3 gap-4 items-start">
-        {/* Datos del grupo */}
-        <div className="bg-white border border-gray-200">
-          <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200"><h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Datos del grupo</h3></div>
-          <div className="px-5 py-4 divide-y divide-gray-50">
-            {([["Nombre", grupo.nombre], ["CIF matriz", grupo.cif_matriz], ["Web", grupo.web], ["Descripción", grupo.descripcion]] as [string, string | null][]).map(([label, value]) =>
-              value ? (
-                <div key={label} className="py-2.5 flex flex-col gap-0.5">
-                  <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">{label}</span>
-                  {label === "Web" ? <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm text-[#2E1A47] hover:underline break-all">{value}</a>
-                    : <span className="text-sm text-gray-800 font-medium">{value}</span>}
-                </div>
-              ) : null
-            )}
+        {/* Datos del grupo + contactos */}
+        <div className="flex flex-col gap-4">
+          <div className="bg-white border border-gray-200">
+            <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200"><h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Datos del grupo</h3></div>
+            <div className="px-5 py-4 divide-y divide-gray-50">
+              {([["Nombre", grupo.nombre], ["CIF matriz", grupo.cif_matriz], ["Web", grupo.web], ["Descripción", grupo.descripcion]] as [string, string | null][]).map(([label, value]) =>
+                value ? (
+                  <div key={label} className="py-2.5 flex flex-col gap-0.5">
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">{label}</span>
+                    {label === "Web" ? <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm text-[#2E1A47] hover:underline break-all">{value}</a>
+                      : <span className="text-sm text-gray-800 font-medium">{value}</span>}
+                  </div>
+                ) : null
+              )}
+            </div>
           </div>
+          <ContactosGrupoPanel contactos={contactosGrupo} groupId={id} />
         </div>
 
         {/* Empresas */}

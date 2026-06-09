@@ -78,6 +78,17 @@ export const clientGroups = pgTable("client_groups", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const clientGroupContacts = pgTable("client_group_contacts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  group_id: uuid("group_id").notNull().references(() => clientGroups.id, { onDelete: "cascade" }),
+  nombre: text("nombre").notNull(),
+  rol: text("rol"),
+  email: text("email"),
+  telefono: text("telefono"),
+  linkedin: text("linkedin"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const clients = pgTable("clients", {
   id: uuid("id").primaryKey().defaultRandom(),
   collaborator_id: uuid("collaborator_id")
