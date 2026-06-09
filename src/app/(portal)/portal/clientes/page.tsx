@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { clients, contacts, operations } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import Link from "next/link";
-import ClientesBuscador from "./ClientesBuscador";
+import ClientesTabla from "@/components/ClientesTabla";
 
 export const dynamic = "force-dynamic";
 
@@ -62,15 +62,13 @@ export default async function ClientesPage() {
           <p className="text-xs text-gray-300 mt-1">Los clientes se crean al dar de alta una operación.</p>
         </div>
       ) : (
-        <ClientesBuscador clientes={myClients.map(c => ({
+        <ClientesTabla esAdmin={false} hrefBase="/portal/clientes" clientes={myClients.map(c => ({
           id: c.id,
           nombre: c.nombre,
+          codigo: c.codigo ?? null,
           cif: c.cif ?? null,
           email: c.email ?? null,
-          web: c.web ?? null,
-          codigo: c.codigo ?? null,
-          ops_activas: (opsByClient[c.id] ?? []).filter(o => o.status === "activa").length,
-          ops_totales: (opsByClient[c.id] ?? []).length,
+          ops: (opsByClient[c.id] ?? []).length,
         }))} />
       )}
     </div>

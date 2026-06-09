@@ -2,6 +2,9 @@ import { db } from "@/db";
 import { clients, collaborators, operations } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import Link from "next/link";
+import ClientesTabla from "@/components/ClientesTabla";
+
+export const dynamic = "force-dynamic";
 
 export default async function AdminClientesPage({
   searchParams,
@@ -22,6 +25,7 @@ export default async function AdminClientesPage({
     .select({
       id: clients.id,
       nombre: clients.nombre,
+      codigo: clients.codigo,
       cif: clients.cif,
       email: clients.email,
       created_at: clients.created_at,
@@ -77,42 +81,10 @@ export default async function AdminClientesPage({
         )}
       </form>
 
-      <div className="bg-white border border-gray-200 overflow-hidden">
-        {cls.length === 0 ? (
-          <div className="px-6 py-12 text-center text-sm text-gray-400">Sin clientes.</div>
-        ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="bg-[#EEEBF3] border-b border-gray-100">
-                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Nombre empresa</th>
-                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">CIF</th>
-                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Email</th>
-                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Colaborador</th>
-                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Nº ops</th>
-                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fecha alta</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {cls.map((c) => (
-                <tr key={c.id} className="hover:bg-[#EEEBF3]/30 transition-colors">
-                  <td className="px-6 py-3.5">
-                    <Link href={`/admin/clientes/${c.id}`} className="text-sm font-medium text-gray-900 hover:text-[#2E1A47] hover:underline">
-                      {c.nombre}
-                    </Link>
-                  </td>
-                  <td className="px-6 py-3.5 text-sm text-gray-500">{c.cif ?? "—"}</td>
-                  <td className="px-6 py-3.5 text-sm text-gray-500">{c.email ?? "—"}</td>
-                  <td className="px-6 py-3.5 text-sm text-gray-600">{c.colaborador_nombre ?? "—"}</td>
-                  <td className="px-6 py-3.5 text-sm text-gray-600">{opCountMap.get(c.id) ?? 0}</td>
-                  <td className="px-6 py-3.5 text-sm text-gray-400">
-                    {new Date(c.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <ClientesTabla esAdmin hrefBase="/admin/clientes" clientes={cls.map(c => ({
+        id: c.id, nombre: c.nombre, codigo: c.codigo, cif: c.cif, email: c.email,
+        colaborador_nombre: c.colaborador_nombre, ops: opCountMap.get(c.id) ?? 0,
+      }))} />
     </div>
   );
 }

@@ -79,10 +79,10 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
   const notes = await db.select().from(clientNotes).where(eq(clientNotes.client_id, id)).orderBy(clientNotes.created_at);
 
   const FASES_APROBADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
-  const FASES_ESTUDIO = ["Pre-análisis", "Firma de honorarios", "En estudio por entidad", "Operación aprobada", "Condiciones aceptadas"];
 
   const opsAprobadas = ops.filter(o => FASES_APROBADAS.includes(o.fase));
-  const opsEstudio = ops.filter(o => FASES_ESTUDIO.includes(o.fase));
+  // En estudio: solo las que siguen vivas en el funnel (status activa y aún no firmadas). Las denegadas (archivada) NO cuentan.
+  const opsEstudio = ops.filter(o => o.status === "activa" && !FASES_APROBADAS.includes(o.fase));
   const totalFinanciado = opsAprobadas.reduce((s, o) => s + Number(o.importe ?? 0), 0);
   const totalPendiente = opsEstudio.reduce((s, o) => s + Number(o.importe ?? 0), 0);
 

@@ -72,7 +72,6 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
     .orderBy(operations.created_at);
 
   const FASES_APROBADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
-  const FASES_ESTUDIO = ["Pre-análisis", "Firma de honorarios", "En estudio por entidad", "Operación aprobada", "Condiciones aceptadas"];
 
   // Campos personalizados del cliente
   const clienteCustomFields = await db.select().from(customFields).where(eq(customFields.entidad, "cliente")).orderBy(asc(customFields.orden));
@@ -83,7 +82,8 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
   const inicial = client.nombre.charAt(0).toUpperCase();
 
   const opsAprobadas = ops.filter((o) => FASES_APROBADAS.includes(o.fase));
-  const opsEstudio   = ops.filter((o) => FASES_ESTUDIO.includes(o.fase));
+  // En estudio: solo activas en el funnel; las denegadas (archivada) NO cuentan.
+  const opsEstudio   = ops.filter((o) => o.status === "activa" && !FASES_APROBADAS.includes(o.fase));
 
   const totalFinanciado = opsAprobadas.reduce((s, o) => s + Number(o.importe ?? 0), 0);
   const totalPendiente  = opsEstudio.reduce((s, o) => s + Number(o.importe ?? 0), 0);
