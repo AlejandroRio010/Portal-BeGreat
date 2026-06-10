@@ -373,7 +373,10 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             <OpEditForm opId={op.id} pipelineKey={op.pipeline_key}
               initialProducto={op.producto ?? null} initialImporte={op.importe ?? null}
               initialDescripcion={op.descripcion ?? null} initialPlazoMeses={op.plazo_meses ?? null}
-              initialLugarEntrega={op.lugar_entrega ?? null} initialEquipoTipo={op.equipo_tipo ?? null} />
+              initialLugarEntrega={op.lugar_entrega ?? null} initialEquipoTipo={op.equipo_tipo ?? null}
+              initialEsRenovacion={op.es_renovacion ?? false}
+              initialOpOriginal={opOriginal}
+              resultadoActual={isGanada ? "ganada" : isDenegada ? "denegada" : "en_curso"} />
           )}
 
         </div>

@@ -51,6 +51,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       notas_admin: operations.notas_admin,
       facturacion_renting: operations.facturacion_renting,
       es_renovacion: operations.es_renovacion,
+      operacion_original_id: operations.operacion_original_id,
       onedrive_url: operations.onedrive_url,
       motivo_denegacion: operations.motivo_denegacion,
       fecha_cierre: operations.fecha_cierre,
@@ -126,6 +127,12 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
   const opOffice = op.entity_office_id
     ? await db.select({ id: entityOffices.id, nombre: entityOffices.nombre, ciudad: entityOffices.ciudad, email: entityOffices.email, telefono: entityOffices.telefono })
         .from(entityOffices).where(eq(entityOffices.id, op.entity_office_id)).limit(1).then(r => r[0] ?? null)
+    : null;
+
+  // Operación original (si es renovación)
+  const opOriginal = op.operacion_original_id
+    ? await db.select({ id: operations.id, codigo: operations.codigo, nombre: operations.nombre })
+        .from(operations).where(eq(operations.id, op.operacion_original_id)).limit(1).then(r => r[0] ?? null)
     : null;
 
   // Logo del colaborador para la celebración
@@ -378,6 +385,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialNotasAdmin={op.notas_admin ?? null}
             initialFacturacionRenting={op.facturacion_renting ?? null}
             initialEsRenovacion={op.es_renovacion ?? false}
+            initialOpOriginal={opOriginal}
             initialOnedriveUrl={op.onedrive_url ?? null}
             initialNombre={op.nombre ?? null}
             initialDescripcion={op.descripcion ?? null}

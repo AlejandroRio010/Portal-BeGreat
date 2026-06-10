@@ -37,11 +37,21 @@ export async function PATCH(
     lugar_entrega,
     equipo_tipo,
     motivo_denegacion,
+    operacion_original_id,
   } = body;
 
+  const GANADAS = ["Honorarios pagados", "Transferencia realizada"];
   const updateData: Record<string, unknown> = {
     updated_at: new Date(),
   };
+  if (operacion_original_id !== undefined) updateData.operacion_original_id = operacion_original_id || null;
+
+  // Fecha de cierre: se registra al marcar ganada (fase final) o denegada (archivada); se limpia si vuelve a curso
+  if (status === "archivada" || (fase && GANADAS.includes(fase))) {
+    updateData.fecha_cierre = new Date();
+  } else if (status === "activa") {
+    updateData.fecha_cierre = null;
+  }
 
   if (fase !== undefined) updateData.fase = fase;
   if (status !== undefined) updateData.status = status;

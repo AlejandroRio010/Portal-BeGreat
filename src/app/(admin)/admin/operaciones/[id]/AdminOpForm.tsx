@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const FASES_CONSULTORIA = [
@@ -50,6 +50,7 @@ interface Props {
   initialFacturacionRenting: string | null;
   initialOnedriveUrl: string | null;
   initialEsRenovacion?: boolean | null;
+  initialOpOriginal?: { id: string; codigo: string | null; nombre: string | null } | null;
   // basic op fields
   initialNombre: string | null;
   initialDescripcion: string | null;
@@ -78,6 +79,7 @@ export default function AdminOpForm({
   initialNotasAdmin,
   initialFacturacionRenting,
   initialEsRenovacion,
+  initialOpOriginal,
   initialOnedriveUrl,
   initialNombre,
   initialDescripcion,
@@ -102,6 +104,19 @@ export default function AdminOpForm({
   const [honorarios, setHonorarios] = useState(initialHonorarios ?? false);
   const [facturacionRenting, setFacturacionRenting] = useState(initialFacturacionRenting ?? "");
   const [esRenovacion, setEsRenovacion] = useState(initialEsRenovacion ?? false);
+  const [opOriginal, setOpOriginal] = useState(initialOpOriginal ?? null);
+  const [renovBusq, setRenovBusq] = useState("");
+  const [renovRes, setRenovRes] = useState<any[]>([]);
+  const [renovOpen, setRenovOpen] = useState(false);
+  const renovTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (renovTimer.current) clearTimeout(renovTimer.current);
+    if (renovBusq.length < 2) { setRenovRes([]); return; }
+    renovTimer.current = setTimeout(async () => {
+      const r = await fetch(`/api/operations/search?q=${encodeURIComponent(renovBusq)}`);
+      setRenovRes(await r.json()); setRenovOpen(true);
+    }, 250);
+  }, [renovBusq]);
   const [onedriveUrl, setOnedriveUrl] = useState(initialOnedriveUrl ?? "");
   const [notasAdmin, setNotasAdmin] = useState(initialNotasAdmin ?? "");
 
@@ -188,6 +203,7 @@ export default function AdminOpForm({
         facturacion_renting: facturacionRenting || null,
         onedrive_url: onedriveUrl || null,
         es_renovacion: esRenovacion,
+        operacion_original_id: esRenovacion ? (opOriginal?.id ?? null) : null,
       });
       setSaved(true);
     } catch { setError("Error al guardar los cambios."); }
@@ -418,10 +434,40 @@ export default function AdminOpForm({
               </div>
 
               {/* Es renovación */}
-              <div className="flex items-center gap-3">
-                <input type="checkbox" id="renovacion" checked={esRenovacion} onChange={(e) => setEsRenovacion(e.target.checked)}
-                  className="w-4 h-4 accent-[#2E1A47]" />
-                <label htmlFor="renovacion" className="text-sm text-gray-700 cursor-pointer">Es una renovación de una operación anterior</label>
+              <div>
+                <div className="flex items-center gap-3">
+                  <input type="checkbox" id="renovacion" checked={esRenovacion} onChange={(e) => setEsRenovacion(e.target.checked)}
+                    className="w-4 h-4 accent-[#2E1A47]" />
+                  <label htmlFor="renovacion" className="text-sm text-gray-700 cursor-pointer">Es una renovación de una operación anterior</label>
+                </div>
+                {esRenovacion && (
+                  <div className="relative mt-2">
+                    {opOriginal ? (
+                      <div className="flex items-center justify-between border border-[#2E1A47] bg-[#EEEBF3] px-3 py-2">
+                        <span className="text-xs font-semibold text-[#2E1A47]">{opOriginal.codigo} — {opOriginal.nombre}</span>
+                        <button type="button" onClick={() => setOpOriginal(null)} className="text-[10px] text-gray-400 hover:text-red-500">✕ Cambiar</button>
+                      </div>
+                    ) : (
+                      <>
+                        <input value={renovBusq} onChange={(e) => setRenovBusq(e.target.value)}
+                          onBlur={() => setTimeout(() => setRenovOpen(false), 150)}
+                          className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]"
+                          placeholder="Buscar la operación original a vincular..." autoComplete="off" />
+                        {renovOpen && renovRes.length > 0 && (
+                          <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-gray-200 shadow-lg max-h-48 overflow-y-auto">
+                            {renovRes.filter((o: any) => o.id !== opId).map((o: any) => (
+                              <button key={o.id} type="button" onMouseDown={() => { setOpOriginal(o); setRenovBusq(""); setRenovOpen(false); }}
+                                className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
+                                <p className="text-xs font-semibold text-gray-800">{o.nombre ?? o.client_nombre}</p>
+                                <p className="text-[10px] text-gray-400">{o.codigo} · {o.client_nombre}</p>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Modalidad facturación renting */}
