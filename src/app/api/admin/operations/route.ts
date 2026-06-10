@@ -47,8 +47,16 @@ export async function POST(req: NextRequest) {
       })
       .returning();
     clientId = newClient.id;
+  }
 
-    if (contacto_nombre && clientId) {
+  // Añadir la persona de contacto al cliente (nuevo o existente) si no estaba ya
+  if (contacto_nombre && clientId) {
+    const [yaExiste] = await db
+      .select({ id: contacts.id })
+      .from(contacts)
+      .where(and(eq(contacts.client_id, clientId), eq(contacts.nombre, contacto_nombre)))
+      .limit(1);
+    if (!yaExiste) {
       await db.insert(contacts).values({
         client_id: clientId, nombre: contacto_nombre,
         email: contacto_email || null, telefono: contacto_telefono || null,

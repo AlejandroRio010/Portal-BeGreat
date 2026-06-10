@@ -282,7 +282,7 @@ export default function AltaOperacionPage() {
                 />
                 <div>
                   <label className={label}>Importe (€)</label>
-                  <input name="importe" type="number" step="1000" className={inp} placeholder="50.000" />
+                  <input name="importe" type="number" step="any" inputMode="decimal" className={inp} placeholder="50.000" />
                 </div>
                 <div>
                   <label className={label}>Email</label>
@@ -330,7 +330,7 @@ export default function AltaOperacionPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={label}>Importe (€)</label>
-                  <input name="importe" type="number" step="1000" className={inp} placeholder="10.000" />
+                  <input name="importe" type="number" step="any" inputMode="decimal" className={inp} placeholder="10.000" />
                 </div>
                 <div>
                   <label className={label}>Plazo deseado</label>
