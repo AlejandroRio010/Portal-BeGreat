@@ -59,6 +59,15 @@ interface Props {
   initialPlazoMeses: number | null;
   initialLugarEntrega: string | null;
   initialEquipoTipo: string | null;
+  initialNecesidad?: string | null;
+  initialTieneAval?: boolean;
+  initialAvalTipo?: string | null;
+  initialAvalNombre?: string | null;
+  initialAvalEmail?: string | null;
+  initialAvalTelefono?: string | null;
+  initialAvalPersonaContacto?: string | null;
+  initialModalidadRenting?: string | null;
+  initialEntidadDestino?: string | null;
   // entity/office lists
   allEntities: EntityRow[];
   allOffices: OfficeRow[];
@@ -88,6 +97,15 @@ export default function AdminOpForm({
   initialPlazoMeses,
   initialLugarEntrega,
   initialEquipoTipo,
+  initialNecesidad,
+  initialTieneAval,
+  initialAvalTipo,
+  initialAvalNombre,
+  initialAvalEmail,
+  initialAvalTelefono,
+  initialAvalPersonaContacto,
+  initialModalidadRenting,
+  initialEntidadDestino,
   allEntities,
   allOffices,
   customFieldDefs = [],
@@ -142,6 +160,15 @@ export default function AdminOpForm({
   const [plazoMeses, setPlazoMeses] = useState(initialPlazoMeses ? String(initialPlazoMeses) : "");
   const [lugarEntrega, setLugarEntrega] = useState(initialLugarEntrega ?? "");
   const [equipoTipo, setEquipoTipo] = useState(initialEquipoTipo ?? "");
+  const [necesidad, setNecesidad] = useState(initialNecesidad ?? "");
+  const [modalidadRenting, setModalidadRenting] = useState(initialModalidadRenting ?? "");
+  const [entidadDestino, setEntidadDestino] = useState(initialEntidadDestino ?? "");
+  const [tieneAval, setTieneAval] = useState(!!initialTieneAval);
+  const [avalTipo, setAvalTipo] = useState(initialAvalTipo ?? "persona_fisica");
+  const [avalNombre, setAvalNombre] = useState(initialAvalNombre ?? "");
+  const [avalEmail, setAvalEmail] = useState(initialAvalEmail ?? "");
+  const [avalTelefono, setAvalTelefono] = useState(initialAvalTelefono ?? "");
+  const [avalPersonaContacto, setAvalPersonaContacto] = useState(initialAvalPersonaContacto ?? "");
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [saving, setSaving] = useState(false);
@@ -179,7 +206,14 @@ export default function AdminOpForm({
     setError(null);
     try {
       await patch({ nombre: nombre || null, descripcion: descripcion || null, importe: importe || null, producto: producto || null,
-        plazo_meses: plazoMeses || null, lugar_entrega: lugarEntrega || null, equipo_tipo: equipoTipo || null });
+        plazo_meses: plazoMeses || null, lugar_entrega: lugarEntrega || null, equipo_tipo: equipoTipo || null,
+        necesidad: necesidad || null, modalidad_renting: modalidadRenting || null,
+        tiene_aval: tieneAval,
+        aval_tipo: tieneAval ? avalTipo : null,
+        aval_nombre: tieneAval ? (avalNombre || null) : null,
+        aval_email: tieneAval ? (avalEmail || null) : null,
+        aval_telefono: tieneAval ? (avalTelefono || null) : null,
+        aval_persona_contacto: tieneAval ? (avalPersonaContacto || null) : null });
       setSavedBasic(true);
     } catch { setError("Error al guardar datos básicos."); }
     finally { setSavingBasic(false); }
@@ -204,6 +238,7 @@ export default function AdminOpForm({
         onedrive_url: onedriveUrl || null,
         es_renovacion: esRenovacion,
         operacion_original_id: esRenovacion ? (opOriginal?.id ?? null) : null,
+        entidad_destino: entidadDestino || null,
       });
       setSaved(true);
     } catch { setError("Error al guardar los cambios."); }
@@ -306,6 +341,84 @@ export default function AdminOpForm({
             <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows={3} placeholder="Descripción de la operación..."
               className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47] resize-none" />
           </div>
+          {pipelineKey === "consultoria" && (
+            <div className="col-span-2">
+              <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Necesidad del cliente</label>
+              <textarea value={necesidad} onChange={(e) => setNecesidad(e.target.value)} rows={2} placeholder="Breve descripción de la necesidad..."
+                className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47] resize-none" />
+            </div>
+          )}
+          {pipelineKey === "renting" && (
+            <div className="col-span-2">
+              <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Modalidad</label>
+              <div className="grid grid-cols-3 gap-0 border border-gray-200">
+                {([
+                  ["begreat_comisiona", "BeGreat comisiona"],
+                  ["begreat_factura", "BeGreat factura"],
+                  ["begreat_factura_comisiona", "Factura & comisiona"],
+                ] as const).map(([val, lbl], i) => (
+                  <button key={val} type="button" onClick={() => setModalidadRenting(val)}
+                    className={`py-2 text-[11px] font-semibold transition-all ${i > 0 ? "border-l border-gray-200" : ""} ${
+                      modalidadRenting === val ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+                    }`}>{lbl}</button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Aval */}
+        <div className="border-t border-gray-100 pt-4 space-y-3">
+          <label className="block text-xs text-gray-400 uppercase tracking-wider">¿Aporta aval?</label>
+          <div className="grid grid-cols-2 gap-0 border border-gray-200">
+            <button type="button" onClick={() => setTieneAval(false)}
+              className={`py-2 text-xs font-semibold transition-all ${!tieneAval ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>No</button>
+            <button type="button" onClick={() => setTieneAval(true)}
+              className={`py-2 text-xs font-semibold transition-all border-l border-gray-200 ${tieneAval ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>Sí</button>
+          </div>
+          {tieneAval && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-0 border border-gray-200">
+                <button type="button" onClick={() => setAvalTipo("persona_fisica")}
+                  className={`py-2 text-xs font-semibold transition-all ${avalTipo === "persona_fisica" ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>Persona física</button>
+                <button type="button" onClick={() => setAvalTipo("empresa")}
+                  className={`py-2 text-xs font-semibold transition-all border-l border-gray-200 ${avalTipo === "empresa" ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>Empresa</button>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Nombre{avalTipo === "empresa" ? " de la empresa" : ""}</label>
+                <input value={avalNombre} onChange={(e) => setAvalNombre(e.target.value)}
+                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
+                  placeholder={avalTipo === "empresa" ? "Nombre de la empresa avalista" : "Nombre completo"} />
+              </div>
+              {avalTipo === "persona_fisica" ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
+                    <input type="email" value={avalEmail} onChange={(e) => setAvalEmail(e.target.value)}
+                      className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Teléfono</label>
+                    <input value={avalTelefono} onChange={(e) => setAvalTelefono(e.target.value)}
+                      className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Persona de contacto</label>
+                    <input value={avalPersonaContacto} onChange={(e) => setAvalPersonaContacto(e.target.value)}
+                      className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
+                    <input type="email" value={avalEmail} onChange={(e) => setAvalEmail(e.target.value)}
+                      className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <button onClick={handleSaveBasic} disabled={savingBasic}
@@ -424,6 +537,15 @@ export default function AdminOpForm({
                   </select>
                 )}
                 <p className="text-[10px] text-gray-400">Los colaboradores solo ven el nombre del banco, no la oficina.</p>
+              </div>
+
+              {/* Entidad destino (broker → banco final) */}
+              <div>
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Entidad destino (banco final)</label>
+                <input value={entidadDestino} onChange={(e) => setEntidadDestino(e.target.value)}
+                  placeholder="Si la entidad es broker, ¿a qué banco lleva la op?"
+                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                <p className="text-[10px] text-gray-400 mt-1">Ej: Tendrit → Credit Agricole. Solo visible para admin y colaboradores con permiso.</p>
               </div>
 
               {/* Honorarios firmados */}

@@ -11,11 +11,13 @@ import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
-const tiles = [
+const baseTiles = [
   { href: "/portal/alta-operacion",          label: "Alta nueva operación",    sub: "Registra una nueva operación" },
   { href: "/portal/operaciones/consultoria", label: "Consultoría financiera",  sub: "Pólizas, leasing, préstamos..." },
   { href: "/portal/operaciones/renting",     label: "Renting de equipos",      sub: "Industrial y tecnológico" },
   { href: "/portal/clientes",                label: "Mis clientes",            sub: "Empresas y contactos" },
+  { href: "/portal/grupos",                  label: "Grupos empresariales",    sub: "Grupos y matrices" },
+  { href: "/portal/proveedores",             label: "Proveedores",             sub: "Equipos y suministros" },
   { href: "/portal/historial",               label: "Historial & Resumen",     sub: "Tus métricas y comisiones" },
   { href: "/portal/perfil",                  label: "Mi perfil",               sub: "Datos de tu empresa" },
   { href: "/portal/contacto",                label: "Contacto BeGreat",        sub: "Rita & Alejandro" },
@@ -31,7 +33,7 @@ export default async function PortalHomePage({
   const userId = session!.user!.id as string;
 
   const [colab] = await db
-    .select({ nombre: collaborators.nombre, logo_url: collaborators.logo_url, identificador: collaborators.identificador })
+    .select({ nombre: collaborators.nombre, logo_url: collaborators.logo_url, identificador: collaborators.identificador, puede_ver_entidades: collaborators.puede_ver_entidades })
     .from(collaborators)
     .where(eq(collaborators.id, userId))
     .limit(1);
@@ -204,7 +206,10 @@ export default async function PortalHomePage({
 
       {/* ── Tiles — 4 columnas ──────────────────────────────────────── */}
       <div className="grid grid-cols-4 gap-3 mb-6">
-        {tiles.map((tile) => (
+        {[
+          ...baseTiles.filter(t => t.href !== "/portal/entidades"),
+          ...(colab?.puede_ver_entidades ? [{ href: "/portal/entidades", label: "Entidades financieras", sub: "Bancos y alternativas" }] : []),
+        ].map((tile) => (
           <Link
             key={tile.href}
             href={tile.href}

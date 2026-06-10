@@ -29,7 +29,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const body = await req.json();
   const { producto, importe, descripcion, plazo_meses, lugar_entrega, equipo_tipo,
-          es_renovacion, operacion_original_id, resultado, pipeline_key } = body;
+          es_renovacion, operacion_original_id, resultado, pipeline_key,
+          necesidad, modalidad_renting,
+          tiene_aval, aval_tipo, aval_nombre, aval_email, aval_telefono, aval_persona_contacto } = body;
 
   // Actualización parcial: solo tocamos lo que llega
   const data: Record<string, unknown> = { updated_at: new Date() };
@@ -39,8 +41,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (plazo_meses !== undefined) data.plazo_meses = plazo_meses ? Number(plazo_meses) : null;
   if (lugar_entrega !== undefined) data.lugar_entrega = lugar_entrega || null;
   if (equipo_tipo !== undefined) data.equipo_tipo = equipo_tipo || null;
+  if (necesidad !== undefined) data.necesidad = necesidad || null;
+  if (modalidad_renting !== undefined) data.modalidad_renting = modalidad_renting || null;
   if (typeof es_renovacion === "boolean") data.es_renovacion = es_renovacion;
   if (operacion_original_id !== undefined) data.operacion_original_id = operacion_original_id || null;
+  if (typeof tiene_aval === "boolean") {
+    data.tiene_aval = tiene_aval;
+    data.aval_tipo = tiene_aval ? (aval_tipo || null) : null;
+    data.aval_nombre = tiene_aval ? (aval_nombre || null) : null;
+    data.aval_email = tiene_aval ? (aval_email || null) : null;
+    data.aval_telefono = tiene_aval ? (aval_telefono || null) : null;
+    data.aval_persona_contacto = tiene_aval ? (aval_persona_contacto || null) : null;
+  }
 
   // Resultado: marca ganada/denegada/en curso y fija la fecha de cierre
   if (resultado === "ganada") {

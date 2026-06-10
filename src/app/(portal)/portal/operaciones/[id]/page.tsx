@@ -48,10 +48,19 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       plazo_meses: operations.plazo_meses,
       equipo_tipo: operations.equipo_tipo,
       facturacion_renting: operations.facturacion_renting,
+      modalidad_renting: operations.modalidad_renting,
       motivo_denegacion: operations.motivo_denegacion,
       entity_office_id: operations.entity_office_id,
       onedrive_url: operations.onedrive_url,
       fecha_cierre: operations.fecha_cierre,
+      tiene_aval: operations.tiene_aval,
+      aval_tipo: operations.aval_tipo,
+      aval_nombre: operations.aval_nombre,
+      aval_email: operations.aval_email,
+      aval_telefono: operations.aval_telefono,
+      aval_persona_contacto: operations.aval_persona_contacto,
+      necesidad: operations.necesidad,
+      entidad_destino: operations.entidad_destino,
       created_at: operations.created_at,
       client_id: operations.client_id,
       client_nombre: clients.nombre,
@@ -273,32 +282,41 @@ export default async function OperacionDetallePage({ params }: { params: Promise
               const cuota = op.importe && op.plazo_meses ? `${fmtNum(Number(op.importe) / op.plazo_meses)} €/mes` : null;
               const isRenting = op.pipeline_key === "renting";
 
-              const puedeVerComision = puedeVerEntidades; // comisión/oficina solo admin o colaboradores con derecho
-              const facturaLabel = op.facturacion_renting === "begreat" ? "BeGreat factura la operación" : op.facturacion_renting === "financiera" ? "BeGreat comisiona" : null;
-              const campos: { label: string; value: string | null; href?: string }[] = isRenting ? [
-                { label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/portal/clientes/${op.client_id}` : undefined },
-                { label: "Persona de contacto (cliente)", value: clienteContacto?.nombre ?? null, href: clienteContacto && op.client_id ? `/portal/clientes/${op.client_id}/contactos/${clienteContacto.id}` : undefined },
-                { label: "Proveedor", value: op.supplier_nombre, href: op.supplier_id ? `/portal/proveedores/${op.supplier_id}` : undefined },
-                { label: "Persona de contacto (proveedor)", value: proveedorData?.persona_contacto ?? null, href: op.supplier_id ? `/portal/proveedores/${op.supplier_id}` : undefined },
-                { label: "Importe (sin IVA)", value: fmtEuro(op.importe) },
-                { label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null },
-                { label: "Cuota (sin IVA)", value: cuota },
-                { label: "Tipo de equipo", value: op.equipo_tipo },
-                { label: "Descripción del equipo", value: op.descripcion },
-                { label: "Lugar de instalación", value: op.lugar_entrega },
-                { label: "Facturación", value: facturaLabel },
-                ...(puedeVerComision ? [{ label: "Fee / Comisión", value: fmtEuro(op.comision_colaborador) }] : []),
-                { label: "Fecha de alta", value: fmtFecha(op.created_at) },
-                { label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) },
-              ] : [
-                { label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/portal/clientes/${op.client_id}` : undefined },
-                { label: "Producto", value: op.producto },
-                { label: "Fee / Comisión", value: fmtEuro(op.comision_colaborador) },
-                { label: "Descripción", value: op.descripcion },
-                { label: "Fecha de alta", value: fmtFecha(op.created_at) },
-                { label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) },
-                { label: "Honorarios firmados", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null },
-              ];
+              const modalidadLabel: Record<string, string> = {
+                begreat_comisiona: "BeGreat comisiona",
+                begreat_factura: "BeGreat factura",
+                begreat_factura_comisiona: "BeGreat factura & comisiona",
+              };
+
+              type Campo = { label: string; value: string | null; href?: string };
+              const campos: Campo[] = [];
+
+              if (isRenting) {
+                campos.push({ label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/portal/clientes/${op.client_id}` : undefined });
+                campos.push({ label: "Persona de contacto (cliente)", value: clienteContacto?.nombre ?? null, href: clienteContacto && op.client_id ? `/portal/clientes/${op.client_id}/contactos/${clienteContacto.id}` : undefined });
+                campos.push({ label: "Fecha de alta", value: fmtFecha(op.created_at) });
+                campos.push({ label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) });
+                campos.push({ label: "Proveedor", value: op.supplier_nombre, href: op.supplier_id ? `/portal/proveedores/${op.supplier_id}` : undefined });
+                campos.push({ label: "Persona de contacto (proveedor)", value: proveedorData?.persona_contacto ?? null, href: op.supplier_id ? `/portal/proveedores/${op.supplier_id}` : undefined });
+                campos.push({ label: "Equipo a arrendar", value: op.descripcion });
+                campos.push({ label: "Tipo de equipo", value: op.equipo_tipo });
+                campos.push({ label: "Importe (sin IVA)", value: fmtEuro(op.importe) });
+                campos.push({ label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null });
+                campos.push({ label: "Cuota (sin IVA)", value: cuota });
+                campos.push({ label: "Lugar de instalación", value: op.lugar_entrega });
+                campos.push({ label: "Modalidad", value: op.modalidad_renting ? (modalidadLabel[op.modalidad_renting] ?? op.modalidad_renting) : null });
+                campos.push({ label: "Fee colaborador", value: fmtEuro(op.comision_colaborador) });
+              } else {
+                campos.push({ label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/portal/clientes/${op.client_id}` : undefined });
+                campos.push({ label: "Persona de contacto", value: clienteContacto?.nombre ?? null, href: clienteContacto && op.client_id ? `/portal/clientes/${op.client_id}/contactos/${clienteContacto.id}` : undefined });
+                campos.push({ label: "Fecha de alta", value: fmtFecha(op.created_at) });
+                campos.push({ label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) });
+                campos.push({ label: "Producto solicitado", value: op.producto });
+                campos.push({ label: "Necesidad del cliente", value: op.necesidad ?? op.descripcion });
+                campos.push({ label: "Importe", value: fmtEuro(op.importe) });
+                campos.push({ label: "Honorarios firmados", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null });
+                campos.push({ label: "Fee colaborador", value: fmtEuro(op.comision_colaborador) });
+              }
 
               return (
                 <dl className="space-y-3">
@@ -313,7 +331,27 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                     </div>
                   ) : null)}
 
-                  {/* Entidad financiera — el banco siempre visible; el detalle solo con permiso */}
+                  {/* Aval — solo mostrar si tiene_aval es true */}
+                  {op.tiene_aval && op.aval_tipo && (
+                    <div className="pt-3 mt-3 border-t border-gray-100">
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Aval</dt>
+                      {op.aval_tipo === "persona_fisica" ? (
+                        <dd className="text-sm text-gray-800">
+                          <p className="font-medium">{op.aval_nombre}</p>
+                          {op.aval_email && <p className="text-xs text-gray-500">{op.aval_email}</p>}
+                          {op.aval_telefono && <p className="text-xs text-gray-500">{op.aval_telefono}</p>}
+                        </dd>
+                      ) : (
+                        <dd className="text-sm text-gray-800">
+                          <p className="font-medium">{op.aval_nombre}</p>
+                          {op.aval_persona_contacto && <p className="text-xs text-gray-500">Contacto: {op.aval_persona_contacto}</p>}
+                          {op.aval_email && <p className="text-xs text-gray-500">{op.aval_email}</p>}
+                        </dd>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Entidad financiera */}
                   {op.entidad_financiera && (
                     <div>
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Entidad financiera</dt>
@@ -322,6 +360,13 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                           ? <Link href={`/portal/entidades/${entidadRecord.id}`} className="text-[#2E1A47] hover:underline font-semibold">{op.entidad_financiera} →</Link>
                           : op.entidad_financiera}
                       </dd>
+                    </div>
+                  )}
+                  {/* Entidad destino (broker → banco final) — solo con permiso */}
+                  {puedeVerEntidades && op.entidad_destino && (
+                    <div>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Entidad destino (banco final)</dt>
+                      <dd className="text-sm text-gray-800 font-medium">{op.entidad_destino}</dd>
                     </div>
                   )}
                   {puedeVerEntidades && opOffice && (
@@ -376,6 +421,14 @@ export default async function OperacionDetallePage({ params }: { params: Promise
               initialLugarEntrega={op.lugar_entrega ?? null} initialEquipoTipo={op.equipo_tipo ?? null}
               initialEsRenovacion={op.es_renovacion ?? false}
               initialOpOriginal={opOriginal}
+              initialNecesidad={op.necesidad ?? null}
+              initialTieneAval={op.tiene_aval ?? false}
+              initialAvalTipo={op.aval_tipo ?? null}
+              initialAvalNombre={op.aval_nombre ?? null}
+              initialAvalEmail={op.aval_email ?? null}
+              initialAvalTelefono={op.aval_telefono ?? null}
+              initialAvalPersonaContacto={op.aval_persona_contacto ?? null}
+              initialModalidadRenting={op.modalidad_renting ?? null}
               resultadoActual={isGanada ? "ganada" : isDenegada ? "denegada" : "en_curso"} />
           )}
 

@@ -21,6 +21,8 @@ export const operationStatusEnum = pgEnum("operation_status", [
 export const rentingRoleEnum = pgEnum("renting_role", ["proveedor", "colaborador"]);
 export const equipoTipoEnum = pgEnum("equipo_tipo", ["industrial", "tecnologico"]);
 export const entityTypeEnum = pgEnum("entity_type", ["banco", "alternativa_financiera", "renting"]);
+export const avalTipoEnum = pgEnum("aval_tipo", ["persona_fisica", "empresa"]);
+export const modalidadRentingEnum = pgEnum("modalidad_renting", ["begreat_comisiona", "begreat_factura", "begreat_factura_comisiona"]);
 
 // ─── Collaborators (users) ────────────────────────────────────────────────────
 export const collaborators = pgTable("collaborators", {
@@ -298,6 +300,19 @@ export const operations = pgTable("operations", {
   onedrive_url: text("onedrive_url"),
   motivo_denegacion: text("motivo_denegacion"),
   fecha_cierre: timestamp("fecha_cierre"),
+  // Aval
+  tiene_aval: boolean("tiene_aval").default(false),
+  aval_tipo: avalTipoEnum("aval_tipo"),
+  aval_nombre: text("aval_nombre"),
+  aval_email: text("aval_email"),
+  aval_telefono: text("aval_telefono"),
+  aval_persona_contacto: text("aval_persona_contacto"),
+  // Modalidad renting
+  modalidad_renting: modalidadRentingEnum("modalidad_renting"),
+  // Entidad destino (cuando un broker lleva la op a otro banco)
+  entidad_destino: text("entidad_destino"),
+  // Necesidad del cliente
+  necesidad: text("necesidad"),
   es_renovacion: boolean("es_renovacion").default(false),
   operacion_original_id: uuid("operacion_original_id"),
   codigo: text("codigo").unique(),

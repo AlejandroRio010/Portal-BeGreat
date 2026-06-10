@@ -38,6 +38,15 @@ export async function PATCH(
     equipo_tipo,
     motivo_denegacion,
     operacion_original_id,
+    necesidad,
+    modalidad_renting,
+    entidad_destino,
+    tiene_aval,
+    aval_tipo,
+    aval_nombre,
+    aval_email,
+    aval_telefono,
+    aval_persona_contacto,
   } = body;
 
   const GANADAS = ["Honorarios pagados", "Transferencia realizada"];
@@ -76,6 +85,17 @@ export async function PATCH(
   if (lugar_entrega !== undefined) updateData.lugar_entrega = lugar_entrega || null;
   if (equipo_tipo !== undefined) updateData.equipo_tipo = equipo_tipo || null;
   if (motivo_denegacion !== undefined) updateData.motivo_denegacion = motivo_denegacion || null;
+  if (necesidad !== undefined) updateData.necesidad = necesidad || null;
+  if (modalidad_renting !== undefined) updateData.modalidad_renting = modalidad_renting || null;
+  if (entidad_destino !== undefined) updateData.entidad_destino = entidad_destino || null;
+  if (typeof tiene_aval === "boolean") {
+    updateData.tiene_aval = tiene_aval;
+    updateData.aval_tipo = tiene_aval ? (aval_tipo || null) : null;
+    updateData.aval_nombre = tiene_aval ? (aval_nombre || null) : null;
+    updateData.aval_email = tiene_aval ? (aval_email || null) : null;
+    updateData.aval_telefono = tiene_aval ? (aval_telefono || null) : null;
+    updateData.aval_persona_contacto = tiene_aval ? (aval_persona_contacto || null) : null;
+  }
 
   await db.update(operations).set(updateData).where(eq(operations.id, id));
 
