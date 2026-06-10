@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import ContactoAutocomplete from "@/components/ContactoAutocomplete";
 
 interface Contacto {
@@ -13,7 +14,7 @@ interface Contacto {
   linkedin: string | null;
 }
 
-function ContactoRow({ c }: { c: Contacto }) {
+function ContactoRow({ c, clientId }: { c: Contacto; clientId: string }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -76,6 +77,7 @@ function ContactoRow({ c }: { c: Contacto }) {
       </div>
       <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button onClick={() => setEditing(true)} className="text-[10px] text-[#2E1A47] font-semibold border border-[#2E1A47]/30 px-2 py-0.5 hover:bg-[#EEEBF3]">Editar</button>
+        <a href={`/admin/clientes/${clientId}/contactos/${c.id}`} className="text-[10px] text-[#2E1A47] font-semibold border border-[#2E1A47]/30 px-2 py-0.5 hover:bg-[#EEEBF3]">Ver →</a>
         {!confirm ? (
           <button onClick={() => setConfirm(true)} className="text-[10px] text-red-400 font-semibold border border-red-200 px-2 py-0.5 hover:bg-red-50">×</button>
         ) : (
@@ -149,7 +151,7 @@ export default function ContactosAdminPanel({ contactos, clientId }: { contactos
       </div>
       <div className="px-5 py-3">
         {contactos.length === 0 ? <p className="text-sm text-gray-400 py-2">Sin contactos registrados.</p> : (
-          <div>{contactos.map(c => <ContactoRow key={c.id} c={c} />)}</div>
+          <div>{contactos.map(c => <ContactoRow key={c.id} c={c} clientId={clientId} />)}</div>
         )}
         <NuevoContactoForm clientId={clientId} />
       </div>

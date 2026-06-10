@@ -1,20 +1,18 @@
-import { auth } from "@/lib/auth";
 import { db } from "@/db";
+import { auth } from "@/lib/auth";
 import { clients, contacts, contactNotes } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import NotesSection from "@/components/NotesSection";
 
-export default async function ContactoDetallePage({ params }: { params: Promise<{ id: string; contactoId: string }> }) {
+export default async function AdminContactoDetallePage({ params }: { params: Promise<{ id: string; contactoId: string }> }) {
   const { id: clientId, contactoId } = await params;
   const session = await auth();
-  if (!session) redirect("/login");
-
-  const userId = session.user!.id as string;
+  const userId = session!.user!.id as string;
 
   const [client] = await db.select({ id: clients.id, nombre: clients.nombre })
-    .from(clients).where(and(eq(clients.id, clientId), eq(clients.collaborator_id, userId))).limit(1);
+    .from(clients).where(eq(clients.id, clientId)).limit(1);
   if (!client) notFound();
 
   const [contacto] = await db.select().from(contacts).where(and(eq(contacts.id, contactoId), eq(contacts.client_id, clientId))).limit(1);
@@ -27,9 +25,9 @@ export default async function ContactoDetallePage({ params }: { params: Promise<
   return (
     <div className="min-h-screen bg-[#f8f7fb]">
       <div className="px-8 pt-6 pb-2 flex items-center gap-2 text-xs text-gray-500">
-        <Link href="/portal/clientes" className="hover:text-[#2E1A47] font-medium">Mis clientes</Link>
+        <Link href="/admin/clientes" className="hover:text-[#2E1A47] font-medium">Clientes</Link>
         <span>/</span>
-        <Link href={`/portal/clientes/${clientId}`} className="hover:text-[#2E1A47] font-medium">{client.nombre}</Link>
+        <Link href={`/admin/clientes/${clientId}`} className="hover:text-[#2E1A47] font-medium">{client.nombre}</Link>
         <span>/</span>
         <span className="text-[#2E1A47] font-semibold">{contacto.nombre}</span>
       </div>
@@ -72,7 +70,7 @@ export default async function ContactoDetallePage({ params }: { params: Promise<
               )}
               <div className="py-3 flex flex-col gap-0.5">
                 <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">Empresa</span>
-                <Link href={`/portal/clientes/${clientId}`} className="text-sm text-[#2E1A47] font-semibold hover:underline">{client.nombre} →</Link>
+                <Link href={`/admin/clientes/${clientId}`} className="text-sm text-[#2E1A47] font-semibold hover:underline">{client.nombre} →</Link>
               </div>
             </div>
           </div>
@@ -83,6 +81,7 @@ export default async function ContactoDetallePage({ params }: { params: Promise<
             notes={notes}
             apiUrl={`/api/contacts/${contactoId}/notes`}
             currentUserId={userId}
+            isAdmin={true}
             placeholder="Añade una nota sobre este contacto..."
           />
         </div>

@@ -131,6 +131,27 @@ export const clientNotes = pgTable("client_notes", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── Client documents ────────────────────────────────────────────────────────
+export const clientDocuments = pgTable("client_documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  client_id: uuid("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  filename: text("filename").notNull(),
+  url: text("url").notNull(),
+  size: integer("size"),
+  uploaded_by: text("uploaded_by").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Contact notes (notes for client contact persons) ────────────────────────
+export const contactNotes = pgTable("contact_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contact_id: uuid("contact_id").notNull().references(() => contacts.id, { onDelete: "cascade" }),
+  author_id: uuid("author_id").notNull().references(() => collaborators.id),
+  author_name: text("author_name").notNull(),
+  texto: text("texto").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Contacts (of clients) ────────────────────────────────────────────────────
 export const contacts = pgTable("contacts", {
   id: uuid("id").primaryKey().defaultRandom(),

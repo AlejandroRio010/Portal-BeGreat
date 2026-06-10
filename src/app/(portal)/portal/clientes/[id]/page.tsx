@@ -1,9 +1,10 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { clients, contacts, operations, collaborators, clientNotes, customFields, customFieldValues } from "@/db/schema";
+import { clients, contacts, operations, collaborators, clientNotes, customFields, customFieldValues, clientDocuments } from "@/db/schema";
 import ClienteEditFormPortal from "./ClienteEditFormPortal";
 import NuevoContactoForm from "./NuevoContactoForm";
 import NotesSection from "@/components/NotesSection";
+import DocumentsSection from "@/components/DocumentsSection";
 import { eq, and, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -77,6 +78,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
   const clienteCustomFields = await db.select().from(customFields).where(eq(customFields.entidad, "cliente")).orderBy(asc(customFields.orden));
   const clienteCustomValues = await db.select().from(customFieldValues).where(eq(customFieldValues.entity_id, id));
   const notes = await db.select().from(clientNotes).where(eq(clientNotes.client_id, id)).orderBy(clientNotes.created_at);
+  const docs = await db.select().from(clientDocuments).where(eq(clientDocuments.client_id, id)).orderBy(clientDocuments.created_at);
 
   const FASES_APROBADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
 
@@ -156,14 +158,13 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
             <div className="px-5 py-4 divide-y divide-gray-50">
               {[
                 ["Nombre", client.nombre],
-                ["Nombre comercial", client.nombre_comercial],
                 ["CIF", client.cif],
-                ["Email", client.email],
-                ["Teléfono", client.telefono],
-                ["Web", client.web],
-                ["LinkedIn", client.linkedin],
                 ["Dirección", client.direccion],
                 ["CNAE", client.cnae ? (getCnaeByCode(client.cnae) ? `${getCnaeByCode(client.cnae)!.codigo} — ${getCnaeByCode(client.cnae)!.titulo}` : client.cnae) : null],
+                ["Web", client.web],
+                ["Email", client.email],
+                ["Teléfono", client.telefono],
+                ["LinkedIn", client.linkedin],
                 ...clienteCustomFields
                   .filter(f => { const v = clienteCustomValues.find(cv => cv.field_id === f.id); return v && v.valor && v.valor.trim() !== ""; })
                   .map(f => [f.etiqueta, clienteCustomValues.find(cv => cv.field_id === f.id)?.valor ?? null] as [string, string | null]),
@@ -181,7 +182,6 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
                   </div>
                 ) : null
               )}
-              {/* Grupo empresarial como link */}
               {client.grupo_empresarial && (
                 <div className="py-2.5 flex flex-col gap-0.5">
                   <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">Grupo empresarial</span>
@@ -285,6 +285,8 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
             currentUserId={userId}
             placeholder="Añade una nota general sobre este cliente..."
           />
+
+          <DocumentsSection docs={docs} apiUrl={`/api/clientes/${id}/documents`} />
         </div>
       </div>
     </div>

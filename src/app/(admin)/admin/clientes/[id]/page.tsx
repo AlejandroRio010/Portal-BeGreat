@@ -1,11 +1,12 @@
 import { db } from "@/db";
-import { clients, collaborators, contacts, operations, customFields, customFieldValues, clientNotes, clientGroups } from "@/db/schema";
+import { clients, collaborators, contacts, operations, customFields, customFieldValues, clientNotes, clientGroups, clientDocuments } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import ClienteEditForm from "./ClienteEditForm";
 import ContactosAdminPanel from "./ContactosAdminPanel";
 import NotesSection from "@/components/NotesSection";
+import DocumentsSection from "@/components/DocumentsSection";
 import { getCnaeByCode } from "@/lib/cnaes";
 import { fmtEur } from "@/lib/format";
 
@@ -77,6 +78,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
   const clienteCustomFields = await db.select().from(customFields).where(eq(customFields.entidad, "cliente")).orderBy(asc(customFields.orden));
   const clienteCustomValues = await db.select().from(customFieldValues).where(eq(customFieldValues.entity_id, id));
   const notes = await db.select().from(clientNotes).where(eq(clientNotes.client_id, id)).orderBy(clientNotes.created_at);
+  const docs = await db.select().from(clientDocuments).where(eq(clientDocuments.client_id, id)).orderBy(clientDocuments.created_at);
   const grupos = await db.select({ id: clientGroups.id, nombre: clientGroups.nombre }).from(clientGroups).orderBy(clientGroups.nombre);
 
   const inicial = client.nombre.charAt(0).toUpperCase();
@@ -159,14 +161,13 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
             <div className="px-5 py-4 divide-y divide-gray-50">
               {[
                 ["Nombre", client.nombre],
-                ["Nombre comercial", client.nombre_comercial],
                 ["CIF", client.cif],
-                ["Email", client.email],
-                ["Teléfono", client.telefono],
-                ["Web", client.web],
-                ["LinkedIn", client.linkedin],
                 ["Dirección", client.direccion],
                 ["CNAE", client.cnae ? (getCnaeByCode(client.cnae) ? `${getCnaeByCode(client.cnae)!.codigo} — ${getCnaeByCode(client.cnae)!.titulo}` : client.cnae) : null],
+                ["Web", client.web],
+                ["Email", client.email],
+                ["Teléfono", client.telefono],
+                ["LinkedIn", client.linkedin],
                 // Campos personalizados rellenos
                 ...clienteCustomFields
                   .filter((f) => {
@@ -278,6 +279,8 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
             placeholder="Añade una nota general sobre este cliente..."
             isAdmin={true}
           />
+
+          <DocumentsSection docs={docs} apiUrl={`/api/clientes/${id}/documents`} />
         </div>
       </div>
     </div>

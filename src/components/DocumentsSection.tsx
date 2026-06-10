@@ -24,7 +24,8 @@ function cloudinaryDownloadUrl(url: string, filename: string): string {
   return url.replace("/upload/", `/upload/fl_attachment:${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}/`);
 }
 
-export default function DocumentsSection({ docs, operationId }: { docs: Doc[]; operationId: string }) {
+export default function DocumentsSection({ docs, operationId, apiUrl }: { docs: Doc[]; operationId?: string; apiUrl?: string }) {
+  const resolvedApiUrl = apiUrl ?? `/api/operations/${operationId}/documents`;
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -45,7 +46,7 @@ export default function DocumentsSection({ docs, operationId }: { docs: Doc[]; o
         reader.readAsDataURL(file);
       });
 
-      const res = await fetch(`/api/operations/${operationId}/documents`, {
+      const res = await fetch(`${resolvedApiUrl}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: base64, filename: file.name, size: file.size }),
@@ -78,7 +79,7 @@ export default function DocumentsSection({ docs, operationId }: { docs: Doc[]; o
   }
 
   async function handleDelete(docId: string) {
-    await fetch(`/api/operations/${operationId}/documents`, {
+    await fetch(`${resolvedApiUrl}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ docId }),
