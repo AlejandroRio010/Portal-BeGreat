@@ -384,6 +384,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
           notes={opNotes}
           apiUrl={`/api/operations/${id}/notes`}
           currentUserId={userId}
+          canPin
           placeholder="Añade una nota sobre esta operación..."
         />
 

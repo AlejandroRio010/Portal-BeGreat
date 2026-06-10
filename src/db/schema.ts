@@ -341,6 +341,7 @@ export const notes = pgTable("notes", {
     .references(() => collaborators.id),
   author_name: text("author_name").notNull(),
   texto: text("texto").notNull(),
+  pinned: boolean("pinned").notNull().default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 

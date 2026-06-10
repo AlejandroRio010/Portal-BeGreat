@@ -400,6 +400,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
           apiUrl={`/api/operations/${id}/notes`}
           currentUserId={adminId}
           isAdmin={true}
+          canPin
         />
 
         <DocumentsSection docs={opDocs} operationId={id} />

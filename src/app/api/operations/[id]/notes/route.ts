@@ -57,17 +57,22 @@ export async function PATCH(
 
   const userId = session.user!.id as string;
   const userRole = (session.user as any).role;
-  const { noteId, texto } = await req.json();
-  if (!noteId || !texto?.trim()) return NextResponse.json({ error: "Datos requeridos" }, { status: 400 });
+  const { noteId, texto, pinned } = await req.json();
+  if (!noteId) return NextResponse.json({ error: "Datos requeridos" }, { status: 400 });
 
   const [note] = await db.select().from(notes).where(eq(notes.id, noteId)).limit(1);
   if (!note) return NextResponse.json({ error: "Nota no encontrada" }, { status: 404 });
 
-  // Solo el autor o el admin pueden editar
+  // Solo el autor o el admin pueden editar/fijar
   if (userRole !== "admin" && note.author_id !== userId) {
     return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   }
 
-  await db.update(notes).set({ texto: texto.trim() }).where(eq(notes.id, noteId));
+  const updateData: Record<string, unknown> = {};
+  if (typeof texto === "string" && texto.trim()) updateData.texto = texto.trim();
+  if (typeof pinned === "boolean") updateData.pinned = pinned;
+  if (Object.keys(updateData).length === 0) return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
+
+  await db.update(notes).set(updateData).where(eq(notes.id, noteId));
   return NextResponse.json({ ok: true });
 }
