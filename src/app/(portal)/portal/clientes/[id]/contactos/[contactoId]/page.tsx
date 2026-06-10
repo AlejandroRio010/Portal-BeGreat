@@ -52,12 +52,22 @@ export default async function ContactoDetallePage({ params }: { params: Promise<
             <div className="px-5 py-4 divide-y divide-gray-50">
               {([
                 ["Nombre", contacto.nombre],
+                ["Empresa", null],
+                ["Puesto / Rol", contacto.rol],
                 ["Email", contacto.email],
                 ["Teléfono", contacto.telefono],
-                ["Puesto / Rol", contacto.rol],
                 ["LinkedIn", contacto.linkedin],
-              ] as [string, string | null][]).map(([label, value]) =>
-                value ? (
+              ] as [string, string | null][]).map(([label, value]) => {
+                if (label === "Empresa") {
+                  return (
+                    <div key={label} className="py-3 flex flex-col gap-0.5">
+                      <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">{label}</span>
+                      <Link href={`/portal/clientes/${clientId}`} className="text-sm text-[#2E1A47] font-semibold hover:underline">{client.nombre} →</Link>
+                    </div>
+                  );
+                }
+                if (!value) return null;
+                return (
                   <div key={label} className="py-3 flex flex-col gap-0.5">
                     <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">{label}</span>
                     {label === "Email" ? (
@@ -68,12 +78,8 @@ export default async function ContactoDetallePage({ params }: { params: Promise<
                       <span className="text-sm text-gray-800 font-medium">{value}</span>
                     )}
                   </div>
-                ) : null
-              )}
-              <div className="py-3 flex flex-col gap-0.5">
-                <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">Empresa</span>
-                <Link href={`/portal/clientes/${clientId}`} className="text-sm text-[#2E1A47] font-semibold hover:underline">{client.nombre} →</Link>
-              </div>
+                );
+              })}
             </div>
           </div>
         </div>

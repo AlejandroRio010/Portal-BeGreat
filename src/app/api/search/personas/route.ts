@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { contacts, collaboratorContacts, clients } from "@/db/schema";
-import { ilike, eq, and, inArray } from "drizzle-orm";
+import { contacts, collaboratorContacts, clients, entityContacts, entityOfficeContacts, suppliers, collaborators } from "@/db/schema";
+import { ilike, eq, and, inArray, sql } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -14,13 +14,11 @@ export async function GET(req: NextRequest) {
 
   const pattern = `%${q}%`;
 
-  // Get only client IDs belonging to this collaborator
   const myClients = await db.select({ id: clients.id }).from(clients).where(eq(clients.collaborator_id, userId));
   const myClientIds = myClients.map(c => c.id);
 
-  const results: Array<{ nombre: string; rol: string | null; email: string | null; telefono: string | null }> = [];
+  const results: Array<{ nombre: string; rol: string | null; email: string | null; telefono: string | null; linkedin?: string | null }> = [];
 
-  // Contacts from my clients — una sola query con inArray
   if (myClientIds.length > 0) {
     const cc = await db
       .select({ nombre: contacts.nombre, rol: contacts.rol, email: contacts.email, telefono: contacts.telefono })
@@ -30,14 +28,35 @@ export async function GET(req: NextRequest) {
     results.push(...cc);
   }
 
-  // My own collaborator contacts
   const myContacts = await db.select({ nombre: collaboratorContacts.nombre, rol: collaboratorContacts.rol, email: collaboratorContacts.email, telefono: collaboratorContacts.telefono })
     .from(collaboratorContacts)
     .where(and(eq(collaboratorContacts.collaborator_id, userId), ilike(collaboratorContacts.nombre, pattern)))
     .limit(5);
   results.push(...myContacts);
 
-  // Deduplicate
+  const [colab] = await db.select({ puede_ver_entidades: collaborators.puede_ver_entidades })
+    .from(collaborators).where(eq(collaborators.id, userId)).limit(1);
+
+  if (colab?.puede_ver_entidades) {
+    const [ec, eoc] = await Promise.all([
+      db.select({ nombre: entityContacts.nombre, rol: entityContacts.rol, email: entityContacts.email, telefono: entityContacts.telefono, linkedin: entityContacts.linkedin })
+        .from(entityContacts).where(ilike(entityContacts.nombre, pattern)).limit(5),
+      db.select({ nombre: entityOfficeContacts.nombre, rol: entityOfficeContacts.rol, email: entityOfficeContacts.email, telefono: entityOfficeContacts.telefono, linkedin: entityOfficeContacts.linkedin })
+        .from(entityOfficeContacts).where(ilike(entityOfficeContacts.nombre, pattern)).limit(5),
+    ]);
+    results.push(...ec, ...eoc);
+  }
+
+  const mySuppliers = await db.select({ persona_contacto: suppliers.persona_contacto, contacto_email: suppliers.contacto_email, contacto_telefono: suppliers.contacto_telefono })
+    .from(suppliers)
+    .where(and(eq(suppliers.collaborator_id, userId), ilike(suppliers.persona_contacto, pattern)))
+    .limit(5);
+  for (const s of mySuppliers) {
+    if (s.persona_contacto) {
+      results.push({ nombre: s.persona_contacto, rol: null, email: s.contacto_email, telefono: s.contacto_telefono });
+    }
+  }
+
   const seen = new Set<string>();
   const unique = results.filter(p => {
     const key = p.nombre.toLowerCase();

@@ -41,7 +41,8 @@ function ContactoRow({ c, entityId }: { c: Contacto; entityId: string }) {
           )}
         </div>
       </div>
-      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <a href={`/admin/entidades/${entityId}/contactos/${c.id}`} className="text-[10px] text-[#2E1A47] font-semibold border border-[#2E1A47]/30 px-2 py-0.5 hover:bg-[#EEEBF3]">Ver →</a>
         {!confirm ? (
           <button onClick={() => setConfirm(true)} className="text-[10px] text-red-400 hover:text-red-600 font-semibold border border-red-200 px-2 py-0.5 hover:bg-red-50">
             Eliminar

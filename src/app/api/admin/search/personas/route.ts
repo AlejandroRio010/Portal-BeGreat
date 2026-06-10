@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { entityContacts, entityOfficeContacts, contacts, collaboratorContacts } from "@/db/schema";
+import { entityContacts, entityOfficeContacts, contacts, collaboratorContacts, suppliers } from "@/db/schema";
 import { ilike, sql } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
@@ -21,14 +21,20 @@ export async function GET(req: NextRequest) {
       .from(entityContacts).where(ilike(entityContacts.nombre, pattern)).limit(5),
     db.select({ nombre: entityOfficeContacts.nombre, rol: entityOfficeContacts.rol, email: entityOfficeContacts.email, telefono: entityOfficeContacts.telefono, linkedin: entityOfficeContacts.linkedin })
       .from(entityOfficeContacts).where(ilike(entityOfficeContacts.nombre, pattern)).limit(5),
-    db.select({ nombre: contacts.nombre, rol: contacts.rol, email: contacts.email, telefono: contacts.telefono, linkedin: sql<string | null>`null` })
+    db.select({ nombre: contacts.nombre, rol: contacts.rol, email: contacts.email, telefono: contacts.telefono, linkedin: contacts.linkedin })
       .from(contacts).where(ilike(contacts.nombre, pattern)).limit(5),
     db.select({ nombre: collaboratorContacts.nombre, rol: collaboratorContacts.rol, email: collaboratorContacts.email, telefono: collaboratorContacts.telefono, linkedin: sql<string | null>`null` })
       .from(collaboratorContacts).where(ilike(collaboratorContacts.nombre, pattern)).limit(5),
   ]);
 
+  const sup = await db.select({ persona_contacto: suppliers.persona_contacto, contacto_email: suppliers.contacto_email, contacto_telefono: suppliers.contacto_telefono })
+    .from(suppliers).where(ilike(suppliers.persona_contacto, pattern)).limit(5);
+  const supMapped = sup.filter(s => s.persona_contacto).map(s => ({
+    nombre: s.persona_contacto!, rol: null as string | null, email: s.contacto_email, telefono: s.contacto_telefono, linkedin: null as string | null,
+  }));
+
   // Merge and deduplicate by nombre
-  const all = [...ec, ...eoc, ...cl, ...cc];
+  const all = [...ec, ...eoc, ...cl, ...cc, ...supMapped];
   const seen = new Set<string>();
   const unique = all.filter(p => {
     const key = p.nombre.toLowerCase();

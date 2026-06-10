@@ -1,33 +1,37 @@
 import { db } from "@/db";
 import { auth } from "@/lib/auth";
-import { clients, contacts, contactNotes } from "@/db/schema";
+import { entityContacts, entityContactNotes, financialEntities } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import NotesSection from "@/components/NotesSection";
 
-export default async function AdminContactoDetallePage({ params }: { params: Promise<{ id: string; contactoId: string }> }) {
-  const { id: clientId, contactoId } = await params;
+export const dynamic = "force-dynamic";
+
+export default async function AdminEntityContactoPage({ params }: { params: Promise<{ id: string; contactoId: string }> }) {
+  const { id: entityId, contactoId } = await params;
   const session = await auth();
   const userId = session!.user!.id as string;
 
-  const [client] = await db.select({ id: clients.id, nombre: clients.nombre })
-    .from(clients).where(eq(clients.id, clientId)).limit(1);
-  if (!client) notFound();
+  const [entity] = await db.select({ id: financialEntities.id, nombre: financialEntities.nombre })
+    .from(financialEntities).where(eq(financialEntities.id, entityId)).limit(1);
+  if (!entity) notFound();
 
-  const [contacto] = await db.select().from(contacts).where(and(eq(contacts.id, contactoId), eq(contacts.client_id, clientId))).limit(1);
+  const [contacto] = await db.select().from(entityContacts)
+    .where(and(eq(entityContacts.id, contactoId), eq(entityContacts.entity_id, entityId))).limit(1);
   if (!contacto) notFound();
 
-  const notes = await db.select().from(contactNotes).where(eq(contactNotes.contact_id, contactoId)).orderBy(contactNotes.created_at);
+  const notes = await db.select().from(entityContactNotes)
+    .where(eq(entityContactNotes.contact_id, contactoId)).orderBy(entityContactNotes.created_at);
 
   const inicial = contacto.nombre.charAt(0).toUpperCase();
 
   return (
     <div className="min-h-screen bg-[#f8f7fb]">
       <div className="px-8 pt-6 pb-2 flex items-center gap-2 text-xs text-gray-500">
-        <Link href="/admin/clientes" className="hover:text-[#2E1A47] font-medium">Clientes</Link>
+        <Link href="/admin/entidades" className="hover:text-[#2E1A47] font-medium">Entidades</Link>
         <span>/</span>
-        <Link href={`/admin/clientes/${clientId}`} className="hover:text-[#2E1A47] font-medium">{client.nombre}</Link>
+        <Link href={`/admin/entidades/${entityId}`} className="hover:text-[#2E1A47] font-medium">{entity.nombre}</Link>
         <span>/</span>
         <span className="text-[#2E1A47] font-semibold">{contacto.nombre}</span>
       </div>
@@ -35,7 +39,7 @@ export default async function AdminContactoDetallePage({ params }: { params: Pro
       <div className="mx-8 mb-6 bg-[#2E1A47] flex items-center gap-5 px-8 py-6">
         <div className="h-14 w-14 bg-white/20 flex items-center justify-center text-white text-2xl font-bold">{inicial}</div>
         <div>
-          <p className="text-white/50 text-xs mb-0.5">Contacto de {client.nombre}</p>
+          <p className="text-white/50 text-xs mb-0.5">Contacto de {entity.nombre}</p>
           <p className="text-white text-xl font-bold">{contacto.nombre}</p>
           {contacto.rol && <p className="text-white/60 text-xs mt-0.5">{contacto.rol}</p>}
         </div>
@@ -60,7 +64,7 @@ export default async function AdminContactoDetallePage({ params }: { params: Pro
                   return (
                     <div key={label} className="py-3 flex flex-col gap-0.5">
                       <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">{label}</span>
-                      <Link href={`/admin/clientes/${clientId}`} className="text-sm text-[#2E1A47] font-semibold hover:underline">{client.nombre} →</Link>
+                      <Link href={`/admin/entidades/${entityId}`} className="text-sm text-[#2E1A47] font-semibold hover:underline">{entity.nombre} →</Link>
                     </div>
                   );
                 }
@@ -85,7 +89,7 @@ export default async function AdminContactoDetallePage({ params }: { params: Pro
         <div className="col-span-2">
           <NotesSection
             notes={notes}
-            apiUrl={`/api/contacts/${contactoId}/notes`}
+            apiUrl={`/api/entity-contacts/${contactoId}/notes`}
             currentUserId={userId}
             isAdmin={true}
             placeholder="Añade una nota sobre este contacto..."
