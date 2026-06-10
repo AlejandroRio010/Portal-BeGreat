@@ -5,6 +5,13 @@ import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 export const metadata: Metadata = {
   title: "BeGreat Consulting — Portal de Colaboradores",
   description: "Portal privado de colaboradores de BeGreat Consulting",
+  icons: {
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: { url: "/begreat-oso.png" },
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
