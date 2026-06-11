@@ -67,6 +67,7 @@ interface Props {
   initialAvalTelefono?: string | null;
   initialAvalPersonaContacto?: string | null;
   initialModalidadRenting?: string | null;
+  initialImporteFacturadoBegreat?: string | null;
   initialEntidadDestino?: string | null;
   // entity/office lists
   allEntities: EntityRow[];
@@ -105,6 +106,7 @@ export default function AdminOpForm({
   initialAvalTelefono,
   initialAvalPersonaContacto,
   initialModalidadRenting,
+  initialImporteFacturadoBegreat,
   initialEntidadDestino,
   allEntities,
   allOffices,
@@ -162,6 +164,7 @@ export default function AdminOpForm({
   const [equipoTipo, setEquipoTipo] = useState(initialEquipoTipo ?? "");
   const [necesidad, setNecesidad] = useState(initialNecesidad ?? "");
   const [modalidadRenting, setModalidadRenting] = useState(initialModalidadRenting ?? "");
+  const [importeFacturadoBegreat, setImporteFacturadoBegreat] = useState(initialImporteFacturadoBegreat ?? "");
   const [entidadDestino, setEntidadDestino] = useState(initialEntidadDestino ?? "");
   const [tieneAval, setTieneAval] = useState(!!initialTieneAval);
   const [avalTipo, setAvalTipo] = useState(initialAvalTipo ?? "persona_fisica");
@@ -239,6 +242,7 @@ export default function AdminOpForm({
         es_renovacion: esRenovacion,
         operacion_original_id: esRenovacion ? (opOriginal?.id ?? null) : null,
         entidad_destino: entidadDestino || null,
+        importe_facturado_begreat: importeFacturadoBegreat || null,
       });
       setSaved(true);
     } catch { setError("Error al guardar los cambios."); }
@@ -547,6 +551,17 @@ export default function AdminOpForm({
                   className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
                 <p className="text-[10px] text-gray-400 mt-1">Ej: Tendrit → Credit Agricole. Solo visible para admin y colaboradores con permiso.</p>
               </div>
+
+              {/* Importe facturado por BeGreat (solo renting + BG factura) */}
+              {pipelineKey === "renting" && (modalidadRenting === "begreat_factura" || modalidadRenting === "begreat_factura_comisiona") && (
+                <div>
+                  <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Importe facturado por BeGreat (sin IVA)</label>
+                  <input type="number" step="0.01" value={importeFacturadoBegreat} onChange={(e) => setImporteFacturadoBegreat(e.target.value)}
+                    placeholder="Ej: 11500"
+                    className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                  <p className="text-[10px] text-gray-400 mt-1">Si BeGreat factura un importe distinto al del proveedor. Se muestra al colaborador si se rellena.</p>
+                </div>
+              )}
 
               {/* Honorarios firmados */}
               <div className="flex items-center gap-3">

@@ -17,6 +17,8 @@ interface Op {
   importe: string | null;
   comision_colaborador: string | null;
   facturacion_renting: string | null;
+  modalidad_renting: string | null;
+  importe_facturado_begreat: string | null;
   plazo_meses: number | null;
 }
 
@@ -48,6 +50,8 @@ const FASE_BAR: Record<string, string> = {
 function CardContent({ op, dragListeners, dragAttributes, canEdit }: { op: Op; dragListeners?: any; dragAttributes?: any; canEdit?: boolean }) {
   const displayName = op.nombre ?? op.client_nombre ?? "Sin nombre";
   const importe = Number(op.importe ?? 0);
+  const importeFacturado = Number(op.importe_facturado_begreat ?? 0);
+  const bgFactura = op.modalidad_renting === "begreat_factura" || op.modalidad_renting === "begreat_factura_comisiona";
   const fee = Number(op.comision_colaborador ?? 0);
   return (
     <div className="p-3 pt-2.5">
@@ -71,6 +75,12 @@ function CardContent({ op, dragListeners, dragAttributes, canEdit }: { op: Op; d
           <div className="flex items-baseline gap-1">
             <span className="text-[8px] text-gray-400 uppercase">Imp. proveedor</span>
             <span className="text-[11px] font-bold text-gray-700 whitespace-nowrap">{fmtNum(importe)} €</span>
+          </div>
+        )}
+        {bgFactura && importeFacturado > 0 && (
+          <div className="flex items-baseline gap-1">
+            <span className="text-[8px] text-gray-400 uppercase">BG factura</span>
+            <span className="text-[10px] text-gray-600 font-semibold whitespace-nowrap">{fmtNum(importeFacturado)} €</span>
           </div>
         )}
         {fee > 0 && <span className="text-[9px] text-[#2E1A47] font-semibold whitespace-nowrap">Fee: {fmtNum(fee)} €</span>}

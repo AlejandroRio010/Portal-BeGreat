@@ -19,6 +19,8 @@ export interface KanbanOp {
   comision_colaborador: string | null;
   comision_begreat: string | null;
   facturacion_renting: string | null;
+  modalidad_renting: string | null;
+  importe_facturado_begreat: string | null;
 }
 
 const FASE_ACCENT: Record<string, string> = {
@@ -81,6 +83,8 @@ function DraggableCard({ op, isDragging }: { op: KanbanOp; isDragging: boolean }
 export function CardContent({ op, dragListeners, dragAttributes }: { op: KanbanOp; dragListeners?: any; dragAttributes?: any }) {
   const displayName = op.nombre ?? op.client_nombre ?? "Sin nombre";
   const importe = Number(op.importe ?? 0);
+  const importeFacturado = Number(op.importe_facturado_begreat ?? 0);
+  const bgFactura = op.modalidad_renting === "begreat_factura" || op.modalidad_renting === "begreat_factura_comisiona";
   const fee = Number(op.comision_colaborador ?? 0) + Number(op.comision_begreat ?? 0);
   return (
     <div className="p-3 pt-2.5">
@@ -98,12 +102,25 @@ export function CardContent({ op, dragListeners, dragAttributes }: { op: KanbanO
       </div>
       {op.colaborador_nombre && <p className="text-[9px] text-gray-400 pl-4 mb-1.5 truncate">{op.colaborador_nombre}</p>}
       <div className="pl-4 flex flex-col gap-0.5">
-        {importe > 0 && (
+        {bgFactura && importeFacturado > 0 ? (
+          <>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[8px] text-gray-400 uppercase">BG factura</span>
+              <span className="text-[11px] font-bold text-gray-700 whitespace-nowrap">{fmtNum(importeFacturado)} €</span>
+            </div>
+            {importe > 0 && (
+              <div className="flex items-baseline gap-1">
+                <span className="text-[8px] text-gray-400 uppercase">Proveedor</span>
+                <span className="text-[10px] text-gray-500 whitespace-nowrap">{fmtNum(importe)} €</span>
+              </div>
+            )}
+          </>
+        ) : importe > 0 ? (
           <div className="flex items-baseline gap-1">
-            <span className="text-[8px] text-gray-400 uppercase">Imp. facturado</span>
+            <span className="text-[8px] text-gray-400 uppercase">Importe</span>
             <span className="text-[11px] font-bold text-gray-700 whitespace-nowrap">{fmtNum(importe)} €</span>
           </div>
-        )}
+        ) : null}
         {fee > 0 && <span className="text-[9px] text-[#2E1A47] font-semibold whitespace-nowrap">Fee: {fmtNum(fee)} €</span>}
         <div className="flex items-center gap-1">
           {op.facturacion_renting && (

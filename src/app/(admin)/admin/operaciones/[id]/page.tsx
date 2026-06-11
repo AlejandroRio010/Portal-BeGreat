@@ -63,6 +63,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       aval_persona_contacto: operations.aval_persona_contacto,
       necesidad: operations.necesidad,
       modalidad_renting: operations.modalidad_renting,
+      importe_facturado_begreat: operations.importe_facturado_begreat,
       entidad_destino: operations.entidad_destino,
       supplier_id: operations.supplier_id,
       codigo: operations.codigo,
@@ -331,9 +332,12 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
                 campos.push({ label: "Persona de contacto (proveedor)", value: proveedorData?.persona_contacto ?? null, href: op.supplier_id ? `/admin/proveedores/${op.supplier_id}` : undefined });
                 campos.push({ label: "Equipo a arrendar", value: op.descripcion });
                 campos.push({ label: "Tipo de equipo", value: op.equipo_tipo });
-                campos.push({ label: "Importe (sin IVA)", value: fmtEuro(op.importe) });
+                const bgFactura = op.modalidad_renting === "begreat_factura" || op.modalidad_renting === "begreat_factura_comisiona";
+                campos.push({ label: bgFactura ? "Importe proveedor (sin IVA)" : "Importe (sin IVA)", value: fmtEuro(op.importe) });
+                if (bgFactura) {
+                  campos.push({ label: "Importe facturado por BeGreat", value: fmtEuro(op.importe_facturado_begreat) });
+                }
                 campos.push({ label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null });
-                campos.push({ label: "Cuota (sin IVA)", value: cuota });
                 campos.push({ label: "Lugar de instalación", value: op.lugar_entrega });
                 campos.push({ label: "Modalidad", value: op.modalidad_renting ? (modalidadLabel[op.modalidad_renting] ?? op.modalidad_renting) : null });
                 campos.push({ label: "Fee colaborador", value: fmtEuro(op.comision_colaborador) });
@@ -465,6 +469,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialAvalTelefono={op.aval_telefono ?? null}
             initialAvalPersonaContacto={op.aval_persona_contacto ?? null}
             initialModalidadRenting={op.modalidad_renting ?? null}
+            initialImporteFacturadoBegreat={op.importe_facturado_begreat ?? null}
             initialEntidadDestino={op.entidad_destino ?? null}
             allEntities={allEntities}
             allOffices={allOffices}

@@ -330,6 +330,7 @@ export const operations = pgTable("operations", {
   aval_persona_contacto: text("aval_persona_contacto"),
   // Modalidad renting
   modalidad_renting: modalidadRentingEnum("modalidad_renting"),
+  importe_facturado_begreat: numeric("importe_facturado_begreat", { precision: 12, scale: 2 }),
   // Entidad destino (cuando un broker lleva la op a otro banco)
   entidad_destino: text("entidad_destino"),
   // Necesidad del cliente

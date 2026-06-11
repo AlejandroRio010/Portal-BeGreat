@@ -49,6 +49,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       equipo_tipo: operations.equipo_tipo,
       facturacion_renting: operations.facturacion_renting,
       modalidad_renting: operations.modalidad_renting,
+      importe_facturado_begreat: operations.importe_facturado_begreat,
       motivo_denegacion: operations.motivo_denegacion,
       entity_office_id: operations.entity_office_id,
       onedrive_url: operations.onedrive_url,
@@ -300,9 +301,12 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                 campos.push({ label: "Persona de contacto (proveedor)", value: proveedorData?.persona_contacto ?? null, href: op.supplier_id ? `/portal/proveedores/${op.supplier_id}` : undefined });
                 campos.push({ label: "Equipo a arrendar", value: op.descripcion });
                 campos.push({ label: "Tipo de equipo", value: op.equipo_tipo });
-                campos.push({ label: "Importe (sin IVA)", value: fmtEuro(op.importe) });
+                const bgFactura = op.modalidad_renting === "begreat_factura" || op.modalidad_renting === "begreat_factura_comisiona";
+                campos.push({ label: bgFactura ? "Importe proveedor (sin IVA)" : "Importe (sin IVA)", value: fmtEuro(op.importe) });
+                if (bgFactura && op.importe_facturado_begreat) {
+                  campos.push({ label: "Importe facturado por BeGreat", value: fmtEuro(op.importe_facturado_begreat) });
+                }
                 campos.push({ label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null });
-                campos.push({ label: "Cuota (sin IVA)", value: cuota });
                 campos.push({ label: "Lugar de instalación", value: op.lugar_entrega });
                 campos.push({ label: "Modalidad", value: op.modalidad_renting ? (modalidadLabel[op.modalidad_renting] ?? op.modalidad_renting) : null });
                 campos.push({ label: "Fee colaborador", value: fmtEuro(op.comision_colaborador) });

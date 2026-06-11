@@ -24,6 +24,8 @@ export default async function AdminRentingKanbanPage() {
       comision_colaborador: operations.comision_colaborador,
       comision_begreat: operations.comision_begreat,
       facturacion_renting: operations.facturacion_renting,
+      modalidad_renting: operations.modalidad_renting,
+      importe_facturado_begreat: operations.importe_facturado_begreat,
     })
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
