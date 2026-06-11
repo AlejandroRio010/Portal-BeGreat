@@ -50,6 +50,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       facturacion_renting: operations.facturacion_renting,
       modalidad_renting: operations.modalidad_renting,
       importe_facturado_begreat: operations.importe_facturado_begreat,
+      importe_facturado_visible: operations.importe_facturado_visible,
       motivo_denegacion: operations.motivo_denegacion,
       entity_office_id: operations.entity_office_id,
       onedrive_url: operations.onedrive_url,
@@ -303,7 +304,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                 campos.push({ label: "Tipo de equipo", value: op.equipo_tipo });
                 const bgFactura = op.modalidad_renting === "begreat_factura" || op.modalidad_renting === "begreat_factura_comisiona";
                 campos.push({ label: bgFactura ? "Importe proveedor (sin IVA)" : "Importe (sin IVA)", value: fmtEuro(op.importe) });
-                if (bgFactura && op.importe_facturado_begreat) {
+                if (bgFactura && op.importe_facturado_begreat && op.importe_facturado_visible) {
                   campos.push({ label: "Importe facturado por BeGreat", value: fmtEuro(op.importe_facturado_begreat) });
                 }
                 campos.push({ label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null });

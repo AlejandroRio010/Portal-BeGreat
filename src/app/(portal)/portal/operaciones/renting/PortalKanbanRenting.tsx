@@ -19,6 +19,7 @@ interface Op {
   facturacion_renting: string | null;
   modalidad_renting: string | null;
   importe_facturado_begreat: string | null;
+  importe_facturado_visible: boolean;
   plazo_meses: number | null;
 }
 
@@ -77,7 +78,7 @@ function CardContent({ op, dragListeners, dragAttributes, canEdit }: { op: Op; d
             <span className="text-[11px] font-bold text-gray-700 whitespace-nowrap">{fmtNum(importe)} €</span>
           </div>
         )}
-        {bgFactura && importeFacturado > 0 && (
+        {bgFactura && importeFacturado > 0 && op.importe_facturado_visible && (
           <div className="flex items-baseline gap-1">
             <span className="text-[8px] text-gray-400 uppercase">BG factura</span>
             <span className="text-[10px] text-gray-600 font-semibold whitespace-nowrap">{fmtNum(importeFacturado)} €</span>

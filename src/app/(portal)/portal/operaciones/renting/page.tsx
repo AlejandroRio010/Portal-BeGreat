@@ -33,6 +33,7 @@ export default async function RentingPage() {
       facturacion_renting: operations.facturacion_renting,
       modalidad_renting: operations.modalidad_renting,
       importe_facturado_begreat: operations.importe_facturado_begreat,
+      importe_facturado_visible: operations.importe_facturado_visible,
       plazo_meses: operations.plazo_meses,
       client_nombre: clients.nombre,
     })
@@ -65,7 +66,7 @@ export default async function RentingPage() {
         </div>
       ) : (
         <PortalKanbanRenting
-          ops={ops.map(o => ({ ...o, importe: o.importe ?? null, comision_colaborador: o.comision_colaborador ?? null, facturacion_renting: o.facturacion_renting ?? null, modalidad_renting: o.modalidad_renting ?? null, importe_facturado_begreat: o.importe_facturado_begreat ?? null, plazo_meses: o.plazo_meses ?? null }))}
+          ops={ops.map(o => ({ ...o, importe: o.importe ?? null, comision_colaborador: o.comision_colaborador ?? null, facturacion_renting: o.facturacion_renting ?? null, modalidad_renting: o.modalidad_renting ?? null, importe_facturado_begreat: o.importe_facturado_begreat ?? null, importe_facturado_visible: o.importe_facturado_visible ?? false, plazo_meses: o.plazo_meses ?? null }))}
           fases={fases}
           canEdit={puedeEditar}
         />

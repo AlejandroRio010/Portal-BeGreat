@@ -64,6 +64,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       necesidad: operations.necesidad,
       modalidad_renting: operations.modalidad_renting,
       importe_facturado_begreat: operations.importe_facturado_begreat,
+      importe_facturado_visible: operations.importe_facturado_visible,
       entidad_destino: operations.entidad_destino,
       supplier_id: operations.supplier_id,
       codigo: operations.codigo,
@@ -470,6 +471,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialAvalPersonaContacto={op.aval_persona_contacto ?? null}
             initialModalidadRenting={op.modalidad_renting ?? null}
             initialImporteFacturadoBegreat={op.importe_facturado_begreat ?? null}
+            initialImporteFacturadoVisible={op.importe_facturado_visible ?? false}
             initialEntidadDestino={op.entidad_destino ?? null}
             allEntities={allEntities}
             allOffices={allOffices}

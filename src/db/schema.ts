@@ -331,6 +331,7 @@ export const operations = pgTable("operations", {
   // Modalidad renting
   modalidad_renting: modalidadRentingEnum("modalidad_renting"),
   importe_facturado_begreat: numeric("importe_facturado_begreat", { precision: 12, scale: 2 }),
+  importe_facturado_visible: boolean("importe_facturado_visible").default(false),
   // Entidad destino (cuando un broker lleva la op a otro banco)
   entidad_destino: text("entidad_destino"),
   // Necesidad del cliente

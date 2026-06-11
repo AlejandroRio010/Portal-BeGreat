@@ -68,6 +68,7 @@ interface Props {
   initialAvalPersonaContacto?: string | null;
   initialModalidadRenting?: string | null;
   initialImporteFacturadoBegreat?: string | null;
+  initialImporteFacturadoVisible?: boolean;
   initialEntidadDestino?: string | null;
   // entity/office lists
   allEntities: EntityRow[];
@@ -107,6 +108,7 @@ export default function AdminOpForm({
   initialAvalPersonaContacto,
   initialModalidadRenting,
   initialImporteFacturadoBegreat,
+  initialImporteFacturadoVisible,
   initialEntidadDestino,
   allEntities,
   allOffices,
@@ -165,6 +167,7 @@ export default function AdminOpForm({
   const [necesidad, setNecesidad] = useState(initialNecesidad ?? "");
   const [modalidadRenting, setModalidadRenting] = useState(initialModalidadRenting ?? "");
   const [importeFacturadoBegreat, setImporteFacturadoBegreat] = useState(initialImporteFacturadoBegreat ?? "");
+  const [importeFacturadoVisible, setImporteFacturadoVisible] = useState(initialImporteFacturadoVisible ?? false);
   const [entidadDestino, setEntidadDestino] = useState(initialEntidadDestino ?? "");
   const [tieneAval, setTieneAval] = useState(!!initialTieneAval);
   const [avalTipo, setAvalTipo] = useState(initialAvalTipo ?? "persona_fisica");
@@ -243,6 +246,7 @@ export default function AdminOpForm({
         operacion_original_id: esRenovacion ? (opOriginal?.id ?? null) : null,
         entidad_destino: entidadDestino || null,
         importe_facturado_begreat: importeFacturadoBegreat || null,
+        importe_facturado_visible: importeFacturadoVisible,
       });
       setSaved(true);
     } catch { setError("Error al guardar los cambios."); }
@@ -559,7 +563,12 @@ export default function AdminOpForm({
                   <input type="number" step="0.01" value={importeFacturadoBegreat} onChange={(e) => setImporteFacturadoBegreat(e.target.value)}
                     placeholder="Ej: 11500"
                     className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                  <p className="text-[10px] text-gray-400 mt-1">Si BeGreat factura un importe distinto al del proveedor. Se muestra al colaborador si se rellena.</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input type="checkbox" id="importeFacturadoVisible" checked={importeFacturadoVisible} onChange={(e) => setImporteFacturadoVisible(e.target.checked)}
+                      className="w-4 h-4 accent-[#2E1A47]" />
+                    <label htmlFor="importeFacturadoVisible" className="text-xs text-gray-600 cursor-pointer">Visible para el colaborador</label>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1">Si no marcas la casilla, solo tú (admin) lo verás.</p>
                 </div>
               )}
 
