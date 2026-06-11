@@ -71,6 +71,9 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const clienteListo = !!(clienteSeleccionado || (esNuevoCliente && clienteNombre.trim() && clienteEmail.trim() && clienteCnae.trim() && contactoNombre.trim() && contactoEmail.trim() && contactoTelefono.trim()));
+  const clientePendiente = esNuevoCliente && !clienteListo;
+
   function fillCliente(c: any) {
     setClienteSeleccionado(c);
     setClienteNombre(c.nombre);
@@ -173,7 +176,8 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
     const data: Record<string, string> = {};
     form.forEach((v, k) => { data[k] = v as string; });
 
-    // Validation
+    // Validation — client must be either selected from DB or fully filled as new
+    if (!clienteSeleccionado && !esNuevoCliente) { setError("Busca y selecciona una empresa cliente, o da de alta una nueva."); setLoading(false); return; }
     if (!clienteNombre.trim()) { setError("El nombre de la empresa cliente es obligatorio."); setLoading(false); return; }
     if (!data.importe) { setError("El importe (sin IVA) es obligatorio."); setLoading(false); return; }
     if (pipeline === "consultoria" && !producto) { setError("Selecciona un producto de financiación."); setLoading(false); return; }
@@ -470,9 +474,17 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
 
         {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 px-4 py-3">{error}</p>}
 
-        <button type="submit" disabled={loading}
-          className="w-full bg-[#2E1A47] text-white py-3.5 text-sm font-bold hover:bg-[#5a3d80] transition-colors disabled:opacity-60">
-          {loading ? "Enviando operación..." : "Enviar operación a BeGreat"}
+        {clientePendiente && (
+          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-4 py-3">
+            Completa todos los campos obligatorios de la nueva empresa cliente antes de enviar la operación.
+          </p>
+        )}
+
+        <button type="submit" disabled={loading || clientePendiente}
+          className={`w-full py-3.5 text-sm font-bold transition-colors disabled:opacity-60 ${
+            clientePendiente ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#2E1A47] text-white hover:bg-[#5a3d80]"
+          }`}>
+          {loading ? "Enviando operación..." : clientePendiente ? "Completa los datos del cliente para continuar" : "Enviar operación a BeGreat"}
         </button>
       </form>
     </div>
@@ -490,10 +502,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function SearchableField({ value, onChange, onSelect, onNew, placeholder, searchUrl, nameField, label, inp, labelCls, required, disabled }: {
+function SearchableField({ value, onChange, onSelect, onNew, placeholder, searchUrl, nameField, label, inp, labelCls, required, disabled, autoNewWhenEmpty = false }: {
   value: string; onChange: (v: string) => void; onSelect: (item: any) => void; onNew: () => void;
   placeholder: string; searchUrl: string; nameField: string; label: string;
-  inp: string; labelCls: string; required?: boolean; disabled?: boolean;
+  inp: string; labelCls: string; required?: boolean; disabled?: boolean; autoNewWhenEmpty?: boolean;
 }) {
   const [resultados, setResultados] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
@@ -509,7 +521,12 @@ function SearchableField({ value, onChange, onSelect, onNew, placeholder, search
       const data = await res.json();
       setResultados(data);
       setSearched(true);
-      setOpen(true);
+      if (data.length === 0 && autoNewWhenEmpty) {
+        setOpen(false);
+        onNew();
+      } else {
+        setOpen(true);
+      }
     }, 250);
   }
 
@@ -625,7 +642,8 @@ function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClie
               onNew={() => setEsNuevoCliente(true)}
               placeholder="Escribe para buscar o añadir nueva empresa..."
               searchUrl="/api/search/clientes" nameField="cliente_nombre"
-              label="Empresa cliente *" inp={inp} labelCls={labelCls} required disabled={disabled} />
+              label="Empresa cliente *" inp={inp} labelCls={labelCls} required disabled={disabled}
+              autoNewWhenEmpty />
           </div>
         )}
       </div>
@@ -739,7 +757,8 @@ function ProveedorSection({ proveedorNombre, setProveedorNombre, proveedorEmail,
               onNew={() => setEsNuevoProveedor(true)}
               placeholder="Escribe para buscar o añadir nuevo proveedor..."
               searchUrl="/api/search/proveedores" nameField="proveedor_nombre"
-              label="Nombre del proveedor" inp={inp} labelCls={labelCls} />
+              label="Nombre del proveedor" inp={inp} labelCls={labelCls}
+              autoNewWhenEmpty />
           </div>
         )}
       </div>
