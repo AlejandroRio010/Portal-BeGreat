@@ -45,9 +45,10 @@ const FASE_BAR: Record<string, string> = {
 
 function CardContent({ op, dragListeners, dragAttributes, canEdit }: { op: Op; dragListeners?: any; dragAttributes?: any; canEdit?: boolean }) {
   const displayName = op.nombre ?? op.client_nombre ?? "Sin nombre";
+  const importe = Number(op.importe ?? 0);
   const fee = Number(op.comision_colaborador ?? 0);
   return (
-    <div className="p-2.5 pt-2">
+    <div className="p-3 pt-2.5">
       <div className="flex items-start gap-1 mb-1.5">
         {canEdit && (
           <button {...dragListeners} {...dragAttributes} className="mt-0.5 flex-shrink-0 text-gray-200 hover:text-gray-400 cursor-grab active:cursor-grabbing touch-none" tabIndex={-1}>
@@ -63,8 +64,9 @@ function CardContent({ op, dragListeners, dragAttributes, canEdit }: { op: Op; d
         </Link>
       </div>
       {op.client_nombre && op.nombre && <p className={`text-[9px] text-gray-400 mb-1.5 truncate ${canEdit ? "pl-4" : ""}`}>{op.client_nombre}</p>}
-      <div className={`flex items-center flex-wrap gap-1 ${canEdit ? "pl-4" : ""}`}>
-        {fee > 0 && <span className="text-[10px] font-bold text-[#2E1A47] whitespace-nowrap">{fmtNum(fee)} €</span>}
+      <div className={`flex flex-col gap-0.5 ${canEdit ? "pl-4" : ""}`}>
+        {importe > 0 && <span className="text-[11px] font-bold text-gray-700 whitespace-nowrap">{fmtNum(importe)} €</span>}
+        {fee > 0 && <span className="text-[9px] text-[#2E1A47] font-semibold whitespace-nowrap">Fee: {fmtNum(fee)} €</span>}
         {op.status === "pendiente_de_validar" && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />}
       </div>
     </div>

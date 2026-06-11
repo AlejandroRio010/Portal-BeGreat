@@ -47,9 +47,10 @@ const FASE_BAR: Record<string, string> = {
 
 function CardContent({ op, dragListeners, dragAttributes, canEdit }: { op: Op; dragListeners?: any; dragAttributes?: any; canEdit?: boolean }) {
   const displayName = op.nombre ?? op.client_nombre ?? "Sin nombre";
+  const importe = Number(op.importe ?? 0);
   const fee = Number(op.comision_colaborador ?? 0);
   return (
-    <div className="p-2.5 pt-2">
+    <div className="p-3 pt-2.5">
       <div className="flex items-start gap-1 mb-1.5">
         {canEdit && (
           <button {...dragListeners} {...dragAttributes} className="mt-0.5 flex-shrink-0 text-gray-200 hover:text-gray-400 cursor-grab active:cursor-grabbing touch-none" tabIndex={-1}>
@@ -65,19 +66,22 @@ function CardContent({ op, dragListeners, dragAttributes, canEdit }: { op: Op; d
         </Link>
       </div>
       {op.client_nombre && op.nombre && <p className={`text-[9px] text-gray-400 mb-1.5 truncate ${canEdit ? "pl-4" : ""}`}>{op.client_nombre}</p>}
-      <div className={`flex items-center flex-wrap gap-1 ${canEdit ? "pl-4" : ""}`}>
-        {fee > 0 && <span className="text-[10px] font-bold text-[#2E1A47] whitespace-nowrap">{fmtNum(fee)} €</span>}
-        {op.importe && op.plazo_meses && (
-          <span className="text-[9px] text-gray-400 whitespace-nowrap">
-            {fmtNum(Number(op.importe) / op.plazo_meses)} €/mes
-          </span>
+      <div className={`flex flex-col gap-0.5 ${canEdit ? "pl-4" : ""}`}>
+        {importe > 0 && (
+          <div className="flex items-baseline gap-1">
+            <span className="text-[8px] text-gray-400 uppercase">Imp. proveedor</span>
+            <span className="text-[11px] font-bold text-gray-700 whitespace-nowrap">{fmtNum(importe)} €</span>
+          </div>
         )}
-        {op.facturacion_renting && (
-          <span className={`text-[9px] font-bold px-1 py-0.5 uppercase ${op.facturacion_renting === "begreat" ? "bg-[#EEEBF3] text-[#2E1A47]" : "bg-amber-50 text-amber-700"}`}>
-            {op.facturacion_renting === "begreat" ? "BG" : "Fin"}
-          </span>
-        )}
-        {op.status === "pendiente_de_validar" && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />}
+        {fee > 0 && <span className="text-[9px] text-[#2E1A47] font-semibold whitespace-nowrap">Fee: {fmtNum(fee)} €</span>}
+        <div className="flex items-center gap-1">
+          {op.facturacion_renting && (
+            <span className={`text-[9px] font-bold px-1 py-0.5 uppercase ${op.facturacion_renting === "begreat" ? "bg-[#EEEBF3] text-[#2E1A47]" : "bg-amber-50 text-amber-700"}`}>
+              {op.facturacion_renting === "begreat" ? "BG" : "Fin"}
+            </span>
+          )}
+          {op.status === "pendiente_de_validar" && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />}
+        </div>
       </div>
     </div>
   );

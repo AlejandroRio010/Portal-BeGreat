@@ -79,9 +79,10 @@ function DraggableCard({ op, isDragging }: { op: KanbanOp; isDragging: boolean }
 
 export function CardContent({ op, dragListeners, dragAttributes }: { op: KanbanOp; dragListeners?: any; dragAttributes?: any }) {
   const displayName = op.nombre ?? op.client_nombre ?? "Sin nombre";
+  const importe = Number(op.importe ?? 0);
   const fee = Number(op.comision_colaborador ?? 0) + Number(op.comision_begreat ?? 0);
   return (
-    <div className="p-2.5 pt-2">
+    <div className="p-3 pt-2.5">
       <div className="flex items-start gap-1 mb-1.5">
         <button {...dragListeners} {...dragAttributes} className="mt-0.5 flex-shrink-0 text-gray-200 hover:text-gray-400 cursor-grab active:cursor-grabbing touch-none" tabIndex={-1}>
           <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
@@ -95,8 +96,9 @@ export function CardContent({ op, dragListeners, dragAttributes }: { op: KanbanO
         </Link>
       </div>
       {op.colaborador_nombre && <p className="text-[9px] text-gray-400 pl-4 mb-1.5 truncate">{op.colaborador_nombre}</p>}
-      <div className="pl-4 flex items-center flex-wrap gap-1">
-        {fee > 0 && <span className="text-[10px] font-bold text-[#2E1A47] whitespace-nowrap">{fmtNum(fee)} €</span>}
+      <div className="pl-4 flex flex-col gap-0.5">
+        {importe > 0 && <span className="text-[11px] font-bold text-gray-700 whitespace-nowrap">{fmtNum(importe)} €</span>}
+        {fee > 0 && <span className="text-[9px] text-[#2E1A47] font-semibold whitespace-nowrap">Fee: {fmtNum(fee)} €</span>}
         {op.status === "pendiente_de_validar" && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />}
       </div>
     </div>
