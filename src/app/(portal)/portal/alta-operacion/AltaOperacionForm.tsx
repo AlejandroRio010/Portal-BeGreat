@@ -33,6 +33,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
   const [clienteEmail, setClienteEmail] = useState("");
   const [clienteTelefono, setClienteTelefono] = useState("");
   const [clienteWeb, setClienteWeb] = useState("");
+  const [clienteCif, setClienteCif] = useState("");
   const [clienteCnae, setClienteCnae] = useState("");
   const [esNuevoCliente, setEsNuevoCliente] = useState(false);
   const [clienteMissingData, setClienteMissingData] = useState<string[]>([]);
@@ -71,7 +72,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const clienteListo = !!(clienteSeleccionado || (esNuevoCliente && clienteNombre.trim() && clienteEmail.trim() && clienteCnae.trim() && contactoNombre.trim() && contactoEmail.trim() && contactoTelefono.trim()));
+  const clienteListo = !!(clienteSeleccionado || (esNuevoCliente && clienteNombre.trim() && clienteEmail.trim() && clienteCif.trim() && contactoNombre.trim() && contactoEmail.trim() && contactoTelefono.trim()));
   const clientePendiente = esNuevoCliente && !clienteListo;
 
   function fillCliente(c: any) {
@@ -80,13 +81,14 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
     setClienteEmail(c.email ?? "");
     setClienteTelefono(c.telefono ?? "");
     setClienteWeb(c.web ?? "");
+    setClienteCif(c.cif ?? "");
     setClienteCnae(c.cnae ?? "");
     setEsNuevoCliente(false);
 
     // Check missing data
     const missing: string[] = [];
     if (!c.email) missing.push("email");
-    if (!c.cnae) missing.push("CNAE");
+    if (!c.cif) missing.push("CIF");
 
     if (c.contacto_nombre) {
       setContactoNombre(c.contacto_nombre);
@@ -132,6 +134,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
     setClienteEmail("");
     setClienteTelefono("");
     setClienteWeb("");
+    setClienteCif("");
     setClienteCnae("");
     setContactoNombre("");
     setContactoPuesto("");
@@ -187,7 +190,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
 
     if (esNuevoCliente) {
       if (!clienteEmail.trim()) { setError("El email de la empresa cliente es obligatorio."); setLoading(false); return; }
-      if (!clienteCnae.trim()) { setError("El CNAE de la empresa cliente es obligatorio."); setLoading(false); return; }
+      if (!clienteCif.trim()) { setError("El CIF de la empresa cliente es obligatorio."); setLoading(false); return; }
       if (!contactoNombre.trim()) { setError("El nombre de la persona de contacto del cliente es obligatorio."); setLoading(false); return; }
       if (!contactoEmail.trim()) { setError("El email de la persona de contacto del cliente es obligatorio."); setLoading(false); return; }
       if (!contactoTelefono.trim()) { setError("El teléfono de la persona de contacto del cliente es obligatorio."); setLoading(false); return; }
@@ -213,6 +216,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
         cliente_email: clienteEmail || null,
         cliente_telefono: clienteTelefono || null,
         cliente_web: clienteWeb || null,
+        cliente_cif: clienteCif || null,
         cliente_cnae: clienteCnae || null,
         es_nuevo_cliente: esNuevoCliente,
         contacto_nombre: contactoNombre || null,
@@ -318,6 +322,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
                 clienteEmail={clienteEmail} setClienteEmail={setClienteEmail}
                 clienteTelefono={clienteTelefono} setClienteTelefono={setClienteTelefono}
                 clienteWeb={clienteWeb} setClienteWeb={setClienteWeb}
+                clienteCif={clienteCif} setClienteCif={setClienteCif}
                 clienteCnae={clienteCnae} setClienteCnae={setClienteCnae}
                 clienteSeleccionado={clienteSeleccionado}
                 esNuevoCliente={esNuevoCliente} setEsNuevoCliente={setEsNuevoCliente}
@@ -401,6 +406,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
                 clienteEmail={clienteEmail} setClienteEmail={setClienteEmail}
                 clienteTelefono={clienteTelefono} setClienteTelefono={setClienteTelefono}
                 clienteWeb={clienteWeb} setClienteWeb={setClienteWeb}
+                clienteCif={clienteCif} setClienteCif={setClienteCif}
                 clienteCnae={clienteCnae} setClienteCnae={setClienteCnae}
                 clienteSeleccionado={clienteSeleccionado}
                 esNuevoCliente={esNuevoCliente} setEsNuevoCliente={setEsNuevoCliente}
@@ -562,7 +568,7 @@ function SearchableField({ value, onChange, onSelect, onNew, placeholder, search
 }
 
 function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClienteEmail, clienteTelefono, setClienteTelefono,
-  clienteWeb, setClienteWeb, clienteCnae, setClienteCnae, clienteSeleccionado, esNuevoCliente, setEsNuevoCliente,
+  clienteWeb, setClienteWeb, clienteCif, setClienteCif, clienteCnae, setClienteCnae, clienteSeleccionado, esNuevoCliente, setEsNuevoCliente,
   clienteMissingData, onSelect, onClear, contactoNombre, setContactoNombre, contactoPuesto, setContactoPuesto,
   contactoEmail, setContactoEmail, contactoTelefono, setContactoTelefono, disabled, inp, labelCls,
 }: any) {
@@ -604,8 +610,12 @@ function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClie
                   <input type="email" value={clienteEmail} onChange={e => setClienteEmail(e.target.value)} required className={inp} placeholder="info@empresa.es" />
                 </div>
                 <div>
-                  <label className={labelCls}>CNAE *</label>
-                  <input value={clienteCnae} onChange={e => setClienteCnae(e.target.value)} required className={inp} placeholder="4711" />
+                  <label className={labelCls}>CIF *</label>
+                  <input value={clienteCif} onChange={e => setClienteCif(e.target.value)} required className={inp} placeholder="B12345678" />
+                </div>
+                <div>
+                  <label className={labelCls}>CNAE</label>
+                  <input value={clienteCnae} onChange={e => setClienteCnae(e.target.value)} className={inp} placeholder="4711" />
                 </div>
                 <div>
                   <label className={labelCls}>Web</label>

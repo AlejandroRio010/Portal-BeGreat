@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
     cliente_email,
     cliente_telefono,
     cliente_web,
+    cliente_cif,
     cliente_cnae,
     contacto_nombre,
     contacto_puesto,
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
         email: cliente_email || null,
         telefono: cliente_telefono || null,
         web: cliente_web || null,
+        cif: cliente_cif || null,
         cnae: cliente_cnae || null,
         codigo: clientCodigo,
       })
