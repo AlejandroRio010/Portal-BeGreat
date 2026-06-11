@@ -13,7 +13,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   const body = await req.json();
   const { nombre, email, telefono, cif, web, razon_social, num_trabajadores, activo,
-          puede_editar_ops, puede_ver_entidades, puede_publicar_sin_validar } = body;
+          puede_editar_ops, puede_ver_entidades, puede_publicar_sin_validar, nivel_entidades } = body;
 
   const updateData: Record<string, unknown> = {};
 
@@ -21,6 +21,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (puede_editar_ops !== undefined) updateData.puede_editar_ops = puede_editar_ops;
   if (puede_ver_entidades !== undefined) updateData.puede_ver_entidades = puede_ver_entidades;
   if (puede_publicar_sin_validar !== undefined) updateData.puede_publicar_sin_validar = puede_publicar_sin_validar;
+  if (nivel_entidades !== undefined) updateData.nivel_entidades = Number(nivel_entidades);
 
   // Full profile update
   if (nombre !== undefined) {

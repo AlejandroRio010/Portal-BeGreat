@@ -13,12 +13,13 @@ export default async function PortalEntidadesPage() {
 
   const userId = session.user!.id as string;
   const [colab] = await db
-    .select({ puede_ver_entidades: collaborators.puede_ver_entidades })
+    .select({ nivel_entidades: collaborators.nivel_entidades })
     .from(collaborators)
     .where(eq(collaborators.id, userId))
     .limit(1);
 
-  if (!colab?.puede_ver_entidades) notFound();
+  const nivel = colab?.nivel_entidades ?? 4;
+  if (nivel > 2) notFound();
 
   const entidades = await db
     .select()

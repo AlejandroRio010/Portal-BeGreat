@@ -24,8 +24,8 @@ export default async function PortalOficinaFichaPage({ params }: { params: Promi
   if (!session) redirect("/login");
 
   const userId = session.user!.id as string;
-  const [colab] = await db.select({ puede_ver_entidades: collaborators.puede_ver_entidades }).from(collaborators).where(eq(collaborators.id, userId)).limit(1);
-  if (!colab?.puede_ver_entidades) notFound();
+  const [colab] = await db.select({ nivel_entidades: collaborators.nivel_entidades }).from(collaborators).where(eq(collaborators.id, userId)).limit(1);
+  if ((colab?.nivel_entidades ?? 4) > 1) notFound();
 
   const [oficina] = await db.select().from(entityOffices).where(eq(entityOffices.id, oficineId)).limit(1);
   if (!oficina) notFound();

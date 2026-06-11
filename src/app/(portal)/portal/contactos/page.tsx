@@ -26,9 +26,9 @@ export default async function PortalContactosPage() {
   if (!session) redirect("/login");
   const userId = session.user!.id as string;
 
-  const [colab] = await db.select({ puede_ver_entidades: collaborators.puede_ver_entidades })
+  const [colab] = await db.select({ nivel_entidades: collaborators.nivel_entidades })
     .from(collaborators).where(eq(collaborators.id, userId)).limit(1);
-  const puedeVerEntidades = colab?.puede_ver_entidades ?? false;
+  const nivelEntidades = colab?.nivel_entidades ?? 4;
 
   const myClients = await db.select({ id: clients.id, nombre: clients.nombre })
     .from(clients).where(eq(clients.collaborator_id, userId));
@@ -73,7 +73,7 @@ export default async function PortalContactosPage() {
     });
   }
 
-  if (puedeVerEntidades) {
+  if (nivelEntidades === 1) {
     const [entContacts, officeContacts] = await Promise.all([
       db.select({
         id: entityContacts.id,
@@ -133,7 +133,7 @@ export default async function PortalContactosPage() {
 
   all.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
 
-  const tabs = puedeVerEntidades
+  const tabs = nivelEntidades === 1
     ? undefined
     : (["todos", "cliente", "proveedor"] as const);
 

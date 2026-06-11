@@ -14,9 +14,9 @@ export default async function PortalContactoEntidadPage({ params }: { params: Pr
   if (!session) redirect("/login");
   const userId = session.user!.id as string;
 
-  const [colab] = await db.select({ puede_ver_entidades: collaborators.puede_ver_entidades })
+  const [colab] = await db.select({ nivel_entidades: collaborators.nivel_entidades })
     .from(collaborators).where(eq(collaborators.id, userId)).limit(1);
-  if (!colab?.puede_ver_entidades) notFound();
+  if ((colab?.nivel_entidades ?? 4) > 1) notFound();
 
   const [entity] = await db.select({ id: financialEntities.id, nombre: financialEntities.nombre })
     .from(financialEntities).where(eq(financialEntities.id, entityId)).limit(1);

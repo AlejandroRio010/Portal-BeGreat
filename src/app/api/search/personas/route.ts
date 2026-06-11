@@ -34,10 +34,10 @@ export async function GET(req: NextRequest) {
     .limit(5);
   results.push(...myContacts);
 
-  const [colab] = await db.select({ puede_ver_entidades: collaborators.puede_ver_entidades })
+  const [colab] = await db.select({ nivel_entidades: collaborators.nivel_entidades })
     .from(collaborators).where(eq(collaborators.id, userId)).limit(1);
 
-  if (colab?.puede_ver_entidades) {
+  if ((colab?.nivel_entidades ?? 4) === 1) {
     const [ec, eoc] = await Promise.all([
       db.select({ nombre: entityContacts.nombre, rol: entityContacts.rol, email: entityContacts.email, telefono: entityContacts.telefono, linkedin: entityContacts.linkedin })
         .from(entityContacts).where(ilike(entityContacts.nombre, pattern)).limit(5),

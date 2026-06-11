@@ -33,7 +33,7 @@ export default async function PortalHomePage({
   const userId = session!.user!.id as string;
 
   const [colab] = await db
-    .select({ nombre: collaborators.nombre, logo_url: collaborators.logo_url, identificador: collaborators.identificador, puede_ver_entidades: collaborators.puede_ver_entidades })
+    .select({ nombre: collaborators.nombre, logo_url: collaborators.logo_url, identificador: collaborators.identificador, nivel_entidades: collaborators.nivel_entidades })
     .from(collaborators)
     .where(eq(collaborators.id, userId))
     .limit(1);
@@ -208,7 +208,7 @@ export default async function PortalHomePage({
       <div className="grid grid-cols-4 gap-3 mb-6">
         {[
           ...baseTiles.filter(t => t.href !== "/portal/entidades"),
-          ...(colab?.puede_ver_entidades ? [{ href: "/portal/entidades", label: "Entidades financieras", sub: "Bancos y alternativas" }] : []),
+          ...((colab?.nivel_entidades ?? 4) <= 2 ? [{ href: "/portal/entidades", label: "Entidades financieras", sub: "Bancos y alternativas" }] : []),
         ].map((tile) => (
           <Link
             key={tile.href}

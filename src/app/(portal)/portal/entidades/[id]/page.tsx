@@ -25,16 +25,21 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
 
   const userId = session.user!.id as string;
   const [colab] = await db
-    .select({ puede_ver_entidades: collaborators.puede_ver_entidades })
+    .select({ nivel_entidades: collaborators.nivel_entidades })
     .from(collaborators).where(eq(collaborators.id, userId)).limit(1);
-  if (!colab?.puede_ver_entidades) notFound();
+  const nivel = colab?.nivel_entidades ?? 4;
+  if (nivel > 2) notFound();
 
   const [entidad] = await db.select().from(financialEntities).where(eq(financialEntities.id, id)).limit(1);
   if (!entidad) notFound();
 
   const oficinas = await db.select().from(entityOffices).where(eq(entityOffices.entity_id, id)).orderBy(entityOffices.nombre);
-  const contactos = await db.select().from(entityContacts).where(eq(entityContacts.entity_id, id)).orderBy(entityContacts.created_at);
-  const notes = await db.select().from(entityNotes).where(eq(entityNotes.entity_id, id)).orderBy(entityNotes.created_at);
+  const contactos = nivel === 1
+    ? await db.select().from(entityContacts).where(eq(entityContacts.entity_id, id)).orderBy(entityContacts.created_at)
+    : [];
+  const notes = nivel === 1
+    ? await db.select().from(entityNotes).where(eq(entityNotes.entity_id, id)).orderBy(entityNotes.created_at)
+    : [];
 
   const inicial = entidad.nombre.charAt(0).toUpperCase();
 
@@ -97,7 +102,7 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
             </div>
           </div>
 
-          {(entidad.persona_contacto || entidad.contacto_email || entidad.contacto_telefono) && (
+          {nivel === 1 && (entidad.persona_contacto || entidad.contacto_email || entidad.contacto_telefono) && (
             <div className="bg-white border border-gray-200">
               <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
                 <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Contacto principal</h3>
@@ -115,17 +120,18 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
             </div>
           )}
 
-          {/* Contactos de la entidad — mismo panel que admin (añadir con buscador) */}
-          <ContactosPanel contactos={contactos} entityId={id} />
+          {nivel === 1 && <ContactosPanel contactos={contactos} entityId={id} />}
         </div>
 
         {/* Col 2-3: Notas + Oficinas */}
         <div className="col-span-2 flex flex-col gap-6">
-          <NotesSection
-            notes={notes}
-            apiUrl={`/api/admin/entidades/${id}/notes`}
-            currentUserId={userId}
-          />
+          {nivel === 1 && (
+            <NotesSection
+              notes={notes}
+              apiUrl={`/api/admin/entidades/${id}/notes`}
+              currentUserId={userId}
+            />
+          )}
 
           {/* Oficinas */}
           <div>
@@ -136,7 +142,7 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
 
             {oficinas.length > 0 ? (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                {oficinas.map(o => (
+                {oficinas.map(o => nivel === 1 ? (
                   <Link key={o.id} href={`/portal/entidades/${id}/oficinas/${o.id}`}
                     className="bg-white border border-gray-200 p-4 hover:border-[#2E1A47]/40 hover:shadow-md transition-all group">
                     <div className="flex items-start justify-between mb-2">
@@ -149,6 +155,16 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
                     {o.ciudad && <p className="text-xs text-gray-400">{o.ciudad}</p>}
                     {o.persona_contacto && <p className="text-xs text-gray-400 mt-0.5 truncate">{o.persona_contacto}</p>}
                   </Link>
+                ) : (
+                  <div key={o.id} className="bg-white border border-gray-200 p-4">
+                    <div className="mb-2">
+                      <div className="w-8 h-8 bg-[#EEEBF3] flex items-center justify-center text-[#2E1A47] text-sm font-bold">
+                        {o.nombre.charAt(0).toUpperCase()}
+                      </div>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-900 leading-tight mb-1">{o.nombre}</p>
+                    {o.ciudad && <p className="text-xs text-gray-400">{o.ciudad}</p>}
+                  </div>
                 ))}
               </div>
             ) : (

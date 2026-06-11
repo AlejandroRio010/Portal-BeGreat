@@ -10,6 +10,7 @@ interface SidebarProps {
   identificador: string;
   role: "admin" | "colaborador";
   puedeVerEntidades?: boolean;
+  nivelEntidades?: number;
 }
 
 const colaboradorNav = [
@@ -41,10 +42,11 @@ const adminNav = [
   { href: "/admin/configuracion", label: "Configuración",        exact: false },
 ];
 
-export default function Sidebar({ nombre, identificador, role, puedeVerEntidades }: SidebarProps) {
+export default function Sidebar({ nombre, identificador, role, puedeVerEntidades, nivelEntidades }: SidebarProps) {
   const pathname = usePathname();
   const baseNav = role === "admin" ? adminNav : colaboradorNav;
-  const nav = role === "colaborador" && puedeVerEntidades
+  const showEntidades = nivelEntidades !== undefined ? nivelEntidades <= 2 : puedeVerEntidades;
+  const nav = role === "colaborador" && showEntidades
     ? [...colaboradorNav.slice(0, -2), { href: "/portal/entidades", label: "Entidades financieras", exact: false }, ...colaboradorNav.slice(-2)]
     : baseNav;
 

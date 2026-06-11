@@ -8,6 +8,7 @@ import NuevaOficinaForm from "./NuevaOficinaForm";
 import EliminarEntidadBtn from "./EliminarEntidadBtn";
 import ContactosPanel from "./ContactosPanel";
 import NotesSection from "@/components/NotesSection";
+import NombreOcultoToggle from "./NombreOcultoToggle";
 
 const TIPO_LABEL: Record<string, string> = {
   banco: "Banco",
@@ -65,6 +66,11 @@ export default async function EntidadFichaPage({ params }: { params: Promise<{ i
           </span>
           <EliminarEntidadBtn entidadId={entidad.id} />
         </div>
+      </div>
+
+      {/* Nombre oculto toggle */}
+      <div className="mx-8 mb-4">
+        <NombreOcultoToggle entidadId={entidad.id} initialValue={entidad.nombre_oculto ?? false} />
       </div>
 
       <div className="mx-8 mb-6 grid grid-cols-3 gap-4 items-start">

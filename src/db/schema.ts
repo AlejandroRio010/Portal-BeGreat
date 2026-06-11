@@ -42,6 +42,7 @@ export const collaborators = pgTable("collaborators", {
   notas_internas: text("notas_internas"),
   puede_editar_ops: boolean("puede_editar_ops").notNull().default(false),
   puede_ver_entidades: boolean("puede_ver_entidades").notNull().default(false),
+  nivel_entidades: integer("nivel_entidades").notNull().default(4),
   puede_publicar_sin_validar: boolean("puede_publicar_sin_validar").notNull().default(false),
   codigo: text("codigo").unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
@@ -197,6 +198,8 @@ export const financialEntities = pgTable("financial_entities", {
   contacto_telefono: text("contacto_telefono"),
   notas: text("notas"),
   logo_url: text("logo_url"),
+  nombre_oculto: boolean("nombre_oculto").notNull().default(false),
+  created_by: uuid("created_by"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -221,6 +224,7 @@ export const entityContacts = pgTable("entity_contacts", {
   email: text("email"),
   telefono: text("telefono"),
   linkedin: text("linkedin"),
+  created_by: uuid("created_by"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -239,6 +243,7 @@ export const entityOffices = pgTable("entity_offices", {
   contacto_email: text("contacto_email"),
   contacto_telefono: text("contacto_telefono"),
   notas: text("notas"),
+  created_by: uuid("created_by"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 

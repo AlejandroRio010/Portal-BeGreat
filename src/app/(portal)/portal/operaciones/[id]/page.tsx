@@ -78,19 +78,20 @@ export default async function OperacionDetallePage({ params }: { params: Promise
   if (!op) notFound();
 
   const [colab] = await db
-    .select({ puede_editar_ops: collaborators.puede_editar_ops, puede_ver_entidades: collaborators.puede_ver_entidades, logo_url: collaborators.logo_url })
+    .select({ puede_editar_ops: collaborators.puede_editar_ops, nivel_entidades: collaborators.nivel_entidades, logo_url: collaborators.logo_url })
     .from(collaborators)
     .where(eq(collaborators.id, userId))
     .limit(1);
   const puedeEditar = colab?.puede_editar_ops ?? false;
-  const puedeVerEntidades = colab?.puede_ver_entidades ?? false;
+  const nivelEntidades = colab?.nivel_entidades ?? 4;
 
   // Buscar entidad financiera por nombre para hacer link
   const entidadRecord = op.entidad_financiera
-    ? await db.select({ id: financialEntities.id, nombre: financialEntities.nombre }).from(financialEntities)
+    ? await db.select({ id: financialEntities.id, nombre: financialEntities.nombre, nombre_oculto: financialEntities.nombre_oculto }).from(financialEntities)
         .where(eq(financialEntities.nombre, op.entidad_financiera)).limit(1).then(r => r[0] ?? null)
     : null;
   const entidadLink = entidadRecord?.id ?? null;
+  const entidadOculta = nivelEntidades === 4 && entidadRecord?.nombre_oculto;
 
   // Si es renovación, buscar op original
   const opOriginal = op.operacion_original_id
@@ -217,7 +218,9 @@ export default async function OperacionDetallePage({ params }: { params: Promise
         </div>
         <div className="bg-white border border-gray-200 p-5">
           <p className="text-gray-400 text-xs uppercase tracking-widest mb-2 font-semibold">Entidad financiera</p>
-          {entidadLink ? (
+          {entidadOculta ? (
+            <p className="text-lg font-bold text-gray-400 italic">Confidencial</p>
+          ) : nivelEntidades <= 2 && entidadLink ? (
             <Link href={`/portal/entidades/${entidadLink}`} className="text-lg font-bold text-[#2E1A47] hover:underline">
               {op.entidad_financiera} →
             </Link>
@@ -356,25 +359,30 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                     </div>
                   )}
 
-                  {/* Entidad financiera */}
-                  {op.entidad_financiera && (
+                  {/* Entidad financiera — nivel 1-2: link, nivel 3: text, nivel 4: text o oculto */}
+                  {op.entidad_financiera && !entidadOculta && (
                     <div>
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Entidad financiera</dt>
                       <dd className="text-sm text-gray-800 font-medium">
-                        {puedeVerEntidades && entidadRecord
+                        {nivelEntidades <= 2 && entidadRecord
                           ? <Link href={`/portal/entidades/${entidadRecord.id}`} className="text-[#2E1A47] hover:underline font-semibold">{op.entidad_financiera} →</Link>
                           : op.entidad_financiera}
                       </dd>
                     </div>
                   )}
-                  {/* Entidad destino (broker → banco final) — solo con permiso */}
-                  {puedeVerEntidades && op.entidad_destino && (
+                  {entidadOculta && (
+                    <div>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Entidad financiera</dt>
+                      <dd className="text-sm text-gray-400 italic">Confidencial</dd>
+                    </div>
+                  )}
+                  {nivelEntidades <= 3 && op.entidad_destino && (
                     <div>
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Entidad destino (banco final)</dt>
                       <dd className="text-sm text-gray-800 font-medium">{op.entidad_destino}</dd>
                     </div>
                   )}
-                  {puedeVerEntidades && opOffice && (
+                  {nivelEntidades <= 3 && opOffice && (
                     <div>
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Oficina que la estudia</dt>
                       <dd className="text-sm text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</dd>
@@ -382,7 +390,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                       {opOffice.telefono && <dd className="text-xs text-gray-500">{opOffice.telefono}</dd>}
                     </div>
                   )}
-                  {puedeVerEntidades && officeContacts.map(c => (
+                  {nivelEntidades === 1 && officeContacts.map(c => (
                     <div key={c.id}>
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Persona de contacto en la entidad</dt>
                       <dd className="text-sm text-gray-800 font-semibold">{c.nombre}</dd>
