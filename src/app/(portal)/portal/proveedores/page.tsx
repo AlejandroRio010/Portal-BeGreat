@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function PortalProveedoresPage() {
   const session = await auth();
   if (!session) redirect("/login");
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
 
   const proveedores = await db
     .select({

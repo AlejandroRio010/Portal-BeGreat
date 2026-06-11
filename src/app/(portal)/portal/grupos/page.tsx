@@ -13,7 +13,7 @@ const FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia reali
 export default async function PortalGruposPage() {
   const session = await auth();
   if (!session) redirect("/login");
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
 
   // Clientes del colaborador que pertenecen a un grupo
   const clientesConGrupo = await db

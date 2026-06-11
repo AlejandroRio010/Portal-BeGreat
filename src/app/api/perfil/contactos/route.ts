@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
   const { nombre, email, telefono, rol } = await req.json();
 
   if (!nombre) return NextResponse.json({ error: "Nombre requerido" }, { status: 400 });
@@ -25,7 +25,7 @@ export async function DELETE(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
   const { id } = await req.json();
 
   await db

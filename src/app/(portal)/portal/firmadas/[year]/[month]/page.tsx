@@ -13,7 +13,7 @@ export default async function FirmadasMesPage({ params }: { params: Promise<{ ye
   const { year, month } = await params;
   const session = await auth();
   if (!session) redirect("/login");
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
 
   const y = parseInt(year);
   const m = parseInt(month); // 1-12

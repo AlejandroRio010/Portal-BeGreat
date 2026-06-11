@@ -8,7 +8,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
   const { id: grupoId } = await params;
   const { client_id } = await req.json();
 
@@ -29,7 +29,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
   const { client_id } = await req.json();
 
   // Solo puede quitar sus propios clientes

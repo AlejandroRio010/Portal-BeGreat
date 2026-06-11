@@ -8,7 +8,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
   const { id: clientId } = await params;
 
   // Verify client belongs to this collaborator

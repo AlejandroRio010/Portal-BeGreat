@@ -11,7 +11,7 @@ export default async function ContactoDetallePage({ params }: { params: Promise<
   const session = await auth();
   if (!session) redirect("/login");
 
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
 
   const [client] = await db.select({ id: clients.id, nombre: clients.nombre })
     .from(clients).where(and(eq(clients.id, clientId), eq(clients.collaborator_id, userId))).limit(1);

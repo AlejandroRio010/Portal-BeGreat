@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { passwordResetTokens, collaborators } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { passwordResetTokens, collaboratorUsers } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import crypto from "crypto";
 import { sendAccessInviteEmail, sendPasswordResetEmail } from "@/lib/email";
 
@@ -12,21 +12,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id: userId } = await params;
-  const { tipo, enviarEmail } = await req.json();
+  const { id: collaboratorId } = await params;
+  const { tipo, enviarEmail, userId } = await req.json();
 
-  const [colab] = await db
-    .select({ nombre: collaborators.nombre, email: collaborators.email })
-    .from(collaborators).where(eq(collaborators.id, userId)).limit(1);
+  // userId = collaborator_user id. Required.
+  if (!userId) {
+    return NextResponse.json({ error: "userId requerido" }, { status: 400 });
+  }
 
-  if (!colab) return NextResponse.json({ error: "Colaborador no encontrado" }, { status: 404 });
+  const [cu] = await db
+    .select({ id: collaboratorUsers.id, nombre: collaboratorUsers.nombre, email: collaboratorUsers.email })
+    .from(collaboratorUsers)
+    .where(and(eq(collaboratorUsers.id, userId), eq(collaboratorUsers.collaborator_id, collaboratorId)))
+    .limit(1);
+
+  if (!cu) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
 
   const token = crypto.randomBytes(32).toString("hex");
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
   const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
   await db.insert(passwordResetTokens).values({
-    user_id: userId,
+    user_id: cu.id,
     token_hash: tokenHash,
     expires_at: expiresAt,
   });
@@ -35,12 +42,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const url = `${base}/reset-password?token=${token}`;
 
   let emailSent = false;
-  if (enviarEmail && colab.email) {
+  if (enviarEmail && cu.email) {
     try {
       if (tipo === "invitacion") {
-        await sendAccessInviteEmail(colab.email, colab.nombre, url);
+        await sendAccessInviteEmail(cu.email, cu.nombre, url);
       } else {
-        await sendPasswordResetEmail(colab.email, colab.nombre, url);
+        await sendPasswordResetEmail(cu.email, cu.nombre, url);
       }
       emailSent = true;
     } catch (e) {

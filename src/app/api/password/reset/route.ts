@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { collaborators, passwordResetTokens } from "@/db/schema";
+import { collaborators, collaboratorUsers, passwordResetTokens } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
@@ -31,7 +31,20 @@ export async function POST(req: NextRequest) {
   }
 
   const password_hash = await bcrypt.hash(password, 12);
-  await db.update(collaborators).set({ password_hash }).where(eq(collaborators.id, record.user_id));
+
+  // Try collaborator_users first, then collaborators (admin)
+  const [cu] = await db
+    .select({ id: collaboratorUsers.id })
+    .from(collaboratorUsers)
+    .where(eq(collaboratorUsers.id, record.user_id))
+    .limit(1);
+
+  if (cu) {
+    await db.update(collaboratorUsers).set({ password_hash }).where(eq(collaboratorUsers.id, record.user_id));
+  } else {
+    await db.update(collaborators).set({ password_hash }).where(eq(collaborators.id, record.user_id));
+  }
+
   await db.update(passwordResetTokens).set({ used: true }).where(eq(passwordResetTokens.id, record.id));
 
   return NextResponse.json({ ok: true });

@@ -7,7 +7,7 @@ import { generateCodigoPRV } from "@/lib/codigos";
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
 
   const { nombre, email, telefono, web, persona_contacto, contacto_email, contacto_telefono } = await req.json();
   if (!nombre?.trim()) return NextResponse.json({ error: "Nombre obligatorio" }, { status: 400 });

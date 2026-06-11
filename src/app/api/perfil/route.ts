@@ -8,7 +8,7 @@ export async function PATCH(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
   const body = await req.json();
 
   const { nombre, telefono, cif, web, num_trabajadores, razon_social, logo_url } = body;

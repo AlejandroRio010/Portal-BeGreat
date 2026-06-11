@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function AltaOperacionPage() {
   const session = await auth();
   if (!session) redirect("/login");
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
 
   const [colab] = await db
     .select({ nivel_entidades: collaborators.nivel_entidades })

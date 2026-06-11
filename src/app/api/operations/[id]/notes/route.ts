@@ -12,7 +12,7 @@ export async function POST(
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
   const userRole = (session.user as any).role;
 
   // Verify the user has access to this operation
@@ -55,7 +55,7 @@ export async function PATCH(
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
   const userRole = (session.user as any).role;
   const { noteId, texto, pinned } = await req.json();
   if (!noteId) return NextResponse.json({ error: "Datos requeridos" }, { status: 400 });

@@ -9,7 +9,7 @@ export default async function PortalLayout({ children }: { children: React.React
   const session = await auth();
   if (!session || (session.user as any).role !== "colaborador") redirect("/login");
 
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
   // Fetch nombre desde BD para reflejar cambios de perfil sin necesidad de volver a iniciar sesión
   const [colab] = await db
     .select({ nombre: collaborators.nombre, identificador: collaborators.identificador, nivel_entidades: collaborators.nivel_entidades })

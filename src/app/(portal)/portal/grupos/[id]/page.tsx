@@ -16,7 +16,7 @@ export default async function PortalGrupoFichaPage({ params }: { params: Promise
   const { id } = await params;
   const session = await auth();
   if (!session) redirect("/login");
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
 
   const [grupo] = await db.select().from(clientGroups).where(eq(clientGroups.id, id)).limit(1);
   if (!grupo) notFound();

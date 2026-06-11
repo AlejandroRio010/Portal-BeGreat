@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
   const [colab] = await db
     .select({ nivel_entidades: collaborators.nivel_entidades })
     .from(collaborators).where(eq(collaborators.id, userId)).limit(1);

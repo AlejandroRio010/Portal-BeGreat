@@ -9,7 +9,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
   const role = (session.user as any).role;
   const nombre = (session.user as any).nombre ?? "Usuario";
 

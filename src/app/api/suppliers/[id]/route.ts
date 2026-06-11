@@ -7,7 +7,7 @@ import { eq, and } from "drizzle-orm";
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
   const { id } = await params;
 
   // El proveedor debe pertenecer al colaborador

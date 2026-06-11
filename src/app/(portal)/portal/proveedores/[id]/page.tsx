@@ -24,7 +24,7 @@ export default async function PortalProveedorFichaPage({ params }: { params: Pro
   const { id } = await params;
   const session = await auth();
   if (!session) redirect("/login");
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
 
   const [prov] = await db.select().from(suppliers)
     .where(and(eq(suppliers.id, id), eq(suppliers.collaborator_id, userId))).limit(1);

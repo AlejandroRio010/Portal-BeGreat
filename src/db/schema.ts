@@ -48,10 +48,23 @@ export const collaborators = pgTable("collaborators", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── Collaborator users (login accounts per company) ─────────────────────────
+export const collaboratorUsers = pgTable("collaborator_users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  collaborator_id: uuid("collaborator_id")
+    .notNull()
+    .references(() => collaborators.id, { onDelete: "cascade" }),
+  nombre: text("nombre").notNull(),
+  email: text("email").notNull().unique(),
+  password_hash: text("password_hash").notNull(),
+  activo: boolean("activo").notNull().default(true),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Password reset tokens ────────────────────────────────────────────────────
 export const passwordResetTokens = pgTable("password_reset_tokens", {
   id: uuid("id").primaryKey().defaultRandom(),
-  user_id: uuid("user_id").notNull().references(() => collaborators.id, { onDelete: "cascade" }),
+  user_id: uuid("user_id").notNull(),
   token_hash: text("token_hash").notNull(),
   expires_at: timestamp("expires_at").notNull(),
   used: boolean("used").notNull().default(false),

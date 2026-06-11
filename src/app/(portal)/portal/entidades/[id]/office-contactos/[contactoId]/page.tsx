@@ -12,7 +12,7 @@ export default async function PortalOfficeContactoPage({ params }: { params: Pro
   const { id: entityId, contactoId } = await params;
   const session = await auth();
   if (!session) redirect("/login");
-  const userId = session.user!.id as string;
+  const userId = (session.user as any).collaboratorId as string;
 
   const [colab] = await db.select({ nivel_entidades: collaborators.nivel_entidades })
     .from(collaborators).where(eq(collaborators.id, userId)).limit(1);
