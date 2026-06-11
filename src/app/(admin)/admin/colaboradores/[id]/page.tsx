@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import ColaboradorEditForm from "./ColaboradorEditForm";
 import PermisosForm from "./PermisosForm";
+import AccesoPanel from "./AccesoPanel";
 import NotesSection from "@/components/NotesSection";
 import { fmtEur } from "@/lib/format";
 
@@ -183,6 +184,9 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
               }} />
             </div>
           </div>
+
+          {/* Acceso al portal */}
+          <AccesoPanel colaboradorId={colab.id} nombre={colab.nombre} activo={colab.activo} />
 
           {/* Personas de contacto */}
           <div className="bg-white border border-gray-200">
