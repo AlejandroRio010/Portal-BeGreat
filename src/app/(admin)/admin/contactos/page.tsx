@@ -15,6 +15,7 @@ interface ContactoUnificado {
   email: string | null;
   telefono: string | null;
   linkedin: string | null;
+  oficina: string | null;
   tipo: "cliente" | "entidad" | "proveedor";
   href: string;
 }
@@ -51,6 +52,8 @@ export default async function AdminContactosPage() {
       telefono: entityOfficeContacts.telefono,
       linkedin: entityOfficeContacts.linkedin,
       officeId: entityOffices.id,
+      officeNombre: entityOffices.nombre,
+      officeCiudad: entityOffices.ciudad,
       entityId: financialEntities.id,
       entityNombre: financialEntities.nombre,
     }).from(entityOfficeContacts)
@@ -78,6 +81,7 @@ export default async function AdminContactosPage() {
       email: c.email,
       telefono: c.telefono,
       linkedin: c.linkedin,
+      oficina: null,
       tipo: "cliente",
       href: `/admin/clientes/${c.clientId}/contactos/${c.id}`,
     });
@@ -93,12 +97,14 @@ export default async function AdminContactosPage() {
       email: c.email,
       telefono: c.telefono,
       linkedin: c.linkedin,
+      oficina: null,
       tipo: "entidad",
       href: `/admin/entidades/${c.entityId}/contactos/${c.id}`,
     });
   }
 
   for (const c of officeContacts) {
+    const ofi = [c.officeNombre, c.officeCiudad].filter(Boolean).join(" — ");
     all.push({
       id: c.id,
       nombre: c.nombre,
@@ -108,8 +114,9 @@ export default async function AdminContactosPage() {
       email: c.email,
       telefono: c.telefono,
       linkedin: c.linkedin,
+      oficina: ofi || null,
       tipo: "entidad",
-      href: `/admin/entidades/${c.entityId}/contactos/office-${c.id}`,
+      href: `/admin/entidades/${c.entityId}/office-contactos/${c.id}`,
     });
   }
 
@@ -124,6 +131,7 @@ export default async function AdminContactosPage() {
       email: s.contacto_email,
       telefono: s.contacto_telefono,
       linkedin: null,
+      oficina: null,
       tipo: "proveedor",
       href: `/admin/proveedores/${s.id}`,
     });

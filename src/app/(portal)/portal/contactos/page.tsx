@@ -16,6 +16,7 @@ interface ContactoUnificado {
   email: string | null;
   telefono: string | null;
   linkedin: string | null;
+  oficina: string | null;
   tipo: "cliente" | "entidad" | "proveedor";
   href: string;
 }
@@ -66,6 +67,7 @@ export default async function PortalContactosPage() {
       email: c.email,
       telefono: c.telefono,
       linkedin: null,
+      oficina: null,
       tipo: "cliente",
       href: `/portal/clientes/${c.clientId}/contactos/${c.id}`,
     });
@@ -93,6 +95,8 @@ export default async function PortalContactosPage() {
         linkedin: entityOfficeContacts.linkedin,
         entityId: financialEntities.id,
         entityNombre: financialEntities.nombre,
+        officeNombre: entityOffices.nombre,
+        officeCiudad: entityOffices.ciudad,
       }).from(entityOfficeContacts)
         .leftJoin(entityOffices, eq(entityOfficeContacts.office_id, entityOffices.id))
         .leftJoin(financialEntities, eq(entityOffices.entity_id, financialEntities.id)),
@@ -102,14 +106,17 @@ export default async function PortalContactosPage() {
       all.push({
         id: c.id, nombre: c.nombre, empresa: c.entityNombre ?? "—", empresaId: c.entityId ?? "",
         puesto: c.rol, email: c.email, telefono: c.telefono, linkedin: c.linkedin,
+        oficina: null,
         tipo: "entidad", href: `/portal/entidades/${c.entityId}/contactos/${c.id}`,
       });
     }
     for (const c of officeContacts) {
+      const ofi = [c.officeNombre, c.officeCiudad].filter(Boolean).join(" — ");
       all.push({
         id: c.id, nombre: c.nombre, empresa: c.entityNombre ?? "—", empresaId: c.entityId ?? "",
         puesto: c.rol, email: c.email, telefono: c.telefono, linkedin: c.linkedin,
-        tipo: "entidad", href: `/portal/entidades/${c.entityId}/contactos/office-${c.id}`,
+        oficina: ofi || null,
+        tipo: "entidad", href: `/portal/entidades/${c.entityId}/office-contactos/${c.id}`,
       });
     }
   }
@@ -119,6 +126,7 @@ export default async function PortalContactosPage() {
     all.push({
       id: `sup-${s.id}`, nombre: s.persona_contacto, empresa: s.nombre, empresaId: s.id,
       puesto: null, email: s.contacto_email, telefono: s.contacto_telefono, linkedin: null,
+      oficina: null,
       tipo: "proveedor", href: `/portal/proveedores/${s.id}`,
     });
   }

@@ -32,7 +32,7 @@ function ContactoRow({ c }: { c: Contacto; }) {
   return (
     <div className="border-l-2 border-[#EEEBF3] pl-4 py-3 flex items-start justify-between gap-4 group">
       <div className="flex-1 min-w-0">
-        <Link href={`/admin/entidades/${c.entityId}/oficinas/${c.officeId}/contactos/${c.id}`}
+        <Link href={`/admin/entidades/${c.entityId}/office-contactos/${c.id}`}
           className="text-sm font-semibold text-gray-800 hover:text-[#2E1A47] hover:underline">
           {c.nombre}
         </Link>
@@ -43,7 +43,8 @@ function ContactoRow({ c }: { c: Contacto; }) {
           {c.linkedin && <a href={c.linkedin} target="_blank" rel="noopener noreferrer" className="text-xs text-[#2E1A47] hover:underline">LinkedIn →</a>}
         </div>
       </div>
-      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <a href={`/admin/entidades/${c.entityId}/office-contactos/${c.id}`} className="text-[10px] text-[#2E1A47] font-semibold border border-[#2E1A47]/30 px-2 py-0.5 hover:bg-[#EEEBF3]">Ver →</a>
         {!confirm ? (
           <button onClick={() => setConfirm(true)} className="text-[10px] text-red-400 hover:text-red-600 font-semibold border border-red-200 px-2 py-0.5 hover:bg-red-50">Eliminar</button>
         ) : (

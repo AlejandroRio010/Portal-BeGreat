@@ -12,6 +12,7 @@ interface ContactoUnificado {
   email: string | null;
   telefono: string | null;
   linkedin: string | null;
+  oficina: string | null;
   tipo: "cliente" | "entidad" | "proveedor";
   href: string;
 }
@@ -95,7 +96,10 @@ export default function ContactosListClient({ contactos, role }: { contactos: Co
               className="grid grid-cols-[1fr_1fr_1fr_1fr_100px] gap-0 px-5 py-3 border-b border-gray-50 last:border-0 hover:bg-[#f8f7fb] transition-colors items-center"
             >
               <span className="text-sm font-semibold text-gray-800 truncate">{c.nombre}</span>
-              <span className="text-sm text-gray-600 truncate">{c.empresa}</span>
+              <div className="min-w-0">
+                <span className="text-sm text-gray-600 truncate block">{c.empresa}</span>
+                {c.oficina && <span className="text-[10px] text-gray-400 truncate block">{c.oficina}</span>}
+              </div>
               <span className="text-xs text-gray-500 truncate">{c.puesto ?? "—"}</span>
               <div className="flex flex-col gap-0.5 min-w-0">
                 {c.email && <span className="text-xs text-gray-500 truncate">{c.email}</span>}
