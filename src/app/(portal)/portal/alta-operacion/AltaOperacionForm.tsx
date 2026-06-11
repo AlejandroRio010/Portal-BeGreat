@@ -84,7 +84,6 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
     const missing: string[] = [];
     if (!c.email) missing.push("email");
     if (!c.cnae) missing.push("CNAE");
-    setClienteMissingData(missing);
 
     if (c.contacto_nombre) {
       setContactoNombre(c.contacto_nombre);
@@ -96,9 +95,9 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
       setContactoEmail("");
       setContactoTelefono("");
       setContactoPuesto("");
-      if (!missing.includes("persona de contacto")) missing.push("persona de contacto");
-      setClienteMissingData([...missing]);
+      missing.push("persona de contacto");
     }
+    setClienteMissingData(missing);
   }
 
   function fillProveedor(p: any) {
@@ -178,6 +177,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
     if (!clienteNombre.trim()) { setError("El nombre de la empresa cliente es obligatorio."); setLoading(false); return; }
     if (!data.importe) { setError("El importe (sin IVA) es obligatorio."); setLoading(false); return; }
     if (pipeline === "consultoria" && !producto) { setError("Selecciona un producto de financiación."); setLoading(false); return; }
+    if (pipeline === "consultoria" && producto === "Otro" && !data.producto_otro?.trim()) { setError("Describe qué producto necesita tu cliente."); setLoading(false); return; }
     if (pipeline === "renting" && !data.equipo_tipo) { setError("Selecciona el tipo de equipo."); setLoading(false); return; }
     if (pipeline === "renting" && !data.plazo_meses) { setError("Selecciona el plazo deseado."); setLoading(false); return; }
 
@@ -193,12 +193,15 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
       if (!proveedorEmail.trim()) { setError("El email del proveedor es obligatorio."); setLoading(false); return; }
     }
 
+    const productoFinal = producto === "Otro" ? (data.producto_otro?.trim() || "Otro") : producto;
+
     const res = await fetch("/api/operations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...data,
         pipeline_key: pipeline,
+        producto: productoFinal,
         renting_rol: "colaborador",
         es_renovacion: esRenovacion,
         operacion_original_id: renovSeleccionada?.id ?? null,
