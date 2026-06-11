@@ -70,6 +70,7 @@ interface Props {
   initialImporteFacturadoBegreat?: string | null;
   initialImporteFacturadoVisible?: boolean;
   initialEntidadDestino?: string | null;
+  initialEntidadVisible?: boolean;
   // entity/office lists
   allEntities: EntityRow[];
   allOffices: OfficeRow[];
@@ -110,6 +111,7 @@ export default function AdminOpForm({
   initialImporteFacturadoBegreat,
   initialImporteFacturadoVisible,
   initialEntidadDestino,
+  initialEntidadVisible = true,
   allEntities,
   allOffices,
   customFieldDefs = [],
@@ -169,6 +171,7 @@ export default function AdminOpForm({
   const [importeFacturadoBegreat, setImporteFacturadoBegreat] = useState(initialImporteFacturadoBegreat ?? "");
   const [importeFacturadoVisible, setImporteFacturadoVisible] = useState(initialImporteFacturadoVisible ?? false);
   const [entidadDestino, setEntidadDestino] = useState(initialEntidadDestino ?? "");
+  const [entidadVisible, setEntidadVisible] = useState(initialEntidadVisible);
   const [tieneAval, setTieneAval] = useState(!!initialTieneAval);
   const [avalTipo, setAvalTipo] = useState(initialAvalTipo ?? "persona_fisica");
   const [avalNombre, setAvalNombre] = useState(initialAvalNombre ?? "");
@@ -245,6 +248,7 @@ export default function AdminOpForm({
         es_renovacion: esRenovacion,
         operacion_original_id: esRenovacion ? (opOriginal?.id ?? null) : null,
         entidad_destino: entidadDestino || null,
+        entidad_visible: entidadVisible,
         importe_facturado_begreat: importeFacturadoBegreat || null,
         importe_facturado_visible: importeFacturadoVisible,
       });
@@ -545,6 +549,15 @@ export default function AdminOpForm({
                   </select>
                 )}
                 <p className="text-[10px] text-gray-400">Los colaboradores solo ven el nombre del banco, no la oficina.</p>
+                {selectedEntityId && allEntities.find(e => e.id === selectedEntityId)?.tipo !== "banco" && (
+                  <div className="flex items-center gap-2 mt-2 p-2 bg-amber-50 border border-amber-200">
+                    <input type="checkbox" id="entidadVisible" checked={entidadVisible} onChange={(e) => setEntidadVisible(e.target.checked)}
+                      className="w-4 h-4 accent-[#2E1A47]" />
+                    <label htmlFor="entidadVisible" className="text-xs text-gray-700 cursor-pointer">
+                      Nombre de entidad visible para el colaborador
+                    </label>
+                  </div>
+                )}
               </div>
 
               {/* Entidad destino (broker → banco final) */}

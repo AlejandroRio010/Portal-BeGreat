@@ -339,6 +339,10 @@ export const operations = pgTable("operations", {
   importe_facturado_visible: boolean("importe_facturado_visible").default(false),
   // Entidad destino (cuando un broker lleva la op a otro banco)
   entidad_destino: text("entidad_destino"),
+  // Visibilidad entidad para colaborador (bancos siempre visibles, alt/renting toggle)
+  entidad_visible: boolean("entidad_visible").default(true),
+  // Preferencia de entidad financiera (texto libre del colaborador nivel 3-4)
+  entidad_preferencia: text("entidad_preferencia"),
   // Necesidad del cliente
   necesidad: text("necesidad"),
   es_renovacion: boolean("es_renovacion").default(false),

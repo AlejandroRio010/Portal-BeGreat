@@ -6,6 +6,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import NotesSection from "@/components/NotesSection";
 import ContactosPanel from "@/app/(admin)/admin/entidades/[id]/ContactosPanel";
+import AddOfficeButton from "./AddOfficeButton";
 
 const TIPO_LABEL: Record<string, string> = {
   banco: "Banco",
@@ -37,7 +38,7 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
   const contactos = nivel === 1
     ? await db.select().from(entityContacts).where(eq(entityContacts.entity_id, id)).orderBy(entityContacts.created_at)
     : [];
-  const notes = nivel === 1
+  const notes = nivel <= 2
     ? await db.select().from(entityNotes).where(eq(entityNotes.entity_id, id)).orderBy(entityNotes.created_at)
     : [];
 
@@ -85,7 +86,10 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
               <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Datos generales</h3>
             </div>
             <div className="px-5 py-4 divide-y divide-gray-50">
-              {([["Email", entidad.email], ["Teléfono", entidad.telefono], ["Web", entidad.web], ["LinkedIn", entidad.linkedin]] as [string, string | null][]).map(([label, value]) =>
+              {(nivel === 1
+                ? [["Email", entidad.email], ["Teléfono", entidad.telefono], ["Web", entidad.web], ["LinkedIn", entidad.linkedin]]
+                : [["Web", entidad.web]]
+              ).map(([label, value]) =>
                 value ? (
                   <div key={label} className="py-2.5 flex flex-col gap-0.5">
                     <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">{label}</span>
@@ -125,11 +129,12 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
 
         {/* Col 2-3: Notas + Oficinas */}
         <div className="col-span-2 flex flex-col gap-6">
-          {nivel === 1 && (
+          {nivel <= 2 && (
             <NotesSection
               notes={notes}
               apiUrl={`/api/admin/entidades/${id}/notes`}
               currentUserId={userId}
+              readOnly={nivel === 2}
             />
           )}
 
@@ -137,7 +142,10 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-widest">Oficinas / Sucursales</h2>
-              <span className="text-xs text-gray-400">{oficinas.length} oficina{oficinas.length !== 1 ? "s" : ""}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-400">{oficinas.length} oficina{oficinas.length !== 1 ? "s" : ""}</span>
+                {nivel === 1 && <AddOfficeButton entityId={id} />}
+              </div>
             </div>
 
             {oficinas.length > 0 ? (

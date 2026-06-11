@@ -25,13 +25,84 @@ const TIPO_ACCENT: Record<string, string> = {
   renting:                "border-t-violet-500",
 };
 
-export default function PortalEntidadesClient({ entidades }: { entidades: Entidad[] }) {
+export default function PortalEntidadesClient({ entidades, nivel = 2 }: { entidades: Entidad[]; nivel?: number }) {
   const [tab, setTab] = useState<string>("banco");
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({ nombre: "", tipo: "banco", email: "", telefono: "", web: "", linkedin: "" });
+  const [creating, setCreating] = useState(false);
+
+  async function handleCreate() {
+    if (!formData.nombre.trim()) return;
+    setCreating(true);
+    try {
+      const res = await fetch("/api/portal/entidades", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (res.ok) {
+        window.location.reload();
+      }
+    } finally { setCreating(false); }
+  }
 
   const filtered = entidades.filter(e => e.tipo === tab);
 
   return (
     <div>
+      {nivel === 1 && (
+        <div className="mb-4">
+          {!showForm ? (
+            <button onClick={() => setShowForm(true)}
+              className="px-4 py-2 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] transition-colors">
+              + Nueva entidad
+            </button>
+          ) : (
+            <div className="bg-white border border-gray-200 p-5 space-y-3">
+              <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">Nueva entidad financiera</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">Nombre *</label>
+                  <input value={formData.nombre} onChange={e => setFormData(d => ({ ...d, nombre: e.target.value }))}
+                    className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">Tipo *</label>
+                  <select value={formData.tipo} onChange={e => setFormData(d => ({ ...d, tipo: e.target.value }))}
+                    className="w-full border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#2E1A47]">
+                    <option value="banco">Banco</option>
+                    <option value="alternativa_financiera">Alternativa financiera</option>
+                    <option value="renting">Renting</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">Email</label>
+                  <input value={formData.email} onChange={e => setFormData(d => ({ ...d, email: e.target.value }))}
+                    className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">Teléfono</label>
+                  <input value={formData.telefono} onChange={e => setFormData(d => ({ ...d, telefono: e.target.value }))}
+                    className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">Web</label>
+                  <input value={formData.web} onChange={e => setFormData(d => ({ ...d, web: e.target.value }))}
+                    className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={handleCreate} disabled={creating || !formData.nombre.trim()}
+                  className="px-4 py-2 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] disabled:opacity-50">
+                  {creating ? "Creando..." : "Crear entidad"}
+                </button>
+                <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 hover:bg-gray-50">Cancelar</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-0 mb-6 border-b border-gray-200">
         {TIPO_TABS.map(t => (

@@ -63,6 +63,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       aval_persona_contacto: operations.aval_persona_contacto,
       necesidad: operations.necesidad,
       entidad_destino: operations.entidad_destino,
+      entidad_visible: operations.entidad_visible,
       created_at: operations.created_at,
       client_id: operations.client_id,
       client_nombre: clients.nombre,
@@ -87,11 +88,14 @@ export default async function OperacionDetallePage({ params }: { params: Promise
 
   // Buscar entidad financiera por nombre para hacer link
   const entidadRecord = op.entidad_financiera
-    ? await db.select({ id: financialEntities.id, nombre: financialEntities.nombre, nombre_oculto: financialEntities.nombre_oculto }).from(financialEntities)
+    ? await db.select({ id: financialEntities.id, nombre: financialEntities.nombre, nombre_oculto: financialEntities.nombre_oculto, tipo: financialEntities.tipo }).from(financialEntities)
         .where(eq(financialEntities.nombre, op.entidad_financiera)).limit(1).then(r => r[0] ?? null)
     : null;
   const entidadLink = entidadRecord?.id ?? null;
   const entidadOculta = nivelEntidades === 4 && entidadRecord?.nombre_oculto;
+  // For non-bank entities (alternativa/renting), respect entidad_visible per operation
+  const esBanco = entidadRecord?.tipo === "banco";
+  const entidadOcultaPorVisibilidad = !esBanco && nivelEntidades >= 2 && op.entidad_visible === false;
 
   // Si es renovación, buscar op original
   const opOriginal = op.operacion_original_id
@@ -218,7 +222,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
         </div>
         <div className="bg-white border border-gray-200 p-5">
           <p className="text-gray-400 text-xs uppercase tracking-widest mb-2 font-semibold">Entidad financiera</p>
-          {entidadOculta ? (
+          {(entidadOculta || entidadOcultaPorVisibilidad) ? (
             <p className="text-lg font-bold text-gray-400 italic">Confidencial</p>
           ) : nivelEntidades <= 2 && entidadLink ? (
             <Link href={`/portal/entidades/${entidadLink}`} className="text-lg font-bold text-[#2E1A47] hover:underline">
@@ -360,7 +364,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                   )}
 
                   {/* Entidad financiera — nivel 1-2: link, nivel 3: text, nivel 4: text o oculto */}
-                  {op.entidad_financiera && !entidadOculta && (
+                  {op.entidad_financiera && !entidadOculta && !entidadOcultaPorVisibilidad && (
                     <div>
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Entidad financiera</dt>
                       <dd className="text-sm text-gray-800 font-medium">
@@ -370,7 +374,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                       </dd>
                     </div>
                   )}
-                  {entidadOculta && (
+                  {(entidadOculta || entidadOcultaPorVisibilidad) && (
                     <div>
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Entidad financiera</dt>
                       <dd className="text-sm text-gray-400 italic">Confidencial</dd>
@@ -386,8 +390,8 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                     <div>
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Oficina que la estudia</dt>
                       <dd className="text-sm text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</dd>
-                      {opOffice.email && <dd className="text-xs text-gray-500 mt-0.5">{opOffice.email}</dd>}
-                      {opOffice.telefono && <dd className="text-xs text-gray-500">{opOffice.telefono}</dd>}
+                      {nivelEntidades <= 2 && opOffice.email && <dd className="text-xs text-gray-500 mt-0.5">{opOffice.email}</dd>}
+                      {nivelEntidades <= 2 && opOffice.telefono && <dd className="text-xs text-gray-500">{opOffice.telefono}</dd>}
                     </div>
                   )}
                   {nivelEntidades === 1 && officeContacts.map(c => (

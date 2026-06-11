@@ -57,7 +57,7 @@ export default async function PortalEntidadesPage() {
         <h1 className="text-2xl font-bold text-gray-900">Entidades financieras</h1>
         <p className="text-sm text-gray-400 mt-1">{entidades.length} entidades registradas</p>
       </div>
-      <PortalEntidadesClient entidades={data} />
+      <PortalEntidadesClient entidades={data} nivel={nivel} />
     </div>
   );
 }

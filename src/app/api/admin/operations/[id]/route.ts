@@ -41,6 +41,7 @@ export async function PATCH(
     necesidad,
     modalidad_renting,
     entidad_destino,
+    entidad_visible,
     importe_facturado_begreat,
     importe_facturado_visible,
     tiene_aval,
@@ -90,6 +91,7 @@ export async function PATCH(
   if (necesidad !== undefined) updateData.necesidad = necesidad || null;
   if (modalidad_renting !== undefined) updateData.modalidad_renting = modalidad_renting || null;
   if (entidad_destino !== undefined) updateData.entidad_destino = entidad_destino || null;
+  if (typeof entidad_visible === "boolean") updateData.entidad_visible = entidad_visible;
   if (importe_facturado_begreat !== undefined) updateData.importe_facturado_begreat = importe_facturado_begreat || null;
   if (typeof importe_facturado_visible === "boolean") updateData.importe_facturado_visible = importe_facturado_visible;
   if (typeof tiene_aval === "boolean") {

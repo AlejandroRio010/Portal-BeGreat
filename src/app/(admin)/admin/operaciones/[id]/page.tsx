@@ -66,6 +66,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       importe_facturado_begreat: operations.importe_facturado_begreat,
       importe_facturado_visible: operations.importe_facturado_visible,
       entidad_destino: operations.entidad_destino,
+      entidad_visible: operations.entidad_visible,
       supplier_id: operations.supplier_id,
       codigo: operations.codigo,
       created_at: operations.created_at,
@@ -473,6 +474,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialImporteFacturadoBegreat={op.importe_facturado_begreat ?? null}
             initialImporteFacturadoVisible={op.importe_facturado_visible ?? false}
             initialEntidadDestino={op.entidad_destino ?? null}
+            initialEntidadVisible={op.entidad_visible ?? true}
             allEntities={allEntities}
             allOffices={allOffices}
             customFieldDefs={opCustomFields}

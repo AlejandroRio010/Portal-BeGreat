@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { operations, clients, suppliers, contacts, collaborators } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { generateCodigoCLI, generateCodigoPRV, generateCodigoOP } from "@/lib/codigos";
 
 export async function POST(req: NextRequest) {
@@ -14,13 +14,14 @@ export async function POST(req: NextRequest) {
 
   const {
     pipeline_key,
-    nombre,
     renting_rol,
     cliente_nombre,
     cliente_email,
     cliente_telefono,
     cliente_web,
+    cliente_cnae,
     contacto_nombre,
+    contacto_puesto,
     contacto_email,
     contacto_telefono,
     proveedor_nombre,
@@ -38,12 +39,24 @@ export async function POST(req: NextRequest) {
     descripcion,
     contacto_directo,
     es_renovacion,
-    operacion_original_codigo,
     operacion_original_id: operacion_original_id_body,
+    entidad_preferencia,
   } = body;
 
   if (!pipeline_key || !cliente_nombre) {
     return NextResponse.json({ error: "Faltan campos obligatorios" }, { status: 400 });
+  }
+  if (!importe) {
+    return NextResponse.json({ error: "El importe (sin IVA) es obligatorio" }, { status: 400 });
+  }
+  if (pipeline_key === "consultoria" && !producto) {
+    return NextResponse.json({ error: "Selecciona un producto de financiación" }, { status: 400 });
+  }
+  if (pipeline_key === "renting" && !equipo_tipo) {
+    return NextResponse.json({ error: "Selecciona el tipo de equipo" }, { status: 400 });
+  }
+  if (pipeline_key === "renting" && !plazo_meses) {
+    return NextResponse.json({ error: "Selecciona el plazo deseado" }, { status: 400 });
   }
 
   // Get or create client
@@ -66,13 +79,14 @@ export async function POST(req: NextRequest) {
         email: cliente_email || null,
         telefono: cliente_telefono || null,
         web: cliente_web || null,
+        cnae: cliente_cnae || null,
         codigo: clientCodigo,
       })
       .returning();
     clientId = newClient.id;
   }
 
-  // Añadir la persona de contacto al cliente (nuevo o existente) si no estaba ya — todo interconectado
+  // Add contact person to client if provided
   if (contacto_nombre && clientId) {
     const [yaExiste] = await db
       .select({ id: contacts.id })
@@ -85,6 +99,7 @@ export async function POST(req: NextRequest) {
         nombre: contacto_nombre,
         email: contacto_email || null,
         telefono: contacto_telefono || null,
+        rol: contacto_puesto || null,
       });
     }
   }
@@ -120,7 +135,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Comprobar si el colaborador puede publicar sin validar
+  // Check if collaborator can publish without validation
   const [colabPerms] = await db
     .select({ puede_publicar_sin_validar: collaborators.puede_publicar_sin_validar })
     .from(collaborators)
@@ -130,23 +145,24 @@ export async function POST(req: NextRequest) {
 
   const opCodigo = await generateCodigoOP(clientId);
 
-  // Resolver operacion_original_id (directo desde form o por código)
+  // Auto-generate operation name: "Empresa - OP N (Entidad)"
+  const [{ count: opCount }] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(operations)
+    .where(clientId ? eq(operations.client_id, clientId) : sql`client_id IS NULL`);
+  const opNum = Number(opCount) + 1;
+  const entidadPart = entidad_preferencia ? ` (${entidad_preferencia})` : "";
+  const autoNombre = `${cliente_nombre} - OP${String(opNum).padStart(2, "0")}${entidadPart}`;
+
+  // Resolve operacion_original_id
   let opOriginalId: string | null = operacion_original_id_body || null;
-  if (!opOriginalId && es_renovacion && operacion_original_codigo) {
-    const [opOriginal] = await db
-      .select({ id: operations.id })
-      .from(operations)
-      .where(eq(operations.codigo, operacion_original_codigo.trim().toUpperCase()))
-      .limit(1);
-    opOriginalId = opOriginal?.id ?? null;
-  }
 
   const [op] = await db
     .insert(operations)
     .values({
       collaborator_id: userId,
       pipeline_key,
-      nombre: nombre || null,
+      nombre: autoNombre,
       client_id: clientId,
       supplier_id: supplierId,
       producto: producto || null,
@@ -159,6 +175,7 @@ export async function POST(req: NextRequest) {
       contacto_directo: contacto_directo === "true",
       es_renovacion: es_renovacion === true,
       operacion_original_id: opOriginalId,
+      entidad_preferencia: entidad_preferencia || null,
       fase: "Pre-análisis",
       status: statusInicial,
       codigo: opCodigo,

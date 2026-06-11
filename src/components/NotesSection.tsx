@@ -19,6 +19,7 @@ interface Props {
   currentUserId?: string;
   isAdmin?: boolean;
   canPin?: boolean;
+  readOnly?: boolean;
 }
 
 // ─── Editor de texto enriquecido (negrita, listas) ───────────────────────────
@@ -173,7 +174,7 @@ function NoteItem({ note, apiUrl, canEdit, canPin }: { note: Note; apiUrl: strin
   );
 }
 
-export default function NotesSection({ notes, apiUrl, placeholder = "Añade una nota… (puedes usar negrita y listas)", currentUserId, isAdmin, canPin = false }: Props) {
+export default function NotesSection({ notes, apiUrl, placeholder = "Añade una nota… (puedes usar negrita y listas)", currentUserId, isAdmin, canPin = false, readOnly = false }: Props) {
   // Orden: fijadas primero; dentro de cada grupo, las más nuevas arriba (la primera escrita queda abajo)
   const ordenadas = [...notes].sort((a, b) => {
     if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
@@ -186,9 +187,11 @@ export default function NotesSection({ notes, apiUrl, placeholder = "Añade una 
         Notas e historial
       </p>
 
-      <div className="mb-5">
-        <AddNoteForm apiUrl={apiUrl} placeholder={placeholder} />
-      </div>
+      {!readOnly && (
+        <div className="mb-5">
+          <AddNoteForm apiUrl={apiUrl} placeholder={placeholder} />
+        </div>
+      )}
 
       <div className="space-y-2.5 max-h-[480px] overflow-y-auto">
         {ordenadas.length === 0 ? (
@@ -198,7 +201,7 @@ export default function NotesSection({ notes, apiUrl, placeholder = "Añade una 
           </div>
         ) : (
           ordenadas.map(n => {
-            const canEdit = isAdmin || (!!currentUserId && n.author_id === currentUserId);
+            const canEdit = readOnly ? false : (isAdmin || (!!currentUserId && n.author_id === currentUserId));
             return <NoteItem key={n.id} note={n} apiUrl={apiUrl} canEdit={canEdit} canPin={canPin} />;
           })
         )}
