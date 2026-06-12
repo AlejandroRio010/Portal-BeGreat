@@ -19,6 +19,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className="h-full">
       <body className="min-h-full">
         <SessionProviderWrapper>{children}</SessionProviderWrapper>
+        {process.env.NEXT_PUBLIC_GOOGLE_PLACES_KEY && (
+          <script
+            src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_KEY}&libraries=places`}
+            async
+            defer
+          />
+        )}
       </body>
     </html>
   );

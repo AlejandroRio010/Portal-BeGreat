@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import EmpresaSearchInput from "@/components/EmpresaSearchInput";
 
 const PRODUCTOS_CONSULTORIA = [
   "Póliza de crédito",
@@ -845,9 +846,22 @@ function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClie
                   className="text-xs text-gray-400 hover:text-red-500">✕ Cancelar</button>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Nombre *</label>
-                  <input value={clienteNombre} onChange={e => setClienteNombre(e.target.value)} required className={inp} placeholder="Empresa S.L." />
+                <div className="col-span-2">
+                  <EmpresaSearchInput
+                    value={clienteNombre}
+                    onChange={setClienteNombre}
+                    inp={inp}
+                    labelCls={labelCls}
+                    onSelect={(data) => {
+                      setClienteNombre(data.nombre);
+                      setClienteCif(data.cif);
+                      if (data.provincia) setClienteProvincia(data.provincia);
+                      if (data.cnae) setClienteCnae(data.cnae);
+                      if (data.telefono) setContactoTelefono(data.telefono);
+                      if (data.web) setClienteWeb(data.web);
+                    }}
+                    onCifDuplicate={() => {}}
+                  />
                 </div>
                 <div>
                   <label className={labelCls}>CIF *</label>
@@ -866,6 +880,10 @@ function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClie
                   <label className={labelCls}>CNAE</label>
                   <CnaeSearchInput value={clienteCnae} onChange={setClienteCnae} inp={inp}
                     placeholder="Buscar por código o actividad..." options={[]} isCnae />
+                </div>
+                <div>
+                  <label className={labelCls}>Teléfono</label>
+                  <input value={clienteTelefono} onChange={e => setClienteTelefono(e.target.value)} className={inp} placeholder="+34 600 000 000" />
                 </div>
                 <div>
                   <label className={labelCls}>Web</label>
