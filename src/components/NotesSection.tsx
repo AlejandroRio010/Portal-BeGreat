@@ -68,7 +68,7 @@ function RichEditor({ initialHtml, placeholder, editorId }: { initialHtml?: stri
         id={editorId}
         contentEditable
         data-placeholder={placeholder}
-        dangerouslySetInnerHTML={{ __html: initialHtml ?? "" }}
+        ref={(el) => { if (el && !el.dataset.ready) { el.dataset.ready = "1"; el.innerHTML = initialHtml ?? ""; } }}
         onKeyUp={updateActive}
         onMouseUp={updateActive}
         className="notes-editor min-h-[80px] px-3 py-2.5 text-sm text-gray-800 focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-300"
