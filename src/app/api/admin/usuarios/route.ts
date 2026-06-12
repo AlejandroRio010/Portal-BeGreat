@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { nombre, email, password, role, tipo_colaborador, nombre_empresa, razon_social, cif, telefono, web } = await req.json();
+  const { nombre, email, password, role, tipo_colaborador, nombre_comercial, razon_social, cif, telefono, web } = await req.json();
 
   if (!nombre?.trim() || !email?.trim() || !password || !role) {
     return NextResponse.json({ error: "Nombre, email, contraseña y rol son obligatorios" }, { status: 400 });
@@ -69,11 +69,13 @@ export async function POST(req: NextRequest) {
 
   // Colaborador: create company (collaborators) + user (collaborator_users)
   const isAutonomo = tipo_colaborador === "autonomo";
-  const companyName = isAutonomo ? nombre.trim() : (nombre_empresa?.trim() || nombre.trim());
 
-  if (!isAutonomo && !nombre_empresa?.trim()) {
-    return NextResponse.json({ error: "El nombre de la empresa es obligatorio" }, { status: 400 });
+  if (!isAutonomo && !razon_social?.trim()) {
+    return NextResponse.json({ error: "La razón social es obligatoria para empresas" }, { status: 400 });
   }
+
+  // nombre_comercial si existe, si no razón social, si no nombre de la persona
+  const companyName = nombre_comercial?.trim() || razon_social?.trim() || nombre.trim();
 
   // Create collaborator (company)
   const [newColab] = await db

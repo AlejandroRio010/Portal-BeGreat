@@ -281,7 +281,7 @@ function NuevoUsuarioForm({ onCreated }: { onCreated: (user: UserRow) => void })
       password: form.get("password"),
       role,
       tipo_colaborador: tipoColaborador,
-      nombre_empresa: tipoColaborador === "empresa" ? form.get("nombre_empresa") : null,
+      nombre_comercial: form.get("nombre_comercial") || null,
       razon_social: form.get("razon_social") || null,
       cif: form.get("cif") || null,
       telefono: form.get("telefono") || null,
@@ -373,22 +373,21 @@ function NuevoUsuarioForm({ onCreated }: { onCreated: (user: UserRow) => void })
 
             {tipoColaborador === "autonomo" && (
               <p className="text-xs text-gray-400 bg-gray-50 border border-gray-100 px-3 py-2">
-                El nombre de la persona se usará como nombre del colaborador.
+                Se usará el nombre de la persona como identificador del colaborador.
               </p>
             )}
 
-            {tipoColaborador === "empresa" && (
-              <div>
-                <label className={lbl}>Nombre de la empresa *</label>
-                <input name="nombre_empresa" required className={inp} placeholder="BirdCapital" />
-              </div>
-            )}
+            <div>
+              <label className={lbl}>Razón social {tipoColaborador === "empresa" ? "*" : ""}</label>
+              <input name="razon_social" required={tipoColaborador === "empresa"} className={inp} placeholder={tipoColaborador === "autonomo" ? "Nombre completo del autónomo" : "BirdCapital S.L."} />
+            </div>
+
+            <div>
+              <label className={lbl}>Nombre comercial <span className="text-gray-300 font-normal normal-case">(opcional — si se rellena, se usará como nombre visible)</span></label>
+              <input name="nombre_comercial" className={inp} placeholder="BirdCapital" />
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={lbl}>Razón social</label>
-                <input name="razon_social" className={inp} placeholder="Empresa S.L." />
-              </div>
               <div>
                 <label className={lbl}>CIF</label>
                 <input name="cif" className={inp} placeholder="B12345678" />

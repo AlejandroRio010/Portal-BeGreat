@@ -124,12 +124,12 @@ export default function PerfilForm({ colab }: { colab: any }) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className={lbl}>Nombre comercial *</label>
-            <input name="nombre" defaultValue={colab?.nombre ?? ""} required className={inp} placeholder="Tu empresa" />
+            <label className={lbl}>Razón social *</label>
+            <input name="razon_social" defaultValue={colab?.razon_social ?? colab?.nombre ?? ""} required className={inp} placeholder="Tu Empresa S.L." />
           </div>
           <div>
-            <label className={lbl}>Razón social</label>
-            <input name="razon_social" defaultValue={colab?.razon_social ?? ""} className={inp} placeholder="Tu Empresa S.L." />
+            <label className={lbl}>Nombre comercial <span className="text-gray-300 font-normal normal-case">(opcional)</span></label>
+            <input name="nombre_comercial" defaultValue={colab?.nombre !== colab?.razon_social ? (colab?.nombre ?? "") : ""} className={inp} placeholder="Nombre visible en la plataforma" />
           </div>
         </div>
 

@@ -22,10 +22,10 @@ export default function ColaboradorEditForm({ colab }: { colab: Colab }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
-    nombre: colab.nombre ?? "",
+    razon_social: colab.razon_social ?? colab.nombre ?? "",
+    nombre_comercial: colab.nombre !== colab.razon_social ? (colab.nombre ?? "") : "",
     email: colab.email ?? "",
     telefono: colab.telefono ?? "",
-    razon_social: colab.razon_social ?? "",
     cif: colab.cif ?? "",
     web: colab.web ?? "",
     num_trabajadores: colab.num_trabajadores ? String(colab.num_trabajadores) : "",
@@ -36,16 +36,23 @@ export default function ColaboradorEditForm({ colab }: { colab: Colab }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.nombre.trim() || !form.email.trim()) return;
+    if (!form.razon_social.trim()) return;
     setSaving(true);
     setError(null);
     try {
+      const nombre = form.nombre_comercial.trim() || form.razon_social.trim();
       const res = await fetch(`/api/admin/colaboradores/${colab.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
+          nombre,
+          email: form.email,
+          telefono: form.telefono || null,
+          razon_social: form.razon_social.trim() || null,
+          cif: form.cif || null,
+          web: form.web || null,
           num_trabajadores: form.num_trabajadores ? Number(form.num_trabajadores) : null,
+          activo: form.activo,
         }),
       });
       if (!res.ok) {
@@ -73,6 +80,9 @@ export default function ColaboradorEditForm({ colab }: { colab: Colab }) {
     );
   }
 
+  const lbl = "block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1";
+  const inp = "w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]";
+
   return (
     <div className="bg-white border border-gray-200">
       <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200 flex items-center justify-between">
@@ -81,42 +91,32 @@ export default function ColaboradorEditForm({ colab }: { colab: Colab }) {
       </div>
       <form onSubmit={handleSubmit} className="px-5 py-4 grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nombre <span className="text-red-500">*</span></label>
-          <input value={form.nombre} onChange={(e) => set("nombre", e.target.value)} required
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+          <label className={lbl}>Razón social <span className="text-red-500">*</span></label>
+          <input value={form.razon_social} onChange={(e) => set("razon_social", e.target.value)} required className={inp} />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Email <span className="text-red-500">*</span></label>
-          <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+          <label className={lbl}>Nombre comercial <span className="text-gray-300 font-normal normal-case">(opcional)</span></label>
+          <input value={form.nombre_comercial} onChange={(e) => set("nombre_comercial", e.target.value)} className={inp} placeholder="Nombre visible en la plataforma" />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Teléfono</label>
-          <input value={form.telefono} onChange={(e) => set("telefono", e.target.value)}
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+          <label className={lbl}>Email empresa</label>
+          <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className={inp} />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Web</label>
-          <input value={form.web} onChange={(e) => set("web", e.target.value)}
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" placeholder="https://" />
-        </div>
-        <div className="col-span-2 border-t border-gray-100 pt-3">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Datos de empresa</p>
+          <label className={lbl}>CIF</label>
+          <input value={form.cif} onChange={(e) => set("cif", e.target.value)} className={inp} />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Razón social</label>
-          <input value={form.razon_social} onChange={(e) => set("razon_social", e.target.value)}
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+          <label className={lbl}>Teléfono</label>
+          <input value={form.telefono} onChange={(e) => set("telefono", e.target.value)} className={inp} />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">CIF</label>
-          <input value={form.cif} onChange={(e) => set("cif", e.target.value)}
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+          <label className={lbl}>Web</label>
+          <input value={form.web} onChange={(e) => set("web", e.target.value)} className={inp} placeholder="https://" />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nº trabajadores</label>
-          <input type="number" value={form.num_trabajadores} onChange={(e) => set("num_trabajadores", e.target.value)}
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+          <label className={lbl}>Nº trabajadores</label>
+          <input type="number" value={form.num_trabajadores} onChange={(e) => set("num_trabajadores", e.target.value)} className={inp} />
         </div>
         <div className="flex items-center gap-3 self-end pb-2">
           <input type="checkbox" id="activo_check" checked={form.activo} onChange={(e) => set("activo", e.target.checked)}
@@ -132,7 +132,7 @@ export default function ColaboradorEditForm({ colab }: { colab: Colab }) {
             {saving ? "Guardando..." : "Guardar cambios"}
           </button>
         </div>
-        {saved && <p className="col-span-2 text-xs text-emerald-600 font-semibold text-center">Datos guardados ✓</p>}
+        {saved && <p className="col-span-2 text-xs text-emerald-600 font-semibold text-center">Datos guardados</p>}
       </form>
     </div>
   );

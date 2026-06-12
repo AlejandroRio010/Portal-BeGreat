@@ -11,7 +11,10 @@ export async function PATCH(req: NextRequest) {
   const userId = (session.user as any).collaboratorId as string;
   const body = await req.json();
 
-  const { nombre, telefono, cif, web, num_trabajadores, razon_social, logo_url } = body;
+  const { nombre_comercial, telefono, cif, web, num_trabajadores, razon_social, logo_url } = body;
+
+  // nombre = nombre_comercial si existe, si no razón social
+  const nombre = nombre_comercial?.trim() || razon_social?.trim() || undefined;
 
   await db
     .update(collaborators)

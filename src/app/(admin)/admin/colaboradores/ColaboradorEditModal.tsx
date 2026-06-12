@@ -31,13 +31,15 @@ export default function ColaboradorEditModal({ colab }: { colab: Colab }) {
     setLoading(true);
     setError("");
     const form = new FormData(e.currentTarget);
+    const nombreComercial = (form.get("nombre_comercial") as string)?.trim() || null;
+    const razonSocial = (form.get("razon_social") as string)?.trim() || null;
     const data = {
-      nombre: form.get("nombre"),
+      nombre: nombreComercial || razonSocial,
       email: form.get("email"),
       telefono: form.get("telefono") || null,
       cif: form.get("cif") || null,
       web: form.get("web") || null,
-      razon_social: form.get("razon_social") || null,
+      razon_social: razonSocial,
       num_trabajadores: form.get("num_trabajadores") ? Number(form.get("num_trabajadores")) : null,
       activo: form.get("activo") === "true",
     };
@@ -75,27 +77,25 @@ export default function ColaboradorEditModal({ colab }: { colab: Colab }) {
 
             <form onSubmit={handleSubmit}>
               <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
-                {/* Identificación */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className={lbl}>Nombre *</label>
-                    <input name="nombre" defaultValue={colab.nombre} required className={inp} />
+                    <label className={lbl}>Razón social *</label>
+                    <input name="razon_social" defaultValue={colab.razon_social ?? colab.nombre} required className={inp} placeholder="Empresa S.L." />
                   </div>
                   <div>
-                    <label className={lbl}>Email *</label>
-                    <input name="email" type="email" defaultValue={colab.email} required className={inp} />
-                    <p className="text-[10px] text-amber-600 mt-1">⚠ Cambia las credenciales de acceso</p>
+                    <label className={lbl}>Nombre comercial <span className="text-gray-300 font-normal normal-case">(opcional)</span></label>
+                    <input name="nombre_comercial" defaultValue={colab.nombre !== colab.razon_social ? colab.nombre : ""} className={inp} placeholder="Nombre visible" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className={lbl}>Razón social</label>
-                    <input name="razon_social" defaultValue={colab.razon_social ?? ""} className={inp} placeholder="Empresa S.L." />
-                  </div>
-                  <div>
                     <label className={lbl}>CIF</label>
                     <input name="cif" defaultValue={colab.cif ?? ""} className={inp} placeholder="B12345678" />
+                  </div>
+                  <div>
+                    <label className={lbl}>Email empresa</label>
+                    <input name="email" type="email" defaultValue={colab.email} className={inp} />
                   </div>
                 </div>
 
