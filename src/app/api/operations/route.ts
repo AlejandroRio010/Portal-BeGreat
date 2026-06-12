@@ -149,6 +149,13 @@ export async function POST(req: NextRequest) {
 
   const opCodigo = await generateCodigoOP(clientId);
 
+  // Resolve display name: prefer nombre_comercial over nombre
+  let displayName = cliente_nombre;
+  if (clientId) {
+    const [cli] = await db.select({ nombre: clients.nombre, nombre_comercial: clients.nombre_comercial }).from(clients).where(eq(clients.id, clientId)).limit(1);
+    if (cli) displayName = cli.nombre_comercial?.trim() || cli.nombre;
+  }
+
   // Auto-generate operation name: "Empresa - OP N (Entidad)"
   // Count ALL operations globally for clients with this name (across all collaborators)
   const [{ count: opCount }] = await db
@@ -158,7 +165,7 @@ export async function POST(req: NextRequest) {
     .where(eq(clients.nombre, cliente_nombre));
   const opNum = Number(opCount) + 1;
   const entidadPart = entidad_preferencia ? ` (${entidad_preferencia})` : "";
-  const autoNombre = `${cliente_nombre} - OP ${opNum}${entidadPart}`;
+  const autoNombre = `${displayName} - OP ${opNum}${entidadPart}`;
 
   // Resolve operacion_original_id
   let opOriginalId: string | null = operacion_original_id_body || null;
