@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "atlas",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "/Users/alejandro/Downloads", "-p", "5500", "--no-clipboard"],
+      "port": 5500
     }
   ]
 }

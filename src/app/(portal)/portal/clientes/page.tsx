@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ClientesPage() {
   const session = await auth();
-  const userId = session!.user!.id as string;
+  const userId = (session!.user as any).collaboratorId as string;
 
   const myClients = await db
     .select()

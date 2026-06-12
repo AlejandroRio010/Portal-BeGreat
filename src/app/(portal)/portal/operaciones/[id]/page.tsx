@@ -26,7 +26,7 @@ const FASE_COLOR: Record<string, { bg: string; text: string; border: string }> =
 export default async function OperacionDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
-  const userId = session!.user!.id as string;
+  const userId = (session!.user as any).collaboratorId as string;
 
   const [op] = await db
     .select({

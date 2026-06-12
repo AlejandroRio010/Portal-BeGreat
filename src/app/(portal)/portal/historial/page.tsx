@@ -15,7 +15,7 @@ export default async function HistorialPage({
 }) {
   const { tipo, estado, desde, hasta } = await searchParams;
   const session = await auth();
-  const userId = session!.user!.id as string;
+  const userId = (session!.user as any).collaboratorId as string;
 
   const allOps = await db
     .select({

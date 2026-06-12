@@ -14,7 +14,7 @@ const FASES_DEFAULT = [
 
 export default async function RentingPage() {
   const session = await auth();
-  const userId = session!.user!.id as string;
+  const userId = (session!.user as any).collaboratorId as string;
 
   const [pr] = await db.select().from(pipelines).where(eq(pipelines.key, "renting")).limit(1);
   const fases = (pr?.fases as string[]) ?? FASES_DEFAULT;

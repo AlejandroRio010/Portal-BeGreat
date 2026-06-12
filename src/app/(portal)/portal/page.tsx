@@ -30,7 +30,7 @@ export default async function PortalHomePage({
 }) {
   const sp = await searchParams;
   const session = await auth();
-  const userId = session!.user!.id as string;
+  const userId = (session!.user as any).collaboratorId as string;
 
   const [colab] = await db
     .select({ nombre: collaborators.nombre, logo_url: collaborators.logo_url, identificador: collaborators.identificador, nivel_entidades: collaborators.nivel_entidades })

@@ -14,7 +14,7 @@ const FASES_DEFAULT = [
 
 export default async function ConsultoriaPage() {
   const session = await auth();
-  const userId = session!.user!.id as string;
+  const userId = (session!.user as any).collaboratorId as string;
 
   const [pc] = await db.select().from(pipelines).where(eq(pipelines.key, "consultoria")).limit(1);
   const fases = (pc?.fases as string[]) ?? FASES_DEFAULT;

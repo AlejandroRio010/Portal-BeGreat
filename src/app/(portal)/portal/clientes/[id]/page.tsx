@@ -25,7 +25,7 @@ const STATUS_BADGE: Record<string, { bg: string; label: string }> = {
 export default async function ClienteDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
-  const userId = session!.user!.id as string;
+  const userId = (session!.user as any).collaboratorId as string;
 
   const [client] = await db
     .select({
