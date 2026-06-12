@@ -266,6 +266,8 @@ function NuevoUsuarioForm({ onCreated }: { onCreated: (user: UserRow) => void })
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [tipoColaborador, setTipoColaborador] = useState<"autonomo" | "empresa">("empresa");
+  const [role, setRole] = useState<"colaborador" | "admin">("colaborador");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -277,7 +279,9 @@ function NuevoUsuarioForm({ onCreated }: { onCreated: (user: UserRow) => void })
       nombre: form.get("nombre"),
       email: form.get("email"),
       password: form.get("password"),
-      role: form.get("role"),
+      role,
+      tipo_colaborador: tipoColaborador,
+      nombre_empresa: tipoColaborador === "empresa" ? form.get("nombre_empresa") : null,
       razon_social: form.get("razon_social") || null,
       cif: form.get("cif") || null,
       telefono: form.get("telefono") || null,
@@ -297,8 +301,9 @@ function NuevoUsuarioForm({ onCreated }: { onCreated: (user: UserRow) => void })
     } else {
       const newUser = await res.json();
       onCreated(newUser);
-      setSuccess(`Usuario ${newUser.nombre} creado. Identificador: ${newUser.identificador}`);
+      setSuccess(`${newUser.nombre} dado de alta. Identificador: ${newUser.identificador}`);
       (e.target as HTMLFormElement).reset();
+      setTipoColaborador("empresa");
     }
   }
 
@@ -308,18 +313,20 @@ function NuevoUsuarioForm({ onCreated }: { onCreated: (user: UserRow) => void })
   return (
     <div className="bg-white border border-gray-200">
       <div className="px-6 py-4 border-b border-gray-100">
-        <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">Dar de alta nuevo usuario</p>
-        <p className="text-xs text-gray-400 mt-0.5">El usuario podrá acceder inmediatamente con las credenciales que indiques</p>
+        <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">Dar de alta nuevo colaborador</p>
+        <p className="text-xs text-gray-400 mt-0.5">Se creará la empresa/autónomo y su primer usuario de acceso</p>
       </div>
       <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+        {/* Persona de contacto */}
+        <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Persona de contacto</p>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={lbl}>Nombre completo *</label>
-            <input name="nombre" required className={inp} placeholder="María García" />
+            <input name="nombre" required className={inp} placeholder="Josué Martínez" />
           </div>
           <div>
             <label className={lbl}>Email (login) *</label>
-            <input name="email" type="email" required className={inp} placeholder="maria@empresa.com" />
+            <input name="email" type="email" required className={inp} placeholder="josue@empresa.com" />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -334,41 +341,76 @@ function NuevoUsuarioForm({ onCreated }: { onCreated: (user: UserRow) => void })
           </div>
           <div>
             <label className={lbl}>Rol *</label>
-            <select name="role" defaultValue="colaborador" className={inp}>
+            <select value={role} onChange={(e) => setRole(e.target.value as any)} className={inp}>
               <option value="colaborador">Colaborador</option>
               <option value="admin">Admin (acceso total)</option>
             </select>
           </div>
         </div>
-        {/* Datos empresa (opcional) */}
-        <div className="border-t border-gray-100 pt-4">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Datos de empresa (opcional)</p>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={lbl}>Razón social</label>
-              <input name="razon_social" className={inp} placeholder="Empresa S.L." />
+
+        {/* Datos empresa / autónomo */}
+        {role === "colaborador" && (
+          <div className="border-t border-gray-100 pt-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Tipo de colaborador</p>
+              <div className="flex border border-gray-200 ml-2">
+                <button
+                  type="button"
+                  onClick={() => setTipoColaborador("autonomo")}
+                  className={`px-4 py-1.5 text-xs font-semibold transition-all ${tipoColaborador === "autonomo" ? "bg-[#2E1A47] text-white" : "text-gray-500 hover:bg-gray-50"}`}
+                >
+                  Autónomo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTipoColaborador("empresa")}
+                  className={`px-4 py-1.5 text-xs font-semibold border-l border-gray-200 transition-all ${tipoColaborador === "empresa" ? "bg-[#2E1A47] text-white" : "text-gray-500 hover:bg-gray-50"}`}
+                >
+                  Empresa
+                </button>
+              </div>
             </div>
-            <div>
-              <label className={lbl}>CIF</label>
-              <input name="cif" className={inp} placeholder="B12345678" />
+
+            {tipoColaborador === "autonomo" && (
+              <p className="text-xs text-gray-400 bg-gray-50 border border-gray-100 px-3 py-2">
+                El nombre de la persona se usará como nombre del colaborador.
+              </p>
+            )}
+
+            {tipoColaborador === "empresa" && (
+              <div>
+                <label className={lbl}>Nombre de la empresa *</label>
+                <input name="nombre_empresa" required className={inp} placeholder="BirdCapital" />
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={lbl}>Razón social</label>
+                <input name="razon_social" className={inp} placeholder="Empresa S.L." />
+              </div>
+              <div>
+                <label className={lbl}>CIF</label>
+                <input name="cif" className={inp} placeholder="B12345678" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={lbl}>Teléfono</label>
+                <input name="telefono" className={inp} placeholder="+34 600 000 000" />
+              </div>
+              <div>
+                <label className={lbl}>Web</label>
+                <input name="web" className={inp} placeholder="https://empresa.com" />
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div>
-              <label className={lbl}>Teléfono</label>
-              <input name="telefono" className={inp} placeholder="+34 600 000 000" />
-            </div>
-            <div>
-              <label className={lbl}>Web</label>
-              <input name="web" className={inp} placeholder="https://empresa.com" />
-            </div>
-          </div>
-        </div>
+        )}
 
         {error && <p className="text-xs text-red-600 font-semibold bg-red-50 border border-red-200 px-3 py-2">{error}</p>}
-        {success && <p className="text-xs text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 px-3 py-2">✓ {success}</p>}
+        {success && <p className="text-xs text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 px-3 py-2">{success}</p>}
         <button type="submit" disabled={loading} className="px-5 py-2.5 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50">
-          {loading ? "Creando..." : "Crear usuario"}
+          {loading ? "Creando..." : "Dar de alta"}
         </button>
       </form>
     </div>
