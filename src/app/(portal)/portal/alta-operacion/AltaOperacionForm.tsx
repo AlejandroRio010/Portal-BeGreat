@@ -346,17 +346,14 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
               </div>
             </Section>
 
-            {/* Entity preference — only for nivel 3-4 */}
-            {nivelEntidades >= 3 && (
-              <Section title="¿Dónde quieres presentar la operación?">
-                <div>
-                  <label className={labelCls}>Entidad financiera preferida</label>
-                  <input value={entidadPreferencia} onChange={e => setEntidadPreferencia(e.target.value)}
-                    className={inp} placeholder="Ej: Banco Santander, CaixaBank..." />
-                  <p className="text-xs text-gray-400 mt-1.5">Indica en qué entidad financiera te gustaría presentar esta operación.</p>
-                </div>
-              </Section>
-            )}
+            <Section title="¿Dónde quieres presentar la operación?">
+              <div>
+                <label className={labelCls}>Entidad financiera preferida</label>
+                <input value={entidadPreferencia} onChange={e => setEntidadPreferencia(e.target.value)}
+                  className={inp} placeholder="Ej: Banco Santander, CaixaBank..." />
+                <p className="text-xs text-gray-400 mt-1.5">Indica en qué entidad financiera te gustaría presentar esta operación.</p>
+              </div>
+            </Section>
           </>
         )}
 
@@ -442,16 +439,14 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
               />
             </Section>
 
-            {nivelEntidades >= 3 && (
-              <Section title="¿Dónde quieres presentar la operación?">
-                <div>
-                  <label className={labelCls}>Entidad financiera preferida</label>
-                  <input value={entidadPreferencia} onChange={e => setEntidadPreferencia(e.target.value)}
-                    className={inp} placeholder="Ej: Banco Santander, CaixaBank..." />
-                  <p className="text-xs text-gray-400 mt-1.5">Indica en qué entidad financiera te gustaría presentar esta operación.</p>
-                </div>
-              </Section>
-            )}
+            <Section title="¿Dónde quieres presentar la operación?">
+              <div>
+                <label className={labelCls}>Entidad financiera preferida</label>
+                <input value={entidadPreferencia} onChange={e => setEntidadPreferencia(e.target.value)}
+                  className={inp} placeholder="Ej: Banco Santander, CaixaBank..." />
+                <p className="text-xs text-gray-400 mt-1.5">Indica en qué entidad financiera te gustaría presentar esta operación.</p>
+              </div>
+            </Section>
           </>
         )}
 
