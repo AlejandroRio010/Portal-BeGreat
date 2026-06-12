@@ -67,6 +67,12 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
       comision_begreat: operations.comision_begreat,
       entidad_financiera: operations.entidad_financiera,
       created_at: operations.created_at,
+      tiene_aval: operations.tiene_aval,
+      aval_tipo: operations.aval_tipo,
+      aval_nombre: operations.aval_nombre,
+      aval_email: operations.aval_email,
+      aval_telefono: operations.aval_telefono,
+      aval_persona_contacto: operations.aval_persona_contacto,
     })
     .from(operations)
     .where(eq(operations.client_id, id))
@@ -271,6 +277,48 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
             </div>
           )}
           </div>
+
+          {/* Avalistas vinculados */}
+          {(() => {
+            const opsConAval = ops.filter(o => o.tiene_aval && o.aval_nombre);
+            // Deduplicate by aval_nombre
+            const avalistasMap = new Map<string, typeof opsConAval[0]>();
+            opsConAval.forEach(o => { if (!avalistasMap.has(o.aval_nombre!)) avalistasMap.set(o.aval_nombre!, o); });
+            const avalistas = Array.from(avalistasMap.values());
+            if (avalistas.length === 0) return null;
+            return (
+              <div className="bg-white border border-gray-200 p-5">
+                <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">
+                  Avalistas vinculados ({avalistas.length})
+                </p>
+                <div className="space-y-3">
+                  {avalistas.map((a, i) => (
+                    <div key={i} className="flex items-center justify-between bg-gray-50 border border-gray-100 px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
+                          a.aval_tipo === "empresa" ? "bg-[#2E1A47] text-white" : "bg-amber-100 text-amber-700"
+                        }`}>
+                          {a.aval_tipo === "empresa" ? "E" : "P"}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">{a.aval_nombre}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-gray-400 uppercase">{a.aval_tipo === "empresa" ? "Empresa" : "Persona física"}</span>
+                            {a.aval_email && <><span className="text-[10px] text-gray-300">·</span><span className="text-[10px] text-gray-400">{a.aval_email}</span></>}
+                            {a.aval_telefono && <><span className="text-[10px] text-gray-300">·</span><span className="text-[10px] text-gray-400">{a.aval_telefono}</span></>}
+                            {a.aval_persona_contacto && <><span className="text-[10px] text-gray-300">·</span><span className="text-[10px] text-gray-400">Contacto: {a.aval_persona_contacto}</span></>}
+                          </div>
+                        </div>
+                      </div>
+                      <Link href={`/admin/operaciones/${a.id}`} className="text-xs text-[#2E1A47] font-semibold hover:underline flex-shrink-0">
+                        Ver op →
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Notas del cliente (no de ops) */}
           <NotesSection
