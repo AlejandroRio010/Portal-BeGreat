@@ -85,7 +85,7 @@ export function CardContent({ op, dragListeners, dragAttributes }: { op: KanbanO
   const importe = Number(op.importe ?? 0);
   const importeFacturado = Number(op.importe_facturado_begreat ?? 0);
   const bgFactura = op.modalidad_renting === "begreat_factura" || op.modalidad_renting === "begreat_factura_comisiona";
-  const fee = Number(op.comision_colaborador ?? 0) + Number(op.comision_begreat ?? 0);
+  const fee = Number(op.comision_begreat ?? 0);
   return (
     <div className="p-3 pt-2.5">
       <div className="flex items-start gap-1 mb-1.5">

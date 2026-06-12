@@ -80,7 +80,7 @@ function DraggableCard({ op, isDragging }: { op: KanbanOp; isDragging: boolean }
 export function CardContent({ op, dragListeners, dragAttributes }: { op: KanbanOp; dragListeners?: any; dragAttributes?: any }) {
   const displayName = op.nombre ?? op.client_nombre ?? "Sin nombre";
   const importe = Number(op.importe ?? 0);
-  const fee = Number(op.comision_colaborador ?? 0) + Number(op.comision_begreat ?? 0);
+  const fee = Number(op.comision_begreat ?? 0);
   return (
     <div className="p-3 pt-2.5">
       <div className="flex items-start gap-1 mb-1.5">
