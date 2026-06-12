@@ -129,6 +129,7 @@ export const clients = pgTable("clients", {
   nombre_comercial: text("nombre_comercial"),
   direccion: text("direccion"),
   cnae: text("cnae"),
+  provincia: text("provincia"),
   grupo_empresarial: text("grupo_empresarial"),
   group_id: uuid("group_id").references(() => clientGroups.id, { onDelete: "set null" }),
   codigo: text("codigo").unique(),

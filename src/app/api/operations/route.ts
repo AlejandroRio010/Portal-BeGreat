@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     cliente_web,
     cliente_cif,
     cliente_cnae,
+    cliente_provincia,
     contacto_nombre,
     contacto_puesto,
     contacto_email,
@@ -82,6 +83,7 @@ export async function POST(req: NextRequest) {
         web: cliente_web || null,
         cif: cliente_cif || null,
         cnae: cliente_cnae || null,
+        provincia: cliente_provincia || null,
         codigo: clientCodigo,
       })
       .returning();
@@ -148,13 +150,15 @@ export async function POST(req: NextRequest) {
   const opCodigo = await generateCodigoOP(clientId);
 
   // Auto-generate operation name: "Empresa - OP N (Entidad)"
+  // Count ALL operations globally for clients with this name (across all collaborators)
   const [{ count: opCount }] = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(operations)
-    .where(clientId ? eq(operations.client_id, clientId) : sql`client_id IS NULL`);
+    .innerJoin(clients, eq(operations.client_id, clients.id))
+    .where(eq(clients.nombre, cliente_nombre));
   const opNum = Number(opCount) + 1;
   const entidadPart = entidad_preferencia ? ` (${entidad_preferencia})` : "";
-  const autoNombre = `${cliente_nombre} - OP${String(opNum).padStart(2, "0")}${entidadPart}`;
+  const autoNombre = `${cliente_nombre} - OP ${opNum}${entidadPart}`;
 
   // Resolve operacion_original_id
   let opOriginalId: string | null = operacion_original_id_body || null;

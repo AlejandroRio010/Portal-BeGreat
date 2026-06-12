@@ -390,8 +390,6 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                     <div>
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Oficina que la estudia</dt>
                       <dd className="text-sm text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</dd>
-                      {nivelEntidades <= 2 && opOffice.email && <dd className="text-xs text-gray-500 mt-0.5">{opOffice.email}</dd>}
-                      {nivelEntidades <= 2 && opOffice.telefono && <dd className="text-xs text-gray-500">{opOffice.telefono}</dd>}
                     </div>
                   )}
                   {nivelEntidades === 1 && officeContacts.map(c => (

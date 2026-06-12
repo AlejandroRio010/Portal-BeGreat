@@ -35,6 +35,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
   const [clienteWeb, setClienteWeb] = useState("");
   const [clienteCif, setClienteCif] = useState("");
   const [clienteCnae, setClienteCnae] = useState("");
+  const [clienteProvincia, setClienteProvincia] = useState("");
   const [esNuevoCliente, setEsNuevoCliente] = useState(false);
   const [clienteMissingData, setClienteMissingData] = useState<string[]>([]);
 
@@ -72,7 +73,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const clienteListo = !!(clienteSeleccionado || (esNuevoCliente && clienteNombre.trim() && clienteEmail.trim() && clienteCif.trim() && contactoNombre.trim() && contactoEmail.trim() && contactoTelefono.trim()));
+  const clienteListo = !!(clienteSeleccionado || (esNuevoCliente && clienteNombre.trim() && clienteCif.trim() && contactoNombre.trim() && contactoTelefono.trim()));
   const clientePendiente = esNuevoCliente && !clienteListo;
 
   function fillCliente(c: any) {
@@ -136,6 +137,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
     setClienteWeb("");
     setClienteCif("");
     setClienteCnae("");
+    setClienteProvincia("");
     setContactoNombre("");
     setContactoPuesto("");
     setContactoEmail("");
@@ -189,10 +191,8 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
     if (pipeline === "renting" && !data.plazo_meses) { setError("Selecciona el plazo deseado."); setLoading(false); return; }
 
     if (esNuevoCliente) {
-      if (!clienteEmail.trim()) { setError("El email de la empresa cliente es obligatorio."); setLoading(false); return; }
       if (!clienteCif.trim()) { setError("El CIF de la empresa cliente es obligatorio."); setLoading(false); return; }
       if (!contactoNombre.trim()) { setError("El nombre de la persona de contacto del cliente es obligatorio."); setLoading(false); return; }
-      if (!contactoEmail.trim()) { setError("El email de la persona de contacto del cliente es obligatorio."); setLoading(false); return; }
       if (!contactoTelefono.trim()) { setError("El teléfono de la persona de contacto del cliente es obligatorio."); setLoading(false); return; }
     }
 
@@ -218,6 +218,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
         cliente_web: clienteWeb || null,
         cliente_cif: clienteCif || null,
         cliente_cnae: clienteCnae || null,
+        cliente_provincia: clienteProvincia || null,
         es_nuevo_cliente: esNuevoCliente,
         contacto_nombre: contactoNombre || null,
         contacto_puesto: contactoPuesto || null,
@@ -324,6 +325,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
                 clienteWeb={clienteWeb} setClienteWeb={setClienteWeb}
                 clienteCif={clienteCif} setClienteCif={setClienteCif}
                 clienteCnae={clienteCnae} setClienteCnae={setClienteCnae}
+                clienteProvincia={clienteProvincia} setClienteProvincia={setClienteProvincia}
                 clienteSeleccionado={clienteSeleccionado}
                 esNuevoCliente={esNuevoCliente} setEsNuevoCliente={setEsNuevoCliente}
                 clienteMissingData={clienteMissingData}
@@ -408,6 +410,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
                 clienteWeb={clienteWeb} setClienteWeb={setClienteWeb}
                 clienteCif={clienteCif} setClienteCif={setClienteCif}
                 clienteCnae={clienteCnae} setClienteCnae={setClienteCnae}
+                clienteProvincia={clienteProvincia} setClienteProvincia={setClienteProvincia}
                 clienteSeleccionado={clienteSeleccionado}
                 esNuevoCliente={esNuevoCliente} setEsNuevoCliente={setEsNuevoCliente}
                 clienteMissingData={clienteMissingData}
@@ -497,7 +500,248 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
   );
 }
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const PROVINCIAS = [
+  "A Coruña","Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz",
+  "Barcelona","Bizkaia","Burgos","Cáceres","Cádiz","Cantabria","Castellón","Ceuta",
+  "Ciudad Real","Córdoba","Cuenca","Gipuzkoa","Girona","Granada","Guadalajara",
+  "Huelva","Huesca","Illes Balears","Jaén","La Rioja","Las Palmas","León","Lleida",
+  "Lugo","Madrid","Málaga","Melilla","Murcia","Navarra","Ourense","Palencia",
+  "Pontevedra","Salamanca","Santa Cruz de Tenerife","Segovia","Sevilla","Soria",
+  "Tarragona","Teruel","Toledo","Valencia","Valladolid","Zamora","Zaragoza",
+];
+
+// ─── CNAE top-level search data ──────────────────────────────────────────────
+const CNAE_CODES = [
+  "0111 Cultivo de cereales","0113 Cultivo de hortalizas","0121 Cultivo de uva","0141 Explotación de ganado bovino",
+  "0150 Producción agrícola combinada","0210 Silvicultura","0311 Pesca marina","0321 Acuicultura marina",
+  "0510 Extracción de antracita y hulla","0610 Extracción de crudo de petróleo",
+  "1011 Procesado de carne","1020 Procesado de pescado","1039 Otro procesado de frutas y hortalizas",
+  "1051 Preparación de leche","1071 Fabricación de pan","1081 Fabricación de azúcar",
+  "1101 Destilación de bebidas alcohólicas","1102 Elaboración de vinos","1105 Fabricación de cerveza",
+  "1200 Industria del tabaco","1310 Preparación de fibras textiles","1392 Fabricación de artículos textiles",
+  "1413 Confección de prendas de vestir","1520 Fabricación de calzado",
+  "1610 Aserrado de madera","1621 Fabricación de chapas y tableros","1629 Otras industrias de madera",
+  "1711 Fabricación de pasta papelera","1712 Fabricación de papel y cartón",
+  "1811 Artes gráficas","1812 Otras actividades de impresión",
+  "1920 Refino de petróleo","2011 Fabricación de gases industriales","2014 Fabricación de química orgánica",
+  "2041 Fabricación de jabones y detergentes","2059 Otros productos químicos",
+  "2110 Fabricación de productos farmacéuticos","2120 Fabricación de especialidades farmacéuticas",
+  "2211 Fabricación de neumáticos","2219 Otros productos de caucho","2221 Fabricación de placas y tubos plásticos",
+  "2311 Fabricación de vidrio plano","2320 Fabricación de productos cerámicos refractarios",
+  "2410 Fabricación de productos siderúrgicos","2420 Fabricación de tubos de acero",
+  "2511 Fabricación de estructuras metálicas","2529 Fabricación de depósitos metálicos",
+  "2611 Fabricación de componentes electrónicos","2620 Fabricación de ordenadores",
+  "2711 Fabricación de motores eléctricos","2712 Fabricación de aparatos de distribución",
+  "2811 Fabricación de motores","2821 Fabricación de hornos",
+  "2910 Fabricación de vehículos de motor","2920 Fabricación de carrocerías",
+  "2932 Fabricación de otros componentes para vehículos","3011 Construcción de barcos",
+  "3030 Construcción aeronáutica","3091 Fabricación de motocicletas","3099 Fabricación de otro material de transporte",
+  "3101 Fabricación de muebles de oficina","3109 Fabricación de otros muebles",
+  "3311 Reparación de productos metálicos","3312 Reparación de maquinaria",
+  "3511 Producción de energía eléctrica","3512 Transporte de energía eléctrica","3513 Distribución de energía eléctrica",
+  "3521 Producción de gas","3530 Suministro de vapor",
+  "3600 Captación, depuración y distribución de agua","3700 Evacuación de aguas residuales",
+  "3811 Recogida de residuos no peligrosos","3821 Tratamiento de residuos no peligrosos",
+  "4110 Promoción inmobiliaria","4121 Construcción de edificios residenciales","4122 Construcción de edificios no residenciales",
+  "4211 Construcción de carreteras","4221 Construcción de redes","4222 Construcción de redes eléctricas",
+  "4311 Demolición","4312 Preparación de terrenos","4321 Instalaciones eléctricas",
+  "4322 Fontanería e instalaciones","4329 Otras instalaciones","4331 Revocamiento",
+  "4332 Instalación de carpintería","4339 Otro acabado de edificios","4391 Construcción de cubiertas",
+  "4399 Otras actividades de construcción",
+  "4511 Venta de automóviles","4519 Venta de otros vehículos","4520 Mantenimiento de vehículos",
+  "4531 Comercio al por mayor de repuestos","4532 Comercio al por menor de repuestos",
+  "4611 Intermediarios del comercio de materias primas","4612 Intermediarios de combustibles",
+  "4613 Intermediarios de madera","4614 Intermediarios de maquinaria","4615 Intermediarios de muebles",
+  "4616 Intermediarios de textiles","4617 Intermediarios de productos alimenticios",
+  "4619 Intermediarios del comercio de productos diversos",
+  "4621 Comercio al por mayor de cereales","4622 Comercio al por mayor de flores",
+  "4631 Comercio al por mayor de frutas","4632 Comercio al por mayor de carne",
+  "4634 Comercio al por mayor de bebidas","4636 Comercio al por mayor de azúcar y chocolate",
+  "4637 Comercio al por mayor de café y té","4639 Comercio al por mayor de productos alimenticios",
+  "4641 Comercio al por mayor de textiles","4642 Comercio al por mayor de prendas de vestir y calzado",
+  "4643 Comercio al por mayor de electrodomésticos","4644 Comercio al por mayor de porcelana y cristalería",
+  "4645 Comercio al por mayor de perfumería y cosmética",
+  "4646 Comercio al por mayor de productos farmacéuticos",
+  "4647 Comercio al por mayor de muebles y alfombras","4648 Comercio al por mayor de artículos de relojería",
+  "4649 Comercio al por mayor de otros artículos de uso doméstico",
+  "4651 Comercio al por mayor de equipos para TIC","4652 Comercio al por mayor de componentes electrónicos",
+  "4661 Comercio al por mayor de maquinaria agrícola","4662 Comercio al por mayor de máquinas herramienta",
+  "4663 Comercio al por mayor de maquinaria para minería y construcción",
+  "4664 Comercio al por mayor de maquinaria para industria textil",
+  "4665 Comercio al por mayor de muebles de oficina","4666 Comercio al por mayor de otra maquinaria de oficina",
+  "4669 Comercio al por mayor de otra maquinaria","4671 Comercio al por mayor de combustibles",
+  "4672 Comercio al por mayor de metales y minerales","4673 Comercio al por mayor de madera y materiales de construcción",
+  "4674 Comercio al por mayor de ferretería y fontanería","4675 Comercio al por mayor de productos químicos",
+  "4676 Comercio al por mayor de otros productos semielaborados","4677 Comercio al por mayor de chatarra y productos de desecho",
+  "4690 Comercio al por mayor no especializado",
+  "4711 Comercio al por menor en establecimientos no especializados con predominio de alimentación",
+  "4719 Otro comercio al por menor en establecimientos no especializados",
+  "4721 Comercio al por menor de frutas y hortalizas","4722 Comercio al por menor de carne",
+  "4723 Comercio al por menor de pescado","4724 Comercio al por menor de pan y pastelería",
+  "4725 Comercio al por menor de bebidas","4726 Comercio al por menor de tabaco",
+  "4729 Otro comercio al por menor de alimentación",
+  "4730 Comercio al por menor de combustible","4741 Comercio al por menor de ordenadores y software",
+  "4742 Comercio al por menor de equipos de telecomunicaciones",
+  "4743 Comercio al por menor de equipos de audio y vídeo",
+  "4751 Comercio al por menor de textiles","4752 Comercio al por menor de ferretería",
+  "4753 Comercio al por menor de alfombras","4754 Comercio al por menor de electrodomésticos",
+  "4759 Comercio al por menor de muebles y otros artículos del hogar",
+  "4761 Comercio al por menor de libros","4762 Comercio al por menor de periódicos y artículos de papelería",
+  "4763 Comercio al por menor de grabaciones de música y vídeo",
+  "4764 Comercio al por menor de artículos deportivos","4765 Comercio al por menor de juegos y juguetes",
+  "4771 Comercio al por menor de prendas de vestir","4772 Comercio al por menor de calzado y artículos de cuero",
+  "4773 Comercio al por menor de productos farmacéuticos","4774 Comercio al por menor de artículos médicos",
+  "4775 Comercio al por menor de cosméticos e higiene","4776 Comercio al por menor de flores y plantas",
+  "4777 Comercio al por menor de artículos de relojería y joyería",
+  "4778 Otro comercio al por menor de artículos nuevos","4779 Comercio al por menor de artículos de segunda mano",
+  "4781 Comercio al por menor de productos alimenticios en puestos de venta",
+  "4782 Comercio al por menor de productos textiles en puestos de venta",
+  "4789 Comercio al por menor de otros productos en puestos de venta","4791 Comercio por correo o por Internet",
+  "4799 Otro comercio al por menor no realizado en establecimientos",
+  "4910 Transporte interurbano de pasajeros por ferrocarril","4920 Transporte de mercancías por ferrocarril",
+  "4931 Transporte terrestre urbano de pasajeros","4932 Transporte por taxi",
+  "4939 Otros tipos de transporte terrestre de pasajeros","4941 Transporte de mercancías por carretera",
+  "4942 Servicios de mudanzas","4950 Transporte por tubería",
+  "5010 Transporte marítimo de pasajeros","5020 Transporte marítimo de mercancías",
+  "5030 Transporte de pasajeros por vías navegables interiores","5040 Transporte de mercancías por vías navegables interiores",
+  "5110 Transporte aéreo de pasajeros","5121 Transporte aéreo de mercancías",
+  "5210 Depósito y almacenamiento","5221 Actividades anexas al transporte terrestre",
+  "5222 Actividades anexas al transporte marítimo","5223 Actividades anexas al transporte aéreo",
+  "5224 Manipulación de mercancías","5229 Otras actividades anexas al transporte",
+  "5310 Actividades postales","5320 Otras actividades postales y de correos",
+  "5510 Hoteles y alojamientos similares","5520 Alojamientos turísticos",
+  "5530 Campings y aparcamientos para caravanas","5590 Otros alojamientos",
+  "5610 Restaurantes y puestos de comidas","5621 Provisión de comidas preparadas para eventos",
+  "5629 Otros servicios de comidas","5630 Establecimientos de bebidas",
+  "5811 Edición de libros","5812 Edición de directorios","5813 Edición de periódicos",
+  "5814 Edición de revistas","5819 Otras actividades editoriales","5821 Edición de videojuegos",
+  "5829 Edición de otros programas informáticos",
+  "5911 Actividades de producción cinematográfica","5912 Actividades de postproducción",
+  "5913 Actividades de distribución cinematográfica","5914 Actividades de exhibición cinematográfica",
+  "5920 Actividades de grabación de sonido y edición musical",
+  "6010 Actividades de radiodifusión","6020 Actividades de programación y emisión de televisión",
+  "6110 Telecomunicaciones por cable","6120 Telecomunicaciones inalámbricas",
+  "6130 Telecomunicaciones por satélite","6190 Otras actividades de telecomunicaciones",
+  "6201 Actividades de programación informática","6202 Actividades de consultoría informática",
+  "6203 Gestión de recursos informáticos","6209 Otros servicios de tecnología de la información",
+  "6311 Proceso de datos, hosting","6312 Portales web",
+  "6391 Actividades de agencias de noticias","6399 Otros servicios de información",
+  "6411 Banco central","6419 Otra intermediación monetaria",
+  "6420 Actividades de las sociedades holding","6430 Inversión colectiva",
+  "6491 Arrendamiento financiero","6492 Otras actividades crediticias",
+  "6499 Otros servicios financieros","6511 Seguros de vida","6512 Seguros distintos de los de vida",
+  "6520 Reaseguros","6530 Fondos de pensiones",
+  "6611 Administración de mercados financieros","6612 Actividades de intermediación en operaciones con valores",
+  "6619 Otras actividades auxiliares a los servicios financieros",
+  "6621 Evaluación de riesgos y daños","6622 Actividades de agentes y corredores de seguros",
+  "6629 Otras actividades auxiliares a seguros y fondos de pensiones",
+  "6630 Actividades de gestión de fondos",
+  "6810 Compraventa de bienes inmobiliarios","6820 Alquiler de bienes inmobiliarios",
+  "6831 Agentes de la propiedad inmobiliaria","6832 Gestión de bienes inmobiliarios",
+  "6910 Actividades jurídicas","6920 Actividades de contabilidad y auditoría",
+  "7010 Actividades de las sedes centrales","7021 Consultoría en relaciones públicas y comunicación",
+  "7022 Otras actividades de consultoría de gestión empresarial",
+  "7111 Servicios técnicos de arquitectura","7112 Servicios técnicos de ingeniería",
+  "7120 Ensayos y análisis técnicos",
+  "7211 Investigación en biotecnología","7219 Otra investigación en ciencias naturales",
+  "7220 Investigación en ciencias sociales y humanidades",
+  "7311 Agencias de publicidad","7312 Servicios de representación de medios de comunicación",
+  "7320 Estudios de mercado y encuestas de opinión pública",
+  "7410 Actividades de diseño especializado","7420 Actividades de fotografía",
+  "7430 Actividades de traducción e interpretación","7490 Otras actividades profesionales, científicas y técnicas",
+  "7500 Actividades veterinarias",
+  "7711 Alquiler de automóviles","7712 Alquiler de camiones",
+  "7721 Alquiler de artículos de ocio y deporte","7722 Alquiler de cintas de vídeo y discos",
+  "7729 Alquiler de otros efectos personales y artículos de uso doméstico",
+  "7731 Alquiler de maquinaria y equipo agrícola","7732 Alquiler de maquinaria y equipo para la construcción",
+  "7733 Alquiler de maquinaria y equipo de oficina","7734 Alquiler de medios de navegación",
+  "7735 Alquiler de medios de transporte aéreo","7739 Alquiler de otra maquinaria y equipo",
+  "7740 Arrendamiento de la propiedad intelectual",
+  "7810 Actividades de agencias de colocación","7820 Actividades de empresas de trabajo temporal",
+  "7830 Otra provisión de recursos humanos",
+  "7911 Actividades de agencias de viajes","7912 Actividades de operadores turísticos",
+  "7990 Otros servicios de reservas",
+  "8010 Actividades de seguridad privada","8020 Servicios de sistemas de seguridad",
+  "8030 Actividades de investigación","8110 Servicios integrales a edificios e instalaciones",
+  "8121 Limpieza general de edificios","8122 Otras actividades de limpieza industrial y de edificios",
+  "8129 Otras actividades de limpieza","8130 Actividades de jardinería",
+  "8211 Servicios administrativos combinados","8219 Actividades de fotocopiado y otros servicios de apoyo a oficinas",
+  "8220 Actividades de los centros de llamadas","8230 Organización de convenciones y ferias de muestras",
+  "8291 Actividades de agencias de cobros y de información comercial",
+  "8292 Actividades de envasado y empaquetado","8299 Otras actividades de apoyo a las empresas",
+  "8411 Actividades generales de la Administración Pública",
+  "8510 Educación preprimaria","8520 Educación primaria",
+  "8531 Educación secundaria general","8532 Educación secundaria técnica y profesional",
+  "8541 Educación postsecundaria no terciaria","8543 Educación universitaria",
+  "8544 Educación terciaria no universitaria","8551 Educación deportiva y recreativa",
+  "8552 Educación cultural","8553 Actividades de las escuelas de conducción",
+  "8559 Otra educación","8560 Actividades auxiliares a la educación",
+  "8610 Actividades hospitalarias","8621 Actividades de medicina general",
+  "8622 Actividades de medicina especializada","8623 Actividades odontológicas",
+  "8690 Otras actividades sanitarias",
+  "8710 Asistencia en establecimientos residenciales con cuidados sanitarios",
+  "8720 Asistencia en establecimientos residenciales para personas con discapacidad",
+  "8730 Asistencia en establecimientos residenciales para personas mayores",
+  "8790 Otras actividades de asistencia en establecimientos residenciales",
+  "8810 Actividades de servicios sociales sin alojamiento para personas mayores y con discapacidad",
+  "8891 Actividades de cuidado diurno de niños","8899 Otros actividades de servicios sociales sin alojamiento",
+  "9001 Artes escénicas","9002 Actividades auxiliares a las artes escénicas",
+  "9003 Creación artística y literaria","9004 Gestión de salas de espectáculos",
+  "9102 Actividades de museos","9103 Gestión de lugares y edificios históricos",
+  "9104 Actividades de jardines botánicos, parques zoológicos y reservas naturales",
+  "9200 Actividades de juegos de azar y apuestas",
+  "9311 Gestión de instalaciones deportivas","9312 Actividades de los clubs deportivos",
+  "9313 Actividades de los gimnasios","9319 Otras actividades deportivas",
+  "9321 Actividades de los parques de atracciones y los parques temáticos",
+  "9329 Otras actividades recreativas y de entretenimiento",
+  "9411 Actividades de organizaciones empresariales y patronales",
+  "9412 Actividades de organizaciones profesionales",
+  "9420 Actividades sindicales","9491 Actividades de organizaciones religiosas",
+  "9492 Actividades de organizaciones políticas","9499 Otras actividades asociativas",
+  "9511 Reparación de ordenadores","9512 Reparación de equipos de comunicación",
+  "9521 Reparación de aparatos electrónicos de audio y vídeo",
+  "9522 Reparación de aparatos electrodomésticos","9523 Reparación de calzado y artículos de cuero",
+  "9524 Reparación de muebles y artículos de hogar","9525 Reparación de relojes y joyería",
+  "9529 Reparación de otros efectos personales","9601 Lavado y limpieza de prendas textiles y de piel",
+  "9602 Peluquería y otros tratamientos de belleza","9603 Pompas fúnebres y actividades relacionadas",
+  "9604 Actividades de mantenimiento físico","9609 Otras actividades de servicios personales",
+  "9700 Actividades de los hogares como empleadores de personal doméstico",
+  "9900 Actividades de organizaciones extraterritoriales",
+];
+
 // ─── Sub-components ──────────────────────────────────────────────────────────
+
+function CnaeSearchInput({ value, onChange, inp, placeholder, options, isCnae }: {
+  value: string; onChange: (v: string) => void; inp: string; placeholder: string; options: string[]; isCnae?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const source = isCnae ? CNAE_CODES : options;
+  const filtered = value.length >= 1
+    ? source.filter(o => o.toLowerCase().includes(value.toLowerCase())).slice(0, 8)
+    : [];
+
+  return (
+    <div className="relative">
+      <input value={value} onChange={e => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => filtered.length > 0 && setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        className={inp} placeholder={placeholder} autoComplete="off" />
+      {open && filtered.length > 0 && (
+        <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-gray-200 shadow-lg max-h-48 overflow-y-auto">
+          {filtered.map(o => (
+            <button key={o} type="button"
+              onMouseDown={() => { onChange(isCnae ? o.split(" ")[0] : o); setOpen(false); }}
+              className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] text-sm border-b border-gray-50 last:border-0">
+              {o}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -568,7 +812,8 @@ function SearchableField({ value, onChange, onSelect, onNew, placeholder, search
 }
 
 function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClienteEmail, clienteTelefono, setClienteTelefono,
-  clienteWeb, setClienteWeb, clienteCif, setClienteCif, clienteCnae, setClienteCnae, clienteSeleccionado, esNuevoCliente, setEsNuevoCliente,
+  clienteWeb, setClienteWeb, clienteCif, setClienteCif, clienteCnae, setClienteCnae, clienteProvincia, setClienteProvincia,
+  clienteSeleccionado, esNuevoCliente, setEsNuevoCliente,
   clienteMissingData, onSelect, onClear, contactoNombre, setContactoNombre, contactoPuesto, setContactoPuesto,
   contactoEmail, setContactoEmail, contactoTelefono, setContactoTelefono, disabled, inp, labelCls,
 }: any) {
@@ -606,16 +851,22 @@ function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClie
                   <input value={clienteNombre} onChange={e => setClienteNombre(e.target.value)} required className={inp} placeholder="Empresa S.L." />
                 </div>
                 <div>
-                  <label className={labelCls}>Email *</label>
-                  <input type="email" value={clienteEmail} onChange={e => setClienteEmail(e.target.value)} required className={inp} placeholder="info@empresa.es" />
-                </div>
-                <div>
                   <label className={labelCls}>CIF *</label>
                   <input value={clienteCif} onChange={e => setClienteCif(e.target.value)} required className={inp} placeholder="B12345678" />
                 </div>
                 <div>
+                  <label className={labelCls}>Email</label>
+                  <input type="email" value={clienteEmail} onChange={e => setClienteEmail(e.target.value)} className={inp} placeholder="info@empresa.es" />
+                </div>
+                <div>
+                  <label className={labelCls}>Provincia</label>
+                  <CnaeSearchInput value={clienteProvincia} onChange={setClienteProvincia} inp={inp}
+                    placeholder="Madrid" options={PROVINCIAS} />
+                </div>
+                <div>
                   <label className={labelCls}>CNAE</label>
-                  <input value={clienteCnae} onChange={e => setClienteCnae(e.target.value)} className={inp} placeholder="4711" />
+                  <CnaeSearchInput value={clienteCnae} onChange={setClienteCnae} inp={inp}
+                    placeholder="Buscar por código o actividad..." options={[]} isCnae />
                 </div>
                 <div>
                   <label className={labelCls}>Web</label>
