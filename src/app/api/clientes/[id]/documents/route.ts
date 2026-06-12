@@ -37,7 +37,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { id } = await params;
   const { docId } = await req.json();
-  await db.delete(clientDocuments).where(eq(clientDocuments.id, docId));
+  await db.delete(clientDocuments).where(and(eq(clientDocuments.id, docId), eq(clientDocuments.client_id, id)));
   return NextResponse.json({ ok: true });
 }

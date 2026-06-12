@@ -7,8 +7,9 @@ import { sendPendingValidationDigest } from "@/lib/email";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
+  // Vercel Cron sends CRON_SECRET automatically; block public access
   const cronSecret = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (process.env.CRON_SECRET && cronSecret !== process.env.CRON_SECRET) {
+  if (!cronSecret || cronSecret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

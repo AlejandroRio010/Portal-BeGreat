@@ -11,8 +11,8 @@ export async function POST(req: NextRequest) {
   if (!token || !password) {
     return NextResponse.json({ error: "Faltan datos" }, { status: 400 });
   }
-  if (password.length < 8) {
-    return NextResponse.json({ error: "La contraseña debe tener al menos 8 caracteres" }, { status: 400 });
+  if (password.length < 10 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+    return NextResponse.json({ error: "La contraseña debe tener al menos 10 caracteres, una mayúscula y un número" }, { status: 400 });
   }
 
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");

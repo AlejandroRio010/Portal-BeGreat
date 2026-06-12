@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import DOMPurify from "isomorphic-dompurify";
 
 interface Note {
   id: string;
@@ -208,7 +209,7 @@ function NoteItem({ note, apiUrl, canEdit, canPin, idx }: { note: Note; apiUrl: 
           </div>
         </div>
       ) : (
-        <div className="notes-content text-sm text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: note.texto }} />
+        <div className="notes-content text-sm text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(note.texto) }} />
       )}
     </div>
   );
