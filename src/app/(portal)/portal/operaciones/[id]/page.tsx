@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments, financialEntities, entityOffices, entityOfficeContacts, contacts, infoRequests } from "@/db/schema";
+import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments, clientDocuments, avalDocuments, financialEntities, entityOffices, entityOfficeContacts, contacts, infoRequests } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -123,6 +123,12 @@ export default async function OperacionDetallePage({ params }: { params: Promise
 
   const opNotes = await db.select().from(notes).where(eq(notes.operation_id, id)).orderBy(notes.created_at);
   const opDocs = await db.select().from(operationDocuments).where(eq(operationDocuments.operation_id, id)).orderBy(operationDocuments.created_at);
+  const clientDocs = op.client_id
+    ? await db.select().from(clientDocuments).where(eq(clientDocuments.client_id, op.client_id)).orderBy(clientDocuments.created_at)
+    : [];
+  const avalDocs = op.tiene_aval
+    ? await db.select().from(avalDocuments).where(eq(avalDocuments.operation_id, id)).orderBy(avalDocuments.created_at)
+    : [];
   const opInfoRequests = await db.select().from(infoRequests).where(eq(infoRequests.operation_id, id)).orderBy(infoRequests.created_at);
 
   const opCustomFields = await db.select().from(customFields).where(eq(customFields.entidad, "operacion")).orderBy(asc(customFields.orden));
@@ -469,7 +475,23 @@ export default async function OperacionDetallePage({ params }: { params: Promise
           />
         )}
 
-        <DocumentsSection docs={opDocs} operationId={id} />
+        {op.client_id && (
+          <DocumentsSection
+            docs={clientDocs}
+            apiUrl={`/api/clientes/${op.client_id}/documents`}
+            title="Documentación del cliente"
+          />
+        )}
+
+        {op.tiene_aval && (
+          <DocumentsSection
+            docs={avalDocs}
+            apiUrl={`/api/operations/${id}/aval-documents`}
+            title="Documentación del avalista"
+          />
+        )}
+
+        <DocumentsSection docs={opDocs} operationId={id} title="Documentación de la operación" />
         </div>
       </div>
     </div>

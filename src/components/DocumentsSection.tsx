@@ -24,7 +24,7 @@ function cloudinaryDownloadUrl(url: string, filename: string): string {
   return url.replace("/upload/", `/upload/fl_attachment:${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}/`);
 }
 
-export default function DocumentsSection({ docs, operationId, apiUrl }: { docs: Doc[]; operationId?: string; apiUrl?: string }) {
+export default function DocumentsSection({ docs, operationId, apiUrl, title = "Documentos" }: { docs: Doc[]; operationId?: string; apiUrl?: string; title?: string }) {
   const resolvedApiUrl = apiUrl ?? `/api/operations/${operationId}/documents`;
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
@@ -90,7 +90,7 @@ export default function DocumentsSection({ docs, operationId, apiUrl }: { docs: 
   return (
     <div className="bg-white border border-gray-200 p-5">
       <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">
-        Documentos ({docs.length})
+        {title} ({docs.length})
       </p>
 
       {/* Files list */}
