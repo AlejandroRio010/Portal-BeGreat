@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface Note {
@@ -22,78 +22,29 @@ interface Props {
   readOnly?: boolean;
 }
 
-// ─── Editor de texto enriquecido (negrita, listas) ───────────────────────────
-function RichEditor({ initialHtml, onReady, placeholder }: { initialHtml?: string; onReady: (getHtml: () => string, clear: () => void) => void; placeholder: string }) {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const readyFired = useRef(false);
-
-  function cmd(command: string) {
-    document.execCommand(command, false);
-    editorRef.current?.focus();
-  }
-
-  return (
-    <div className="border border-gray-200 focus-within:border-[#2E1A47] transition-colors">
-      {/* Toolbar */}
-      <div className="flex items-center gap-1 px-2 py-1.5 border-b border-gray-100 bg-gray-50">
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("bold"); }}
-          className="w-7 h-7 flex items-center justify-center text-sm font-bold text-gray-600 hover:bg-[#EEEBF3] hover:text-[#2E1A47]" title="Negrita">B</button>
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("italic"); }}
-          className="w-7 h-7 flex items-center justify-center text-sm italic text-gray-600 hover:bg-[#EEEBF3] hover:text-[#2E1A47]" title="Cursiva">I</button>
-        <div className="w-px h-4 bg-gray-200 mx-0.5" />
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("insertUnorderedList"); }}
-          className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-[#EEEBF3] hover:text-[#2E1A47]" title="Lista con viñetas">•</button>
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("insertOrderedList"); }}
-          className="w-7 h-7 flex items-center justify-center text-[11px] font-bold text-gray-600 hover:bg-[#EEEBF3] hover:text-[#2E1A47]" title="Lista numerada">1.</button>
-      </div>
-      {/* Área editable */}
-      <div
-        ref={(el) => {
-          editorRef.current = el;
-          if (el && !readyFired.current) {
-            readyFired.current = true;
-            el.innerHTML = initialHtml ?? "";
-            onReady(
-              () => editorRef.current?.innerHTML ?? "",
-              () => { if (editorRef.current) editorRef.current.innerHTML = ""; }
-            );
-          }
-        }}
-        contentEditable
-        data-placeholder={placeholder}
-        className="notes-editor min-h-[80px] px-3 py-2.5 text-sm text-gray-800 focus:outline-none"
-        suppressContentEditableWarning
-      />
-    </div>
-  );
-}
-
 function AddNoteForm({ apiUrl, placeholder }: { apiUrl: string; placeholder: string }) {
   const router = useRouter();
+  const [texto, setTexto] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const getHtmlRef = useRef<() => string>(() => "");
-  const clearRef = useRef<() => void>(() => {});
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    const html = getHtmlRef.current().trim();
-    const textOnly = html.replace(/<[^>]*>/g, "").trim();
-    if (!textOnly) { setError("Escribe algo antes de guardar."); return; }
+    if (!texto.trim()) { setError("Escribe algo antes de guardar."); return; }
     setLoading(true);
     try {
       const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texto: html }),
+        body: JSON.stringify({ texto: texto.trim() }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         setError(body.error ?? `Error ${res.status}`);
         return;
       }
-      clearRef.current();
+      setTexto("");
       router.refresh();
     } catch {
       setError("Error de conexión");
@@ -104,9 +55,15 @@ function AddNoteForm({ apiUrl, placeholder }: { apiUrl: string; placeholder: str
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <RichEditor placeholder={placeholder} onReady={(getHtml, clear) => { getHtmlRef.current = getHtml; clearRef.current = clear; }} />
+      <textarea
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        rows={3}
+        placeholder={placeholder}
+        className="w-full px-3 py-2.5 border border-gray-200 text-sm focus:outline-none focus:border-[#2E1A47] resize-none"
+      />
       {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
-      <button type="submit" disabled={loading}
+      <button type="submit" disabled={loading || !texto.trim()}
         className="bg-[#2E1A47] text-white px-4 py-2 text-sm font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50">
         {loading ? "Guardando…" : "Añadir nota"}
       </button>
@@ -117,17 +74,16 @@ function AddNoteForm({ apiUrl, placeholder }: { apiUrl: string; placeholder: str
 function NoteItem({ note, apiUrl, canEdit, canPin }: { note: Note; apiUrl: string; canEdit: boolean; canPin: boolean }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
+  const [editTexto, setEditTexto] = useState(note.texto);
   const [saving, setSaving] = useState(false);
-  const getHtmlRef = useRef<() => string>(() => note.texto);
 
   async function handleSave() {
-    const html = getHtmlRef.current().trim();
-    if (!html || html === note.texto) { setEditing(false); return; }
+    if (!editTexto.trim() || editTexto.trim() === note.texto.trim()) { setEditing(false); return; }
     setSaving(true);
     await fetch(apiUrl, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ noteId: note.id, texto: html }),
+      body: JSON.stringify({ noteId: note.id, texto: editTexto.trim() }),
     });
     setSaving(false);
     setEditing(false);
@@ -143,6 +99,8 @@ function NoteItem({ note, apiUrl, canEdit, canPin }: { note: Note; apiUrl: strin
     router.refresh();
   }
 
+  const plainText = note.texto.replace(/<[^>]*>/g, "");
+
   return (
     <div className={`group relative border p-3.5 transition-colors ${note.pinned ? "bg-[#EEEBF3]/50 border-[#2E1A47]/20" : "bg-white border-gray-100 hover:border-gray-200"}`}>
       <div className="flex items-center gap-2 mb-2">
@@ -155,7 +113,7 @@ function NoteItem({ note, apiUrl, canEdit, canPin }: { note: Note; apiUrl: strin
           {new Date(note.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}
         </span>
         {note.pinned && (
-          <span className="text-[9px] font-bold text-[#2E1A47] bg-[#2E1A47]/10 px-1.5 py-0.5 uppercase tracking-wide flex items-center gap-1">📌 Fijada</span>
+          <span className="text-[9px] font-bold text-[#2E1A47] bg-[#2E1A47]/10 px-1.5 py-0.5 uppercase tracking-wide flex items-center gap-1">Fijada</span>
         )}
         <div className="ml-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           {canPin && (
@@ -164,7 +122,7 @@ function NoteItem({ note, apiUrl, canEdit, canPin }: { note: Note; apiUrl: strin
             </button>
           )}
           {canEdit && !editing && (
-            <button onClick={() => setEditing(true)} className="text-[10px] text-gray-400 hover:text-[#2E1A47] font-semibold">
+            <button onClick={() => { setEditTexto(plainText); setEditing(true); }} className="text-[10px] text-gray-400 hover:text-[#2E1A47] font-semibold">
               Editar
             </button>
           )}
@@ -173,7 +131,8 @@ function NoteItem({ note, apiUrl, canEdit, canPin }: { note: Note; apiUrl: strin
 
       {editing ? (
         <div className="space-y-2">
-          <RichEditor initialHtml={note.texto} placeholder="Edita la nota…" onReady={(getHtml) => { getHtmlRef.current = getHtml; }} />
+          <textarea value={editTexto} onChange={e => setEditTexto(e.target.value)} rows={3}
+            className="w-full px-3 py-2 border border-gray-200 text-sm focus:outline-none focus:border-[#2E1A47] resize-none" />
           <div className="flex gap-2">
             <button onClick={() => setEditing(false)} className="px-3 py-1.5 text-xs font-semibold text-gray-500 border border-gray-200 hover:bg-gray-50">Cancelar</button>
             <button onClick={handleSave} disabled={saving} className="px-4 py-1.5 text-xs font-bold text-white bg-[#2E1A47] hover:bg-[#3d2460] disabled:opacity-50">
@@ -182,14 +141,13 @@ function NoteItem({ note, apiUrl, canEdit, canPin }: { note: Note; apiUrl: strin
           </div>
         </div>
       ) : (
-        <div className="notes-content text-sm text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: note.texto }} />
+        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{plainText}</p>
       )}
     </div>
   );
 }
 
-export default function NotesSection({ notes, apiUrl, placeholder = "Añade una nota… (puedes usar negrita y listas)", currentUserId, isAdmin, canPin = false, readOnly = false }: Props) {
-  // Orden: fijadas primero; dentro de cada grupo, las más nuevas arriba (la primera escrita queda abajo)
+export default function NotesSection({ notes, apiUrl, placeholder = "Añade una nota…", currentUserId, isAdmin, canPin = false, readOnly = false }: Props) {
   const ordenadas = [...notes].sort((a, b) => {
     if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
