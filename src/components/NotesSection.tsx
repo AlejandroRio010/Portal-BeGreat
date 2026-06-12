@@ -24,33 +24,53 @@ interface Props {
 
 // ─── Rich text editor with toolbar ───────────────────────────────────────────
 function RichEditor({ initialHtml, placeholder, editorId }: { initialHtml?: string; placeholder: string; editorId: string }) {
-  function cmd(command: string, value?: string) {
-    document.execCommand(command, false, value);
-    document.getElementById(editorId)?.focus();
+  const [active, setActive] = useState<Record<string, boolean>>({});
+
+  function updateActive() {
+    setActive({
+      bold: document.queryCommandState("bold"),
+      italic: document.queryCommandState("italic"),
+      underline: document.queryCommandState("underline"),
+      insertUnorderedList: document.queryCommandState("insertUnorderedList"),
+      insertOrderedList: document.queryCommandState("insertOrderedList"),
+    });
   }
+
+  function cmd(command: string) {
+    document.execCommand(command, false);
+    document.getElementById(editorId)?.focus();
+    updateActive();
+  }
+
+  const btnCls = (command: string) =>
+    `w-7 h-7 flex items-center justify-center text-sm transition-colors ${
+      active[command] ? "bg-[#2E1A47] text-white" : "text-gray-600 hover:bg-[#EEEBF3] hover:text-[#2E1A47]"
+    }`;
 
   return (
     <div className="border border-gray-200 focus-within:border-[#2E1A47] transition-colors">
       <div className="flex items-center gap-1 px-2 py-1.5 border-b border-gray-100 bg-gray-50">
         <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("bold"); }}
-          className="w-7 h-7 flex items-center justify-center text-sm font-bold text-gray-600 hover:bg-[#EEEBF3] hover:text-[#2E1A47]" title="Negrita">B</button>
+          className={`${btnCls("bold")} font-bold`} title="Negrita">B</button>
         <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("italic"); }}
-          className="w-7 h-7 flex items-center justify-center text-sm italic text-gray-600 hover:bg-[#EEEBF3] hover:text-[#2E1A47]" title="Cursiva">I</button>
+          className={`${btnCls("italic")} italic`} title="Cursiva">I</button>
         <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("underline"); }}
-          className="w-7 h-7 flex items-center justify-center text-sm underline text-gray-600 hover:bg-[#EEEBF3] hover:text-[#2E1A47]" title="Subrayado">U</button>
+          className={`${btnCls("underline")} underline`} title="Subrayado">U</button>
         <div className="w-px h-4 bg-gray-200 mx-0.5" />
         <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("insertUnorderedList"); }}
-          className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-[#EEEBF3] hover:text-[#2E1A47]" title="Lista con viñetas">
+          className={btnCls("insertUnorderedList")} title="Lista con viñetas">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor"/><circle cx="4" cy="12" r="1.5" fill="currentColor"/><circle cx="4" cy="18" r="1.5" fill="currentColor"/></svg>
         </button>
         <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("insertOrderedList"); }}
-          className="w-7 h-7 flex items-center justify-center text-[11px] font-bold text-gray-600 hover:bg-[#EEEBF3] hover:text-[#2E1A47]" title="Lista numerada">1.</button>
+          className={`${btnCls("insertOrderedList")} text-[11px] font-bold`} title="Lista numerada">1.</button>
       </div>
       <div
         id={editorId}
         contentEditable
         data-placeholder={placeholder}
         dangerouslySetInnerHTML={{ __html: initialHtml ?? "" }}
+        onKeyUp={updateActive}
+        onMouseUp={updateActive}
         className="notes-editor min-h-[80px] px-3 py-2.5 text-sm text-gray-800 focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-300"
         suppressContentEditableWarning
       />
