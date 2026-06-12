@@ -71,27 +71,40 @@ function RichEditor({ initialHtml, onReady, placeholder }: { initialHtml?: strin
 function AddNoteForm({ apiUrl, placeholder }: { apiUrl: string; placeholder: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const getHtmlRef = useRef<() => string>(() => "");
   const clearRef = useRef<() => void>(() => {});
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
     const html = getHtmlRef.current().trim();
     if (!html || html === "<br>") return;
     setLoading(true);
-    await fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texto: html }),
-    });
-    clearRef.current();
-    setLoading(false);
-    router.refresh();
+    try {
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texto: html }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? `Error ${res.status}`);
+        return;
+      }
+      clearRef.current();
+      router.refresh();
+    } catch {
+      setError("Error de conexión");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <RichEditor placeholder={placeholder} onReady={(getHtml, clear) => { getHtmlRef.current = getHtml; clearRef.current = clear; }} />
+      {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
       <button type="submit" disabled={loading}
         className="bg-[#2E1A47] text-white px-4 py-2 text-sm font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50">
         {loading ? "Guardando…" : "Añadir nota"}
