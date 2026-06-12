@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 interface Note {
@@ -22,29 +22,82 @@ interface Props {
   readOnly?: boolean;
 }
 
+// ─── Rich text editor with toolbar ───────────────────────────────────────────
+function RichEditor({ initialHtml, placeholder, editorId }: { initialHtml?: string; placeholder: string; editorId: string }) {
+  function cmd(command: string, value?: string) {
+    document.execCommand(command, false, value);
+    document.getElementById(editorId)?.focus();
+  }
+
+  return (
+    <div className="border border-gray-200 focus-within:border-[#2E1A47] transition-colors">
+      <div className="flex items-center gap-1 px-2 py-1.5 border-b border-gray-100 bg-gray-50">
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("bold"); }}
+          className="w-7 h-7 flex items-center justify-center text-sm font-bold text-gray-600 hover:bg-[#EEEBF3] hover:text-[#2E1A47]" title="Negrita">B</button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("italic"); }}
+          className="w-7 h-7 flex items-center justify-center text-sm italic text-gray-600 hover:bg-[#EEEBF3] hover:text-[#2E1A47]" title="Cursiva">I</button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("underline"); }}
+          className="w-7 h-7 flex items-center justify-center text-sm underline text-gray-600 hover:bg-[#EEEBF3] hover:text-[#2E1A47]" title="Subrayado">U</button>
+        <div className="w-px h-4 bg-gray-200 mx-0.5" />
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("insertUnorderedList"); }}
+          className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-[#EEEBF3] hover:text-[#2E1A47]" title="Lista con viñetas">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor"/><circle cx="4" cy="12" r="1.5" fill="currentColor"/><circle cx="4" cy="18" r="1.5" fill="currentColor"/></svg>
+        </button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); cmd("insertOrderedList"); }}
+          className="w-7 h-7 flex items-center justify-center text-[11px] font-bold text-gray-600 hover:bg-[#EEEBF3] hover:text-[#2E1A47]" title="Lista numerada">1.</button>
+      </div>
+      <div
+        id={editorId}
+        contentEditable
+        data-placeholder={placeholder}
+        dangerouslySetInnerHTML={{ __html: initialHtml ?? "" }}
+        className="notes-editor min-h-[80px] px-3 py-2.5 text-sm text-gray-800 focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-300"
+        suppressContentEditableWarning
+      />
+    </div>
+  );
+}
+
+function getEditorHtml(editorId: string): string {
+  const el = document.getElementById(editorId);
+  return el?.innerHTML?.trim() ?? "";
+}
+
+function clearEditor(editorId: string) {
+  const el = document.getElementById(editorId);
+  if (el) el.innerHTML = "";
+}
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+}
+
+// ─── Add note form ───────────────────────────────────────────────────────────
 function AddNoteForm({ apiUrl, placeholder }: { apiUrl: string; placeholder: string }) {
   const router = useRouter();
-  const [texto, setTexto] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const editorId = "notes-add-editor";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!texto.trim()) { setError("Escribe algo antes de guardar."); return; }
+    const html = getEditorHtml(editorId);
+    const text = stripHtml(html);
+    if (!text) { setError("Escribe algo antes de guardar."); return; }
     setLoading(true);
     try {
       const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texto: texto.trim() }),
+        body: JSON.stringify({ texto: html }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         setError(body.error ?? `Error ${res.status}`);
         return;
       }
-      setTexto("");
+      clearEditor(editorId);
       router.refresh();
     } catch {
       setError("Error de conexión");
@@ -55,15 +108,9 @@ function AddNoteForm({ apiUrl, placeholder }: { apiUrl: string; placeholder: str
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <textarea
-        value={texto}
-        onChange={(e) => setTexto(e.target.value)}
-        rows={3}
-        placeholder={placeholder}
-        className="w-full px-3 py-2.5 border border-gray-200 text-sm focus:outline-none focus:border-[#2E1A47] resize-none"
-      />
+      <RichEditor placeholder={placeholder} editorId={editorId} />
       {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
-      <button type="submit" disabled={loading || !texto.trim()}
+      <button type="submit" disabled={loading}
         className="bg-[#2E1A47] text-white px-4 py-2 text-sm font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50">
         {loading ? "Guardando…" : "Añadir nota"}
       </button>
@@ -71,19 +118,22 @@ function AddNoteForm({ apiUrl, placeholder }: { apiUrl: string; placeholder: str
   );
 }
 
-function NoteItem({ note, apiUrl, canEdit, canPin }: { note: Note; apiUrl: string; canEdit: boolean; canPin: boolean }) {
+// ─── Note item ───────────────────────────────────────────────────────────────
+function NoteItem({ note, apiUrl, canEdit, canPin, idx }: { note: Note; apiUrl: string; canEdit: boolean; canPin: boolean; idx: number }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const [editTexto, setEditTexto] = useState(note.texto);
   const [saving, setSaving] = useState(false);
+  const editEditorId = `notes-edit-${idx}`;
 
   async function handleSave() {
-    if (!editTexto.trim() || editTexto.trim() === note.texto.trim()) { setEditing(false); return; }
+    const html = getEditorHtml(editEditorId);
+    const text = stripHtml(html);
+    if (!text) { setEditing(false); return; }
     setSaving(true);
     await fetch(apiUrl, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ noteId: note.id, texto: editTexto.trim() }),
+      body: JSON.stringify({ noteId: note.id, texto: html }),
     });
     setSaving(false);
     setEditing(false);
@@ -98,8 +148,6 @@ function NoteItem({ note, apiUrl, canEdit, canPin }: { note: Note; apiUrl: strin
     });
     router.refresh();
   }
-
-  const plainText = note.texto.replace(/<[^>]*>/g, "");
 
   return (
     <div className={`group relative border p-3.5 transition-colors ${note.pinned ? "bg-[#EEEBF3]/50 border-[#2E1A47]/20" : "bg-white border-gray-100 hover:border-gray-200"}`}>
@@ -122,7 +170,7 @@ function NoteItem({ note, apiUrl, canEdit, canPin }: { note: Note; apiUrl: strin
             </button>
           )}
           {canEdit && !editing && (
-            <button onClick={() => { setEditTexto(plainText); setEditing(true); }} className="text-[10px] text-gray-400 hover:text-[#2E1A47] font-semibold">
+            <button onClick={() => setEditing(true)} className="text-[10px] text-gray-400 hover:text-[#2E1A47] font-semibold">
               Editar
             </button>
           )}
@@ -131,8 +179,7 @@ function NoteItem({ note, apiUrl, canEdit, canPin }: { note: Note; apiUrl: strin
 
       {editing ? (
         <div className="space-y-2">
-          <textarea value={editTexto} onChange={e => setEditTexto(e.target.value)} rows={3}
-            className="w-full px-3 py-2 border border-gray-200 text-sm focus:outline-none focus:border-[#2E1A47] resize-none" />
+          <RichEditor initialHtml={note.texto} placeholder="Edita la nota…" editorId={editEditorId} />
           <div className="flex gap-2">
             <button onClick={() => setEditing(false)} className="px-3 py-1.5 text-xs font-semibold text-gray-500 border border-gray-200 hover:bg-gray-50">Cancelar</button>
             <button onClick={handleSave} disabled={saving} className="px-4 py-1.5 text-xs font-bold text-white bg-[#2E1A47] hover:bg-[#3d2460] disabled:opacity-50">
@@ -141,12 +188,13 @@ function NoteItem({ note, apiUrl, canEdit, canPin }: { note: Note; apiUrl: strin
           </div>
         </div>
       ) : (
-        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{plainText}</p>
+        <div className="notes-content text-sm text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: note.texto }} />
       )}
     </div>
   );
 }
 
+// ─── Main section ────────────────────────────────────────────────────────────
 export default function NotesSection({ notes, apiUrl, placeholder = "Añade una nota…", currentUserId, isAdmin, canPin = false, readOnly = false }: Props) {
   const ordenadas = [...notes].sort((a, b) => {
     if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
@@ -172,9 +220,9 @@ export default function NotesSection({ notes, apiUrl, placeholder = "Añade una 
             <p className="text-xs text-gray-300 mt-1">Las notas quedan registradas con autor y fecha.</p>
           </div>
         ) : (
-          ordenadas.map(n => {
+          ordenadas.map((n, i) => {
             const canEdit = readOnly ? false : (isAdmin || (!!currentUserId && n.author_id === currentUserId));
-            return <NoteItem key={n.id} note={n} apiUrl={apiUrl} canEdit={canEdit} canPin={canPin} />;
+            return <NoteItem key={n.id} note={n} apiUrl={apiUrl} canEdit={canEdit} canPin={canPin} idx={i} />;
           })
         )}
       </div>
