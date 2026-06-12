@@ -164,8 +164,7 @@ export async function POST(req: NextRequest) {
     .innerJoin(clients, eq(operations.client_id, clients.id))
     .where(eq(clients.nombre, cliente_nombre));
   const opNum = Number(opCount) + 1;
-  const entidadPart = entidad_preferencia ? ` (${entidad_preferencia})` : "";
-  const autoNombre = `${displayName} - OP ${opNum}${entidadPart}`;
+  const autoNombre = `${displayName} - OP ${opNum}`;
 
   // Resolve operacion_original_id
   let opOriginalId: string | null = operacion_original_id_body || null;
