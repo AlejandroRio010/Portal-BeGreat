@@ -24,16 +24,12 @@ interface Props {
 
 // ─── Editor de texto enriquecido (negrita, listas) ───────────────────────────
 function RichEditor({ initialHtml, onReady, placeholder }: { initialHtml?: string; onReady: (getHtml: () => string, clear: () => void) => void; placeholder: string }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const readyFired = useRef(false);
 
   function cmd(command: string) {
     document.execCommand(command, false);
-    ref.current?.focus();
-  }
-
-  // Exponer getHtml/clear al padre
-  if (ref.current && !(ref.current as any)._wired) {
-    (ref.current as any)._wired = true;
+    editorRef.current?.focus();
   }
 
   return (
@@ -53,10 +49,14 @@ function RichEditor({ initialHtml, onReady, placeholder }: { initialHtml?: strin
       {/* Área editable */}
       <div
         ref={(el) => {
-          if (el && !(el as any)._init) {
-            (el as any)._init = true;
+          editorRef.current = el;
+          if (el && !readyFired.current) {
+            readyFired.current = true;
             el.innerHTML = initialHtml ?? "";
-            onReady(() => el.innerHTML, () => { el.innerHTML = ""; });
+            onReady(
+              () => editorRef.current?.innerHTML ?? "",
+              () => { if (editorRef.current) editorRef.current.innerHTML = ""; }
+            );
           }
         }}
         contentEditable
@@ -79,7 +79,8 @@ function AddNoteForm({ apiUrl, placeholder }: { apiUrl: string; placeholder: str
     e.preventDefault();
     setError("");
     const html = getHtmlRef.current().trim();
-    if (!html || html === "<br>") return;
+    const textOnly = html.replace(/<[^>]*>/g, "").trim();
+    if (!textOnly) { setError("Escribe algo antes de guardar."); return; }
     setLoading(true);
     try {
       const res = await fetch(apiUrl, {
