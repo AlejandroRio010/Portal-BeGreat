@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations } from "@/db/schema";
+import { operations, collaborators } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { sendOperationValidatedEmail, sendOperationDeniedEmail } from "@/lib/email";
+import { fmtEur } from "@/lib/format";
 
 export async function PATCH(
   req: NextRequest,
@@ -51,6 +53,19 @@ export async function PATCH(
     aval_telefono,
     aval_persona_contacto,
   } = body;
+
+  // Fetch current state before update (for email triggers)
+  const [prevOp] = await db
+    .select({
+      status: operations.status,
+      nombre: operations.nombre,
+      collaborator_id: operations.collaborator_id,
+      importe: operations.importe,
+      comision_colaborador: operations.comision_colaborador,
+    })
+    .from(operations)
+    .where(eq(operations.id, id))
+    .limit(1);
 
   const GANADAS = ["Honorarios pagados", "Transferencia realizada"];
   const updateData: Record<string, unknown> = {
@@ -104,6 +119,36 @@ export async function PATCH(
   }
 
   await db.update(operations).set(updateData).where(eq(operations.id, id));
+
+  // ─── Email notifications (fire-and-forget) ─────────────────────────────────
+  if (prevOp) {
+    const wasValidated = prevOp.status === "pendiente_de_validar" && status === "activa";
+    const wasDenied = status === "archivada" && prevOp.status !== "archivada";
+
+    if (wasValidated || wasDenied) {
+      (async () => {
+        try {
+          const [colab] = await db
+            .select({ email: collaborators.email, nombre: collaborators.nombre })
+            .from(collaborators)
+            .where(eq(collaborators.id, prevOp.collaborator_id))
+            .limit(1);
+          if (!colab) return;
+
+          if (wasValidated) {
+            await sendOperationValidatedEmail(colab.email, colab.nombre, prevOp.nombre ?? "Operación", id);
+          } else if (wasDenied) {
+            await sendOperationDeniedEmail(
+              colab.email, colab.nombre, prevOp.nombre ?? "Operación", id,
+              (motivo_denegacion as string) ?? ""
+            );
+          }
+        } catch (e: any) {
+          console.error("[OpEmail]", e.message);
+        }
+      })();
+    }
+  }
 
   return NextResponse.json({ ok: true });
 }

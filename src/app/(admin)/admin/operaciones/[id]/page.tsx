@@ -1,11 +1,12 @@
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues, financialEntities, entityOffices, entityOfficeContacts, operationDocuments, contacts } from "@/db/schema";
+import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues, financialEntities, entityOffices, entityOfficeContacts, operationDocuments, contacts, infoRequests } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import AdminOpForm from "./AdminOpForm";
 import NotesSection from "@/components/NotesSection";
 import DocumentsSection from "@/components/DocumentsSection";
+import InfoRequestsSection from "@/components/InfoRequestsSection";
 import { auth } from "@/lib/auth";
 import CelebrationBanner from "@/components/CelebrationBanner";
 import { fmtEur, fmtNum } from "@/lib/format";
@@ -105,6 +106,12 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
     .from(notes)
     .where(eq(notes.operation_id, id))
     .orderBy(notes.created_at);
+
+  const opInfoRequests = await db
+    .select()
+    .from(infoRequests)
+    .where(eq(infoRequests.operation_id, id))
+    .orderBy(infoRequests.created_at);
 
   const opCustomFields = await db
     .select()
@@ -490,6 +497,12 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
           currentUserId={adminId}
           isAdmin={true}
           canPin
+        />
+
+        <InfoRequestsSection
+          requests={opInfoRequests}
+          apiUrl={`/api/operations/${id}/requests`}
+          isAdmin={true}
         />
 
         <DocumentsSection docs={opDocs} operationId={id} />

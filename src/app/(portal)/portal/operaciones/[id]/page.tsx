@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments, financialEntities, entityOffices, entityOfficeContacts, contacts } from "@/db/schema";
+import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments, financialEntities, entityOffices, entityOfficeContacts, contacts, infoRequests } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import NotesSection from "@/components/NotesSection";
 import { fmtEur, fmtNum } from "@/lib/format";
 import OpEditForm from "./OpEditForm";
 import DocumentsSection from "@/components/DocumentsSection";
+import InfoRequestsSection from "@/components/InfoRequestsSection";
 import CelebrationBanner from "@/components/CelebrationBanner";
 
 const FASES_CONSULTORIA = ["Pre-análisis","Firma de honorarios","En estudio por entidad","Operación aprobada","Contrato firmado","Honorarios pagados"];
@@ -122,6 +123,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
 
   const opNotes = await db.select().from(notes).where(eq(notes.operation_id, id)).orderBy(notes.created_at);
   const opDocs = await db.select().from(operationDocuments).where(eq(operationDocuments.operation_id, id)).orderBy(operationDocuments.created_at);
+  const opInfoRequests = await db.select().from(infoRequests).where(eq(infoRequests.operation_id, id)).orderBy(infoRequests.created_at);
 
   const opCustomFields = await db.select().from(customFields).where(eq(customFields.entidad, "operacion")).orderBy(asc(customFields.orden));
   const opCustomValues = await db.select().from(customFieldValues).where(eq(customFieldValues.entity_id, id));
@@ -458,6 +460,14 @@ export default async function OperacionDetallePage({ params }: { params: Promise
           canPin
           placeholder="Añade una nota sobre esta operación..."
         />
+
+        {opInfoRequests.length > 0 && (
+          <InfoRequestsSection
+            requests={opInfoRequests}
+            apiUrl={`/api/operations/${id}/requests`}
+            isAdmin={false}
+          />
+        )}
 
         <DocumentsSection docs={opDocs} operationId={id} />
         </div>

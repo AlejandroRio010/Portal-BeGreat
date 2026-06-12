@@ -406,6 +406,23 @@ export const notes = pgTable("notes", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── Info requests (admin → collaborator) ────────────────────────────────────
+export const infoRequests = pgTable("info_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  operation_id: uuid("operation_id")
+    .notNull()
+    .references(() => operations.id, { onDelete: "cascade" }),
+  author_id: uuid("author_id")
+    .notNull()
+    .references(() => collaborators.id),
+  author_name: text("author_name").notNull(),
+  mensaje: text("mensaje").notNull(),
+  respuesta: text("respuesta"),
+  respondido: boolean("respondido").notNull().default(false),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  responded_at: timestamp("responded_at"),
+});
+
 // ─── Custom fields definition ─────────────────────────────────────────────────
 export const customFields = pgTable("custom_fields", {
   id: uuid("id").primaryKey().defaultRandom(),
