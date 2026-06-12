@@ -857,8 +857,6 @@ function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClie
                       setClienteCif(data.cif);
                       if (data.provincia) setClienteProvincia(data.provincia);
                       if (data.cnae) setClienteCnae(data.cnae);
-                      if (data.telefono) setContactoTelefono(data.telefono);
-                      if (data.web) setClienteWeb(data.web);
                     }}
                     onCifDuplicate={() => {}}
                   />

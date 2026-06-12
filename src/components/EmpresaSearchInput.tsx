@@ -17,8 +17,6 @@ interface Props {
     direccion?: string;
     provincia?: string;
     cnae?: string;
-    telefono?: string;
-    web?: string;
   }) => void;
   onCifDuplicate?: (nombre: string) => void;
   inp: string;
@@ -84,27 +82,12 @@ export default function EmpresaSearchInput({ onSelect, onCifDuplicate, inp, labe
       if (isDupe) return;
     }
 
-    // Try to get phone/web from Google Places
-    let telefono = "";
-    let web = "";
-    if (empresa.nombre && typeof google !== "undefined" && google.maps?.places) {
-      try {
-        const placeData = await fetchGooglePlaceDetails(empresa.nombre);
-        if (placeData) {
-          telefono = placeData.telefono ?? "";
-          web = placeData.web ?? "";
-        }
-      } catch { /* ignore */ }
-    }
-
     onSelect({
       nombre: empresa.nombre ?? value,
       cif: empresa.cif ?? "",
       direccion: empresa.direccion ?? "",
       provincia: empresa.provincia ?? "",
       cnae: empresa.cnae ?? "",
-      telefono,
-      web,
     });
   }
 
@@ -154,42 +137,3 @@ export default function EmpresaSearchInput({ onSelect, onCifDuplicate, inp, labe
     </div>
   );
 }
-
-// Google Places helper — only runs if the script is loaded
-async function fetchGooglePlaceDetails(query: string): Promise<{ telefono?: string; web?: string } | null> {
-  return new Promise((resolve) => {
-    try {
-      const service = new google.maps.places.AutocompleteService();
-      service.getPlacePredictions(
-        { input: query, componentRestrictions: { country: "es" }, types: ["establishment"] },
-        (predictions: any, status: any) => {
-          if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions?.length) {
-            resolve(null);
-            return;
-          }
-          const placeId = predictions[0].place_id;
-          const div = document.createElement("div");
-          const placesService = new google.maps.places.PlacesService(div);
-          placesService.getDetails(
-            { placeId, fields: ["formatted_phone_number", "website"] },
-            (place: any, detailStatus: any) => {
-              if (detailStatus !== google.maps.places.PlacesServiceStatus.OK || !place) {
-                resolve(null);
-                return;
-              }
-              resolve({
-                telefono: place.formatted_phone_number ?? undefined,
-                web: place.website ?? undefined,
-              });
-            }
-          );
-        }
-      );
-    } catch {
-      resolve(null);
-    }
-  });
-}
-
-// Type declaration for google maps
-declare const google: any;
