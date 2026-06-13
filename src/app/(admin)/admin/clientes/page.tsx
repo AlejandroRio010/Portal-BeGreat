@@ -3,6 +3,7 @@ import { clients, collaborators, operations } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import ClientesTabla from "@/components/ClientesTabla";
+import NuevoClienteToggle from "./ClientesPageClient";
 
 export const dynamic = "force-dynamic";
 
@@ -51,10 +52,8 @@ export default async function AdminClientesPage({
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
-        <p className="text-sm text-gray-400 mt-1">{cls.length} empresas</p>
-      </div>
+      <NuevoClienteToggle colaboradores={allColaboradores} />
+      <p className="text-sm text-gray-400 -mt-4 mb-6">{cls.length} empresas</p>
 
       {/* Filter */}
       <form method="GET" className="flex gap-3 mb-6 bg-white border border-gray-200 p-4">

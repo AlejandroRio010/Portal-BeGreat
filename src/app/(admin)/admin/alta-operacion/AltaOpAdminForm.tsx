@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { EmpresaBuscadorField, ProveedorBuscadorField, ContactoInline } from "@/components/AltaOpFields";
+import { ProveedorBuscadorField, ContactoInline } from "@/components/AltaOpFields";
+import EmpresaSearchInput from "@/components/EmpresaSearchInput";
 
 const PRODUCTOS_CONSULTORIA = ["Póliza de crédito", "Leasing", "Préstamo", "Confirming", "Factoring", "Otro"];
 const PLAZOS = [12, 24, 36, 48, 60, 72];
@@ -20,10 +21,16 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
   const [producto, setProducto] = useState("");
   const [esRenovacion, setEsRenovacion] = useState(false);
   const [clienteSeleccionado, setClienteSeleccionado] = useState<any | null>(null);
+  const [esNuevoCliente, setEsNuevoCliente] = useState(false);
   const [clienteNombre, setClienteNombre] = useState("");
   const [clienteEmail, setClienteEmail] = useState("");
   const [clienteTelefono, setClienteTelefono] = useState("");
   const [clienteWeb, setClienteWeb] = useState("");
+  const [clienteCif, setClienteCif] = useState("");
+  const [clienteCnae, setClienteCnae] = useState("");
+  const [clienteProvincia, setClienteProvincia] = useState("");
+  const [clienteDireccion, setClienteDireccion] = useState("");
+  const [clienteMissingData, setClienteMissingData] = useState<string[]>([]);
   const [contactoNombre, setContactoNombre] = useState("");
   const [contactoEmail, setContactoEmail] = useState("");
   const [contactoTelefono, setContactoTelefono] = useState("");
@@ -40,17 +47,72 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // DB search state
+  const [dbResults, setDbResults] = useState<any[]>([]);
+  const [dbOpen, setDbOpen] = useState(false);
+  const [dbSearched, setDbSearched] = useState(false);
+  const dbTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   function fillCliente(c: any) {
     setClienteSeleccionado(c);
     setClienteNombre(c.nombre);
     setClienteEmail(c.email ?? "");
     setClienteTelefono(c.telefono ?? "");
     setClienteWeb(c.web ?? "");
+    setClienteCif(c.cif ?? "");
+    setClienteCnae(c.cnae ?? "");
+    setClienteProvincia(c.provincia ?? "");
+    setClienteDireccion(c.direccion ?? "");
+    setEsNuevoCliente(false);
+    const missing: string[] = [];
+    if (!c.email) missing.push("email");
+    if (!c.cif) missing.push("CIF");
     if (c.contacto_nombre) {
       setContactoNombre(c.contacto_nombre);
       setContactoEmail(c.contacto_email ?? "");
       setContactoTelefono(c.contacto_telefono ?? "");
+    } else {
+      setContactoNombre("");
+      setContactoEmail("");
+      setContactoTelefono("");
+      missing.push("persona de contacto");
     }
+    setClienteMissingData(missing);
+  }
+
+  function clearCliente() {
+    setClienteSeleccionado(null);
+    setEsNuevoCliente(false);
+    setClienteEmail("");
+    setClienteTelefono("");
+    setClienteWeb("");
+    setClienteCif("");
+    setClienteCnae("");
+    setClienteProvincia("");
+    setClienteDireccion("");
+    setContactoNombre("");
+    setContactoEmail("");
+    setContactoTelefono("");
+    setClienteMissingData([]);
+  }
+
+  function buscarCliente(q: string) {
+    setClienteNombre(q);
+    clearCliente();
+    if (dbTimer.current) clearTimeout(dbTimer.current);
+    if (q.length < 2) { setDbResults([]); setDbOpen(false); setDbSearched(false); return; }
+    dbTimer.current = setTimeout(async () => {
+      const res = await fetch(`/api/search/clientes?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      setDbResults(data);
+      setDbSearched(true);
+      if (data.length === 0) {
+        setDbOpen(false);
+        setEsNuevoCliente(true);
+      } else {
+        setDbOpen(true);
+      }
+    }, 250);
   }
 
   function fillProveedor(p: any) {
@@ -91,6 +153,10 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
         es_renovacion: esRenovacion,
         operacion_original_id: renovSeleccionada?.id ?? null,
         proveedor_nombre: proveedorNombre || null,
+        cliente_cif: clienteCif || null,
+        cliente_cnae: clienteCnae || null,
+        cliente_provincia: clienteProvincia || null,
+        cliente_direccion: clienteDireccion || null,
         ...(esRenovacion && renovSeleccionada?.client_nombre ? { cliente_nombre: renovSeleccionada.client_nombre } : {}),
       }),
     });
@@ -103,6 +169,130 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
     }
     const op = await res.json();
     router.push(`/admin/operaciones/${op.id}`);
+  }
+
+  const clienteDisabled = !!(esRenovacion && renovSeleccionada?.client_nombre);
+
+  function renderClienteSection() {
+    if (clienteSeleccionado) {
+      return (
+        <div className="col-span-2">
+          <label className={label}>Empresa cliente *</label>
+          <div className="flex items-center justify-between border border-[#2E1A47] bg-[#EEEBF3] px-3 py-2.5">
+            <div>
+              <p className="text-sm font-semibold text-[#2E1A47]">{clienteSeleccionado.nombre}</p>
+              <p className="text-xs text-gray-500">{[clienteSeleccionado.codigo, clienteSeleccionado.cif, clienteSeleccionado.email].filter(Boolean).join(" · ")}</p>
+            </div>
+            <button type="button" onClick={() => { clearCliente(); setClienteNombre(""); }}
+              className="text-xs text-gray-400 hover:text-red-500 ml-3">✕ Cambiar</button>
+          </div>
+          {clienteMissingData.length > 0 && (
+            <p className="text-xs text-amber-600 mt-1.5 bg-amber-50 border border-amber-200 px-3 py-2">
+              Faltan datos en la ficha del cliente: <span className="font-semibold">{clienteMissingData.join(", ")}</span>.
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    if (esNuevoCliente) {
+      return (
+        <div className="col-span-2">
+          <div className="border border-emerald-200 bg-emerald-50/50 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Nueva empresa cliente</p>
+              <button type="button" onClick={() => { clearCliente(); setClienteNombre(""); }}
+                className="text-xs text-gray-400 hover:text-red-500">✕ Cancelar</button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <EmpresaSearchInput
+                  value={clienteNombre}
+                  onChange={setClienteNombre}
+                  inp={inp}
+                  labelCls={label}
+                  onSelect={(data) => {
+                    setClienteNombre(data.nombre);
+                    setClienteCif(data.cif);
+                    if (data.direccion) setClienteDireccion(data.direccion);
+                    if (data.provincia) setClienteProvincia(data.provincia);
+                    if (data.cnae) setClienteCnae(data.cnae_label ? `${data.cnae} - ${data.cnae_label}` : data.cnae);
+                    if (data.telefono) setClienteTelefono(data.telefono);
+                    if (data.email) setClienteEmail(data.email);
+                    if (data.web) setClienteWeb(data.web);
+                  }}
+                  onCifDuplicate={() => {}}
+                />
+              </div>
+              <div>
+                <label className={label}>CIF</label>
+                <input value={clienteCif} onChange={e => setClienteCif(e.target.value)} className={inp} placeholder="B12345678" />
+              </div>
+              <div>
+                <label className={label}>Email</label>
+                <input type="email" value={clienteEmail} onChange={e => setClienteEmail(e.target.value)} className={inp} placeholder="info@empresa.es" />
+              </div>
+              <div>
+                <label className={label}>Dirección</label>
+                <input value={clienteDireccion} onChange={e => setClienteDireccion(e.target.value)} className={inp} placeholder="Calle, nº, CP, Ciudad" />
+              </div>
+              <div>
+                <label className={label}>Provincia</label>
+                <input value={clienteProvincia} onChange={e => setClienteProvincia(e.target.value)} className={inp} placeholder="Madrid" />
+              </div>
+              <div>
+                <label className={label}>CNAE</label>
+                <input value={clienteCnae} onChange={e => setClienteCnae(e.target.value)} className={inp} placeholder="6201 - Consultoría informática" />
+              </div>
+              <div>
+                <label className={label}>Teléfono</label>
+                <input value={clienteTelefono} onChange={e => setClienteTelefono(e.target.value)} className={inp} placeholder="+34 600 000 000" />
+              </div>
+              <div>
+                <label className={label}>Web</label>
+                <input value={clienteWeb} onChange={e => setClienteWeb(e.target.value)} className={inp} placeholder="www.empresa.es" />
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-emerald-200">
+              <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-3">Persona de contacto</p>
+              <ContactoInline nombre={contactoNombre} setNombre={setContactoNombre} email={contactoEmail} setEmail={setContactoEmail}
+                telefono={contactoTelefono} setTelefono={setContactoTelefono} inp={inp} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Default: search field
+    return (
+      <div className="col-span-2 relative">
+        <label className={label}>Empresa cliente *</label>
+        <input name="cliente_nombre" value={clienteNombre} disabled={clienteDisabled}
+          onChange={e => buscarCliente(e.target.value)} required
+          onBlur={() => setTimeout(() => setDbOpen(false), 200)}
+          className={inp + (clienteDisabled ? " bg-gray-50 text-gray-500" : "")}
+          placeholder="Escribe para buscar o añadir nueva empresa..." autoComplete="off" />
+        {dbOpen && (
+          <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-gray-200 shadow-lg max-h-64 overflow-y-auto">
+            {dbResults.map((c: any) => (
+              <button key={c.id} type="button"
+                onMouseDown={() => { fillCliente(c); setDbResults([]); setDbOpen(false); }}
+                className="w-full text-left px-3 py-2.5 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
+                <p className="text-sm font-semibold text-gray-800">{c.nombre}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{[c.codigo, c.cif, c.email].filter(Boolean).join(" · ")}</p>
+              </button>
+            ))}
+            {dbSearched && clienteNombre.length >= 2 && (
+              <button type="button" onMouseDown={() => { setEsNuevoCliente(true); setDbOpen(false); }}
+                className="w-full text-left px-3 py-3 hover:bg-emerald-50 border-t border-gray-100 flex items-center gap-2">
+                <span className="w-5 h-5 bg-[#2E1A47] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">+</span>
+                <span className="text-sm font-semibold text-[#2E1A47]">Añadir &quot;{clienteNombre}&quot; como nueva empresa</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -245,27 +435,31 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
 
             <Section title="Datos del cliente">
               <div className="grid grid-cols-2 gap-4">
-                <EmpresaBuscadorField nombre={clienteNombre} setNombre={setClienteNombre} onSelect={fillCliente}
-                  onClearLink={() => setClienteSeleccionado(null)}
-                  disabled={!!(esRenovacion && renovSeleccionada?.client_nombre)} label={label} inp={inp} />
+                {renderClienteSection()}
                 <div>
                   <label className={label}>Importe (€)</label>
                   <input name="importe" type="number" step="any" inputMode="decimal" className={inp} placeholder="50.000" />
                 </div>
-                <div>
-                  <label className={label}>Email</label>
-                  <input name="cliente_email" type="email" value={clienteEmail} onChange={e => setClienteEmail(e.target.value)} className={inp} placeholder="contacto@empresa.es" />
-                </div>
-                <div>
-                  <label className={label}>Teléfono</label>
-                  <input name="cliente_telefono" value={clienteTelefono} onChange={e => setClienteTelefono(e.target.value)} className={inp} placeholder="612 345 678" />
-                </div>
+                {(clienteSeleccionado || !esNuevoCliente) && (
+                  <>
+                    <div>
+                      <label className={label}>Email</label>
+                      <input name="cliente_email" type="email" value={clienteEmail} onChange={e => setClienteEmail(e.target.value)} className={inp} placeholder="contacto@empresa.es" />
+                    </div>
+                    <div>
+                      <label className={label}>Teléfono</label>
+                      <input name="cliente_telefono" value={clienteTelefono} onChange={e => setClienteTelefono(e.target.value)} className={inp} placeholder="612 345 678" />
+                    </div>
+                  </>
+                )}
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Persona de contacto</p>
-                <ContactoInline nombre={contactoNombre} setNombre={setContactoNombre} email={contactoEmail} setEmail={setContactoEmail}
-                  telefono={contactoTelefono} setTelefono={setContactoTelefono} inp={inp} />
-              </div>
+              {!esNuevoCliente && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Persona de contacto</p>
+                  <ContactoInline nombre={contactoNombre} setNombre={setContactoNombre} email={contactoEmail} setEmail={setContactoEmail}
+                    telefono={contactoTelefono} setTelefono={setContactoTelefono} inp={inp} />
+                </div>
+              )}
             </Section>
 
             <Section title="Notas adicionales">
@@ -320,26 +514,31 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
 
             <Section title="Datos del cliente">
               <div className="grid grid-cols-2 gap-4">
-                <EmpresaBuscadorField nombre={clienteNombre} setNombre={setClienteNombre} onSelect={fillCliente}
-                  onClearLink={() => setClienteSeleccionado(null)} label={label} inp={inp} />
-                <div>
-                  <label className={label}>Email</label>
-                  <input name="cliente_email" type="email" value={clienteEmail} onChange={e => setClienteEmail(e.target.value)} className={inp} placeholder="info@empresa.es" />
-                </div>
-                <div>
-                  <label className={label}>Teléfono</label>
-                  <input name="cliente_telefono" value={clienteTelefono} onChange={e => setClienteTelefono(e.target.value)} className={inp} placeholder="612 345 678" />
-                </div>
-                <div>
-                  <label className={label}>Web</label>
-                  <input name="cliente_web" value={clienteWeb} onChange={e => setClienteWeb(e.target.value)} className={inp} placeholder="www.empresa.es" />
-                </div>
+                {renderClienteSection()}
+                {(clienteSeleccionado || !esNuevoCliente) && (
+                  <>
+                    <div>
+                      <label className={label}>Email</label>
+                      <input name="cliente_email" type="email" value={clienteEmail} onChange={e => setClienteEmail(e.target.value)} className={inp} placeholder="info@empresa.es" />
+                    </div>
+                    <div>
+                      <label className={label}>Teléfono</label>
+                      <input name="cliente_telefono" value={clienteTelefono} onChange={e => setClienteTelefono(e.target.value)} className={inp} placeholder="612 345 678" />
+                    </div>
+                    <div>
+                      <label className={label}>Web</label>
+                      <input name="cliente_web" value={clienteWeb} onChange={e => setClienteWeb(e.target.value)} className={inp} placeholder="www.empresa.es" />
+                    </div>
+                  </>
+                )}
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Persona de contacto</p>
-                <ContactoInline nombre={contactoNombre} setNombre={setContactoNombre} email={contactoEmail} setEmail={setContactoEmail}
-                  telefono={contactoTelefono} setTelefono={setContactoTelefono} inp={inp} />
-              </div>
+              {!esNuevoCliente && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Persona de contacto</p>
+                  <ContactoInline nombre={contactoNombre} setNombre={setContactoNombre} email={contactoEmail} setEmail={setContactoEmail}
+                    telefono={contactoTelefono} setTelefono={setContactoTelefono} inp={inp} />
+                </div>
+              )}
             </Section>
 
             <Section title="Proveedor de los equipos">
