@@ -8,6 +8,10 @@ interface EmpresaResult {
   direccion: string | null;
   provincia: string | null;
   cnae: string | null;
+  cnae_label: string | null;
+  telefono: string | null;
+  email: string | null;
+  web: string | null;
 }
 
 interface Props {
@@ -17,6 +21,10 @@ interface Props {
     direccion?: string;
     provincia?: string;
     cnae?: string;
+    cnae_label?: string;
+    telefono?: string;
+    email?: string;
+    web?: string;
   }) => void;
   onCifDuplicate?: (nombre: string) => void;
   inp: string;
@@ -88,6 +96,10 @@ export default function EmpresaSearchInput({ onSelect, onCifDuplicate, inp, labe
       direccion: empresa.direccion ?? "",
       provincia: empresa.provincia ?? "",
       cnae: empresa.cnae ?? "",
+      cnae_label: empresa.cnae_label ?? "",
+      telefono: empresa.telefono ?? "",
+      email: empresa.email ?? "",
+      web: empresa.web ?? "",
     });
   }
 
@@ -122,8 +134,9 @@ export default function EmpresaSearchInput({ onSelect, onCifDuplicate, inp, labe
             >
               <p className="text-sm font-semibold text-gray-800">{r.nombre}</p>
               <p className="text-xs text-gray-400 mt-0.5">
-                {[r.cif, r.provincia, r.cnae].filter(Boolean).join(" · ")}
+                {[r.cif, r.provincia, r.cnae_label || r.cnae].filter(Boolean).join(" · ")}
               </p>
+              {r.direccion && <p className="text-xs text-gray-300 mt-0.5">{r.direccion}</p>}
             </button>
           ))}
         </div>
