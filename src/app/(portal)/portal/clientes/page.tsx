@@ -4,6 +4,7 @@ import { clients, contacts, operations } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 import ClientesTabla from "@/components/ClientesTabla";
+import { NuevoClienteToggle } from "./NuevoClientePortal";
 
 export const dynamic = "force-dynamic";
 
@@ -51,9 +52,12 @@ export default async function ClientesPage() {
             {myClients.length} empresa{myClients.length !== 1 ? "s" : ""} registrada{myClients.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Link href="/portal/alta-operacion" className="bg-[#2E1A47] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#5a3d80] transition-colors">
-          + Nueva operación
-        </Link>
+        <div className="flex gap-3">
+          <NuevoClienteToggle />
+          <Link href="/portal/alta-operacion" className="bg-[#2E1A47] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#5a3d80] transition-colors">
+            + Nueva operación
+          </Link>
+        </div>
       </div>
 
       {myClients.length === 0 ? (
