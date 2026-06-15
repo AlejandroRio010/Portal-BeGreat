@@ -75,10 +75,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const tieneContactoInfo = !!(contactoEmail.trim() || contactoTelefono.trim());
-  const tieneEmpresaInfo = !!(clienteEmail.trim() || clienteTelefono.trim());
-  const clienteListo = !!(clienteSeleccionado || (esNuevoCliente && clienteNombre.trim() && clienteCif.trim() && (tieneContactoInfo || tieneEmpresaInfo)));
-  const clientePendiente = esNuevoCliente && !clienteListo;
+  const clientePendiente = false;
 
   function fillCliente(c: any) {
     setClienteSeleccionado(c);
@@ -296,7 +293,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
                   <label key={p} className={`flex items-center gap-2 px-3 py-3 border text-sm cursor-pointer transition-all ${
                     producto === p ? "border-[#2E1A47] bg-[#EEEBF3] font-semibold text-[#2E1A47]" : "border-gray-200 text-gray-700 hover:border-gray-400"
                   }`}>
-                    <input type="radio" name="producto" value={p} required className="accent-[#2E1A47]" onChange={() => setProducto(p)} />
+                    <input type="radio" name="producto" value={p} className="accent-[#2E1A47]" onChange={() => setProducto(p)} />
                     {p}
                   </label>
                 ))}
@@ -304,7 +301,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
               {producto === "Otro" && (
                 <div className="mt-3">
                   <label className={labelCls}>Describe qué necesita tu cliente *</label>
-                  <textarea name="producto_otro" rows={2} required className={inp + " resize-none"}
+                  <textarea name="producto_otro" rows={2} className={inp + " resize-none"}
                     placeholder="Describe brevemente el tipo de financiación o producto que busca tu cliente..." />
                 </div>
               )}
@@ -352,7 +349,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>Importe (sin IVA) * €</label>
-                  <input name="importe" type="number" step="any" inputMode="decimal" required className={inp} placeholder="50.000" />
+                  <input name="importe" type="number" step="any" inputMode="decimal" className={inp} placeholder="50.000" />
                 </div>
               </div>
             </Section>
@@ -380,7 +377,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
                   { val: "tecnologico", label: "Tecnológico", desc: "IT, servidores, impresoras" },
                 ].map((t, i) => (
                   <label key={t.val} className={`flex items-start gap-3 p-4 cursor-pointer transition-all has-[:checked]:bg-[#EEEBF3] has-[:checked]:border-[#2E1A47] ${i === 0 ? "border-r border-gray-300" : ""}`}>
-                    <input type="radio" name="equipo_tipo" value={t.val} required className="mt-0.5 accent-[#2E1A47]" />
+                    <input type="radio" name="equipo_tipo" value={t.val} className="mt-0.5 accent-[#2E1A47]" />
                     <div>
                       <p className="text-sm font-semibold text-gray-900">{t.label}</p>
                       <p className="text-xs text-gray-400">{t.desc}</p>
@@ -391,11 +388,11 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>Importe (sin IVA) * €</label>
-                  <input name="importe" type="number" step="any" inputMode="decimal" required className={inp} placeholder="10.000" />
+                  <input name="importe" type="number" step="any" inputMode="decimal" className={inp} placeholder="10.000" />
                 </div>
                 <div>
                   <label className={labelCls}>Plazo deseado *</label>
-                  <select name="plazo_meses" required className={inp}>
+                  <select name="plazo_meses" className={inp}>
                     <option value="">Seleccionar</option>
                     {PLAZOS.map((m) => <option key={m} value={m}>{m} meses</option>)}
                   </select>
@@ -938,7 +935,7 @@ function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClie
               onNew={() => setEsNuevoCliente(true)}
               placeholder="Escribe para buscar o añadir nueva empresa..."
               searchUrl="/api/search/clientes" nameField="cliente_nombre"
-              label="Empresa cliente *" inp={inp} labelCls={labelCls} required disabled={disabled}
+              label="Empresa cliente *" inp={inp} labelCls={labelCls} disabled={disabled}
               autoNewWhenEmpty />
           </div>
         )}
@@ -1008,11 +1005,11 @@ function ProveedorSection({ proveedorNombre, setProveedorNombre, proveedorEmail,
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Nombre *</label>
-                  <input value={proveedorNombre} onChange={e => setProveedorNombre(e.target.value)} required className={inp} placeholder="Proveedor S.A." />
+                  <input value={proveedorNombre} onChange={e => setProveedorNombre(e.target.value)} className={inp} placeholder="Proveedor S.A." />
                 </div>
                 <div>
                   <label className={labelCls}>Email *</label>
-                  <input type="email" value={proveedorEmail} onChange={e => setProveedorEmail(e.target.value)} required className={inp} placeholder="info@proveedor.es" />
+                  <input type="email" value={proveedorEmail} onChange={e => setProveedorEmail(e.target.value)} className={inp} placeholder="info@proveedor.es" />
                 </div>
                 <div>
                   <label className={labelCls}>Teléfono</label>
