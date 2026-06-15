@@ -63,6 +63,10 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       aval_email: operations.aval_email,
       aval_telefono: operations.aval_telefono,
       aval_persona_contacto: operations.aval_persona_contacto,
+      aval_dni: operations.aval_dni,
+      aval_empresa: operations.aval_empresa,
+      aval_contact_id: operations.aval_contact_id,
+      aval_client_id: operations.aval_client_id,
       necesidad: operations.necesidad,
       modalidad_renting: operations.modalidad_renting,
       importe_facturado_begreat: operations.importe_facturado_begreat,
@@ -392,16 +396,28 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
                   {/* Aval */}
                   {op.tiene_aval && op.aval_tipo && (
                     <div className="pt-3 mt-3 border-t border-gray-100">
-                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Aval</dt>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">
+                        {op.aval_tipo === "persona_fisica" ? "Avalista (persona física)" : "Avalista (empresa)"}
+                      </dt>
                       {op.aval_tipo === "persona_fisica" ? (
                         <dd className="text-sm text-gray-800">
-                          <p className="font-medium">{op.aval_nombre}</p>
+                          {op.aval_contact_id ? (
+                            <Link href={`/admin/clientes/${op.client_id}#contacto-${op.aval_contact_id}`} className="font-medium text-[#2E1A47] hover:underline">{op.aval_nombre}</Link>
+                          ) : (
+                            <p className="font-medium">{op.aval_nombre}</p>
+                          )}
+                          {op.aval_dni && <p className="text-xs text-gray-500">DNI: {op.aval_dni}</p>}
+                          {op.aval_empresa && <p className="text-xs text-gray-500">Empresa: {op.aval_empresa}</p>}
                           {op.aval_email && <p className="text-xs text-gray-500">{op.aval_email}</p>}
                           {op.aval_telefono && <p className="text-xs text-gray-500">{op.aval_telefono}</p>}
                         </dd>
                       ) : (
                         <dd className="text-sm text-gray-800">
-                          <p className="font-medium">{op.aval_nombre}</p>
+                          {op.aval_client_id ? (
+                            <Link href={`/admin/clientes/${op.aval_client_id}`} className="font-medium text-[#2E1A47] hover:underline">{op.aval_nombre}</Link>
+                          ) : (
+                            <p className="font-medium">{op.aval_nombre}</p>
+                          )}
                           {op.aval_persona_contacto && <p className="text-xs text-gray-500">Contacto: {op.aval_persona_contacto}</p>}
                           {op.aval_email && <p className="text-xs text-gray-500">{op.aval_email}</p>}
                         </dd>
@@ -488,6 +504,10 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialAvalEmail={op.aval_email ?? null}
             initialAvalTelefono={op.aval_telefono ?? null}
             initialAvalPersonaContacto={op.aval_persona_contacto ?? null}
+            initialAvalDni={op.aval_dni ?? null}
+            initialAvalEmpresa={op.aval_empresa ?? null}
+            initialAvalContactId={op.aval_contact_id ?? null}
+            initialAvalClientId={op.aval_client_id ?? null}
             initialModalidadRenting={op.modalidad_renting ?? null}
             initialImporteFacturadoBegreat={op.importe_facturado_begreat ?? null}
             initialImporteFacturadoVisible={op.importe_facturado_visible ?? false}

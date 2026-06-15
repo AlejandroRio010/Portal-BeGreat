@@ -31,7 +31,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { producto, importe, descripcion, plazo_meses, lugar_entrega, equipo_tipo,
           es_renovacion, operacion_original_id, resultado, pipeline_key,
           necesidad, modalidad_renting,
-          tiene_aval, aval_tipo, aval_nombre, aval_email, aval_telefono, aval_persona_contacto } = body;
+          tiene_aval, aval_tipo, aval_nombre, aval_email, aval_telefono, aval_persona_contacto,
+          aval_dni, aval_empresa, aval_contact_id, aval_client_id } = body;
 
   // Actualización parcial: solo tocamos lo que llega
   const data: Record<string, unknown> = { updated_at: new Date() };
@@ -52,6 +53,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     data.aval_email = tiene_aval ? (aval_email || null) : null;
     data.aval_telefono = tiene_aval ? (aval_telefono || null) : null;
     data.aval_persona_contacto = tiene_aval ? (aval_persona_contacto || null) : null;
+    data.aval_dni = tiene_aval && aval_tipo === "persona_fisica" ? (aval_dni || null) : null;
+    data.aval_empresa = tiene_aval && aval_tipo === "persona_fisica" ? (aval_empresa || null) : null;
+    data.aval_contact_id = tiene_aval && aval_tipo === "persona_fisica" ? (aval_contact_id || null) : null;
+    data.aval_client_id = tiene_aval && aval_tipo === "empresa" ? (aval_client_id || null) : null;
   }
 
   // Resultado: marca ganada/denegada/en curso y fija la fecha de cierre

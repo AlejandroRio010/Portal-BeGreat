@@ -347,6 +347,10 @@ export const operations = pgTable("operations", {
   aval_email: text("aval_email"),
   aval_telefono: text("aval_telefono"),
   aval_persona_contacto: text("aval_persona_contacto"),
+  aval_dni: text("aval_dni"),
+  aval_empresa: text("aval_empresa"),
+  aval_contact_id: uuid("aval_contact_id").references(() => contacts.id, { onDelete: "set null" }),
+  aval_client_id: uuid("aval_client_id").references(() => clients.id, { onDelete: "set null" }),
   // Modalidad renting
   modalidad_renting: modalidadRentingEnum("modalidad_renting"),
   importe_facturado_begreat: numeric("importe_facturado_begreat", { precision: 12, scale: 2 }),

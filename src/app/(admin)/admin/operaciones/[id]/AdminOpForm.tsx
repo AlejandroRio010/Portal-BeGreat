@@ -66,6 +66,10 @@ interface Props {
   initialAvalEmail?: string | null;
   initialAvalTelefono?: string | null;
   initialAvalPersonaContacto?: string | null;
+  initialAvalDni?: string | null;
+  initialAvalEmpresa?: string | null;
+  initialAvalContactId?: string | null;
+  initialAvalClientId?: string | null;
   initialModalidadRenting?: string | null;
   initialImporteFacturadoBegreat?: string | null;
   initialImporteFacturadoVisible?: boolean;
@@ -107,6 +111,10 @@ export default function AdminOpForm({
   initialAvalEmail,
   initialAvalTelefono,
   initialAvalPersonaContacto,
+  initialAvalDni,
+  initialAvalEmpresa,
+  initialAvalContactId,
+  initialAvalClientId,
   initialModalidadRenting,
   initialImporteFacturadoBegreat,
   initialImporteFacturadoVisible,
@@ -178,6 +186,19 @@ export default function AdminOpForm({
   const [avalEmail, setAvalEmail] = useState(initialAvalEmail ?? "");
   const [avalTelefono, setAvalTelefono] = useState(initialAvalTelefono ?? "");
   const [avalPersonaContacto, setAvalPersonaContacto] = useState(initialAvalPersonaContacto ?? "");
+  const [avalDni, setAvalDni] = useState(initialAvalDni ?? "");
+  const [avalEmpresa, setAvalEmpresa] = useState(initialAvalEmpresa ?? "");
+  const [avalContactId, setAvalContactId] = useState<string | null>(initialAvalContactId ?? null);
+  const [avalClientId, setAvalClientId] = useState<string | null>(initialAvalClientId ?? null);
+
+  // Aval search state
+  const [avalSearchResults, setAvalSearchResults] = useState<any[]>([]);
+  const [avalSearchOpen, setAvalSearchOpen] = useState(false);
+  const avalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [avalEmpresaResults, setAvalEmpresaResults] = useState<any[]>([]);
+  const [avalEmpresaApiResults, setAvalEmpresaApiResults] = useState<any[]>([]);
+  const [avalEmpresaOpen, setAvalEmpresaOpen] = useState(false);
+  const avalEmpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [saving, setSaving] = useState(false);
@@ -222,10 +243,75 @@ export default function AdminOpForm({
         aval_nombre: tieneAval ? (avalNombre || null) : null,
         aval_email: tieneAval ? (avalEmail || null) : null,
         aval_telefono: tieneAval ? (avalTelefono || null) : null,
-        aval_persona_contacto: tieneAval ? (avalPersonaContacto || null) : null });
+        aval_persona_contacto: tieneAval ? (avalPersonaContacto || null) : null,
+        aval_dni: tieneAval && avalTipo === "persona_fisica" ? (avalDni || null) : null,
+        aval_empresa: tieneAval && avalTipo === "persona_fisica" ? (avalEmpresa || null) : null,
+        aval_contact_id: tieneAval && avalTipo === "persona_fisica" ? (avalContactId || null) : null,
+        aval_client_id: tieneAval && avalTipo === "empresa" ? (avalClientId || null) : null });
       setSavedBasic(true);
     } catch { setError("Error al guardar datos básicos."); }
     finally { setSavingBasic(false); }
+  }
+
+  function buscarPersonaAval(q: string) {
+    setAvalNombre(q);
+    setAvalContactId(null);
+    if (avalTimer.current) clearTimeout(avalTimer.current);
+    if (q.length < 2) { setAvalSearchResults([]); setAvalSearchOpen(false); return; }
+    avalTimer.current = setTimeout(async () => {
+      const res = await fetch(`/api/search/personas?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      setAvalSearchResults(data);
+      setAvalSearchOpen(data.length > 0);
+    }, 250);
+  }
+
+  function selectPersonaAval(p: any) {
+    setAvalNombre(p.nombre);
+    setAvalEmail(p.email ?? "");
+    setAvalTelefono(p.telefono ?? "");
+    setAvalEmpresa(p.empresa ?? p.client_nombre ?? "");
+    setAvalPersonaContacto(p.rol ?? "");
+    setAvalContactId(p.id ?? null);
+    setAvalSearchResults([]);
+    setAvalSearchOpen(false);
+  }
+
+  function buscarEmpresaAval(q: string) {
+    setAvalNombre(q);
+    setAvalClientId(null);
+    if (avalEmpTimer.current) clearTimeout(avalEmpTimer.current);
+    if (q.length < 2) { setAvalEmpresaResults([]); setAvalEmpresaApiResults([]); setAvalEmpresaOpen(false); return; }
+    avalEmpTimer.current = setTimeout(async () => {
+      const [dbRes, apiRes] = await Promise.all([
+        fetch(`/api/search/clientes?q=${encodeURIComponent(q)}`).then(r => r.json()).catch(() => []),
+        fetch(`/api/search/empresas?q=${encodeURIComponent(q)}`).then(r => r.json()).catch(() => []),
+      ]);
+      setAvalEmpresaResults(dbRes);
+      setAvalEmpresaApiResults(apiRes);
+      setAvalEmpresaOpen(dbRes.length > 0 || apiRes.length > 0);
+    }, 300);
+  }
+
+  function selectClienteAval(c: any) {
+    setAvalNombre(c.nombre);
+    setAvalEmail(c.email ?? "");
+    setAvalTelefono(c.telefono ?? "");
+    setAvalPersonaContacto(c.contacto_nombre ?? "");
+    setAvalClientId(c.id ?? null);
+    setAvalEmpresaResults([]);
+    setAvalEmpresaApiResults([]);
+    setAvalEmpresaOpen(false);
+  }
+
+  function selectApiEmpresaAval(e: any) {
+    setAvalNombre(e.nombre ?? "");
+    setAvalEmail(e.email ?? "");
+    setAvalTelefono(e.telefono ?? "");
+    setAvalClientId(null);
+    setAvalEmpresaResults([]);
+    setAvalEmpresaApiResults([]);
+    setAvalEmpresaOpen(false);
   }
 
   async function handleSave() {
@@ -391,43 +477,107 @@ export default function AdminOpForm({
           {tieneAval && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-0 border border-gray-200">
-                <button type="button" onClick={() => setAvalTipo("persona_fisica")}
+                <button type="button" onClick={() => { setAvalTipo("persona_fisica"); setAvalNombre(""); setAvalEmail(""); setAvalTelefono(""); setAvalPersonaContacto(""); setAvalDni(""); setAvalEmpresa(""); setAvalContactId(null); setAvalClientId(null); }}
                   className={`py-2 text-xs font-semibold transition-all ${avalTipo === "persona_fisica" ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>Persona física</button>
-                <button type="button" onClick={() => setAvalTipo("empresa")}
+                <button type="button" onClick={() => { setAvalTipo("empresa"); setAvalNombre(""); setAvalEmail(""); setAvalTelefono(""); setAvalPersonaContacto(""); setAvalDni(""); setAvalEmpresa(""); setAvalContactId(null); setAvalClientId(null); }}
                   className={`py-2 text-xs font-semibold transition-all border-l border-gray-200 ${avalTipo === "empresa" ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>Empresa</button>
               </div>
-              <div>
-                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Nombre{avalTipo === "empresa" ? " de la empresa" : ""}</label>
-                <input value={avalNombre} onChange={(e) => setAvalNombre(e.target.value)}
-                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
-                  placeholder={avalTipo === "empresa" ? "Nombre de la empresa avalista" : "Nombre completo"} />
-              </div>
+
               {avalTipo === "persona_fisica" ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
-                    <input type="email" value={avalEmail} onChange={(e) => setAvalEmail(e.target.value)}
-                      className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                <>
+                  <div className="relative">
+                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Nombre del avalista</label>
+                    <input value={avalNombre} onChange={(e) => buscarPersonaAval(e.target.value)}
+                      onBlur={() => setTimeout(() => setAvalSearchOpen(false), 200)}
+                      className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
+                      placeholder="Buscar persona de contacto..." autoComplete="off" />
+                    {avalSearchOpen && avalSearchResults.length > 0 && (
+                      <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-gray-200 shadow-lg max-h-48 overflow-y-auto">
+                        {avalSearchResults.map((p: any, i: number) => (
+                          <button key={i} type="button" onMouseDown={() => selectPersonaAval(p)}
+                            className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
+                            <p className="text-xs font-semibold text-gray-800">{p.nombre}</p>
+                            <p className="text-[10px] text-gray-400">{[p.rol, p.email, p.empresa || p.client_nombre].filter(Boolean).join(" · ")}</p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {avalContactId && <p className="text-[10px] text-emerald-600 mt-1">Vinculado a contacto existente</p>}
                   </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Teléfono</label>
-                    <input value={avalTelefono} onChange={(e) => setAvalTelefono(e.target.value)}
-                      className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">DNI / NIF</label>
+                      <input value={avalDni} onChange={(e) => setAvalDni(e.target.value)}
+                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" placeholder="12345678A" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Empresa</label>
+                      <input value={avalEmpresa} onChange={(e) => setAvalEmpresa(e.target.value)}
+                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" placeholder="Empresa del avalista" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
+                      <input type="email" value={avalEmail} onChange={(e) => setAvalEmail(e.target.value)}
+                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Teléfono</label>
+                      <input value={avalTelefono} onChange={(e) => setAvalTelefono(e.target.value)}
+                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                    </div>
                   </div>
-                </div>
+                </>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Persona de contacto</label>
-                    <input value={avalPersonaContacto} onChange={(e) => setAvalPersonaContacto(e.target.value)}
-                      className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                <>
+                  <div className="relative">
+                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Nombre de la empresa avalista</label>
+                    <input value={avalNombre} onChange={(e) => buscarEmpresaAval(e.target.value)}
+                      onBlur={() => setTimeout(() => setAvalEmpresaOpen(false), 200)}
+                      className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
+                      placeholder="Buscar empresa en base de datos o API..." autoComplete="off" />
+                    {avalEmpresaOpen && (avalEmpresaResults.length > 0 || avalEmpresaApiResults.length > 0) && (
+                      <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-gray-200 shadow-lg max-h-60 overflow-y-auto">
+                        {avalEmpresaResults.length > 0 && (
+                          <>
+                            <p className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase bg-gray-50">Base de datos</p>
+                            {avalEmpresaResults.map((c: any) => (
+                              <button key={c.id} type="button" onMouseDown={() => selectClienteAval(c)}
+                                className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
+                                <p className="text-xs font-semibold text-gray-800">{c.nombre}</p>
+                                <p className="text-[10px] text-gray-400">{[c.codigo, c.cif, c.email].filter(Boolean).join(" · ")}</p>
+                              </button>
+                            ))}
+                          </>
+                        )}
+                        {avalEmpresaApiResults.length > 0 && (
+                          <>
+                            <p className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase bg-gray-50 border-t border-gray-200">Registro mercantil</p>
+                            {avalEmpresaApiResults.map((e: any, i: number) => (
+                              <button key={i} type="button" onMouseDown={() => selectApiEmpresaAval(e)}
+                                className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
+                                <p className="text-xs font-semibold text-gray-800">{e.nombre}</p>
+                                <p className="text-[10px] text-gray-400">{[e.cif, e.provincia].filter(Boolean).join(" · ")}</p>
+                              </button>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    )}
+                    {avalClientId && <p className="text-[10px] text-emerald-600 mt-1">Vinculado a cliente existente</p>}
                   </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
-                    <input type="email" value={avalEmail} onChange={(e) => setAvalEmail(e.target.value)}
-                      className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Persona de contacto</label>
+                      <input value={avalPersonaContacto} onChange={(e) => setAvalPersonaContacto(e.target.value)}
+                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
+                      <input type="email" value={avalEmail} onChange={(e) => setAvalEmail(e.target.value)}
+                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
           )}

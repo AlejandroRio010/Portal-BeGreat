@@ -52,6 +52,10 @@ export async function PATCH(
     aval_email,
     aval_telefono,
     aval_persona_contacto,
+    aval_dni,
+    aval_empresa,
+    aval_contact_id,
+    aval_client_id,
   } = body;
 
   // Fetch current state before update (for email triggers)
@@ -116,6 +120,10 @@ export async function PATCH(
     updateData.aval_email = tiene_aval ? (aval_email || null) : null;
     updateData.aval_telefono = tiene_aval ? (aval_telefono || null) : null;
     updateData.aval_persona_contacto = tiene_aval ? (aval_persona_contacto || null) : null;
+    updateData.aval_dni = tiene_aval && aval_tipo === "persona_fisica" ? (aval_dni || null) : null;
+    updateData.aval_empresa = tiene_aval && aval_tipo === "persona_fisica" ? (aval_empresa || null) : null;
+    updateData.aval_contact_id = tiene_aval && aval_tipo === "persona_fisica" ? (aval_contact_id || null) : null;
+    updateData.aval_client_id = tiene_aval && aval_tipo === "empresa" ? (aval_client_id || null) : null;
   }
 
   await db.update(operations).set(updateData).where(eq(operations.id, id));
