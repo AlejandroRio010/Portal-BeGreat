@@ -2,11 +2,13 @@ export function sanitizeFolderName(name: string): string {
   return name.replace(/[<>:"/\\|?*]/g, "_").replace(/\s+/g, " ").trim();
 }
 
-const TENANT_ID = process.env.AZURE_TENANT_ID!;
-const CLIENT_ID = process.env.AZURE_CLIENT_ID!;
-const CLIENT_SECRET = process.env.AZURE_CLIENT_SECRET!;
+function env(key: string): string {
+  const v = process.env[key];
+  if (!v) throw new Error(`Missing env var: ${key}`);
+  return v;
+}
+
 const DRIVE_USER_ID = "266c3e3b-a7d8-47c2-ba6a-67091899a11d";
-const BASE_FOLDER = process.env.ONEDRIVE_BASE_FOLDER ?? "Clientes 2026/Portal BeGreat";
 
 let cachedToken: { token: string; expires: number } | null = null;
 
@@ -15,26 +17,27 @@ async function getToken(): Promise<string> {
     return cachedToken.token;
   }
   const res = await fetch(
-    `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token`,
+    `https://login.microsoftonline.com/${env("AZURE_TENANT_ID")}/oauth2/v2.0/token`,
     {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
-        client_id: CLIENT_ID,
+        client_id: env("AZURE_CLIENT_ID"),
         scope: "https://graph.microsoft.com/.default",
-        client_secret: CLIENT_SECRET,
+        client_secret: env("AZURE_CLIENT_SECRET"),
         grant_type: "client_credentials",
       }),
     }
   );
   const data = await res.json();
-  if (!data.access_token) throw new Error("Failed to get Graph token");
+  if (!data.access_token) throw new Error(`Failed to get Graph token: ${data.error_description ?? data.error ?? "unknown"}`);
   cachedToken = { token: data.access_token, expires: Date.now() + data.expires_in * 1000 };
   return data.access_token;
 }
 
 function driveUrl(path: string) {
-  return `https://graph.microsoft.com/v1.0/users/${DRIVE_USER_ID}/drive/root:/${encodeURIComponent(BASE_FOLDER).replace(/%2F/g, "/")}/${path}`;
+  const base = process.env.ONEDRIVE_BASE_FOLDER ?? "Clientes 2026/Portal BeGreat";
+  return `https://graph.microsoft.com/v1.0/users/${DRIVE_USER_ID}/drive/root:/${encodeURIComponent(base).replace(/%2F/g, "/")}/${path}`;
 }
 
 export async function ensureFolder(folderPath: string): Promise<void> {
@@ -47,7 +50,7 @@ export async function ensureFolder(folderPath: string): Promise<void> {
     const check = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (check.ok) continue;
     const parentUrl = currentPath === part
-      ? `https://graph.microsoft.com/v1.0/users/${DRIVE_USER_ID}/drive/root:/${encodeURIComponent(BASE_FOLDER).replace(/%2F/g, "/")}:/children`
+      ? `https://graph.microsoft.com/v1.0/users/${DRIVE_USER_ID}/drive/root:/${encodeURIComponent(process.env.ONEDRIVE_BASE_FOLDER ?? "Clientes 2026/Portal BeGreat").replace(/%2F/g, "/")}:/children`
       : `${driveUrl(currentPath.substring(0, currentPath.lastIndexOf("/")))}:/children`;
     await fetch(parentUrl, {
       method: "POST",
