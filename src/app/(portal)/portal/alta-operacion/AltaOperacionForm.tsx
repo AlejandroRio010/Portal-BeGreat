@@ -75,8 +75,6 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const clientePendiente = false;
-
   function fillCliente(c: any) {
     setClienteSeleccionado(c);
     setClienteNombre(c.nombre);
@@ -87,7 +85,6 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
     setClienteCnae(c.cnae ?? "");
     setEsNuevoCliente(false);
 
-    // Check missing data
     const missing: string[] = [];
     if (!c.email) missing.push("email");
     if (!c.cif) missing.push("CIF");
@@ -183,27 +180,32 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
     const data: Record<string, string> = {};
     form.forEach((v, k) => { data[k] = v as string; });
 
-    // Validation — client must be either selected from DB or fully filled as new
-    if (!clienteSeleccionado && !esNuevoCliente) { setError("Busca y selecciona una empresa cliente, o da de alta una nueva."); setLoading(false); return; }
-    if (!clienteNombre.trim()) { setError("El nombre de la empresa cliente es obligatorio."); setLoading(false); return; }
-    if (!data.importe) { setError("El importe (sin IVA) es obligatorio."); setLoading(false); return; }
-    if (pipeline === "consultoria" && !producto) { setError("Selecciona un producto de financiación."); setLoading(false); return; }
-    if (pipeline === "consultoria" && producto === "Otro" && !data.producto_otro?.trim()) { setError("Describe qué producto necesita tu cliente."); setLoading(false); return; }
-    if (pipeline === "renting" && !data.equipo_tipo) { setError("Selecciona el tipo de equipo."); setLoading(false); return; }
-    if (pipeline === "renting" && !data.plazo_meses) { setError("Selecciona el plazo deseado."); setLoading(false); return; }
+    // Validation with descriptive errors
+    const faltan: string[] = [];
+
+    if (!clienteSeleccionado && !esNuevoCliente) {
+      setError("Busca y selecciona una empresa cliente, o da de alta una nueva.");
+      setLoading(false); return;
+    }
+    if (!clienteNombre.trim()) faltan.push("Nombre de la empresa");
+    if (!data.importe) faltan.push("Importe (€)");
+    if (pipeline === "consultoria" && !producto) faltan.push("Producto de financiación");
+    if (pipeline === "consultoria" && producto === "Otro" && !data.producto_otro?.trim()) faltan.push("Descripción del producto");
+    if (pipeline === "renting" && !data.equipo_tipo) faltan.push("Tipo de equipo");
+    if (pipeline === "renting" && !data.plazo_meses) faltan.push("Plazo deseado");
 
     if (esNuevoCliente) {
-      if (!clienteCif.trim()) { setError("El CIF de la empresa cliente es obligatorio."); setLoading(false); return; }
+      if (!clienteCif.trim()) faltan.push("CIF de la empresa");
       const tieneContacto = !!(contactoEmail.trim() || contactoTelefono.trim());
       const tieneEmpresa = !!(clienteEmail.trim() || clienteTelefono.trim());
       if (!tieneContacto && !tieneEmpresa) {
-        setError("Indica al menos un email o teléfono de contacto (de la persona de contacto o de la empresa).");
-        setLoading(false); return;
+        faltan.push("Email o teléfono (de la empresa o de la persona de contacto)");
       }
     }
 
-    if (pipeline === "renting" && esNuevoProveedor && proveedorNombre.trim()) {
-      if (!proveedorEmail.trim()) { setError("El email del proveedor es obligatorio."); setLoading(false); return; }
+    if (faltan.length > 0) {
+      setError(`Faltan campos obligatorios: ${faltan.join(", ")}.`);
+      setLoading(false); return;
     }
 
     const productoFinal = producto === "Otro" ? (data.producto_otro?.trim() || "Otro") : producto;
@@ -271,7 +273,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Tipo de operación */}
-        <Section title="Tipo de operación">
+        <Section title="Tipo de operación *">
           <div className="grid grid-cols-2 gap-0 border border-gray-300">
             {(["consultoria", "renting"] as Pipeline[]).map((p, i) => (
               <button key={p} type="button" onClick={() => setPipeline(p)}
@@ -379,7 +381,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
                   <label key={t.val} className={`flex items-start gap-3 p-4 cursor-pointer transition-all has-[:checked]:bg-[#EEEBF3] has-[:checked]:border-[#2E1A47] ${i === 0 ? "border-r border-gray-300" : ""}`}>
                     <input type="radio" name="equipo_tipo" value={t.val} className="mt-0.5 accent-[#2E1A47]" />
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">{t.label}</p>
+                      <p className="text-sm font-semibold text-gray-900">{t.label} *</p>
                       <p className="text-xs text-gray-400">{t.desc}</p>
                     </div>
                   </label>
@@ -403,7 +405,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
                 </div>
                 <div className="col-span-2">
                   <label className={labelCls}>Descripción del equipo a arrendar</label>
-                  <textarea name="descripcion" rows={3} className={inp + " resize-none"}
+                  <textarea name="descripcion_equipo" rows={3} className={inp + " resize-none"}
                     placeholder="Describe brevemente el tipo de equipo, marca, modelo, características técnicas..." />
                 </div>
               </div>
@@ -463,12 +465,10 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
           </>
         )}
 
-        {pipeline === "consultoria" && (
-          <Section title="Presentación de la operación">
-            <textarea name="descripcion" rows={5} className={inp}
-              placeholder="Presenta la operación: contexto del cliente, situación financiera, motivo de la solicitud, urgencia, condiciones especiales..." />
-          </Section>
-        )}
+        <Section title="Presentación de la operación">
+          <textarea name="descripcion" rows={5} className={inp + " resize-y"}
+            placeholder="Presenta la operación: contexto del cliente, situación financiera, motivo de la solicitud, urgencia, condiciones especiales..." />
+        </Section>
 
         <Section title="Preferencia de comunicación con el cliente">
           <div className="border border-gray-200 divide-y divide-gray-100">
@@ -491,17 +491,9 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
 
         {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 px-4 py-3">{error}</p>}
 
-        {clientePendiente && (
-          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-4 py-3">
-            Completa todos los campos obligatorios de la nueva empresa cliente antes de enviar la operación.
-          </p>
-        )}
-
-        <button type="submit" disabled={loading || clientePendiente}
-          className={`w-full py-3.5 text-sm font-bold transition-colors disabled:opacity-60 ${
-            clientePendiente ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#2E1A47] text-white hover:bg-[#5a3d80]"
-          }`}>
-          {loading ? "Enviando operación..." : clientePendiente ? "Completa los datos del cliente para continuar" : "Enviar operación a BeGreat"}
+        <button type="submit" disabled={loading}
+          className="w-full py-3.5 text-sm font-bold transition-colors disabled:opacity-60 bg-[#2E1A47] text-white hover:bg-[#5a3d80]">
+          {loading ? "Enviando operación..." : "Enviar operación a BeGreat"}
         </button>
       </form>
     </div>
@@ -760,10 +752,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function SearchableField({ value, onChange, onSelect, onNew, placeholder, searchUrl, nameField, label, inp, labelCls, required, disabled, autoNewWhenEmpty = false }: {
+function SearchableField({ value, onChange, onSelect, onNew, placeholder, searchUrl, nameField, label, inp, labelCls, disabled, autoNewWhenEmpty = false }: {
   value: string; onChange: (v: string) => void; onSelect: (item: any) => void; onNew: () => void;
   placeholder: string; searchUrl: string; nameField: string; label: string;
-  inp: string; labelCls: string; required?: boolean; disabled?: boolean; autoNewWhenEmpty?: boolean;
+  inp: string; labelCls: string; disabled?: boolean; autoNewWhenEmpty?: boolean;
 }) {
   const [resultados, setResultados] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
@@ -1003,12 +995,23 @@ function ProveedorSection({ proveedorNombre, setProveedorNombre, proveedorEmail,
                   className="text-xs text-gray-400 hover:text-red-500">✕ Cancelar</button>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Nombre *</label>
-                  <input value={proveedorNombre} onChange={e => setProveedorNombre(e.target.value)} className={inp} placeholder="Proveedor S.A." />
+                <div className="col-span-2">
+                  <EmpresaSearchInput
+                    value={proveedorNombre}
+                    onChange={setProveedorNombre}
+                    inp={inp}
+                    labelCls={labelCls}
+                    onSelect={(data) => {
+                      setProveedorNombre(data.nombre);
+                      if (data.telefono) setProveedorTelefono(data.telefono);
+                      if (data.email) setProveedorEmail(data.email);
+                      if (data.web) setProveedorWeb(data.web);
+                    }}
+                    onCifDuplicate={() => {}}
+                  />
                 </div>
                 <div>
-                  <label className={labelCls}>Email *</label>
+                  <label className={labelCls}>Email</label>
                   <input type="email" value={proveedorEmail} onChange={e => setProveedorEmail(e.target.value)} className={inp} placeholder="info@proveedor.es" />
                 </div>
                 <div>

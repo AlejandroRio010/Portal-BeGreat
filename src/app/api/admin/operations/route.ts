@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
     collaborator_id, pipeline_key, nombre,
     cliente_nombre, cliente_email, cliente_telefono, cliente_web, cliente_cif, cliente_cnae, cliente_provincia, cliente_direccion, cliente_nombre_comercial,
     contacto_nombre, contacto_email, contacto_telefono,
-    proveedor_nombre, proveedor_email, proveedor_telefono, proveedor_web, proveedor_contacto_nombre,
-    producto, producto_otro, importe, equipo_tipo, plazo_meses, lugar_entrega, descripcion,
+    proveedor_nombre, proveedor_email, proveedor_telefono, proveedor_web, proveedor_contacto_nombre, proveedor_contacto_email, proveedor_contacto_telefono,
+    producto, producto_otro, importe, equipo_tipo, plazo_meses, lugar_entrega, descripcion, descripcion_equipo,
     status, es_renovacion, operacion_original_id,
   } = body;
   const productoFinal = producto === "Otro" && producto_otro ? producto_otro : producto;
@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
           collaborator_id, nombre: proveedor_nombre,
           email: proveedor_email || null, telefono: proveedor_telefono || null,
           web: proveedor_web || null, persona_contacto: proveedor_contacto_nombre || null,
+          contacto_email: proveedor_contacto_email || null, contacto_telefono: proveedor_contacto_telefono || null,
           codigo: prvCodigo,
         })
         .returning();
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest) {
       equipo_tipo: equipo_tipo || null,
       plazo_meses: plazo_meses ? parseInt(plazo_meses) : null,
       lugar_entrega: lugar_entrega || null,
-      descripcion: descripcion || null,
+      descripcion: [descripcion_equipo, descripcion].filter(Boolean).join("\n\n---\n\n") || null,
       es_renovacion: es_renovacion === true,
       operacion_original_id: operacion_original_id || null,
       fase: "Pre-análisis",
