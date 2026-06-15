@@ -302,6 +302,15 @@ export default async function OperacionDetallePage({ params }: { params: Promise
         </div>
       )}
 
+      {puedeEditar && !isPendiente && (
+        <OpResultadoPanel
+          opId={op.id}
+          pipelineKey={op.pipeline_key}
+          currentResultado={isGanada ? "ganada" : isDenegada ? "denegada" : "en_curso"}
+          motivoDenegacion={op.motivo_denegacion ?? null}
+        />
+      )}
+
       {/* Main grid */}
       <div className="grid grid-cols-3 gap-5">
         {/* Col 1: Datos */}
@@ -483,14 +492,6 @@ export default async function OperacionDetallePage({ params }: { params: Promise
               initialAvalContactId={op.aval_contact_id ?? null}
               initialAvalClientId={op.aval_client_id ?? null}
               initialModalidadRenting={op.modalidad_renting ?? null} />
-          )}
-          {puedeEditar && !isPendiente && (
-            <OpResultadoPanel
-              opId={op.id}
-              pipelineKey={op.pipeline_key}
-              currentResultado={isGanada ? "ganada" : isDenegada ? "denegada" : "en_curso"}
-              motivoDenegacion={op.motivo_denegacion ?? null}
-            />
           )}
         </div>
 
