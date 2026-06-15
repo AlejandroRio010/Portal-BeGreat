@@ -35,7 +35,6 @@ export function EmpresaBuscadorField({ nombre, setNombre, onSelect, onClearLink,
       <label className={label}>Nombre de la empresa *</label>
       <input
         name="cliente_nombre"
-        required
         value={nombre}
         disabled={disabled}
         onChange={e => buscar(e.target.value)}

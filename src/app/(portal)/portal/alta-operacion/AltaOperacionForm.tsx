@@ -792,7 +792,7 @@ function SearchableField({ value, onChange, onSelect, onNew, placeholder, search
     <div className="relative">
       <label className={labelCls}>{label}</label>
       <input name={nameField} value={value} disabled={disabled}
-        onChange={e => buscar(e.target.value)} required={required}
+        onChange={e => buscar(e.target.value)}
         onBlur={() => setTimeout(() => setOpen(false), 200)}
         className={inp + (disabled ? " bg-gray-50 text-gray-500" : "")}
         placeholder={placeholder} autoComplete="off" />
