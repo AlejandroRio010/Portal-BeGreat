@@ -151,15 +151,22 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
       body: JSON.stringify({
         ...data,
         pipeline_key: pipeline,
+        cliente_nombre: clienteNombre,
         status: data.status || "activa",
         es_renovacion: esRenovacion,
         operacion_original_id: renovSeleccionada?.id ?? null,
         proveedor_nombre: proveedorNombre || null,
+        cliente_email: clienteEmail || null,
+        cliente_telefono: clienteTelefono || null,
+        cliente_web: clienteWeb || null,
         cliente_cif: clienteCif || null,
         cliente_cnae: clienteCnae || null,
         cliente_provincia: clienteProvincia || null,
         cliente_direccion: clienteDireccion || null,
         cliente_nombre_comercial: clienteNombreComercial || null,
+        contacto_nombre: contactoNombre || null,
+        contacto_email: contactoEmail || null,
+        contacto_telefono: contactoTelefono || null,
         ...(esRenovacion && renovSeleccionada?.client_nombre ? { cliente_nombre: renovSeleccionada.client_nombre } : {}),
       }),
     });
@@ -276,7 +283,7 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
       <div className="col-span-2 relative">
         <label className={label}>Empresa cliente *</label>
         <input name="cliente_nombre" value={clienteNombre} disabled={clienteDisabled}
-          onChange={e => buscarCliente(e.target.value)} required
+          onChange={e => buscarCliente(e.target.value)}
           onBlur={() => setTimeout(() => setDbOpen(false), 200)}
           className={inp + (clienteDisabled ? " bg-gray-50 text-gray-500" : "")}
           placeholder="Escribe para buscar o añadir nueva empresa..." autoComplete="off" />
@@ -328,7 +335,7 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
 
         {/* Colaborador asignado */}
         <Section title="Colaborador asignado">
-          <select name="collaborator_id" required className={inp}>
+          <select name="collaborator_id" className={inp}>
             <option value="">— Seleccionar colaborador —</option>
             {colaboradores.map(c => (
               <option key={c.id} value={c.id}>{c.nombre}{c.codigo ? ` (${c.codigo})` : ""}</option>
@@ -340,7 +347,7 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
         <Section title="Nombre de la operación">
           <div>
             <label className={label}>Nombre identificativo *</label>
-            <input name="nombre" required className={inp} placeholder="Ej: Empresa S.L. — Op01 — Banco Santander" />
+            <input name="nombre" className={inp} placeholder="Ej: Empresa S.L. — Op01 — Banco Santander" />
             <p className="text-xs text-gray-400 mt-1.5">Un nombre que ayude a identificar esta operación fácilmente. Puedes usar el formato: Nombre comercial — Nº op — Entidad financiera.</p>
           </div>
         </Section>
@@ -363,7 +370,7 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
                     className={`flex items-center gap-2 px-3 py-3 border text-sm cursor-pointer transition-all ${
                       producto === p ? "border-[#2E1A47] bg-[#EEEBF3] font-semibold text-[#2E1A47]" : "border-gray-200 text-gray-700 hover:border-gray-400"
                     }`}>
-                    <input type="radio" name="producto" value={p} required className="accent-[#2E1A47]" onChange={() => setProducto(p)} />
+                    <input type="radio" name="producto" value={p} className="accent-[#2E1A47]" onChange={() => setProducto(p)} />
                     {p}
                   </label>
                 ))}
@@ -371,7 +378,7 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
               {producto === "Otro" && (
                 <div className="mt-3">
                   <label className={label}>Describe qué necesita el cliente</label>
-                  <textarea name="producto_otro" rows={2} required className={inp + " resize-none"}
+                  <textarea name="producto_otro" rows={2} className={inp + " resize-none"}
                     placeholder="Describe brevemente el tipo de financiación o producto que busca el cliente..." />
                 </div>
               )}
@@ -488,7 +495,7 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
                 ].map((t, i) => (
                   <label key={t.val}
                     className={`flex items-start gap-3 p-4 cursor-pointer transition-all has-[:checked]:bg-[#EEEBF3] has-[:checked]:border-[#2E1A47] ${i === 0 ? "border-r border-gray-300" : ""}`}>
-                    <input type="radio" name="equipo_tipo" value={t.val} required className="mt-0.5 accent-[#2E1A47]" />
+                    <input type="radio" name="equipo_tipo" value={t.val} className="mt-0.5 accent-[#2E1A47]" />
                     <div>
                       <p className="text-sm font-semibold text-gray-900">{t.label}</p>
                       <p className="text-xs text-gray-400">{t.desc}</p>
