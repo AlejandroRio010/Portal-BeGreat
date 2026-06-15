@@ -1,7 +1,9 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { clients, contacts, contactNotes } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { clients, contacts, contactNotes, operations, avalDocuments } from "@/db/schema";
+import { eq, and, inArray } from "drizzle-orm";
+import DocumentsSection from "@/components/DocumentsSection";
+import { fmtEur } from "@/lib/format";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import NotesSection from "@/components/NotesSection";
@@ -21,6 +23,21 @@ export default async function ContactoDetallePage({ params }: { params: Promise<
   if (!contacto) notFound();
 
   const notes = await db.select().from(contactNotes).where(eq(contactNotes.contact_id, contactoId)).orderBy(contactNotes.created_at);
+
+  const opsAvaladas = await db.select({
+    id: operations.id,
+    nombre: operations.nombre,
+    pipeline_key: operations.pipeline_key,
+    fase: operations.fase,
+    status: operations.status,
+    importe: operations.importe,
+    created_at: operations.created_at,
+  }).from(operations).where(eq(operations.aval_contact_id, contactoId)).orderBy(operations.created_at);
+
+  const opAvaladaIds = opsAvaladas.map(o => o.id);
+  const avalDocs = opAvaladaIds.length > 0
+    ? await db.select().from(avalDocuments).where(inArray(avalDocuments.operation_id, opAvaladaIds)).orderBy(avalDocuments.created_at)
+    : [];
 
   const inicial = contacto.nombre.charAt(0).toUpperCase();
 
@@ -84,7 +101,46 @@ export default async function ContactoDetallePage({ params }: { params: Promise<
           </div>
         </div>
 
-        <div className="col-span-2">
+        <div className="col-span-2 flex flex-col gap-6">
+          {opsAvaladas.length > 0 && (
+            <div className="bg-white border border-gray-200 overflow-hidden">
+              <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
+                <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Operaciones avaladas ({opsAvaladas.length})</h3>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {opsAvaladas.map(op => (
+                  <Link key={op.id} href={`/portal/operaciones/${op.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-[#EEEBF3]/30 transition-colors group">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800 group-hover:text-[#2E1A47]">{op.nombre ?? "—"}</p>
+                      <p className="text-xs text-gray-400">{op.pipeline_key === "consultoria" ? "Consultoría" : "Renting"} · {op.fase} · {fmtEur(op.importe)}</p>
+                    </div>
+                    <span className="text-xs text-[#2E1A47] font-semibold">Ver →</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {avalDocs.length > 0 && (
+            <div className="bg-white border border-gray-200 overflow-hidden">
+              <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
+                <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Documentación de avalista</h3>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {avalDocs.map(d => (
+                  <div key={d.id} className="px-5 py-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{d.filename}</p>
+                    </div>
+                    {d.url && (
+                      <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#2E1A47] font-semibold hover:underline">Abrir →</a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <NotesSection
             notes={notes}
             apiUrl={`/api/contacts/${contactoId}/notes`}

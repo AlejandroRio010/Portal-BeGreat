@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { clients, collaborators, contacts, operations, customFields, customFieldValues, clientNotes, clientGroups, clientDocuments } from "@/db/schema";
+import { clients, collaborators, contacts, operations, customFields, customFieldValues, clientNotes, clientGroups, clientDocuments, avalDocuments } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -87,6 +87,20 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
   const notes = await db.select().from(clientNotes).where(eq(clientNotes.client_id, id)).orderBy(clientNotes.created_at);
   const docs = await db.select().from(clientDocuments).where(eq(clientDocuments.client_id, id)).orderBy(clientDocuments.created_at);
   const grupos = await db.select({ id: clientGroups.id, nombre: clientGroups.nombre }).from(clientGroups).orderBy(clientGroups.nombre);
+
+  const opsAvaladoras = await db.select({
+    id: operations.id,
+    nombre: operations.nombre,
+    pipeline_key: operations.pipeline_key,
+    fase: operations.fase,
+    status: operations.status,
+    importe: operations.importe,
+    created_at: operations.created_at,
+    client_nombre: clients.nombre,
+  }).from(operations)
+    .leftJoin(clients, eq(operations.client_id, clients.id))
+    .where(eq(operations.aval_client_id, id))
+    .orderBy(operations.created_at);
 
   const inicial = client.nombre.charAt(0).toUpperCase();
 
@@ -321,7 +335,25 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
             );
           })()}
 
-          {/* Notas del cliente (no de ops) */}
+          {opsAvaladoras.length > 0 && (
+            <div className="bg-white border border-gray-200 overflow-hidden">
+              <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
+                <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Operaciones avaladas por esta empresa ({opsAvaladoras.length})</h3>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {opsAvaladoras.map(op => (
+                  <Link key={op.id} href={`/admin/operaciones/${op.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-[#EEEBF3]/30 transition-colors group">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800 group-hover:text-[#2E1A47]">{op.nombre ?? "—"}</p>
+                      <p className="text-xs text-gray-400">{op.client_nombre} · {op.pipeline_key === "consultoria" ? "Consultoría" : "Renting"} · {op.fase} · {fmtEur(op.importe)}</p>
+                    </div>
+                    <span className="text-xs text-[#2E1A47] font-semibold flex-shrink-0">Ver →</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
           <NotesSection
             notes={notes}
             apiUrl={`/api/admin/clientes/${id}/notes`}

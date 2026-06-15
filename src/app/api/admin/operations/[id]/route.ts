@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, collaborators } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { operations, collaborators, contacts } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import { sendOperationValidatedEmail, sendOperationDeniedEmail } from "@/lib/email";
 import { fmtEur } from "@/lib/format";
 
@@ -64,6 +64,7 @@ export async function PATCH(
       status: operations.status,
       nombre: operations.nombre,
       collaborator_id: operations.collaborator_id,
+      client_id: operations.client_id,
       importe: operations.importe,
       comision_colaborador: operations.comision_colaborador,
     })
@@ -122,7 +123,24 @@ export async function PATCH(
     updateData.aval_persona_contacto = tiene_aval ? (aval_persona_contacto || null) : null;
     updateData.aval_dni = tiene_aval && aval_tipo === "persona_fisica" ? (aval_dni || null) : null;
     updateData.aval_empresa = tiene_aval && aval_tipo === "persona_fisica" ? (aval_empresa || null) : null;
-    updateData.aval_contact_id = tiene_aval && aval_tipo === "persona_fisica" ? (aval_contact_id || null) : null;
+    let resolvedContactId = aval_contact_id || null;
+    if (tiene_aval && aval_tipo === "persona_fisica" && !aval_contact_id && aval_nombre && prevOp?.client_id) {
+      const [existing] = await db.select({ id: contacts.id }).from(contacts)
+        .where(and(eq(contacts.client_id, prevOp.client_id), eq(contacts.nombre, aval_nombre))).limit(1);
+      if (existing) {
+        resolvedContactId = existing.id;
+      } else {
+        const [newContact] = await db.insert(contacts).values({
+          client_id: prevOp.client_id,
+          nombre: aval_nombre,
+          email: aval_email || null,
+          telefono: aval_telefono || null,
+          rol: aval_persona_contacto || null,
+        }).returning();
+        resolvedContactId = newContact.id;
+      }
+    }
+    updateData.aval_contact_id = tiene_aval && aval_tipo === "persona_fisica" ? resolvedContactId : null;
     updateData.aval_client_id = tiene_aval && aval_tipo === "empresa" ? (aval_client_id || null) : null;
   }
 

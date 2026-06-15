@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, collaborators } from "@/db/schema";
+import { operations, collaborators, contacts } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -13,7 +13,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   // Verify the op belongs to this collaborator
   const [op] = await db
-    .select({ id: operations.id })
+    .select({ id: operations.id, client_id: operations.client_id })
     .from(operations)
     .where(and(eq(operations.id, id), eq(operations.collaborator_id, userId)))
     .limit(1);
@@ -55,7 +55,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     data.aval_persona_contacto = tiene_aval ? (aval_persona_contacto || null) : null;
     data.aval_dni = tiene_aval && aval_tipo === "persona_fisica" ? (aval_dni || null) : null;
     data.aval_empresa = tiene_aval && aval_tipo === "persona_fisica" ? (aval_empresa || null) : null;
-    data.aval_contact_id = tiene_aval && aval_tipo === "persona_fisica" ? (aval_contact_id || null) : null;
+    // Auto-create contact if persona física avalista is new
+    let resolvedContactId = aval_contact_id || null;
+    if (tiene_aval && aval_tipo === "persona_fisica" && !aval_contact_id && aval_nombre && op.client_id) {
+      const [existing] = await db.select({ id: contacts.id }).from(contacts)
+        .where(and(eq(contacts.client_id, op.client_id), eq(contacts.nombre, aval_nombre))).limit(1);
+      if (existing) {
+        resolvedContactId = existing.id;
+      } else {
+        const [newContact] = await db.insert(contacts).values({
+          client_id: op.client_id,
+          nombre: aval_nombre,
+          email: aval_email || null,
+          telefono: aval_telefono || null,
+          rol: aval_persona_contacto || null,
+        }).returning();
+        resolvedContactId = newContact.id;
+      }
+    }
+    data.aval_contact_id = tiene_aval && aval_tipo === "persona_fisica" ? resolvedContactId : null;
     data.aval_client_id = tiene_aval && aval_tipo === "empresa" ? (aval_client_id || null) : null;
   }
 
