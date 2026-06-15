@@ -56,6 +56,8 @@ export async function PATCH(
     aval_empresa,
     aval_contact_id,
     aval_client_id,
+    resultado,
+    pipeline_key,
   } = body;
 
   // Fetch current state before update (for email triggers)
@@ -142,6 +144,19 @@ export async function PATCH(
     }
     updateData.aval_contact_id = tiene_aval && aval_tipo === "persona_fisica" ? resolvedContactId : null;
     updateData.aval_client_id = tiene_aval && aval_tipo === "empresa" ? (aval_client_id || null) : null;
+  }
+
+  if (resultado === "ganada") {
+    updateData.status = "activa";
+    updateData.fase = pipeline_key === "renting" ? "Transferencia realizada" : "Honorarios pagados";
+    updateData.fecha_cierre = new Date();
+  } else if (resultado === "denegada") {
+    updateData.status = "archivada";
+    updateData.fecha_cierre = new Date();
+    updateData.motivo_denegacion = motivo_denegacion || null;
+  } else if (resultado === "en_curso") {
+    updateData.status = "activa";
+    updateData.fecha_cierre = null;
   }
 
   await db.update(operations).set(updateData).where(eq(operations.id, id));

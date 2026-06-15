@@ -4,6 +4,7 @@ import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import AdminOpForm from "./AdminOpForm";
+import AdminOpResultadoPanel from "./AdminOpResultadoPanel";
 import NotesSection from "@/components/NotesSection";
 import DocumentsSection from "@/components/DocumentsSection";
 import InfoRequestsSection from "@/components/InfoRequestsSection";
@@ -327,6 +328,15 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             })}
           </div>
         </div>
+      )}
+
+      {!isPendiente && (
+        <AdminOpResultadoPanel
+          opId={op.id}
+          pipelineKey={op.pipeline_key}
+          currentResultado={isGanada ? "ganada" : op.status === "archivada" ? "denegada" : "en_curso"}
+          motivoDenegacion={op.motivo_denegacion ?? null}
+        />
       )}
 
       {/* Main grid: fields + notes + admin panel */}
