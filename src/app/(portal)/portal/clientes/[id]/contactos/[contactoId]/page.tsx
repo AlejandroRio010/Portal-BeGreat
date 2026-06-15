@@ -7,6 +7,7 @@ import { fmtEur } from "@/lib/format";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import NotesSection from "@/components/NotesSection";
+import ContactoEditForm from "./ContactoEditForm";
 
 export default async function ContactoDetallePage({ params }: { params: Promise<{ id: string; contactoId: string }> }) {
   const { id: clientId, contactoId } = await params;
@@ -97,6 +98,15 @@ export default async function ContactoDetallePage({ params }: { params: Promise<
                   </div>
                 );
               })}
+            </div>
+            <div className="px-5 pb-4">
+              <ContactoEditForm contactoId={contactoId} initial={{
+                nombre: contacto.nombre,
+                email: contacto.email ?? null,
+                telefono: contacto.telefono ?? null,
+                rol: contacto.rol ?? null,
+                linkedin: contacto.linkedin ?? null,
+              }} />
             </div>
           </div>
         </div>

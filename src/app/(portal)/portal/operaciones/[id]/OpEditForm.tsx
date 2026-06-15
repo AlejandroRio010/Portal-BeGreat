@@ -26,14 +26,13 @@ interface Props {
   initialAvalContactId?: string | null;
   initialAvalClientId?: string | null;
   initialModalidadRenting?: string | null;
-  resultadoActual?: "ganada" | "denegada" | "en_curso";
 }
 
 export default function OpEditForm({
   opId, pipelineKey,
   initialProducto, initialImporte, initialDescripcion,
   initialPlazoMeses, initialLugarEntrega, initialEquipoTipo,
-  initialEsRenovacion, initialOpOriginal, resultadoActual,
+  initialEsRenovacion, initialOpOriginal,
   initialNecesidad, initialTieneAval, initialAvalTipo,
   initialAvalNombre, initialAvalEmail, initialAvalTelefono,
   initialAvalPersonaContacto, initialAvalDni, initialAvalEmpresa,
@@ -61,7 +60,6 @@ export default function OpEditForm({
   const [renovRes, setRenovRes] = useState<any[]>([]);
   const [renovOpen, setRenovOpen] = useState(false);
   const renovTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [resultado, setResultado] = useState(resultadoActual ?? "en_curso");
 
   // Aval state
   const [tieneAval, setTieneAval] = useState(!!initialTieneAval);
@@ -189,8 +187,6 @@ export default function OpEditForm({
           aval_empresa: tieneAval && avalTipo === "persona_fisica" ? (avalEmpresa || null) : null,
           aval_contact_id: tieneAval && avalTipo === "persona_fisica" ? (avalContactId || null) : null,
           aval_client_id: tieneAval && avalTipo === "empresa" ? (avalClientId || null) : null,
-          resultado,
-          pipeline_key: pipelineKey,
         }),
       });
       if (!res.ok) { const j = await res.json().catch(() => ({})); setError(j.error ?? "Error"); return; }
@@ -392,20 +388,6 @@ export default function OpEditForm({
               )}
             </div>
           )}
-        </div>
-
-        {/* Resultado de la operación */}
-        <div className="pt-3 border-t border-gray-100">
-          <label className={labelCls}>Resultado</label>
-          <div className="grid grid-cols-3 gap-0 border border-gray-200">
-            {([["en_curso", "En curso"], ["ganada", "Ganada ✓"], ["denegada", "Denegada"]] as const).map(([val, lbl], i) => (
-              <button key={val} type="button" onClick={() => setResultado(val)}
-                className={`py-2 text-xs font-semibold transition-all ${i > 0 ? "border-l border-gray-200" : ""} ${
-                  resultado === val ? (val === "ganada" ? "bg-emerald-600 text-white" : val === "denegada" ? "bg-red-500 text-white" : "bg-[#2E1A47] text-white") : "bg-white text-gray-600 hover:bg-gray-50"
-                }`}>{lbl}</button>
-            ))}
-          </div>
-          <p className="text-[10px] text-gray-400 mt-1">Al marcar Ganada o Denegada se registra la fecha de cierre automáticamente.</p>
         </div>
 
         {/* Renovación */}

@@ -19,7 +19,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   // Admin can edit any contact; collaborator only their own clients
   if (role !== "admin") {
     const [client] = await db.select({ collaborator_id: clients.collaborator_id }).from(clients).where(eq(clients.id, contact.client_id)).limit(1);
-    if (!client || client.collaborator_id !== session.user!.id) {
+    const collabId = (session.user as any).collaboratorId ?? session.user!.id;
+    if (!client || client.collaborator_id !== collabId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
   }
@@ -47,7 +48,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   if (role !== "admin") {
     const [client] = await db.select({ collaborator_id: clients.collaborator_id }).from(clients).where(eq(clients.id, contact.client_id)).limit(1);
-    if (!client || client.collaborator_id !== session.user!.id) {
+    const collabId = (session.user as any).collaboratorId ?? session.user!.id;
+    if (!client || client.collaborator_id !== collabId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
   }

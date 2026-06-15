@@ -53,8 +53,8 @@ export default function Sidebar({ nombre, identificador, role, puedeVerEntidades
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-[#2E1A47] text-white z-50">
 
-      {/* Logo — centrado */}
-      <div className="flex items-center justify-center px-6 py-6 border-b border-white/10">
+      {/* Logo — centrado, link al inicio */}
+      <Link href={role === "admin" ? "/admin" : "/portal"} className="flex items-center justify-center px-6 py-6 border-b border-white/10 hover:bg-white/5 transition-colors">
         <Image
           src="/begreat-logo-blanco.png"
           alt="BeGreat Consulting"
@@ -63,7 +63,7 @@ export default function Sidebar({ nombre, identificador, role, puedeVerEntidades
           className="object-contain"
           priority
         />
-      </div>
+      </Link>
 
       {/* User info */}
       <div className="px-5 py-4 border-b border-white/10">

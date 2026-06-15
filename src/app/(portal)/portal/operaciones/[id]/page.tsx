@@ -8,6 +8,7 @@ import NotesSection from "@/components/NotesSection";
 import { fmtEur, fmtNum } from "@/lib/format";
 import { sanitizeFolderName } from "@/lib/onedrive";
 import OpEditForm from "./OpEditForm";
+import OpResultadoPanel from "./OpResultadoPanel";
 import DocumentsSection from "@/components/DocumentsSection";
 import InfoRequestsSection from "@/components/InfoRequestsSection";
 import CelebrationBanner from "@/components/CelebrationBanner";
@@ -476,10 +477,16 @@ export default async function OperacionDetallePage({ params }: { params: Promise
               initialAvalEmpresa={op.aval_empresa ?? null}
               initialAvalContactId={op.aval_contact_id ?? null}
               initialAvalClientId={op.aval_client_id ?? null}
-              initialModalidadRenting={op.modalidad_renting ?? null}
-              resultadoActual={isGanada ? "ganada" : isDenegada ? "denegada" : "en_curso"} />
+              initialModalidadRenting={op.modalidad_renting ?? null} />
           )}
-
+          {puedeEditar && !isPendiente && (
+            <OpResultadoPanel
+              opId={op.id}
+              pipelineKey={op.pipeline_key}
+              currentResultado={isGanada ? "ganada" : isDenegada ? "denegada" : "en_curso"}
+              motivoDenegacion={op.motivo_denegacion ?? null}
+            />
+          )}
         </div>
 
         {/* Col 2-3: Notas + Docs */}

@@ -32,7 +32,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           es_renovacion, operacion_original_id, resultado, pipeline_key,
           necesidad, modalidad_renting,
           tiene_aval, aval_tipo, aval_nombre, aval_email, aval_telefono, aval_persona_contacto,
-          aval_dni, aval_empresa, aval_contact_id, aval_client_id } = body;
+          aval_dni, aval_empresa, aval_contact_id, aval_client_id,
+          motivo_denegacion } = body;
 
   // Actualización parcial: solo tocamos lo que llega
   const data: Record<string, unknown> = { updated_at: new Date() };
@@ -85,6 +86,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   } else if (resultado === "denegada") {
     data.status = "archivada";
     data.fecha_cierre = new Date();
+    data.motivo_denegacion = motivo_denegacion || null;
   } else if (resultado === "en_curso") {
     data.status = "activa";
     data.fecha_cierre = null;
