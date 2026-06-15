@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const {
     collaborator_id, pipeline_key, nombre,
-    cliente_nombre, cliente_email, cliente_telefono, cliente_web, cliente_cif, cliente_cnae, cliente_provincia, cliente_direccion,
+    cliente_nombre, cliente_email, cliente_telefono, cliente_web, cliente_cif, cliente_cnae, cliente_provincia, cliente_direccion, cliente_nombre_comercial,
     contacto_nombre, contacto_email, contacto_telefono,
     proveedor_nombre, proveedor_email, proveedor_telefono, proveedor_web, proveedor_contacto_nombre,
     producto, producto_otro, importe, equipo_tipo, plazo_meses, lugar_entrega, descripcion,
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
         email: cliente_email || null, telefono: cliente_telefono || null,
         web: cliente_web || null, cif: cliente_cif || null,
         cnae: cliente_cnae || null, provincia: cliente_provincia || null,
-        direccion: cliente_direccion || null, codigo: clientCodigo,
+        direccion: cliente_direccion || null, nombre_comercial: cliente_nombre_comercial || null, codigo: clientCodigo,
       })
       .returning();
     clientId = newClient.id;

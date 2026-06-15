@@ -30,6 +30,7 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
   const [clienteCnae, setClienteCnae] = useState("");
   const [clienteProvincia, setClienteProvincia] = useState("");
   const [clienteDireccion, setClienteDireccion] = useState("");
+  const [clienteNombreComercial, setClienteNombreComercial] = useState("");
   const [clienteMissingData, setClienteMissingData] = useState<string[]>([]);
   const [contactoNombre, setContactoNombre] = useState("");
   const [contactoEmail, setContactoEmail] = useState("");
@@ -90,6 +91,7 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
     setClienteCnae("");
     setClienteProvincia("");
     setClienteDireccion("");
+    setClienteNombreComercial("");
     setContactoNombre("");
     setContactoEmail("");
     setContactoTelefono("");
@@ -157,6 +159,7 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
         cliente_cnae: clienteCnae || null,
         cliente_provincia: clienteProvincia || null,
         cliente_direccion: clienteDireccion || null,
+        cliente_nombre_comercial: clienteNombreComercial || null,
         ...(esRenovacion && renovSeleccionada?.client_nombre ? { cliente_nombre: renovSeleccionada.client_nombre } : {}),
       }),
     });
@@ -225,8 +228,12 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
                 />
               </div>
               <div>
-                <label className={label}>CIF</label>
+                <label className={label}>CIF *</label>
                 <input value={clienteCif} onChange={e => setClienteCif(e.target.value)} className={inp} placeholder="B12345678" />
+              </div>
+              <div>
+                <label className={label}>Nombre comercial</label>
+                <input value={clienteNombreComercial} onChange={e => setClienteNombreComercial(e.target.value)} className={inp} placeholder="Nombre para identificar en la plataforma" />
               </div>
               <div>
                 <label className={label}>Email</label>
@@ -463,9 +470,9 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
               )}
             </Section>
 
-            <Section title="Notas adicionales">
-              <textarea name="descripcion" rows={4} className={inp + " resize-none"}
-                placeholder="Contexto de la operación, situación del cliente, urgencia, condiciones especiales..." />
+            <Section title="Presentación de la operación">
+              <textarea name="descripcion" rows={5} className={inp}
+                placeholder="Presenta la operación: contexto del cliente, situación financiera, motivo de la solicitud, urgencia, condiciones especiales..." />
             </Section>
           </>
         )}

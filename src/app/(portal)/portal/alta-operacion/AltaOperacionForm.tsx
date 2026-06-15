@@ -37,6 +37,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
   const [clienteCif, setClienteCif] = useState("");
   const [clienteCnae, setClienteCnae] = useState("");
   const [clienteProvincia, setClienteProvincia] = useState("");
+  const [clienteNombreComercial, setClienteNombreComercial] = useState("");
   const [esNuevoCliente, setEsNuevoCliente] = useState(false);
   const [clienteMissingData, setClienteMissingData] = useState<string[]>([]);
 
@@ -76,7 +77,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
 
   const tieneContactoInfo = !!(contactoEmail.trim() || contactoTelefono.trim());
   const tieneEmpresaInfo = !!(clienteEmail.trim() || clienteTelefono.trim());
-  const clienteListo = !!(clienteSeleccionado || (esNuevoCliente && clienteNombre.trim() && (tieneContactoInfo || tieneEmpresaInfo)));
+  const clienteListo = !!(clienteSeleccionado || (esNuevoCliente && clienteNombre.trim() && clienteCif.trim() && (tieneContactoInfo || tieneEmpresaInfo)));
   const clientePendiente = esNuevoCliente && !clienteListo;
 
   function fillCliente(c: any) {
@@ -141,6 +142,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
     setClienteCif("");
     setClienteCnae("");
     setClienteProvincia("");
+    setClienteNombreComercial("");
     setContactoNombre("");
     setContactoPuesto("");
     setContactoEmail("");
@@ -194,6 +196,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
     if (pipeline === "renting" && !data.plazo_meses) { setError("Selecciona el plazo deseado."); setLoading(false); return; }
 
     if (esNuevoCliente) {
+      if (!clienteCif.trim()) { setError("El CIF de la empresa cliente es obligatorio."); setLoading(false); return; }
       const tieneContacto = !!(contactoEmail.trim() || contactoTelefono.trim());
       const tieneEmpresa = !!(clienteEmail.trim() || clienteTelefono.trim());
       if (!tieneContacto && !tieneEmpresa) {
@@ -225,6 +228,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
         cliente_cif: clienteCif || null,
         cliente_cnae: clienteCnae || null,
         cliente_provincia: clienteProvincia || null,
+        cliente_nombre_comercial: clienteNombreComercial || null,
         es_nuevo_cliente: esNuevoCliente,
         contacto_nombre: contactoNombre || null,
         contacto_puesto: contactoPuesto || null,
@@ -332,6 +336,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
                 clienteCif={clienteCif} setClienteCif={setClienteCif}
                 clienteCnae={clienteCnae} setClienteCnae={setClienteCnae}
                 clienteProvincia={clienteProvincia} setClienteProvincia={setClienteProvincia}
+                clienteNombreComercial={clienteNombreComercial} setClienteNombreComercial={setClienteNombreComercial}
                 clienteSeleccionado={clienteSeleccionado}
                 esNuevoCliente={esNuevoCliente} setEsNuevoCliente={setEsNuevoCliente}
                 clienteMissingData={clienteMissingData}
@@ -416,6 +421,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
                 clienteCif={clienteCif} setClienteCif={setClienteCif}
                 clienteCnae={clienteCnae} setClienteCnae={setClienteCnae}
                 clienteProvincia={clienteProvincia} setClienteProvincia={setClienteProvincia}
+                clienteNombreComercial={clienteNombreComercial} setClienteNombreComercial={setClienteNombreComercial}
                 clienteSeleccionado={clienteSeleccionado}
                 esNuevoCliente={esNuevoCliente} setEsNuevoCliente={setEsNuevoCliente}
                 clienteMissingData={clienteMissingData}
@@ -461,9 +467,9 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
         )}
 
         {pipeline === "consultoria" && (
-          <Section title="Notas adicionales">
-            <textarea name="descripcion" rows={4} className={inp + " resize-none"}
-              placeholder="Cuéntanos el contexto de la operación, situación del cliente, urgencia, condiciones especiales..." />
+          <Section title="Presentación de la operación">
+            <textarea name="descripcion" rows={5} className={inp}
+              placeholder="Presenta la operación: contexto del cliente, situación financiera, motivo de la solicitud, urgencia, condiciones especiales..." />
           </Section>
         )}
 
@@ -818,6 +824,7 @@ function SearchableField({ value, onChange, onSelect, onNew, placeholder, search
 
 function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClienteEmail, clienteTelefono, setClienteTelefono,
   clienteWeb, setClienteWeb, clienteCif, setClienteCif, clienteCnae, setClienteCnae, clienteProvincia, setClienteProvincia,
+  clienteNombreComercial, setClienteNombreComercial,
   clienteSeleccionado, esNuevoCliente, setEsNuevoCliente,
   clienteMissingData, onSelect, onClear, contactoNombre, setContactoNombre, contactoPuesto, setContactoPuesto,
   contactoEmail, setContactoEmail, contactoTelefono, setContactoTelefono, disabled, inp, labelCls,
@@ -870,8 +877,12 @@ function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClie
                   />
                 </div>
                 <div>
-                  <label className={labelCls}>CIF</label>
+                  <label className={labelCls}>CIF *</label>
                   <input value={clienteCif} onChange={e => setClienteCif(e.target.value)} className={inp} placeholder="B12345678" />
+                </div>
+                <div>
+                  <label className={labelCls}>Nombre comercial</label>
+                  <input value={clienteNombreComercial} onChange={e => setClienteNombreComercial(e.target.value)} className={inp} placeholder="Nombre para identificar en la plataforma" />
                 </div>
                 <div>
                   <label className={labelCls}>Email</label>

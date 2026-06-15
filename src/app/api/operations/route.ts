@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     cliente_cif,
     cliente_cnae,
     cliente_provincia,
+    cliente_nombre_comercial,
     contacto_nombre,
     contacto_puesto,
     contacto_email,
@@ -84,6 +85,7 @@ export async function POST(req: NextRequest) {
         cif: cliente_cif || null,
         cnae: cliente_cnae || null,
         provincia: cliente_provincia || null,
+        nombre_comercial: cliente_nombre_comercial || null,
         codigo: clientCodigo,
       })
       .returning();

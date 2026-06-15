@@ -369,7 +369,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
                 campos.push({ label: "Fecha de alta", value: fmtFecha(op.created_at) });
                 campos.push({ label: "Fecha de cierre", value: fmtFecha(op.fecha_cierre) });
                 campos.push({ label: "Producto solicitado", value: op.producto });
-                campos.push({ label: "Necesidad del cliente", value: op.necesidad ?? op.descripcion });
+                if (op.necesidad) campos.push({ label: "Necesidad del cliente", value: op.necesidad });
                 campos.push({ label: "Importe", value: fmtEuro(op.importe) });
                 campos.push({ label: "Honorarios firmados", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null });
                 campos.push({ label: "Fee colaborador", value: fmtEuro(op.comision_colaborador) });
@@ -509,6 +509,13 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
           isAdmin={true}
           canPin
         />
+
+        {op.descripcion && op.pipeline_key !== "renting" && (
+          <div className="bg-white border border-gray-200 p-5">
+            <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-3 pb-3 border-b border-gray-100">Presentación de la operación</p>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{op.descripcion}</p>
+          </div>
+        )}
 
         <InfoRequestsSection
           requests={opInfoRequests}
