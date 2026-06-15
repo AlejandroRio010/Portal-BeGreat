@@ -10,6 +10,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getCnaeByCode } from "@/lib/cnaes";
 import { fmtEur } from "@/lib/format";
+import { sanitizeFolderName } from "@/lib/onedrive";
 
 function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
@@ -332,7 +333,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
             placeholder="Añade una nota general sobre este cliente..."
           />
 
-          <DocumentsSection docs={docs} apiUrl={`/api/clientes/${id}/documents`} />
+          <DocumentsSection docs={docs} apiUrl={`/api/clientes/${id}/documents`} oneDriveFolder={sanitizeFolderName(client.nombre)} />
         </div>
       </div>
     </div>

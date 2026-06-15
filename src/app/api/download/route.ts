@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { operationDocuments, clientDocuments, avalDocuments, operations, clients } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { downloadFile } from "@/lib/onedrive";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -61,6 +62,22 @@ export async function GET(req: NextRequest) {
   }
 
   if (!doc) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+
+  if (doc.url.startsWith("onedrive:")) {
+    const itemId = doc.url.slice("onedrive:".length);
+    try {
+      const { buffer, contentType } = await downloadFile(itemId);
+      return new NextResponse(new Uint8Array(buffer), {
+        headers: {
+          "Content-Type": contentType,
+          "Content-Disposition": `attachment; filename="${doc.filename}"`,
+          "Content-Length": buffer.length.toString(),
+        },
+      });
+    } catch {
+      return NextResponse.json({ error: "Error descargando de OneDrive" }, { status: 500 });
+    }
+  }
 
   const match = doc.url.match(/^data:([^;]+);base64,([\s\S]+)$/);
   if (!match) return NextResponse.json({ error: "Formato inválido" }, { status: 500 });

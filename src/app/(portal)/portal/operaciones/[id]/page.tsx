@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import NotesSection from "@/components/NotesSection";
 import { fmtEur, fmtNum } from "@/lib/format";
+import { sanitizeFolderName } from "@/lib/onedrive";
 import OpEditForm from "./OpEditForm";
 import DocumentsSection from "@/components/DocumentsSection";
 import InfoRequestsSection from "@/components/InfoRequestsSection";
@@ -130,6 +131,10 @@ export default async function OperacionDetallePage({ params }: { params: Promise
     ? await db.select().from(avalDocuments).where(eq(avalDocuments.operation_id, id)).orderBy(avalDocuments.created_at)
     : [];
   const opInfoRequests = await db.select().from(infoRequests).where(eq(infoRequests.operation_id, id)).orderBy(infoRequests.created_at);
+
+  const clientFolder = sanitizeFolderName(op.client_nombre ?? "Sin cliente");
+  const opFolder = `${clientFolder}/${sanitizeFolderName(op.codigo ?? id)}`;
+  const avalFolder = `${opFolder}/Avalista`;
 
   const opCustomFields = await db.select().from(customFields).where(eq(customFields.entidad, "operacion")).orderBy(asc(customFields.orden));
   const opCustomValues = await db.select().from(customFieldValues).where(eq(customFieldValues.entity_id, id));
@@ -480,6 +485,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             docs={clientDocs}
             apiUrl={`/api/clientes/${op.client_id}/documents`}
             title="Documentación del cliente"
+            oneDriveFolder={clientFolder}
           />
         )}
 
@@ -488,10 +494,11 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             docs={avalDocs}
             apiUrl={`/api/operations/${id}/aval-documents`}
             title="Documentación del avalista"
+            oneDriveFolder={avalFolder}
           />
         )}
 
-        <DocumentsSection docs={opDocs} operationId={id} title="Documentación de la operación" />
+        <DocumentsSection docs={opDocs} operationId={id} title="Documentación de la operación" oneDriveFolder={opFolder} />
         </div>
       </div>
     </div>

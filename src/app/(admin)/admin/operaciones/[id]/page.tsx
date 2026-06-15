@@ -10,6 +10,7 @@ import InfoRequestsSection from "@/components/InfoRequestsSection";
 import { auth } from "@/lib/auth";
 import CelebrationBanner from "@/components/CelebrationBanner";
 import { fmtEur, fmtNum } from "@/lib/format";
+import { sanitizeFolderName } from "@/lib/onedrive";
 
 const FASE_COLOR: Record<string, { bg: string; text: string; border: string }> = {
   "Pre-análisis":        { bg: "bg-gray-100",     text: "text-gray-600",    border: "border-gray-200" },
@@ -118,6 +119,10 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
     .from(infoRequests)
     .where(eq(infoRequests.operation_id, id))
     .orderBy(infoRequests.created_at);
+
+  const clientFolder = sanitizeFolderName(op.client_nombre ?? "Sin cliente");
+  const opFolder = `${clientFolder}/${sanitizeFolderName(op.codigo ?? id)}`;
+  const avalFolder = `${opFolder}/Avalista`;
 
   const opCustomFields = await db
     .select()
@@ -516,6 +521,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             docs={clientDocs}
             apiUrl={`/api/clientes/${op.client_id}/documents`}
             title="Documentación del cliente"
+            oneDriveFolder={clientFolder}
           />
         )}
 
@@ -524,10 +530,11 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             docs={avalDocs}
             apiUrl={`/api/operations/${id}/aval-documents`}
             title="Documentación del avalista"
+            oneDriveFolder={avalFolder}
           />
         )}
 
-        <DocumentsSection docs={opDocs} operationId={id} title="Documentación de la operación" />
+        <DocumentsSection docs={opDocs} operationId={id} title="Documentación de la operación" oneDriveFolder={opFolder} />
         </div>
       </div>
     </div>

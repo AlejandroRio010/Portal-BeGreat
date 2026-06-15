@@ -24,7 +24,7 @@ function cloudinaryDownloadUrl(url: string, filename: string): string {
   return url.replace("/upload/", `/upload/fl_attachment:${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}/`);
 }
 
-export default function DocumentsSection({ docs, operationId, apiUrl, title = "Documentos" }: { docs: Doc[]; operationId?: string; apiUrl?: string; title?: string }) {
+export default function DocumentsSection({ docs, operationId, apiUrl, title = "Documentos", oneDriveFolder }: { docs: Doc[]; operationId?: string; apiUrl?: string; title?: string; oneDriveFolder?: string }) {
   const resolvedApiUrl = apiUrl ?? `/api/operations/${operationId}/documents`;
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
@@ -38,18 +38,22 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
     setError(null);
     setSuccess(false);
     try {
-      // Leer archivo como base64 y guardar en la base de datos directamente
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      const formData = new FormData();
+      formData.append("file", file);
+      if (oneDriveFolder) formData.append("folder", oneDriveFolder);
+
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!uploadRes.ok) {
+        const j = await uploadRes.json().catch(() => ({}));
+        setError(j.error ?? `Error ${uploadRes.status}`);
+        return;
+      }
+      const { url, filename, size } = await uploadRes.json();
 
       const res = await fetch(`${resolvedApiUrl}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: base64, filename: file.name, size: file.size }),
+        body: JSON.stringify({ url, filename, size }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));

@@ -9,6 +9,7 @@ import NotesSection from "@/components/NotesSection";
 import DocumentsSection from "@/components/DocumentsSection";
 import { getCnaeByCode } from "@/lib/cnaes";
 import { fmtEur } from "@/lib/format";
+import { sanitizeFolderName } from "@/lib/onedrive";
 
 function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
@@ -328,7 +329,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
             isAdmin={true}
           />
 
-          <DocumentsSection docs={docs} apiUrl={`/api/clientes/${id}/documents`} />
+          <DocumentsSection docs={docs} apiUrl={`/api/clientes/${id}/documents`} oneDriveFolder={sanitizeFolderName(client.nombre)} />
         </div>
       </div>
     </div>

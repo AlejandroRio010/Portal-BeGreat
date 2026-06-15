@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { avalDocuments, operations } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { deleteFile } from "@/lib/onedrive";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -39,6 +40,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   const { id } = await params;
   const { docId } = await req.json();
+  const [existing] = await db.select({ url: avalDocuments.url }).from(avalDocuments).where(eq(avalDocuments.id, docId)).limit(1);
   await db.delete(avalDocuments).where(and(eq(avalDocuments.id, docId), eq(avalDocuments.operation_id, id)));
+  if (existing?.url?.startsWith("onedrive:")) {
+    deleteFile(existing.url.slice(9)).catch(() => {});
+  }
   return NextResponse.json({ ok: true });
 }
