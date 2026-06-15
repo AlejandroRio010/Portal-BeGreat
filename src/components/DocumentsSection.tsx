@@ -28,58 +28,70 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
   const resolvedApiUrl = apiUrl ?? `/api/operations/${operationId}/documents`;
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  async function uploadFile(file: File) {
+  async function uploadFiles(files: File[]) {
     setUploading(true);
     setError(null);
     setSuccess(false);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      if (oneDriveFolder) formData.append("folder", oneDriveFolder);
+    const errors: string[] = [];
 
-      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!uploadRes.ok) {
-        const j = await uploadRes.json().catch(() => ({}));
-        setError(j.error ?? `Error ${uploadRes.status}`);
-        return;
-      }
-      const { url, filename, size } = await uploadRes.json();
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setUploadProgress(`${i + 1} de ${files.length}: ${file.name}`);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        if (oneDriveFolder) formData.append("folder", oneDriveFolder);
 
-      const res = await fetch(`${resolvedApiUrl}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, filename, size }),
-      });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        setError(j.error ?? `Error ${res.status}`);
-      } else {
-        setSuccess(true);
-        setTimeout(() => setSuccess(false), 3000);
-        router.refresh();
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+        if (!uploadRes.ok) {
+          const j = await uploadRes.json().catch(() => ({}));
+          errors.push(`${file.name}: ${j.error ?? `Error ${uploadRes.status}`}`);
+          continue;
+        }
+        const { url, filename, size } = await uploadRes.json();
+
+        const res = await fetch(`${resolvedApiUrl}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, filename, size }),
+        });
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          errors.push(`${file.name}: ${j.error ?? `Error ${res.status}`}`);
+        }
+      } catch {
+        errors.push(`${file.name}: Error de red`);
       }
-    } catch (e) {
-      setError("Error de red al subir el archivo");
-    } finally {
-      setUploading(false);
     }
+
+    setUploading(false);
+    setUploadProgress("");
+    if (errors.length > 0) {
+      setError(errors.join("\n"));
+    } else {
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    }
+    router.refresh();
   }
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file) uploadFile(file);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) uploadFiles(files);
   }
 
   function handleSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) uploadFile(file);
+    const files = Array.from(e.target.files ?? []);
+    if (files.length > 0) uploadFiles(files);
+    e.target.value = "";
   }
 
   async function handleDelete(docId: string) {
@@ -141,13 +153,13 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
           "border-gray-200 hover:border-[#2E1A47]/40 hover:bg-gray-50"
         }`}
       >
-        <input ref={inputRef} type="file" className="hidden" onChange={handleSelect} />
+        <input ref={inputRef} type="file" multiple className="hidden" onChange={handleSelect} />
         {uploading ? (
-          <p className="text-sm text-gray-400">Subiendo documento...</p>
+          <p className="text-sm text-gray-400">Subiendo {uploadProgress}...</p>
         ) : (
           <>
-            <p className="text-sm text-gray-500 font-medium">Arrastra un archivo aquí o haz clic para subir</p>
-            <p className="text-xs text-gray-400 mt-1">PDF, Word, Excel, imágenes...</p>
+            <p className="text-sm text-gray-500 font-medium">Arrastra archivos aquí o haz clic para subir</p>
+            <p className="text-xs text-gray-400 mt-1">PDF, Word, Excel, imágenes... (varios a la vez)</p>
           </>
         )}
       </div>
