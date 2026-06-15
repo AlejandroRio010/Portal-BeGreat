@@ -254,7 +254,8 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-emerald-200">
-              <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-3">Persona de contacto</p>
+              <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2">Persona de contacto</p>
+              <p className="text-xs text-gray-400 mb-3">Al menos un email o teléfono es obligatorio (aquí o en la ficha de empresa).</p>
               <ContactoInline nombre={contactoNombre} setNombre={setContactoNombre} email={contactoEmail} setEmail={setContactoEmail}
                 telefono={contactoTelefono} setTelefono={setContactoTelefono} inp={inp} />
             </div>

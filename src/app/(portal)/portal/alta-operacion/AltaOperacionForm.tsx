@@ -74,7 +74,9 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const clienteListo = !!(clienteSeleccionado || (esNuevoCliente && clienteNombre.trim() && clienteCif.trim() && contactoNombre.trim() && contactoTelefono.trim()));
+  const tieneContactoInfo = !!(contactoEmail.trim() || contactoTelefono.trim());
+  const tieneEmpresaInfo = !!(clienteEmail.trim() || clienteTelefono.trim());
+  const clienteListo = !!(clienteSeleccionado || (esNuevoCliente && clienteNombre.trim() && (tieneContactoInfo || tieneEmpresaInfo)));
   const clientePendiente = esNuevoCliente && !clienteListo;
 
   function fillCliente(c: any) {
@@ -192,9 +194,12 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
     if (pipeline === "renting" && !data.plazo_meses) { setError("Selecciona el plazo deseado."); setLoading(false); return; }
 
     if (esNuevoCliente) {
-      if (!clienteCif.trim()) { setError("El CIF de la empresa cliente es obligatorio."); setLoading(false); return; }
-      if (!contactoNombre.trim()) { setError("El nombre de la persona de contacto del cliente es obligatorio."); setLoading(false); return; }
-      if (!contactoTelefono.trim()) { setError("El teléfono de la persona de contacto del cliente es obligatorio."); setLoading(false); return; }
+      const tieneContacto = !!(contactoEmail.trim() || contactoTelefono.trim());
+      const tieneEmpresa = !!(clienteEmail.trim() || clienteTelefono.trim());
+      if (!tieneContacto && !tieneEmpresa) {
+        setError("Indica al menos un email o teléfono de contacto (de la persona de contacto o de la empresa).");
+        setLoading(false); return;
+      }
     }
 
     if (pipeline === "renting" && esNuevoProveedor && proveedorNombre.trim()) {
@@ -865,8 +870,8 @@ function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClie
                   />
                 </div>
                 <div>
-                  <label className={labelCls}>CIF *</label>
-                  <input value={clienteCif} onChange={e => setClienteCif(e.target.value)} required className={inp} placeholder="B12345678" />
+                  <label className={labelCls}>CIF</label>
+                  <input value={clienteCif} onChange={e => setClienteCif(e.target.value)} className={inp} placeholder="B12345678" />
                 </div>
                 <div>
                   <label className={labelCls}>Email</label>
@@ -892,23 +897,24 @@ function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClie
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-emerald-200">
-                <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-3">Persona de contacto</p>
+                <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2">Persona de contacto</p>
+                <p className="text-xs text-gray-400 mb-3">Al menos un email o teléfono es obligatorio (aquí o en la ficha de empresa).</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={labelCls}>Nombre *</label>
-                    <input value={contactoNombre} onChange={(e: any) => setContactoNombre(e.target.value)} required className={inp} placeholder="Nombre completo" />
+                    <label className={labelCls}>Nombre</label>
+                    <input value={contactoNombre} onChange={(e: any) => setContactoNombre(e.target.value)} className={inp} placeholder="Nombre completo" />
                   </div>
                   <div>
                     <label className={labelCls}>Puesto</label>
                     <input value={contactoPuesto} onChange={(e: any) => setContactoPuesto(e.target.value)} className={inp} placeholder="Director financiero" />
                   </div>
                   <div>
-                    <label className={labelCls}>Email *</label>
-                    <input type="email" value={contactoEmail} onChange={(e: any) => setContactoEmail(e.target.value)} required className={inp} placeholder="contacto@empresa.es" />
+                    <label className={labelCls}>Email</label>
+                    <input type="email" value={contactoEmail} onChange={(e: any) => setContactoEmail(e.target.value)} className={inp} placeholder="contacto@empresa.es" />
                   </div>
                   <div>
-                    <label className={labelCls}>Teléfono *</label>
-                    <input value={contactoTelefono} onChange={(e: any) => setContactoTelefono(e.target.value)} required className={inp} placeholder="612 345 678" />
+                    <label className={labelCls}>Teléfono</label>
+                    <input value={contactoTelefono} onChange={(e: any) => setContactoTelefono(e.target.value)} className={inp} placeholder="612 345 678" />
                   </div>
                 </div>
               </div>
