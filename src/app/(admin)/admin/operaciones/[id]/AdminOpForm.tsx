@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import EmpresaSearchInput from "@/components/EmpresaSearchInput";
 
 const FASES_CONSULTORIA = [
   "Pre-análisis",
@@ -196,9 +197,9 @@ export default function AdminOpForm({
   const [avalSearchOpen, setAvalSearchOpen] = useState(false);
   const avalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [avalEmpresaResults, setAvalEmpresaResults] = useState<any[]>([]);
-  const [avalEmpresaApiResults, setAvalEmpresaApiResults] = useState<any[]>([]);
   const [avalEmpresaOpen, setAvalEmpresaOpen] = useState(false);
   const avalEmpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [avalEmpresaNueva, setAvalEmpresaNueva] = useState(false);
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [saving, setSaving] = useState(false);
@@ -281,15 +282,11 @@ export default function AdminOpForm({
     setAvalNombre(q);
     setAvalClientId(null);
     if (avalEmpTimer.current) clearTimeout(avalEmpTimer.current);
-    if (q.length < 2) { setAvalEmpresaResults([]); setAvalEmpresaApiResults([]); setAvalEmpresaOpen(false); return; }
+    if (q.length < 2) { setAvalEmpresaResults([]); setAvalEmpresaOpen(false); return; }
     avalEmpTimer.current = setTimeout(async () => {
-      const [dbRes, apiRes] = await Promise.all([
-        fetch(`/api/search/clientes?q=${encodeURIComponent(q)}`).then(r => r.json()).catch(() => []),
-        fetch(`/api/search/empresas?q=${encodeURIComponent(q)}`).then(r => r.json()).catch(() => []),
-      ]);
+      const dbRes = await fetch(`/api/search/clientes?q=${encodeURIComponent(q)}`).then(r => r.json()).catch(() => []);
       setAvalEmpresaResults(dbRes);
-      setAvalEmpresaApiResults(apiRes);
-      setAvalEmpresaOpen(dbRes.length > 0 || apiRes.length > 0);
+      setAvalEmpresaOpen(true);
     }, 300);
   }
 
@@ -300,18 +297,13 @@ export default function AdminOpForm({
     setAvalPersonaContacto(c.contacto_nombre ?? "");
     setAvalClientId(c.id ?? null);
     setAvalEmpresaResults([]);
-    setAvalEmpresaApiResults([]);
     setAvalEmpresaOpen(false);
+    setAvalEmpresaNueva(false);
   }
 
-  function selectApiEmpresaAval(e: any) {
-    setAvalNombre(e.nombre ?? "");
-    setAvalEmail(e.email ?? "");
-    setAvalTelefono(e.telefono ?? "");
-    setAvalClientId(null);
-    setAvalEmpresaResults([]);
-    setAvalEmpresaApiResults([]);
-    setAvalEmpresaOpen(false);
+  function clearAvalEmpresa() {
+    setAvalNombre(""); setAvalEmail(""); setAvalTelefono(""); setAvalPersonaContacto("");
+    setAvalClientId(null); setAvalEmpresaNueva(false);
   }
 
   async function handleSave() {
@@ -527,43 +519,65 @@ export default function AdminOpForm({
                     </div>
                   </div>
                 </>
+              ) : avalEmpresaNueva ? (
+                <div className="border border-emerald-200 bg-emerald-50/50 p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Nueva empresa avalista</p>
+                    <button type="button" onClick={clearAvalEmpresa} className="text-[10px] text-gray-400 hover:text-red-500">✕ Cancelar</button>
+                  </div>
+                  <EmpresaSearchInput
+                    value={avalNombre}
+                    onChange={setAvalNombre}
+                    inp="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
+                    labelCls="block text-xs text-gray-400 uppercase tracking-wider mb-1.5"
+                    onSelect={(data) => {
+                      setAvalNombre(data.nombre);
+                      if (data.email) setAvalEmail(data.email);
+                      if (data.telefono) setAvalTelefono(data.telefono);
+                    }}
+                    onCifDuplicate={() => {}}
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Persona de contacto</label>
+                      <input value={avalPersonaContacto} onChange={(e) => setAvalPersonaContacto(e.target.value)}
+                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
+                      <input type="email" value={avalEmail} onChange={(e) => setAvalEmail(e.target.value)}
+                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Teléfono</label>
+                      <input value={avalTelefono} onChange={(e) => setAvalTelefono(e.target.value)}
+                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <>
                   <div className="relative">
-                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Nombre de la empresa avalista</label>
+                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Empresa avalista</label>
                     <input value={avalNombre} onChange={(e) => buscarEmpresaAval(e.target.value)}
                       onBlur={() => setTimeout(() => setAvalEmpresaOpen(false), 200)}
                       className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
-                      placeholder="Buscar empresa en base de datos o API..." autoComplete="off" />
-                    {avalEmpresaOpen && (avalEmpresaResults.length > 0 || avalEmpresaApiResults.length > 0) && (
+                      placeholder="Buscar empresa en base de datos..." autoComplete="off" />
+                    {avalEmpresaOpen && (
                       <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-gray-200 shadow-lg max-h-60 overflow-y-auto">
-                        {avalEmpresaResults.length > 0 && (
-                          <>
-                            <p className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase bg-gray-50">Base de datos</p>
-                            {avalEmpresaResults.map((c: any) => (
-                              <button key={c.id} type="button" onMouseDown={() => selectClienteAval(c)}
-                                className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
-                                <p className="text-xs font-semibold text-gray-800">{c.nombre}</p>
-                                <p className="text-[10px] text-gray-400">{[c.codigo, c.cif, c.email].filter(Boolean).join(" · ")}</p>
-                              </button>
-                            ))}
-                          </>
-                        )}
-                        {avalEmpresaApiResults.length > 0 && (
-                          <>
-                            <p className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase bg-gray-50 border-t border-gray-200">Registro mercantil</p>
-                            {avalEmpresaApiResults.map((e: any, i: number) => (
-                              <button key={i} type="button" onMouseDown={() => selectApiEmpresaAval(e)}
-                                className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
-                                <p className="text-xs font-semibold text-gray-800">{e.nombre}</p>
-                                <p className="text-[10px] text-gray-400">{[e.cif, e.provincia].filter(Boolean).join(" · ")}</p>
-                              </button>
-                            ))}
-                          </>
-                        )}
+                        {avalEmpresaResults.map((c: any) => (
+                          <button key={c.id} type="button" onMouseDown={() => selectClienteAval(c)}
+                            className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
+                            <p className="text-xs font-semibold text-gray-800">{c.nombre}</p>
+                            <p className="text-[10px] text-gray-400">{[c.codigo, c.cif, c.email].filter(Boolean).join(" · ")}</p>
+                          </button>
+                        ))}
+                        <button type="button" onMouseDown={() => { setAvalEmpresaOpen(false); setAvalEmpresaNueva(true); }}
+                          className="w-full text-left px-3 py-2.5 bg-emerald-50 hover:bg-emerald-100 border-t border-gray-200">
+                          <p className="text-xs font-bold text-emerald-700">+ Añadir nueva empresa</p>
+                        </button>
                       </div>
                     )}
-                    {avalClientId && <p className="text-[10px] text-emerald-600 mt-1">Vinculado a cliente existente</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>

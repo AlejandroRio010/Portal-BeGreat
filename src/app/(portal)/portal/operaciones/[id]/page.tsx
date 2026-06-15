@@ -127,6 +127,11 @@ export default async function OperacionDetallePage({ params }: { params: Promise
     ? await db.select({ id: suppliers.id, persona_contacto: suppliers.persona_contacto }).from(suppliers).where(eq(suppliers.id, op.supplier_id)).limit(1).then(r => r[0] ?? null)
     : null;
 
+  // Resolve aval contact's client_id for correct link
+  const avalContactData = op.aval_contact_id
+    ? await db.select({ id: contacts.id, client_id: contacts.client_id }).from(contacts).where(eq(contacts.id, op.aval_contact_id)).limit(1).then(r => r[0] ?? null)
+    : null;
+
   const opNotes = await db.select().from(notes).where(eq(notes.operation_id, id)).orderBy(notes.created_at);
   const opDocs = await db.select().from(operationDocuments).where(eq(operationDocuments.operation_id, id)).orderBy(operationDocuments.created_at);
   const clientDocs = op.client_id
@@ -370,7 +375,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                       {op.aval_tipo === "persona_fisica" ? (
                         <dd className="text-sm text-gray-800">
                           {op.aval_contact_id ? (
-                            <Link href={`/portal/clientes/${op.client_id}#contacto-${op.aval_contact_id}`} className="font-medium text-[#2E1A47] hover:underline">{op.aval_nombre}</Link>
+                            <Link href={`/portal/clientes/${avalContactData?.client_id ?? op.client_id}/contactos/${op.aval_contact_id}`} className="font-medium text-[#2E1A47] hover:underline">{op.aval_nombre}</Link>
                           ) : (
                             <p className="font-medium">{op.aval_nombre}</p>
                           )}

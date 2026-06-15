@@ -112,6 +112,10 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
     ? await db.select().from(avalDocuments).where(eq(avalDocuments.operation_id, id)).orderBy(avalDocuments.created_at)
     : [];
 
+  const avalContactData = op.aval_contact_id
+    ? await db.select({ id: contacts.id, client_id: contacts.client_id }).from(contacts).where(eq(contacts.id, op.aval_contact_id)).limit(1).then(r => r[0] ?? null)
+    : null;
+
   const opNotes = await db
     .select()
     .from(notes)
@@ -402,7 +406,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
                       {op.aval_tipo === "persona_fisica" ? (
                         <dd className="text-sm text-gray-800">
                           {op.aval_contact_id ? (
-                            <Link href={`/admin/clientes/${op.client_id}#contacto-${op.aval_contact_id}`} className="font-medium text-[#2E1A47] hover:underline">{op.aval_nombre}</Link>
+                            <Link href={`/admin/clientes/${avalContactData?.client_id ?? op.client_id}/contactos/${op.aval_contact_id}`} className="font-medium text-[#2E1A47] hover:underline">{op.aval_nombre}</Link>
                           ) : (
                             <p className="font-medium">{op.aval_nombre}</p>
                           )}

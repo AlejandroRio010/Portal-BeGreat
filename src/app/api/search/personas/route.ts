@@ -17,12 +17,21 @@ export async function GET(req: NextRequest) {
   const myClients = await db.select({ id: clients.id }).from(clients).where(eq(clients.collaborator_id, userId));
   const myClientIds = myClients.map(c => c.id);
 
-  const results: Array<{ nombre: string; rol: string | null; email: string | null; telefono: string | null; linkedin?: string | null }> = [];
+  const results: Array<{ id?: string; nombre: string; rol: string | null; email: string | null; telefono: string | null; linkedin?: string | null; client_id?: string; client_nombre?: string }> = [];
 
   if (myClientIds.length > 0) {
     const cc = await db
-      .select({ nombre: contacts.nombre, rol: contacts.rol, email: contacts.email, telefono: contacts.telefono })
+      .select({
+        id: contacts.id,
+        nombre: contacts.nombre,
+        rol: contacts.rol,
+        email: contacts.email,
+        telefono: contacts.telefono,
+        client_id: contacts.client_id,
+        client_nombre: clients.nombre,
+      })
       .from(contacts)
+      .innerJoin(clients, eq(contacts.client_id, clients.id))
       .where(and(inArray(contacts.client_id, myClientIds), ilike(contacts.nombre, pattern)))
       .limit(10);
     results.push(...cc);
