@@ -4,6 +4,8 @@ import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import ProveedorEditForm from "./ProveedorEditForm";
+import SupplierPortalToggle from "./SupplierPortalToggle";
+import SupplierUsuariosPanel from "./SupplierUsuariosPanel";
 import { fmtEur } from "@/lib/format";
 
 function fmtDate(d: Date | null | undefined) {
@@ -36,6 +38,8 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
       contacto_email: suppliers.contacto_email,
       contacto_telefono: suppliers.contacto_telefono,
       codigo: suppliers.codigo,
+      portal_activo: suppliers.portal_activo,
+      puede_ver_entidades: suppliers.puede_ver_entidades,
       created_at: suppliers.created_at,
       colaborador_nombre: collaborators.nombre,
       colaborador_id: collaborators.id,
@@ -109,6 +113,12 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
           <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1">Importe total</p>
           <p className="text-white text-3xl font-black">{totalImporte > 0 ? fmtEur(String(totalImporte)) : "—"}</p>
         </div>
+      </div>
+
+      {/* Portal access + Users */}
+      <div className="mx-8 mb-6 grid grid-cols-2 gap-4">
+        <SupplierPortalToggle supplierId={prov.id} portalActivo={prov.portal_activo} puedeVerEntidades={prov.puede_ver_entidades} />
+        <SupplierUsuariosPanel supplierId={prov.id} portalActivo={prov.portal_activo} />
       </div>
 
       <div className="mx-8 mb-6 grid grid-cols-3 gap-4 items-start">

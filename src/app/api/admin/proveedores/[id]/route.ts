@@ -11,7 +11,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   const { id } = await params;
   const body = await req.json();
-  const { nombre, email, telefono, web, persona_contacto, contacto_email, contacto_telefono } = body;
+  const { nombre, email, telefono, web, persona_contacto, contacto_email, contacto_telefono, portal_activo, puede_ver_entidades } = body;
+
+  // Toggle-only updates (from SupplierPortalToggle)
+  if (portal_activo !== undefined || puede_ver_entidades !== undefined) {
+    const set: Record<string, any> = {};
+    if (portal_activo !== undefined) set.portal_activo = portal_activo;
+    if (puede_ver_entidades !== undefined) set.puede_ver_entidades = puede_ver_entidades;
+    await db.update(suppliers).set(set).where(eq(suppliers.id, id));
+    return NextResponse.json({ ok: true });
+  }
+
   if (!nombre?.trim()) return NextResponse.json({ error: "Nombre obligatorio" }, { status: 400 });
 
   await db.update(suppliers).set({
