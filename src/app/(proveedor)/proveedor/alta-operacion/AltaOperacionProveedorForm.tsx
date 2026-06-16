@@ -20,11 +20,11 @@ const COT_PLAZOS: Record<Entidad, { meses: number; tae: number }[]> = {
     { meses: 72, tae: 0.148 },
   ],
   laboral_kutxa: [
-    { meses: 24, tae: 0.120 },
-    { meses: 36, tae: 0.112 },
-    { meses: 48, tae: 0.105 },
-    { meses: 60, tae: 0.098 },
-    { meses: 72, tae: 0.092 },
+    { meses: 24, tae: 0.128 },
+    { meses: 36, tae: 0.118 },
+    { meses: 48, tae: 0.110 },
+    { meses: 60, tae: 0.105 },
+    { meses: 72, tae: 0.098 },
   ],
 };
 
