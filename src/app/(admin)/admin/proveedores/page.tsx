@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { suppliers, collaborators } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import ProveedoresTabla from "@/components/ProveedoresTabla";
+import NuevoProveedorModal from "./NuevoProveedorModal";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +31,12 @@ export default async function AdminProveedoresPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Proveedores</h1>
-        <p className="text-sm text-gray-400 mt-1">{proveedores.length} proveedores</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Proveedores</h1>
+          <p className="text-sm text-gray-400 mt-1">{proveedores.length} proveedores</p>
+        </div>
+        <NuevoProveedorModal colaboradores={colabs} />
       </div>
       <ProveedoresTabla esAdmin hrefBase="/admin/proveedores" colaboradores={colabs} proveedores={proveedores} />
     </div>
