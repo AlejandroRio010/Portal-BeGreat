@@ -8,6 +8,13 @@
       "when": 1781529326107,
       "tag": "0000_glamorous_big_bertha",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781601197487,
+      "tag": "0001_famous_wendigo",
+      "breakpoints": true
     }
   ]
 }

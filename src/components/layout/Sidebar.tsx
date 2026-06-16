@@ -8,7 +8,7 @@ import Image from "next/image";
 interface SidebarProps {
   nombre: string;
   identificador: string;
-  role: "admin" | "colaborador";
+  role: "admin" | "colaborador" | "proveedor";
   puedeVerEntidades?: boolean;
   nivelEntidades?: number;
 }
@@ -25,6 +25,16 @@ const colaboradorNav = [
   { href: "/portal/proveedores",              label: "Mis proveedores",       exact: false },
   { href: "/portal/perfil",                   label: "Mi perfil",             exact: false },
   { href: "/portal/contacto",                 label: "Contacto",              exact: false },
+];
+
+const proveedorNav = [
+  { href: "/proveedor",                         label: "Inicio",                exact: true },
+  { href: "/proveedor/alta-operacion",           label: "Alta nueva operación",  exact: false },
+  { href: "/proveedor/operaciones/renting",      label: "Funnel de renting",     exact: false },
+  { href: "/proveedor/clientes",                 label: "Mis clientes",          exact: false },
+  { href: "/proveedor/historial",                label: "Historial de operaciones", exact: false },
+  { href: "/proveedor/perfil",                   label: "Mi perfil",             exact: false },
+  { href: "/proveedor/contacto",                 label: "Contacto",              exact: false },
 ];
 
 const adminNav = [
@@ -44,17 +54,20 @@ const adminNav = [
 
 export default function Sidebar({ nombre, identificador, role, puedeVerEntidades, nivelEntidades }: SidebarProps) {
   const pathname = usePathname();
-  const baseNav = role === "admin" ? adminNav : colaboradorNav;
+  const baseNav = role === "admin" ? adminNav : role === "proveedor" ? proveedorNav : colaboradorNav;
   const showEntidades = nivelEntidades !== undefined ? nivelEntidades <= 2 : puedeVerEntidades;
-  const nav = role === "colaborador" && showEntidades
-    ? [...colaboradorNav.slice(0, -2), { href: "/portal/entidades", label: "Entidades financieras", exact: false }, ...colaboradorNav.slice(-2)]
-    : baseNav;
+  let nav = baseNav;
+  if (role === "colaborador" && showEntidades) {
+    nav = [...colaboradorNav.slice(0, -2), { href: "/portal/entidades", label: "Entidades financieras", exact: false }, ...colaboradorNav.slice(-2)];
+  } else if (role === "proveedor" && showEntidades) {
+    nav = [...proveedorNav.slice(0, -2), { href: "/proveedor/entidades", label: "Entidades financieras", exact: false }, ...proveedorNav.slice(-2)];
+  }
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-[#2E1A47] text-white z-50">
 
       {/* Logo — centrado, link al inicio */}
-      <Link href={role === "admin" ? "/admin" : "/portal"} className="flex items-center justify-center px-6 py-6 border-b border-white/10 hover:bg-white/5 transition-colors">
+      <Link href={role === "admin" ? "/admin" : role === "proveedor" ? "/proveedor" : "/portal"} className="flex items-center justify-center px-6 py-6 border-b border-white/10 hover:bg-white/5 transition-colors">
         <Image
           src="/begreat-logo-blanco.png"
           alt="BeGreat Consulting"

@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { db } from "@/db";
-import { collaborators, collaboratorUsers } from "@/db/schema";
+import { collaborators, collaboratorUsers, suppliers, supplierUsers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -17,6 +17,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.identificador = (user as any).identificador;
         token.nombre = (user as any).nombre;
         token.collaboratorId = (user as any).collaboratorId;
+        token.supplierId = (user as any).supplierId;
       }
       return token;
     },
@@ -26,6 +27,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       (session.user as any).identificador = token.identificador;
       (session.user as any).nombre = token.nombre;
       (session.user as any).collaboratorId = token.collaboratorId;
+      (session.user as any).supplierId = token.supplierId;
       return session;
     },
   },
@@ -76,7 +78,42 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           };
         }
 
-        // 2) Try collaborators table (admin login)
+        // 2) Try supplier_users (proveedor login)
+        const [su] = await db
+          .select()
+          .from(supplierUsers)
+          .where(eq(supplierUsers.email, emailNorm))
+          .limit(1);
+
+        if (su) {
+          const [supplier] = await db
+            .select({
+              portal_activo: suppliers.portal_activo,
+              codigo: suppliers.codigo,
+              nombre: suppliers.nombre,
+            })
+            .from(suppliers)
+            .where(eq(suppliers.id, su.supplier_id))
+            .limit(1);
+
+          if (!supplier || !supplier.portal_activo || !su.activo) return null;
+
+          const validSu = await bcrypt.compare(credentials.password as string, su.password_hash);
+          if (!validSu) return null;
+
+          return {
+            id: su.id,
+            email: su.email,
+            name: su.nombre,
+            role: "proveedor" as const,
+            identificador: supplier.codigo ?? "",
+            nombre: su.nombre,
+            collaboratorId: null,
+            supplierId: su.supplier_id,
+          };
+        }
+
+        // 3) Try collaborators table (admin login)
         const [user] = await db
           .select()
           .from(collaborators)

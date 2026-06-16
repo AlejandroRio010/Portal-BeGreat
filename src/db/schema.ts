@@ -185,7 +185,6 @@ export const contacts = pgTable("contacts", {
 export const suppliers = pgTable("suppliers", {
   id: uuid("id").primaryKey().defaultRandom(),
   collaborator_id: uuid("collaborator_id")
-    .notNull()
     .references(() => collaborators.id),
   nombre: text("nombre").notNull(),
   email: text("email"),
@@ -195,6 +194,39 @@ export const suppliers = pgTable("suppliers", {
   contacto_email: text("contacto_email"),
   contacto_telefono: text("contacto_telefono"),
   codigo: text("codigo").unique(),
+  cif: text("cif"),
+  razon_social: text("razon_social"),
+  logo_url: text("logo_url"),
+  portal_activo: boolean("portal_activo").notNull().default(false),
+  puede_ver_entidades: boolean("puede_ver_entidades").notNull().default(false),
+  notas_internas: text("notas_internas"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Supplier users (login accounts per supplier company) ───────────────────
+export const supplierUsers = pgTable("supplier_users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  supplier_id: uuid("supplier_id")
+    .notNull()
+    .references(() => suppliers.id, { onDelete: "cascade" }),
+  nombre: text("nombre").notNull(),
+  email: text("email").notNull().unique(),
+  password_hash: text("password_hash").notNull(),
+  activo: boolean("activo").notNull().default(true),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Supplier products (catalog) ────────────────────────────────────────────
+export const supplierProducts = pgTable("supplier_products", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  supplier_id: uuid("supplier_id")
+    .notNull()
+    .references(() => suppliers.id, { onDelete: "cascade" }),
+  nombre: text("nombre").notNull(),
+  descripcion: text("descripcion"),
+  tipo: equipoTipoEnum("tipo"),
+  precio_venta: numeric("precio_venta", { precision: 12, scale: 2 }),
+  activo: boolean("activo").notNull().default(true),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
