@@ -18,7 +18,13 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo }: { su
   const [email, setEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [created, setCreated] = useState<{ email: string; tempPassword: string } | null>(null);
+
+  // Access link state (per user)
+  const [linkUserId, setLinkUserId] = useState<string | null>(null);
+  const [generando, setGenerando] = useState(false);
+  const [link, setLink] = useState<string | null>(null);
+  const [copiado, setCopiado] = useState(false);
+  const [emailEnviado, setEmailEnviado] = useState(false);
 
   useEffect(() => {
     fetch(`/api/admin/proveedores/${supplierId}/users`)
@@ -44,7 +50,6 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo }: { su
     }
     const user = await res.json();
     setUsers((prev) => [...prev, user]);
-    setCreated({ email: user.email, tempPassword: user.tempPassword });
     setNombre("");
     setEmail("");
     setShowForm(false);
@@ -70,11 +75,40 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo }: { su
     setUsers((prev) => prev.filter((u) => u.id !== userId));
   }
 
+  async function generarEnlace(userId: string, tipo: "invitacion" | "reset", enviarEmail = false) {
+    setLinkUserId(userId);
+    setGenerando(true);
+    setLink(null);
+    setCopiado(false);
+    setEmailEnviado(false);
+    const res = await fetch(`/api/admin/proveedores/${supplierId}/access-link`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tipo, enviarEmail, userId }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setLink(data.url);
+      if (data.emailSent) setEmailEnviado(true);
+    }
+    setGenerando(false);
+  }
+
+  function copiar() {
+    if (!link) return;
+    navigator.clipboard.writeText(link);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 3000);
+  }
+
   return (
     <div className="bg-white border border-gray-200">
       <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200 flex items-center justify-between">
         <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Usuarios de acceso al portal</h3>
-        <button onClick={() => setShowForm(!showForm)} className="text-xs font-semibold text-[#2E1A47] hover:underline">
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="text-xs font-semibold text-[#2E1A47] hover:underline"
+        >
           {showForm ? "Cancelar" : "+ Añadir usuario"}
         </button>
       </div>
@@ -86,31 +120,6 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo }: { su
           </p>
         )}
 
-        {created && (
-          <div className="bg-emerald-50 border border-emerald-200 p-3 space-y-2">
-            <p className="text-xs font-semibold text-emerald-800">Usuario creado correctamente</p>
-            <div className="text-xs text-emerald-700 space-y-1">
-              <p>Email: <span className="font-mono font-semibold">{created.email}</span></p>
-              <p>Contraseña temporal: <span className="font-mono font-semibold">{created.tempPassword}</span></p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  const msg = `Hola, te damos acceso al portal de proveedores de BeGreat Consulting.\n\nAccede desde: https://portal.begreatconsulting.es\n\nEmail: ${created.email}\nContraseña: ${created.tempPassword}\n\nUn saludo,\nBeGreat Consulting`;
-                  navigator.clipboard.writeText(msg);
-                }}
-                className="py-1.5 px-3 bg-emerald-700 text-white text-[11px] font-semibold hover:bg-emerald-800 transition-colors"
-              >
-                Copiar invitación
-              </button>
-              <button onClick={() => setCreated(null)}
-                className="py-1.5 px-3 border border-emerald-300 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors">
-                Cerrar
-              </button>
-            </div>
-          </div>
-        )}
-
         {loading && <p className="text-xs text-gray-400">Cargando...</p>}
 
         {!loading && users.length === 0 && !showForm && (
@@ -119,13 +128,25 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo }: { su
 
         {showForm && (
           <div className="border border-gray-100 p-3 space-y-2">
-            <input value={nombre} onChange={(e) => setNombre(e.target.value)}
-              placeholder="Nombre del usuario" className="w-full px-3 py-2 text-sm border border-gray-200 focus:outline-none focus:border-[#2E1A47]" />
-            <input value={email} onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email de acceso" type="email" className="w-full px-3 py-2 text-sm border border-gray-200 focus:outline-none focus:border-[#2E1A47]" />
+            <input
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              placeholder="Nombre del usuario"
+              className="w-full px-3 py-2 text-sm border border-gray-200 focus:outline-none focus:border-[#2E1A47]"
+            />
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email de acceso"
+              type="email"
+              className="w-full px-3 py-2 text-sm border border-gray-200 focus:outline-none focus:border-[#2E1A47]"
+            />
             {error && <p className="text-xs text-red-600">{error}</p>}
-            <button onClick={addUser} disabled={saving || !nombre.trim() || !email.trim()}
-              className="w-full py-2 bg-[#2E1A47] text-white text-xs font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50">
+            <button
+              onClick={addUser}
+              disabled={saving || !nombre.trim() || !email.trim()}
+              className="w-full py-2 bg-[#2E1A47] text-white text-xs font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50"
+            >
               {saving ? "Creando..." : "Crear usuario"}
             </button>
           </div>
@@ -138,22 +159,81 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo }: { su
                 <p className="text-sm font-semibold text-gray-800">{u.nombre}</p>
                 <p className="text-xs text-gray-500">{u.email}</p>
               </div>
-              <span className={`inline-block px-2 py-0.5 text-[10px] font-semibold border ${
-                u.activo ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-gray-100 text-gray-400 border-gray-200"
-              }`}>
-                {u.activo ? "Activo" : "Inactivo"}
-              </span>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`inline-block px-2 py-0.5 text-[10px] font-semibold border ${
+                    u.activo
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : "bg-gray-100 text-gray-400 border-gray-200"
+                  }`}
+                >
+                  {u.activo ? "Activo" : "Inactivo"}
+                </span>
+              </div>
             </div>
+
             <div className="flex gap-2 flex-wrap">
-              <button onClick={() => toggleActivo(u.id, !u.activo)}
-                className="py-1.5 px-3 border border-gray-200 text-[11px] font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
+              <button
+                onClick={() => generarEnlace(u.id, "invitacion", true)}
+                disabled={generando || !portalActivo || !u.activo}
+                className="py-1.5 px-3 bg-[#2E1A47] text-white text-[11px] font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50"
+              >
+                Enviar invitación
+              </button>
+              <button
+                onClick={() => generarEnlace(u.id, "reset", true)}
+                disabled={generando || !portalActivo || !u.activo}
+                className="py-1.5 px-3 border border-[#2E1A47] text-[#2E1A47] text-[11px] font-semibold hover:bg-[#EEEBF3] transition-colors disabled:opacity-50"
+              >
+                Reset contraseña
+              </button>
+              <button
+                onClick={() => generarEnlace(u.id, "invitacion", false)}
+                disabled={generando || !portalActivo || !u.activo}
+                className="py-1.5 px-3 border border-gray-200 text-[11px] font-semibold text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Solo enlace
+              </button>
+              <button
+                onClick={() => toggleActivo(u.id, !u.activo)}
+                className="py-1.5 px-3 border border-gray-200 text-[11px] font-semibold text-gray-500 hover:bg-gray-50 transition-colors"
+              >
                 {u.activo ? "Desactivar" : "Activar"}
               </button>
-              <button onClick={() => deleteUser(u.id)}
-                className="py-1.5 px-3 border border-red-200 text-[11px] font-semibold text-red-500 hover:bg-red-50 transition-colors">
+              <button
+                onClick={() => deleteUser(u.id)}
+                className="py-1.5 px-3 border border-red-200 text-[11px] font-semibold text-red-500 hover:bg-red-50 transition-colors"
+              >
                 Eliminar
               </button>
             </div>
+
+            {linkUserId === u.id && emailEnviado && (
+              <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-2 font-semibold">
+                Email enviado a {u.email}
+              </p>
+            )}
+
+            {linkUserId === u.id && link && (
+              <div className="border border-gray-200 bg-gray-50 p-3 space-y-2">
+                <p className="text-xs font-semibold text-gray-600">Enlace — válido 48 horas</p>
+                <div className="flex gap-2 items-center">
+                  <input
+                    readOnly
+                    value={link}
+                    className="flex-1 px-3 py-2 text-xs text-gray-700 bg-white border border-gray-200 font-mono select-all focus:outline-none"
+                  />
+                  <button
+                    onClick={copiar}
+                    className={`px-3 py-2 text-xs font-semibold transition-colors ${
+                      copiado ? "bg-emerald-600 text-white" : "bg-[#2E1A47] text-white hover:bg-[#3d2460]"
+                    }`}
+                  >
+                    {copiado ? "Copiado" : "Copiar"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
