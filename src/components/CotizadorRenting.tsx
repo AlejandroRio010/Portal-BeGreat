@@ -126,11 +126,9 @@ export default function CotizadorRenting() {
               <p className="text-white/20 text-sm">Introduce un importe y pulsa calcular</p>
             )}
           </div>
-          <div className="px-4 py-3 bg-white/5 border-t border-white/10">
-            <p className="text-[9px] text-white/30 text-center leading-relaxed">* Cuota provisional sujeta a la aprobación del estudio crediticio del cliente, la elegibilidad de los activos por parte de la entidad financiera y las condiciones vigentes en el momento de la formalización. BeGreat Consulting no garantiza la cuota indicada ni la aprobación de la operación.</p>
-          </div>
         </div>
       </div>
+      <p className="text-xs font-bold text-[#2E1A47] mt-4 leading-relaxed">* Cuota provisional sujeta a la aprobación del estudio crediticio del cliente, la elegibilidad de los activos por parte de la entidad financiera y las condiciones vigentes en el momento de la formalización. BeGreat Consulting no garantiza la cuota indicada ni la aprobación de la operación.</p>
     </div>
   );
 }
