@@ -488,3 +488,14 @@ export const customFieldValues = pgTable("custom_field_values", {
   entity_id: uuid("entity_id").notNull(),
   valor: text("valor"),
 });
+
+// ─── Cotizador: deals de referencia para calibrar TAEs ────────────────────────
+export const cotizadorDeals = pgTable("cotizador_deals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entidad: text("entidad").notNull(),
+  cliente: text("cliente").notNull(),
+  importe: numeric("importe", { precision: 12, scale: 2 }).notNull(),
+  cuota: numeric("cuota", { precision: 10, scale: 2 }).notNull(),
+  plazo_meses: integer("plazo_meses").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});

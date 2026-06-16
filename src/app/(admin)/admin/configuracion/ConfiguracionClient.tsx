@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   DndContext,
@@ -43,7 +43,7 @@ interface Props {
   initialUsers: UserRow[];
 }
 
-type Tab = "campos" | "fases" | "usuarios";
+type Tab = "campos" | "fases" | "usuarios" | "cotizador";
 
 const TIPO_LABELS: Record<string, string> = {
   texto: "Texto",
@@ -460,6 +460,7 @@ export default function ConfiguracionClient({ initialFields, pipelineConsultoria
     { key: "campos", label: "Campos personalizados" },
     { key: "fases", label: "Fases del pipeline" },
     { key: "usuarios", label: "Usuarios y accesos" },
+    { key: "cotizador", label: "Cotizador" },
   ];
 
   return (
@@ -673,6 +674,163 @@ export default function ConfiguracionClient({ initialFields, pipelineConsultoria
           />
         </div>
       )}
+
+      {tab === "cotizador" && <CotizadorDealsPanel />}
+    </div>
+  );
+}
+
+// ── Cotizador deals panel ─────────────────────────────────────────────────────
+
+interface CotDeal {
+  id: string;
+  entidad: string;
+  cliente: string;
+  importe: string;
+  cuota: string;
+  plazo_meses: number;
+  created_at: string;
+}
+
+const ENTIDAD_NAMES: Record<string, string> = {
+  grenke: "Grenke",
+  laboral_kutxa: "Laboral Kutxa",
+};
+
+function CotizadorDealsPanel() {
+  const [deals, setDeals] = useState<CotDeal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [entidad, setEntidad] = useState("");
+  const [cliente, setCliente] = useState("");
+  const [importe, setImporte] = useState("");
+  const [cuota, setCuota] = useState("");
+  const [plazo, setPlazo] = useState("60");
+  const [adding, setAdding] = useState(false);
+
+  const load = useCallback(async () => {
+    const res = await fetch("/api/admin/cotizador-deals");
+    if (res.ok) setDeals(await res.json());
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function handleAdd() {
+    if (!entidad || !cliente.trim() || !importe || !cuota || !plazo) return;
+    setAdding(true);
+    const res = await fetch("/api/admin/cotizador-deals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entidad, cliente: cliente.trim(), importe: Number(importe), cuota: Number(cuota), plazo_meses: Number(plazo) }),
+    });
+    if (res.ok) {
+      setCliente(""); setImporte(""); setCuota(""); setPlazo("60");
+      load();
+    }
+    setAdding(false);
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("¿Eliminar esta operación de referencia?")) return;
+    const res = await fetch("/api/admin/cotizador-deals", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (res.ok) setDeals(prev => prev.filter(d => d.id !== id));
+  }
+
+  const grouped = deals.reduce<Record<string, CotDeal[]>>((acc, d) => {
+    if (!acc[d.entidad]) acc[d.entidad] = [];
+    acc[d.entidad].push(d);
+    return acc;
+  }, {});
+
+  const fmt = (n: string | number) => Number(n).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const inp = "w-full px-3 py-2.5 border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#2E1A47] focus:border-[#2E1A47] bg-white";
+
+  if (loading) return <p className="text-sm text-gray-400 py-8 text-center">Cargando...</p>;
+
+  return (
+    <div className="space-y-6">
+      {Object.entries(grouped).map(([ent, entDeals]) => (
+        <div key={ent} className="bg-white border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">{ENTIDAD_NAMES[ent] ?? ent}</p>
+            <p className="text-xs text-gray-400">{entDeals.length} operaciones</p>
+          </div>
+          <table className="w-full">
+            <thead>
+              <tr className="bg-[#EEEBF3] border-b border-gray-100">
+                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Cliente</th>
+                <th className="text-right px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Importe</th>
+                <th className="text-right px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Cuota</th>
+                <th className="text-right px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Plazo</th>
+                <th className="px-6 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {entDeals.map(d => (
+                <tr key={d.id} className="hover:bg-[#EEEBF3]/20 transition-colors">
+                  <td className="px-6 py-3 text-sm font-semibold text-gray-900">{d.cliente}</td>
+                  <td className="px-6 py-3 text-sm text-gray-700 text-right tabular-nums">{fmt(d.importe)} €</td>
+                  <td className="px-6 py-3 text-sm text-gray-700 text-right tabular-nums">{fmt(d.cuota)} €</td>
+                  <td className="px-6 py-3 text-sm text-gray-700 text-right">{d.plazo_meses}m</td>
+                  <td className="px-6 py-3 text-right">
+                    <button onClick={() => handleDelete(d.id)} className="text-xs text-red-500 hover:text-red-700 font-semibold">Eliminar</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+
+      {Object.keys(grouped).length === 0 && (
+        <div className="bg-white border border-gray-200 p-10 text-center">
+          <p className="text-sm text-gray-400">No hay operaciones de referencia todavía.</p>
+        </div>
+      )}
+
+      {/* Añadir nueva */}
+      <div className="bg-white border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">Añadir operación de referencia</p>
+        </div>
+        <div className="px-6 py-5 grid grid-cols-6 gap-4 items-end">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Entidad</label>
+            <select value={entidad} onChange={e => setEntidad(e.target.value)} className={inp}>
+              <option value="">Seleccionar</option>
+              <option value="grenke">Grenke</option>
+              <option value="laboral_kutxa">Laboral Kutxa</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Cliente</label>
+            <input value={cliente} onChange={e => setCliente(e.target.value)} className={inp} placeholder="Nombre empresa" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Importe €</label>
+            <input value={importe} onChange={e => setImporte(e.target.value)} type="number" step="any" className={inp} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Cuota €/mes</label>
+            <input value={cuota} onChange={e => setCuota(e.target.value)} type="number" step="any" className={inp} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Plazo (meses)</label>
+            <select value={plazo} onChange={e => setPlazo(e.target.value)} className={inp}>
+              {[24, 36, 48, 60, 72].map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+          <button onClick={handleAdd} disabled={adding || !entidad || !cliente.trim() || !importe || !cuota}
+            className="px-5 py-2.5 bg-[#2E1A47] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#3d2560] disabled:opacity-40 transition-colors">
+            {adding ? "Añadiendo..." : "Añadir"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

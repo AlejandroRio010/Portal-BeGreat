@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import EmpresaSearchInput from "@/components/EmpresaSearchInput";
 
@@ -481,11 +481,17 @@ function Cotizador() {
   const [entidad, setEntidad] = useState<Entidad>("grenke");
   const [resultados, setResultados] = useState<{ plazo: number; cuota: number }[] | null>(null);
   const [seleccionado, setSeleccionado] = useState<number | null>(null);
+  const [dynamicTaes, setDynamicTaes] = useState<Record<string, { meses: number; tae: number }[]> | null>(null);
+
+  useEffect(() => {
+    fetch("/api/cotizador").then(r => r.ok ? r.json() : null).then(d => { if (d) setDynamicTaes(d); });
+  }, []);
 
   function calcular(ent?: Entidad) {
     const val = parseFloat(cotImporte.replace(",", "."));
     if (!val || val <= 0) return;
-    const plazos = COT_PLAZOS[ent ?? entidad];
+    const e = ent ?? entidad;
+    const plazos = dynamicTaes?.[e] ?? COT_PLAZOS[e];
     const res = plazos.map(p => ({ plazo: p.meses, cuota: calcularCuota(val, p.meses, p.tae) }));
     setResultados(res);
     if (!seleccionado || !res.find(r => r.plazo === seleccionado)) setSeleccionado(48);
