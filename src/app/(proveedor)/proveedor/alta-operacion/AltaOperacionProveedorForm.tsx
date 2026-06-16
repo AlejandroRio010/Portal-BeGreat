@@ -6,6 +6,19 @@ import EmpresaSearchInput from "@/components/EmpresaSearchInput";
 
 const PLAZOS = [12, 24, 36, 48, 60, 72];
 
+const FINANCIERAS: Record<string, { nombre: string; tae: number; plazos: number[] }> = {
+  grenke: { nombre: "Grenke", tae: 0.095, plazos: [24, 36, 48, 60, 72] },
+  caja_laboral: { nombre: "Caja Laboral", tae: 0.057, plazos: [24, 36, 48, 60] },
+  ibercaja: { nombre: "Ibercaja", tae: 0.065, plazos: [24, 36, 48, 60] },
+};
+
+const MARGEN_SEGURIDAD = 0.08;
+
+function calcularCuota(importe: number, meses: number, tae: number) {
+  const r = tae / 12;
+  return importe * (r / (1 - Math.pow(1 + r, -meses)));
+}
+
 const inp = "w-full px-3 py-2.5 border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#2E1A47] focus:border-[#2E1A47] bg-white";
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5";
 
@@ -217,12 +230,9 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Cotizador placeholder */}
-        <Section title="Cotizador">
-          <div className="text-center py-8 text-gray-300">
-            <p className="text-sm font-semibold">Próximamente</p>
-            <p className="text-xs mt-1">El cotizador se habilitará cuando se configure la información necesaria.</p>
-          </div>
+        {/* Cotizador */}
+        <Section title="Cotizador rápido">
+          <Cotizador />
         </Section>
 
         {/* Datos del cliente */}
@@ -448,6 +458,74 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     <div className="bg-white border border-gray-200 p-6">
       <h2 className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-5 pb-3 border-b border-gray-100">{title}</h2>
       {children}
+    </div>
+  );
+}
+
+function Cotizador() {
+  const [cotImporte, setCotImporte] = useState("");
+  const [cotFinanciera, setCotFinanciera] = useState("grenke");
+  const [resultados, setResultados] = useState<{ plazo: number; cuota: number }[] | null>(null);
+
+  function calcular() {
+    const val = parseFloat(cotImporte.replace(",", "."));
+    if (!val || val <= 0) return;
+    const fin = FINANCIERAS[cotFinanciera];
+    const taeConMargen = fin.tae * (1 + MARGEN_SEGURIDAD);
+    setResultados(fin.plazos.map(n => ({ plazo: n, cuota: calcularCuota(val, n, taeConMargen) })));
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-gray-400">Estimación orientativa de cuotas mensuales. La cuota real puede ser igual o inferior.</p>
+      <div className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Importe (sin IVA) €</label>
+          <input value={cotImporte} onChange={e => setCotImporte(e.target.value)}
+            type="number" step="any" inputMode="decimal"
+            className="w-full px-3 py-2.5 border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#2E1A47] focus:border-[#2E1A47] bg-white"
+            placeholder="10.000" />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Financiera</label>
+          <select value={cotFinanciera} onChange={e => setCotFinanciera(e.target.value)}
+            className="w-full px-3 py-2.5 border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#2E1A47] focus:border-[#2E1A47] bg-white">
+            {Object.entries(FINANCIERAS).map(([key, f]) => (
+              <option key={key} value={key}>{f.nombre}</option>
+            ))}
+          </select>
+        </div>
+        <button type="button" onClick={calcular}
+          className="px-5 py-2.5 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] transition-colors whitespace-nowrap">
+          Calcular
+        </button>
+      </div>
+
+      {resultados && (
+        <div className="border border-gray-200 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-[#EEEBF3]">
+                <th className="text-left px-4 py-2.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Plazo</th>
+                <th className="text-right px-4 py-2.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Cuota/mes (sin IVA)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {resultados.map(r => (
+                <tr key={r.plazo} className="hover:bg-[#EEEBF3]/30">
+                  <td className="px-4 py-2.5 text-sm text-gray-800">{r.plazo} meses</td>
+                  <td className="px-4 py-2.5 text-sm font-bold text-[#2E1A47] text-right">
+                    {r.cuota.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
+            <p className="text-[10px] text-gray-400">* Cuotas estimadas con margen de seguridad. La cuota final depende del estudio de riesgo.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
