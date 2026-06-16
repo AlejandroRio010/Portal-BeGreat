@@ -1,7 +1,17 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-images: {
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "Cache-Control", value: "no-store, must-revalidate" },
+        ],
+      },
+    ];
+  },
+  images: {
     remotePatterns: [
       { protocol: "https", hostname: "www.google.com" },
       { protocol: "https", hostname: "logo.clearbit.com" },
