@@ -1,15 +1,24 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 
 export default function LoginPage() {
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [clearing, setClearing] = useState(false);
+
+  useEffect(() => {
+    if (status === "authenticated" && session) {
+      setClearing(true);
+      signOut({ redirect: false }).then(() => setClearing(false));
+    }
+  }, [status, session]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -87,10 +96,10 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || clearing}
             className="w-full bg-white/15 backdrop-blur-sm border border-white/25 text-white py-3 text-sm font-bold tracking-wide hover:bg-white/25 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
           >
-            {loading ? "Accediendo…" : "Entrar al portal"}
+            {clearing ? "Preparando…" : loading ? "Accediendo…" : "Entrar al portal"}
             {!loading && <span className="text-white/70">→</span>}
           </button>
 
