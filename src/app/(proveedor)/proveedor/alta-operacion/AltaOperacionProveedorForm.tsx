@@ -6,8 +6,13 @@ import EmpresaSearchInput from "@/components/EmpresaSearchInput";
 
 const PLAZOS = [12, 24, 36, 48, 60, 72];
 
-const COT_TAE = 0.23;
-const COT_PLAZOS = [24, 36, 48, 60, 72];
+const COT_PLAZOS: { meses: number; tae: number }[] = [
+  { meses: 24, tae: 0.226 },
+  { meses: 36, tae: 0.200 },
+  { meses: 48, tae: 0.171 },
+  { meses: 60, tae: 0.161 },
+  { meses: 72, tae: 0.148 },
+];
 
 function calcularCuota(importe: number, meses: number, tae: number) {
   const r = tae / 12;
@@ -465,7 +470,7 @@ function Cotizador() {
   function calcular() {
     const val = parseFloat(cotImporte.replace(",", "."));
     if (!val || val <= 0) return;
-    const res = COT_PLAZOS.map(n => ({ plazo: n, cuota: calcularCuota(val, n, COT_TAE) }));
+    const res = COT_PLAZOS.map(p => ({ plazo: p.meses, cuota: calcularCuota(val, p.meses, p.tae) }));
     setResultados(res);
     setSeleccionado(48);
   }
