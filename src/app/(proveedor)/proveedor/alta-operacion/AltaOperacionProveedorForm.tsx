@@ -6,13 +6,8 @@ import EmpresaSearchInput from "@/components/EmpresaSearchInput";
 
 const PLAZOS = [12, 24, 36, 48, 60, 72];
 
-const FINANCIERAS: Record<string, { nombre: string; tae: number; plazos: number[] }> = {
-  grenke: { nombre: "Grenke", tae: 0.095, plazos: [24, 36, 48, 60, 72] },
-  caja_laboral: { nombre: "Caja Laboral", tae: 0.057, plazos: [24, 36, 48, 60] },
-  ibercaja: { nombre: "Ibercaja", tae: 0.065, plazos: [24, 36, 48, 60] },
-};
-
-const MARGEN_SEGURIDAD = 0.08;
+const COT_TAE = 0.12;
+const COT_PLAZOS = [24, 36, 48, 60, 72];
 
 function calcularCuota(importe: number, meses: number, tae: number) {
   const r = tae / 12;
@@ -464,36 +459,24 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Cotizador() {
   const [cotImporte, setCotImporte] = useState("");
-  const [cotFinanciera, setCotFinanciera] = useState("grenke");
   const [resultados, setResultados] = useState<{ plazo: number; cuota: number }[] | null>(null);
 
   function calcular() {
     const val = parseFloat(cotImporte.replace(",", "."));
     if (!val || val <= 0) return;
-    const fin = FINANCIERAS[cotFinanciera];
-    const taeConMargen = fin.tae * (1 + MARGEN_SEGURIDAD);
-    setResultados(fin.plazos.map(n => ({ plazo: n, cuota: calcularCuota(val, n, taeConMargen) })));
+    setResultados(COT_PLAZOS.map(n => ({ plazo: n, cuota: calcularCuota(val, n, COT_TAE) })));
   }
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-gray-400">Estimación orientativa de cuotas mensuales. La cuota real puede ser igual o inferior.</p>
-      <div className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
+      <p className="text-xs text-gray-400">Estimación orientativa de cuotas mensuales. La cuota real será igual o inferior.</p>
+      <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Importe (sin IVA) €</label>
           <input value={cotImporte} onChange={e => setCotImporte(e.target.value)}
             type="number" step="any" inputMode="decimal"
             className="w-full px-3 py-2.5 border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#2E1A47] focus:border-[#2E1A47] bg-white"
             placeholder="10.000" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Financiera</label>
-          <select value={cotFinanciera} onChange={e => setCotFinanciera(e.target.value)}
-            className="w-full px-3 py-2.5 border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#2E1A47] focus:border-[#2E1A47] bg-white">
-            {Object.entries(FINANCIERAS).map(([key, f]) => (
-              <option key={key} value={key}>{f.nombre}</option>
-            ))}
-          </select>
         </div>
         <button type="button" onClick={calcular}
           className="px-5 py-2.5 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] transition-colors whitespace-nowrap">
