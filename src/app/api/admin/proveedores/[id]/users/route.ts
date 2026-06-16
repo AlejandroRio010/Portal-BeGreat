@@ -48,7 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       .values({ supplier_id: supplierId, nombre, email: emailNorm, password_hash })
       .returning({ id: supplierUsers.id, nombre: supplierUsers.nombre, email: supplierUsers.email, activo: supplierUsers.activo, created_at: supplierUsers.created_at });
 
-    return NextResponse.json(user, { status: 201 });
+    return NextResponse.json({ ...user, tempPassword }, { status: 201 });
   } catch (e: any) {
     if (e?.message?.includes("unique") || e?.code === "23505")
       return NextResponse.json({ error: "Ya existe un usuario con ese email" }, { status: 409 });

@@ -18,6 +18,7 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo }: { su
   const [email, setEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [created, setCreated] = useState<{ email: string; tempPassword: string } | null>(null);
 
   useEffect(() => {
     fetch(`/api/admin/proveedores/${supplierId}/users`)
@@ -43,6 +44,7 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo }: { su
     }
     const user = await res.json();
     setUsers((prev) => [...prev, user]);
+    setCreated({ email: user.email, tempPassword: user.tempPassword });
     setNombre("");
     setEmail("");
     setShowForm(false);
@@ -82,6 +84,31 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo }: { su
           <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2">
             El portal del proveedor está desactivado. Actívalo arriba para que los usuarios puedan acceder.
           </p>
+        )}
+
+        {created && (
+          <div className="bg-emerald-50 border border-emerald-200 p-3 space-y-2">
+            <p className="text-xs font-semibold text-emerald-800">Usuario creado correctamente</p>
+            <div className="text-xs text-emerald-700 space-y-1">
+              <p>Email: <span className="font-mono font-semibold">{created.email}</span></p>
+              <p>Contraseña temporal: <span className="font-mono font-semibold">{created.tempPassword}</span></p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const msg = `Hola, te damos acceso al portal de proveedores de BeGreat Consulting.\n\nAccede desde: https://portal.begreatconsulting.es\n\nEmail: ${created.email}\nContraseña: ${created.tempPassword}\n\nUn saludo,\nBeGreat Consulting`;
+                  navigator.clipboard.writeText(msg);
+                }}
+                className="py-1.5 px-3 bg-emerald-700 text-white text-[11px] font-semibold hover:bg-emerald-800 transition-colors"
+              >
+                Copiar invitación
+              </button>
+              <button onClick={() => setCreated(null)}
+                className="py-1.5 px-3 border border-emerald-300 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors">
+                Cerrar
+              </button>
+            </div>
+          </div>
         )}
 
         {loading && <p className="text-xs text-gray-400">Cargando...</p>}
