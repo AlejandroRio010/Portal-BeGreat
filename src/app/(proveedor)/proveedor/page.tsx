@@ -29,14 +29,12 @@ export default async function ProveedorHomePage({
   const session = await auth();
   const supplierId = (session!.user as any).supplierId as string;
 
-  const [supplier] = await db
-    .select({ nombre: suppliers.nombre, logo_url: suppliers.logo_url, codigo: suppliers.codigo, puede_ver_entidades: suppliers.puede_ver_entidades })
-    .from(suppliers)
-    .where(eq(suppliers.id, supplierId))
-    .limit(1);
-
-  const allOps = await db
-    .select({
+  const [supplierResult, allOps] = await Promise.all([
+    db.select({ nombre: suppliers.nombre, logo_url: suppliers.logo_url, codigo: suppliers.codigo, puede_ver_entidades: suppliers.puede_ver_entidades })
+      .from(suppliers)
+      .where(eq(suppliers.id, supplierId))
+      .limit(1),
+    db.select({
       id: operations.id,
       status: operations.status,
       fase: operations.fase,
@@ -45,10 +43,13 @@ export default async function ProveedorHomePage({
       created_at: operations.created_at,
       client_nombre: clients.nombre,
     })
-    .from(operations)
-    .leftJoin(clients, eq(operations.client_id, clients.id))
-    .where(eq(operations.supplier_id, supplierId))
-    .orderBy(desc(operations.created_at));
+      .from(operations)
+      .leftJoin(clients, eq(operations.client_id, clients.id))
+      .where(eq(operations.supplier_id, supplierId))
+      .orderBy(desc(operations.created_at)),
+  ]);
+
+  const supplier = supplierResult[0];
 
   const recentOps = allOps.slice(0, 5);
 
