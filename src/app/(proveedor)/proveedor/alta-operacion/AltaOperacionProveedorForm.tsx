@@ -35,7 +35,10 @@ const CNAE_CODES = [
   "8510 Educación preprimaria","8610 Actividades hospitalarias",
 ];
 
-export default function AltaOperacionProveedorForm() {
+type CatalogoProducto = { id: string; nombre: string; tipo: string | null; precio_venta: string | null };
+type LineaProducto = { id?: string; nombre: string; precio: number; fromCatalog: boolean };
+
+export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: { catalogoProductos?: CatalogoProducto[] }) {
   const router = useRouter();
 
   // Client state
@@ -56,6 +59,30 @@ export default function AltaOperacionProveedorForm() {
   const [contactoPuesto, setContactoPuesto] = useState("");
   const [contactoEmail, setContactoEmail] = useState("");
   const [contactoTelefono, setContactoTelefono] = useState("");
+
+  // Product mode: "catalogo" | "manual" | "total"
+  const [modoProducto, setModoProducto] = useState<"catalogo" | "manual" | "total">(catalogoProductos.length > 0 ? "catalogo" : "total");
+  const [lineas, setLineas] = useState<LineaProducto[]>([]);
+  const [manualNombre, setManualNombre] = useState("");
+  const [manualPrecio, setManualPrecio] = useState("");
+  const [importeTotal, setImporteTotal] = useState("");
+
+  const importeCalculado = lineas.reduce((s, l) => s + l.precio, 0);
+
+  function addFromCatalog(p: CatalogoProducto) {
+    setLineas(prev => [...prev, { id: p.id, nombre: p.nombre, precio: Number(p.precio_venta ?? 0), fromCatalog: true }]);
+  }
+
+  function addManual() {
+    if (!manualNombre.trim() || !manualPrecio) return;
+    setLineas(prev => [...prev, { nombre: manualNombre.trim(), precio: Number(manualPrecio), fromCatalog: false }]);
+    setManualNombre("");
+    setManualPrecio("");
+  }
+
+  function removeLinea(idx: number) {
+    setLineas(prev => prev.filter((_, i) => i !== idx));
+  }
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -121,7 +148,9 @@ export default function AltaOperacionProveedorForm() {
       setLoading(false); return;
     }
     if (!clienteNombre.trim()) faltan.push("Nombre de la empresa");
-    if (!data.importe) faltan.push("Importe (€)");
+    const importeFinal = modoProducto === "total" ? importeTotal : String(importeCalculado);
+    if (modoProducto === "total" && !importeTotal) faltan.push("Importe total (€)");
+    if (modoProducto !== "total" && lineas.length === 0) faltan.push("Al menos un producto");
     if (!data.equipo_tipo) faltan.push("Tipo de equipo");
     if (!data.plazo_meses) faltan.push("Plazo deseado");
 
@@ -144,6 +173,8 @@ export default function AltaOperacionProveedorForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...data,
+        importe: importeFinal,
+        lineas_productos: modoProducto !== "total" ? lineas : undefined,
         cliente_nombre: clienteNombre,
         cliente_email: clienteEmail || null,
         cliente_telefono: clienteTelefono || null,
@@ -231,11 +262,118 @@ export default function AltaOperacionProveedorForm() {
               </label>
             ))}
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Importe venta (sin IVA) * €</label>
-              <input name="importe" type="number" step="any" inputMode="decimal" className={inp} placeholder="10.000" />
+
+          {/* Modo de producto */}
+          <div className="mb-4">
+            <label className={labelCls}>¿Cómo quieres detallar el equipo? *</label>
+            <div className={`grid gap-0 border border-gray-300 ${catalogoProductos.length > 0 ? "grid-cols-3" : "grid-cols-2"}`}>
+              {catalogoProductos.length > 0 && (
+                <label className={`flex items-start gap-2 p-3 cursor-pointer transition-all text-center ${modoProducto === "catalogo" ? "bg-[#EEEBF3] border-[#2E1A47]" : ""} border-r border-gray-300`}>
+                  <input type="radio" checked={modoProducto === "catalogo"} onChange={() => setModoProducto("catalogo")} className="mt-0.5 accent-[#2E1A47]" />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Mi catálogo</p>
+                    <p className="text-[10px] text-gray-400">{catalogoProductos.length} productos</p>
+                  </div>
+                </label>
+              )}
+              <label className={`flex items-start gap-2 p-3 cursor-pointer transition-all ${modoProducto === "manual" ? "bg-[#EEEBF3]" : ""} border-r border-gray-300`}>
+                <input type="radio" checked={modoProducto === "manual"} onChange={() => setModoProducto("manual")} className="mt-0.5 accent-[#2E1A47]" />
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Otros productos</p>
+                  <p className="text-[10px] text-gray-400">Nombre y precio</p>
+                </div>
+              </label>
+              <label className={`flex items-start gap-2 p-3 cursor-pointer transition-all ${modoProducto === "total" ? "bg-[#EEEBF3]" : ""}`}>
+                <input type="radio" checked={modoProducto === "total"} onChange={() => setModoProducto("total")} className="mt-0.5 accent-[#2E1A47]" />
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Importe total</p>
+                  <p className="text-[10px] text-gray-400">Sin detallar</p>
+                </div>
+              </label>
             </div>
+          </div>
+
+          {/* Catálogo */}
+          {modoProducto === "catalogo" && (
+            <div className="mb-4 border border-gray-200 p-4 space-y-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Selecciona productos de tu catálogo</p>
+              <div className="max-h-48 overflow-y-auto divide-y divide-gray-50">
+                {catalogoProductos.map(p => {
+                  const yaAdded = lineas.some(l => l.id === p.id);
+                  return (
+                    <div key={p.id} className="flex items-center justify-between py-2">
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{p.nombre}</p>
+                        <p className="text-xs text-gray-400">{p.tipo ?? ""} · {Number(p.precio_venta ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>
+                      </div>
+                      <button type="button" disabled={yaAdded}
+                        onClick={() => addFromCatalog(p)}
+                        className={`px-3 py-1 text-xs font-semibold transition-colors ${yaAdded ? "bg-gray-100 text-gray-400" : "bg-[#2E1A47] text-white hover:bg-[#3d2460]"}`}>
+                        {yaAdded ? "Añadido" : "+ Añadir"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              {catalogoProductos.length === 0 && (
+                <p className="text-xs text-gray-400 text-center py-4">No tienes productos en tu catálogo. Añádelos desde tu perfil.</p>
+              )}
+            </div>
+          )}
+
+          {/* Manual */}
+          {modoProducto === "manual" && (
+            <div className="mb-4 border border-gray-200 p-4 space-y-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Añadir producto</p>
+              <div className="flex gap-2">
+                <input value={manualNombre} onChange={e => setManualNombre(e.target.value)}
+                  className={inp + " flex-1"} placeholder="Nombre del producto" />
+                <input value={manualPrecio} onChange={e => setManualPrecio(e.target.value)}
+                  type="number" step="any" className={inp + " w-32"} placeholder="Precio €" />
+                <button type="button" onClick={addManual}
+                  disabled={!manualNombre.trim() || !manualPrecio}
+                  className="px-4 py-2 bg-[#2E1A47] text-white text-xs font-semibold hover:bg-[#3d2460] disabled:opacity-50 whitespace-nowrap">
+                  + Añadir
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Lista de productos añadidos */}
+          {modoProducto !== "total" && lineas.length > 0 && (
+            <div className="mb-4 border border-gray-200">
+              <div className="bg-[#EEEBF3] px-4 py-2 flex items-center justify-between">
+                <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Productos añadidos</p>
+                <p className="text-sm font-bold text-[#2E1A47]">Total: {importeCalculado.toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {lineas.map((l, i) => (
+                  <div key={i} className="flex items-center justify-between px-4 py-2.5">
+                    <div>
+                      <p className="text-sm text-gray-800">{l.nombre}</p>
+                      <p className="text-xs text-gray-400">{l.fromCatalog ? "Catálogo" : "Manual"}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className="text-sm font-semibold text-gray-700">{l.precio.toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>
+                      <button type="button" onClick={() => removeLinea(i)}
+                        className="text-xs text-red-400 hover:text-red-600">✕</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Importe total directo */}
+          {modoProducto === "total" && (
+            <div className="mb-4">
+              <label className={labelCls}>Importe venta total (sin IVA) * €</label>
+              <input value={importeTotal} onChange={e => setImporteTotal(e.target.value)}
+                type="number" step="any" inputMode="decimal" className={inp} placeholder="10.000" />
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Plazo deseado *</label>
               <select name="plazo_meses" className={inp}>
@@ -243,7 +381,7 @@ export default function AltaOperacionProveedorForm() {
                 {PLAZOS.map((m) => <option key={m} value={m}>{m} meses</option>)}
               </select>
             </div>
-            <div className="col-span-2">
+            <div>
               <label className={labelCls}>Lugar de instalación / entrega</label>
               <input name="lugar_entrega" className={inp} placeholder="Dirección completa" />
             </div>
