@@ -19,6 +19,7 @@ const colaboradorNav = [
   { href: "/portal/historial",                label: "Historial & Resumen",   exact: false },
   { href: "/portal/operaciones/consultoria",  label: "Consultoría financiera",exact: false, sub: true },
   { href: "/portal/operaciones/renting",      label: "Renting de equipos",    exact: false, sub: true },
+  { href: "/portal/cotizador",                label: "Cotizador renting",     exact: false },
   { href: "/portal/clientes",                 label: "Mis clientes",          exact: false },
   { href: "/portal/contactos",                label: "Personas de contacto",  exact: false },
   { href: "/portal/grupos",                   label: "Grupos empresariales",  exact: false },
@@ -31,6 +32,7 @@ const proveedorNav = [
   { href: "/proveedor",                         label: "Inicio",                exact: true },
   { href: "/proveedor/alta-operacion",           label: "Alta nueva operación",  exact: false },
   { href: "/proveedor/operaciones/renting",      label: "Funnel de renting",     exact: false },
+  { href: "/proveedor/cotizador",                label: "Cotizador renting",     exact: false },
   { href: "/proveedor/clientes",                 label: "Mis clientes",          exact: false },
   { href: "/proveedor/historial",                label: "Historial de operaciones", exact: false },
   { href: "/proveedor/perfil",                   label: "Mi perfil",             exact: false },
@@ -49,6 +51,7 @@ const adminNav = [
   { href: "/admin/grupos",        label: "Grupos empresariales", exact: false },
   { href: "/admin/proveedores",   label: "Proveedores",          exact: false },
   { href: "/admin/entidades",     label: "Entidades financieras",exact: false },
+  { href: "/admin/cotizador",     label: "Cotizador renting",    exact: false },
   { href: "/admin/configuracion", label: "Configuración",        exact: false },
 ];
 
