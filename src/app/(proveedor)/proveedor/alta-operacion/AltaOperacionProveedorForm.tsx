@@ -576,7 +576,7 @@ function Cotizador() {
             )}
           </div>
           <div className="px-4 py-3 bg-white/5 border-t border-white/10">
-            <p className="text-[9px] text-white/30 text-center leading-relaxed">* Estimación orientativa. La cuota final será igual o inferior tras el estudio de riesgo.</p>
+            <p className="text-[9px] text-white/30 text-center leading-relaxed">* Cuota provisional sujeta a la aprobación del estudio crediticio del cliente, la elegibilidad de los activos por parte de la entidad financiera y las condiciones vigentes en el momento de la formalización. BeGreat Consulting no garantiza la cuota indicada ni la aprobación de la operación.</p>
           </div>
         </div>
       </div>
