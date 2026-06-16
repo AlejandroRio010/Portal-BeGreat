@@ -42,7 +42,6 @@ export default function LoginPage() {
         {/* Texto superior */}
         <div className="text-center mb-8">
           <h1 className="text-white text-3xl font-bold leading-tight">Bienvenido al portal de BeGreat</h1>
-          <p className="text-yellow-300 text-xs font-bold mt-1">🔧 PRUEBA DE CAMBIO — Claude Code</p>
           <p className="text-white/65 text-sm mt-4 leading-relaxed">
             Gestiona tus operaciones y haz seguimiento desde un mismo lugar.
           </p>
