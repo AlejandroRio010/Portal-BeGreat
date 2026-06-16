@@ -36,7 +36,7 @@ const CNAE_CODES = [
 ];
 
 type CatalogoProducto = { id: string; nombre: string; tipo: string | null; precio_venta: string | null };
-type LineaProducto = { id?: string; nombre: string; precio: number; fromCatalog: boolean };
+type LineaProducto = { id?: string; nombre: string; precioUnitario: number; unidades: number; fromCatalog: boolean };
 
 export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: { catalogoProductos?: CatalogoProducto[] }) {
   const router = useRouter();
@@ -65,19 +65,21 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
   const [lineas, setLineas] = useState<LineaProducto[]>([]);
   const [manualNombre, setManualNombre] = useState("");
   const [manualPrecio, setManualPrecio] = useState("");
+  const [manualUnidades, setManualUnidades] = useState("1");
   const [importeTotal, setImporteTotal] = useState("");
 
-  const importeCalculado = lineas.reduce((s, l) => s + l.precio, 0);
+  const importeCalculado = lineas.reduce((s, l) => s + l.precioUnitario * l.unidades, 0);
 
   function addFromCatalog(p: CatalogoProducto) {
-    setLineas(prev => [...prev, { id: p.id, nombre: p.nombre, precio: Number(p.precio_venta ?? 0), fromCatalog: true }]);
+    setLineas(prev => [...prev, { id: p.id, nombre: p.nombre, precioUnitario: Number(p.precio_venta ?? 0), unidades: 1, fromCatalog: true }]);
   }
 
   function addManual() {
     if (!manualNombre.trim() || !manualPrecio) return;
-    setLineas(prev => [...prev, { nombre: manualNombre.trim(), precio: Number(manualPrecio), fromCatalog: false }]);
+    setLineas(prev => [...prev, { nombre: manualNombre.trim(), precioUnitario: Number(manualPrecio), unidades: Number(manualUnidades) || 1, fromCatalog: false }]);
     setManualNombre("");
     setManualPrecio("");
+    setManualUnidades("1");
   }
 
   function removeLinea(idx: number) {
@@ -298,22 +300,24 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
             <div className="mb-4 border border-gray-200 p-4 space-y-3">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Selecciona productos de tu catálogo</p>
               <div className="max-h-48 overflow-y-auto divide-y divide-gray-50">
-                {catalogoProductos.map(p => {
-                  const yaAdded = lineas.some(l => l.id === p.id);
-                  return (
-                    <div key={p.id} className="flex items-center justify-between py-2">
-                      <div>
+                {catalogoProductos.map(p => (
+                    <div key={p.id} className="flex items-center justify-between py-2 gap-2">
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-800">{p.nombre}</p>
-                        <p className="text-xs text-gray-400">{p.tipo ?? ""} · {Number(p.precio_venta ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>
+                        <p className="text-xs text-gray-400">{p.tipo ?? ""} · {Number(p.precio_venta ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €/ud.</p>
                       </div>
-                      <button type="button" disabled={yaAdded}
-                        onClick={() => addFromCatalog(p)}
-                        className={`px-3 py-1 text-xs font-semibold transition-colors ${yaAdded ? "bg-gray-100 text-gray-400" : "bg-[#2E1A47] text-white hover:bg-[#3d2460]"}`}>
-                        {yaAdded ? "Añadido" : "+ Añadir"}
+                      <input type="number" min="1" defaultValue="1" id={`cat-qty-${p.id}`}
+                        className="w-16 px-2 py-1 text-sm border border-gray-200 text-center focus:outline-none focus:border-[#2E1A47]" />
+                      <button type="button"
+                        onClick={() => {
+                          const qty = Number((document.getElementById(`cat-qty-${p.id}`) as HTMLInputElement)?.value) || 1;
+                          setLineas(prev => [...prev, { id: p.id, nombre: p.nombre, precioUnitario: Number(p.precio_venta ?? 0), unidades: qty, fromCatalog: true }]);
+                        }}
+                        className="px-3 py-1 text-xs font-semibold bg-[#2E1A47] text-white hover:bg-[#3d2460] whitespace-nowrap">
+                        + Añadir
                       </button>
                     </div>
-                  );
-                })}
+                  ))}
               </div>
               {catalogoProductos.length === 0 && (
                 <p className="text-xs text-gray-400 text-center py-4">No tienes productos en tu catálogo. Añádelos desde tu perfil.</p>
@@ -325,14 +329,25 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
           {modoProducto === "manual" && (
             <div className="mb-4 border border-gray-200 p-4 space-y-3">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Añadir producto</p>
-              <div className="flex gap-2">
-                <input value={manualNombre} onChange={e => setManualNombre(e.target.value)}
-                  className={inp + " flex-1"} placeholder="Nombre del producto" />
-                <input value={manualPrecio} onChange={e => setManualPrecio(e.target.value)}
-                  type="number" step="any" className={inp + " w-32"} placeholder="Precio €" />
+              <div className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-end">
+                <div>
+                  <label className={labelCls}>Nombre</label>
+                  <input value={manualNombre} onChange={e => setManualNombre(e.target.value)}
+                    className={inp} placeholder="Nombre del producto" />
+                </div>
+                <div>
+                  <label className={labelCls}>Precio ud. €</label>
+                  <input value={manualPrecio} onChange={e => setManualPrecio(e.target.value)}
+                    type="number" step="any" className={inp + " w-28"} placeholder="0.00" />
+                </div>
+                <div>
+                  <label className={labelCls}>Uds.</label>
+                  <input value={manualUnidades} onChange={e => setManualUnidades(e.target.value)}
+                    type="number" min="1" className={inp + " w-20"} />
+                </div>
                 <button type="button" onClick={addManual}
                   disabled={!manualNombre.trim() || !manualPrecio}
-                  className="px-4 py-2 bg-[#2E1A47] text-white text-xs font-semibold hover:bg-[#3d2460] disabled:opacity-50 whitespace-nowrap">
+                  className="px-4 py-2.5 bg-[#2E1A47] text-white text-xs font-semibold hover:bg-[#3d2460] disabled:opacity-50 whitespace-nowrap">
                   + Añadir
                 </button>
               </div>
@@ -351,10 +366,10 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
                   <div key={i} className="flex items-center justify-between px-4 py-2.5">
                     <div>
                       <p className="text-sm text-gray-800">{l.nombre}</p>
-                      <p className="text-xs text-gray-400">{l.fromCatalog ? "Catálogo" : "Manual"}</p>
+                      <p className="text-xs text-gray-400">{l.unidades} ud. × {l.precioUnitario.toLocaleString("es-ES", { minimumFractionDigits: 2 })} € · {l.fromCatalog ? "Catálogo" : "Manual"}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <p className="text-sm font-semibold text-gray-700">{l.precio.toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>
+                      <p className="text-sm font-semibold text-gray-700">{(l.precioUnitario * l.unidades).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>
                       <button type="button" onClick={() => removeLinea(i)}
                         className="text-xs text-red-400 hover:text-red-600">✕</button>
                     </div>
