@@ -26,12 +26,14 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
+  function homeForRole(r: string) {
+    return r === "admin" ? "/admin/operaciones" : r === "proveedor" ? "/proveedor" : "/portal";
+  }
+
   // Public routes
   if (pathname === "/login" || pathname === "/") {
     if (session && role) {
-      return NextResponse.redirect(
-        new URL(role === "admin" ? "/admin/operaciones" : "/portal", req.url)
-      );
+      return NextResponse.redirect(new URL(homeForRole(role), req.url));
     }
     return NextResponse.next();
   }
@@ -42,11 +44,15 @@ export default auth((req) => {
   }
 
   if (pathname.startsWith("/admin") && role !== "admin") {
-    return NextResponse.redirect(new URL("/portal", req.url));
+    return NextResponse.redirect(new URL(homeForRole(role), req.url));
   }
 
   if (pathname.startsWith("/portal") && role !== "colaborador") {
-    return NextResponse.redirect(new URL("/admin/operaciones", req.url));
+    return NextResponse.redirect(new URL(homeForRole(role), req.url));
+  }
+
+  if (pathname.startsWith("/proveedor") && role !== "proveedor") {
+    return NextResponse.redirect(new URL(homeForRole(role), req.url));
   }
 
   return NextResponse.next();
