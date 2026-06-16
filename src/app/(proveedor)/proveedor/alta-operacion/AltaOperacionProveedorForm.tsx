@@ -460,55 +460,89 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Cotizador() {
   const [cotImporte, setCotImporte] = useState("");
   const [resultados, setResultados] = useState<{ plazo: number; cuota: number }[] | null>(null);
+  const [seleccionado, setSeleccionado] = useState<number | null>(null);
 
   function calcular() {
     const val = parseFloat(cotImporte.replace(",", "."));
     if (!val || val <= 0) return;
-    setResultados(COT_PLAZOS.map(n => ({ plazo: n, cuota: calcularCuota(val, n, COT_TAE) })));
+    const res = COT_PLAZOS.map(n => ({ plazo: n, cuota: calcularCuota(val, n, COT_TAE) }));
+    setResultados(res);
+    setSeleccionado(48);
   }
 
-  return (
-    <div className="space-y-4">
-      <p className="text-xs text-gray-400">Estimación orientativa de cuotas mensuales. La cuota real será igual o inferior.</p>
-      <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Importe (sin IVA) €</label>
-          <input value={cotImporte} onChange={e => setCotImporte(e.target.value)}
-            type="number" step="any" inputMode="decimal"
-            className="w-full px-3 py-2.5 border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#2E1A47] focus:border-[#2E1A47] bg-white"
-            placeholder="10.000" />
-        </div>
-        <button type="button" onClick={calcular}
-          className="px-5 py-2.5 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] transition-colors whitespace-nowrap">
-          Calcular
-        </button>
-      </div>
+  const cuotaSel = resultados?.find(r => r.plazo === seleccionado);
+  const fmt = (n: number) => n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-      {resultados && (
-        <div className="border border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-[#EEEBF3]">
-                <th className="text-left px-4 py-2.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Plazo</th>
-                <th className="text-right px-4 py-2.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Cuota/mes (sin IVA)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {resultados.map(r => (
-                <tr key={r.plazo} className="hover:bg-[#EEEBF3]/30">
-                  <td className="px-4 py-2.5 text-sm text-gray-800">{r.plazo} meses</td>
-                  <td className="px-4 py-2.5 text-sm font-bold text-[#2E1A47] text-right">
-                    {r.cuota.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
-            <p className="text-[10px] text-gray-400">* Cuotas estimadas con margen de seguridad. La cuota final depende del estudio de riesgo.</p>
+  return (
+    <div>
+      <div className="grid grid-cols-[1fr_280px] gap-0">
+        {/* Panel izquierdo */}
+        <div className="bg-[#2E1A47] p-6">
+          <p className="text-white/50 text-[10px] font-bold uppercase tracking-[0.2em] mb-4">Cálculo basado en importe de factura (neto)</p>
+
+          <div className="flex gap-3 items-end mb-5">
+            <div className="flex-1">
+              <label className="block text-[10px] font-bold text-white/60 uppercase tracking-wider mb-1.5">Importe de factura (neto)</label>
+              <div className="relative">
+                <input value={cotImporte} onChange={e => setCotImporte(e.target.value)}
+                  type="number" step="any" inputMode="decimal"
+                  className="w-full px-4 py-3 bg-white text-sm text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-white/40"
+                  placeholder="10.000,00 €" />
+              </div>
+            </div>
+            <button type="button" onClick={calcular}
+              className="px-6 py-3 bg-white/20 text-white text-sm font-bold uppercase tracking-wider hover:bg-white/30 transition-colors whitespace-nowrap border border-white/30">
+              Calcular
+            </button>
+          </div>
+
+          {resultados && (
+            <div>
+              <div className="flex border-b border-white/20 pb-2 mb-1">
+                <p className="flex-1 text-[10px] font-bold text-white/50 uppercase tracking-wider">Plazo</p>
+                <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider">Cuota/mes</p>
+              </div>
+              <div className="divide-y divide-white/10">
+                {resultados.map(r => (
+                  <label key={r.plazo}
+                    className={`flex items-center py-3 cursor-pointer transition-all group ${seleccionado === r.plazo ? "bg-white/10 -mx-3 px-3" : "hover:bg-white/5 -mx-3 px-3"}`}>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mr-3 flex-shrink-0 transition-colors ${seleccionado === r.plazo ? "border-white bg-white" : "border-white/40"}`}>
+                      {seleccionado === r.plazo && <div className="w-2.5 h-2.5 rounded-full bg-[#2E1A47]" />}
+                    </div>
+                    <input type="radio" name="cot_plazo" className="sr-only"
+                      checked={seleccionado === r.plazo}
+                      onChange={() => setSeleccionado(r.plazo)} />
+                    <span className={`flex-1 text-sm font-medium ${seleccionado === r.plazo ? "text-white" : "text-white/70"}`}>
+                      {r.plazo} meses
+                    </span>
+                    <span className={`text-sm font-bold tabular-nums ${seleccionado === r.plazo ? "text-white" : "text-white/70"}`}>
+                      {fmt(r.cuota)} €
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Panel derecho — cuota seleccionada */}
+        <div className="bg-[#1a0f2e] flex flex-col">
+          <div className="p-6 flex-1 flex flex-col items-center justify-center text-center">
+            <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.2em] mb-3">Cuota estimada</p>
+            {cuotaSel ? (
+              <>
+                <p className="text-4xl font-black text-white mb-1">{fmt(cuotaSel.cuota)} €</p>
+                <p className="text-white/40 text-xs">Valor neto al mes durante<br />{cuotaSel.plazo} meses</p>
+              </>
+            ) : (
+              <p className="text-white/20 text-sm">Introduce un importe y pulsa calcular</p>
+            )}
+          </div>
+          <div className="px-4 py-3 bg-white/5 border-t border-white/10">
+            <p className="text-[9px] text-white/30 text-center leading-relaxed">* Estimación orientativa. La cuota final será igual o inferior tras el estudio de riesgo.</p>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
