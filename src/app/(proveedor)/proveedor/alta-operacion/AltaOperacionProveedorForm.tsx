@@ -6,7 +6,7 @@ import EmpresaSearchInput from "@/components/EmpresaSearchInput";
 
 const PLAZOS = [12, 24, 36, 48, 60, 72];
 
-const COT_TAE = 0.12;
+const COT_TAE = 0.23;
 const COT_PLAZOS = [24, 36, 48, 60, 72];
 
 function calcularCuota(importe: number, meses: number, tae: number) {
