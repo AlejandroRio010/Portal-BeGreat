@@ -224,6 +224,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
         renting_rol: "colaborador",
         es_renovacion: esRenovacion,
         operacion_original_id: renovSeleccionada?.id ?? null,
+        client_id: clienteSeleccionado?.id || null,
         cliente_nombre: clienteNombre,
         cliente_email: clienteEmail || null,
         cliente_telefono: clienteTelefono || null,

@@ -179,6 +179,7 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
         ...data,
         importe: importeFinal,
         lineas_productos: modoProducto !== "total" ? lineas : undefined,
+        client_id: clienteSeleccionado?.id || null,
         cliente_nombre: clienteNombre,
         cliente_email: clienteEmail || null,
         cliente_telefono: clienteTelefono || null,

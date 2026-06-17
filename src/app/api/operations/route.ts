@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
     es_renovacion,
     operacion_original_id: operacion_original_id_body,
     entidad_preferencia,
+    client_id: bodyClientId,
   } = body;
 
   if (!pipeline_key || !cliente_nombre) {
@@ -64,16 +65,17 @@ export async function POST(req: NextRequest) {
   }
 
   // Get or create client
-  let clientId: string | null = null;
-  const [existingClient] = await db
-    .select()
-    .from(clients)
-    .where(and(eq(clients.collaborator_id, userId), eq(clients.nombre, cliente_nombre)))
-    .limit(1);
+  let clientId: string | null = bodyClientId || null;
+  if (!clientId) {
+    const [existingClient] = await db
+      .select()
+      .from(clients)
+      .where(and(eq(clients.collaborator_id, userId), eq(clients.nombre, cliente_nombre)))
+      .limit(1);
+    if (existingClient) clientId = existingClient.id;
+  }
 
-  if (existingClient) {
-    clientId = existingClient.id;
-  } else {
+  if (!clientId) {
     const clientCodigo = await generateCodigoCLI();
     const [newClient] = await db
       .insert(clients)

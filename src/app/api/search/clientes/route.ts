@@ -2,22 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { clients, contacts } from "@/db/schema";
-import { ilike, eq, and, inArray } from "drizzle-orm";
+import { ilike, inArray } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = (session.user as any).collaboratorId as string;
-  const role = (session.user as any).role;
   const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
   if (q.length < 2) return NextResponse.json([]);
 
   const cols = { id: clients.id, nombre: clients.nombre, cif: clients.cif, email: clients.email, telefono: clients.telefono, web: clients.web, cnae: clients.cnae, codigo: clients.codigo };
 
-  const results = role === "admin"
-    ? await db.select(cols).from(clients).where(ilike(clients.nombre, `%${q}%`)).limit(8)
-    : await db.select(cols).from(clients).where(and(eq(clients.collaborator_id, userId), ilike(clients.nombre, `%${q}%`))).limit(8);
+  const results = await db.select(cols).from(clients).where(ilike(clients.nombre, `%${q}%`)).limit(10);
 
   // Adjuntar primera persona de contacto de cada cliente (para autorrelleno)
   const ids = results.map(r => r.id);

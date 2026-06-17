@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
     descripcion,
     descripcion_equipo,
     contacto_directo,
+    client_id: bodyClientId,
   } = body;
 
   if (!cliente_nombre)
@@ -54,16 +55,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No se encontró administrador" }, { status: 500 });
 
   // Get or create client (owned by admin for proveedor-created ops)
-  let clientId: string | null = null;
-  const [existingClient] = await db
-    .select()
-    .from(clients)
-    .where(eq(clients.nombre, cliente_nombre))
-    .limit(1);
+  let clientId: string | null = bodyClientId || null;
+  if (!clientId) {
+    const [existingClient] = await db
+      .select()
+      .from(clients)
+      .where(eq(clients.nombre, cliente_nombre))
+      .limit(1);
+    if (existingClient) clientId = existingClient.id;
+  }
 
-  if (existingClient) {
-    clientId = existingClient.id;
-  } else {
+  if (!clientId) {
     const clientCodigo = await generateCodigoCLI();
     const [newClient] = await db
       .insert(clients)

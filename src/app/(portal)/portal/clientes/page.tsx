@@ -12,12 +12,25 @@ export default async function ClientesPage() {
   const session = await auth();
   const userId = (session!.user as any).collaboratorId as string;
 
-  const myClients = await db
+  const allOps = await db
+    .select({ client_id: operations.client_id, status: operations.status })
+    .from(operations)
+    .where(eq(operations.collaborator_id, userId));
+
+  const opsClientIds = [...new Set(allOps.map(o => o.client_id).filter(Boolean))] as string[];
+
+  const ownClients = await db
     .select()
     .from(clients)
     .where(eq(clients.collaborator_id, userId))
     .orderBy(clients.nombre);
 
+  const extraIds = opsClientIds.filter(id => !ownClients.some(c => c.id === id));
+  const extraClients = extraIds.length > 0
+    ? await db.select().from(clients).where(inArray(clients.id, extraIds)).orderBy(clients.nombre)
+    : [];
+
+  const myClients = [...ownClients, ...extraClients].sort((a, b) => a.nombre.localeCompare(b.nombre));
   const clientIds = myClients.map((c) => c.id);
 
   const allContacts = clientIds.length > 0
@@ -28,13 +41,6 @@ export default async function ClientesPage() {
     acc[c.client_id] = (acc[c.client_id] ?? 0) + 1;
     return acc;
   }, {});
-
-  const allOps = clientIds.length > 0
-    ? await db
-        .select({ client_id: operations.client_id, status: operations.status })
-        .from(operations)
-        .where(eq(operations.collaborator_id, userId))
-    : [];
 
   const opsByClient = allOps.reduce<Record<string, typeof allOps>>((acc, o) => {
     if (!o.client_id) return acc;

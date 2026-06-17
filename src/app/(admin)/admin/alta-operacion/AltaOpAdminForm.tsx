@@ -232,6 +232,7 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
         importe: importe || data.importe,
         pipeline_key: pipeline,
         producto: productoFinal,
+        client_id: clienteSeleccionado?.id || null,
         cliente_nombre: clienteNombre,
         status: data.status || "activa",
         es_renovacion: esRenovacion,

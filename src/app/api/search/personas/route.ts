@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { contacts, collaboratorContacts, clients, entityContacts, entityOfficeContacts, suppliers, collaborators } from "@/db/schema";
-import { ilike, eq, and, inArray, sql } from "drizzle-orm";
+import { ilike, eq, and, sql } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -14,28 +14,23 @@ export async function GET(req: NextRequest) {
 
   const pattern = `%${q}%`;
 
-  const myClients = await db.select({ id: clients.id }).from(clients).where(eq(clients.collaborator_id, userId));
-  const myClientIds = myClients.map(c => c.id);
-
   const results: Array<{ id?: string; nombre: string; rol: string | null; email: string | null; telefono: string | null; linkedin?: string | null; client_id?: string; client_nombre?: string }> = [];
 
-  if (myClientIds.length > 0) {
-    const cc = await db
-      .select({
-        id: contacts.id,
-        nombre: contacts.nombre,
-        rol: contacts.rol,
-        email: contacts.email,
-        telefono: contacts.telefono,
-        client_id: contacts.client_id,
-        client_nombre: clients.nombre,
-      })
-      .from(contacts)
-      .innerJoin(clients, eq(contacts.client_id, clients.id))
-      .where(and(inArray(contacts.client_id, myClientIds), ilike(contacts.nombre, pattern)))
-      .limit(10);
-    results.push(...cc);
-  }
+  const cc = await db
+    .select({
+      id: contacts.id,
+      nombre: contacts.nombre,
+      rol: contacts.rol,
+      email: contacts.email,
+      telefono: contacts.telefono,
+      client_id: contacts.client_id,
+      client_nombre: clients.nombre,
+    })
+    .from(contacts)
+    .innerJoin(clients, eq(contacts.client_id, clients.id))
+    .where(ilike(contacts.nombre, pattern))
+    .limit(10);
+  results.push(...cc);
 
   const myContacts = await db.select({ nombre: collaboratorContacts.nombre, rol: collaboratorContacts.rol, email: collaboratorContacts.email, telefono: collaboratorContacts.telefono })
     .from(collaboratorContacts)

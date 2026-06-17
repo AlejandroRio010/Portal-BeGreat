@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
     proveedor_nombre, proveedor_email, proveedor_telefono, proveedor_web, proveedor_contacto_nombre, proveedor_contacto_email, proveedor_contacto_telefono,
     producto, producto_otro, importe, equipo_tipo, plazo_meses, lugar_entrega, descripcion, descripcion_equipo,
     status, es_renovacion, operacion_original_id,
+    client_id: bodyClientId,
   } = body;
   const productoFinal = producto === "Otro" && producto_otro ? producto_otro : producto;
 
@@ -27,16 +28,17 @@ export async function POST(req: NextRequest) {
   }
 
   // Get or create client (under the selected collaborator)
-  let clientId: string | null = null;
-  const [existingClient] = await db
-    .select()
-    .from(clients)
-    .where(and(eq(clients.collaborator_id, collaborator_id), eq(clients.nombre, cliente_nombre)))
-    .limit(1);
+  let clientId: string | null = bodyClientId || null;
+  if (!clientId) {
+    const [existingClient] = await db
+      .select()
+      .from(clients)
+      .where(and(eq(clients.collaborator_id, collaborator_id), eq(clients.nombre, cliente_nombre)))
+      .limit(1);
+    if (existingClient) clientId = existingClient.id;
+  }
 
-  if (existingClient) {
-    clientId = existingClient.id;
-  } else {
+  if (!clientId) {
     const clientCodigo = await generateCodigoCLI();
     const [newClient] = await db
       .insert(clients)
