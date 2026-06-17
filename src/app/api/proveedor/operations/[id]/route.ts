@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, contacts } from "@/db/schema";
+import { operations, contacts, clients } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -14,7 +14,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   // Verify the op belongs to this supplier
   const [op] = await db
-    .select({ id: operations.id, client_id: operations.client_id })
+    .select({ id: operations.id, client_id: operations.client_id, collaborator_id: operations.collaborator_id })
     .from(operations)
     .where(and(eq(operations.id, id), eq(operations.supplier_id, supplierId)))
     .limit(1);
@@ -81,7 +81,24 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
     data.aval_contact_id = tiene_aval && aval_tipo === "persona_fisica" ? resolvedContactId : null;
-    data.aval_client_id = tiene_aval && aval_tipo === "empresa" ? (aval_client_id || null) : null;
+
+    let resolvedAvalClientId = aval_client_id || null;
+    if (tiene_aval && aval_tipo === "empresa" && !aval_client_id && aval_nombre) {
+      const [existing] = await db.select({ id: clients.id }).from(clients)
+        .where(eq(clients.nombre, aval_nombre)).limit(1);
+      if (existing) {
+        resolvedAvalClientId = existing.id;
+      } else {
+        const [newClient] = await db.insert(clients).values({
+          nombre: aval_nombre,
+          email: aval_email || null,
+          telefono: aval_telefono || null,
+          collaborator_id: op.collaborator_id,
+        }).returning();
+        resolvedAvalClientId = newClient.id;
+      }
+    }
+    data.aval_client_id = tiene_aval && aval_tipo === "empresa" ? resolvedAvalClientId : null;
   }
 
   await db.update(operations).set(data).where(eq(operations.id, id));

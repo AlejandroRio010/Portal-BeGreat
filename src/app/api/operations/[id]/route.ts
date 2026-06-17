@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, collaborators, contacts } from "@/db/schema";
+import { operations, collaborators, contacts, clients } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { formatDocId } from "@/lib/format";
 
@@ -76,7 +76,24 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
     data.aval_contact_id = tiene_aval && aval_tipo === "persona_fisica" ? resolvedContactId : null;
-    data.aval_client_id = tiene_aval && aval_tipo === "empresa" ? (aval_client_id || null) : null;
+
+    let resolvedClientId = aval_client_id || null;
+    if (tiene_aval && aval_tipo === "empresa" && !aval_client_id && aval_nombre) {
+      const [existing] = await db.select({ id: clients.id }).from(clients)
+        .where(eq(clients.nombre, aval_nombre)).limit(1);
+      if (existing) {
+        resolvedClientId = existing.id;
+      } else {
+        const [newClient] = await db.insert(clients).values({
+          nombre: aval_nombre,
+          email: aval_email || null,
+          telefono: aval_telefono || null,
+          collaborator_id: userId,
+        }).returning();
+        resolvedClientId = newClient.id;
+      }
+    }
+    data.aval_client_id = tiene_aval && aval_tipo === "empresa" ? resolvedClientId : null;
   }
 
   // Resultado: marca ganada/denegada/en curso y fija la fecha de cierre
