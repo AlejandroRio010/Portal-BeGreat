@@ -89,7 +89,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
       aval_client_id: operations.aval_client_id,
     })
     .from(operations)
-    .where(eq(operations.client_id, id))
+    .where(and(eq(operations.client_id, id), eq(operations.collaborator_id, userId)))
     .orderBy(operations.created_at);
 
   const clienteCustomFields = await db.select().from(customFields).where(eq(customFields.entidad, "cliente")).orderBy(asc(customFields.orden));
@@ -108,7 +108,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
     client_nombre: clients.nombre,
   }).from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
-    .where(eq(operations.aval_client_id, id))
+    .where(and(eq(operations.aval_client_id, id), eq(operations.collaborator_id, userId)))
     .orderBy(operations.created_at);
 
   const FASES_APROBADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
