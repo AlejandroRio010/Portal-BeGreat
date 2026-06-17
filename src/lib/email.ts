@@ -99,6 +99,35 @@ export async function sendOperationApprovedEmail(
   });
 }
 
+export async function sendOperationWonEmail(
+  to: string, nombre: string, opNombre: string, opId: string,
+  importe: string, feeColaborador: string
+) {
+  if (!resend) { console.error("RESEND_API_KEY no configurada"); return; }
+  const url = `${PORTAL_URL}/portal/operaciones/${opId}`;
+  await resend.emails.send({
+    from: FROM, to,
+    subject: `¡Operación ganada! — ${opNombre}`,
+    html: emailWrapper("Operación ganada",
+      `<p style="font-size: 16px; color: #1a1a1a; margin: 0 0 14px; font-weight: 600;">Hola${nombre ? " " + nombre.split(" ")[0] : ""},</p>
+      <p style="font-size: 14px; line-height: 1.65; color: #555; margin: 0 0 10px;">
+        ¡Enhorabuena! La operación <strong>${opNombre}</strong> ha sido <strong style="color: #059669;">ganada</strong>.
+      </p>
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 16px; margin: 0 0 16px;">
+        <table style="width: 100%; font-size: 14px; color: #333;">
+          <tr><td style="padding: 4px 0; color: #888;">Importe de la operación</td><td style="text-align: right; font-weight: bold;">${importe}</td></tr>
+          <tr><td style="padding: 4px 0; color: #888;">Tu comisión</td><td style="text-align: right; font-weight: bold; color: #059669;">${feeColaborador}</td></tr>
+        </table>
+      </div>
+      <p style="font-size: 14px; line-height: 1.65; color: #555; margin: 0 0 28px;">
+        La factura correspondiente será abonada en los próximos días.
+      </p>`,
+      url, "Ver operación →",
+      "Recibes este email porque eres colaborador de BeGreat Consulting."
+    ),
+  });
+}
+
 export async function sendOperationDeniedEmail(
   to: string, nombre: string, opNombre: string, opId: string,
   motivo: string
