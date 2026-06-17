@@ -5,43 +5,37 @@ import { useState } from "react";
 type Task = {
   id: string;
   titulo: string;
-  asignado_a: "admin" | "colaborador" | "cliente";
+  asignado_a_id: string | null;
+  asignado_a_nombre: string | null;
   completada: boolean;
   created_at: string;
   completed_at: string | null;
 };
 
-const ASSIGNEE_LABELS: Record<string, string> = {
-  admin: "Admin",
-  colaborador: "Colaborador",
-  cliente: "Cliente",
-};
-const ASSIGNEE_COLORS: Record<string, string> = {
-  admin: "bg-[#2E1A47] text-white",
-  colaborador: "bg-emerald-100 text-emerald-800",
-  cliente: "bg-amber-100 text-amber-800",
-};
+type Assignee = { id: string; nombre: string };
 
 export default function TasksSection({
   initialTasks,
   operationId,
+  assignees,
 }: {
   initialTasks: Task[];
   operationId: string;
+  assignees: Assignee[];
 }) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [titulo, setTitulo] = useState("");
-  const [asignado, setAsignado] = useState<"admin" | "colaborador" | "cliente">("admin");
+  const [asignadoId, setAsignadoId] = useState(assignees[0]?.id ?? "");
   const [adding, setAdding] = useState(false);
 
   async function addTask() {
-    if (!titulo.trim()) return;
+    if (!titulo.trim() || !asignadoId) return;
     setAdding(true);
     try {
       const res = await fetch(`/api/operations/${operationId}/tasks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ titulo, asignado_a: asignado }),
+        body: JSON.stringify({ titulo, asignado_a_id: asignadoId, asignado_a_nombre: assignees.find(a => a.id === asignadoId)?.nombre }),
       });
       if (res.ok) {
         const task = await res.json();
@@ -86,6 +80,11 @@ export default function TasksSection({
   function daysBetween(a: string, b: string) {
     return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000);
   }
+  function shortName(nombre: string | null) {
+    if (!nombre) return "?";
+    const parts = nombre.split(" ");
+    return parts[0];
+  }
 
   return (
     <div className="bg-white border border-gray-200 p-5">
@@ -104,13 +103,13 @@ export default function TasksSection({
           className="flex-1 text-sm border border-gray-200 px-3 py-2 focus:outline-none focus:border-[#2E1A47]"
         />
         <select
-          value={asignado}
-          onChange={(e) => setAsignado(e.target.value as any)}
-          className="text-xs border border-gray-200 px-2 py-2 bg-white focus:outline-none focus:border-[#2E1A47]"
+          value={asignadoId}
+          onChange={(e) => setAsignadoId(e.target.value)}
+          className="text-xs border border-gray-200 px-2 py-2 bg-white focus:outline-none focus:border-[#2E1A47] max-w-[140px]"
         >
-          <option value="admin">Admin</option>
-          <option value="colaborador">Colaborador</option>
-          <option value="cliente">Cliente</option>
+          {assignees.map((a) => (
+            <option key={a.id} value={a.id}>{a.nombre}</option>
+          ))}
         </select>
         <button
           onClick={addTask}
@@ -133,8 +132,8 @@ export default function TasksSection({
               className="w-4 h-4 border-2 border-gray-300 flex-shrink-0 hover:border-[#2E1A47] transition-colors"
             />
             <span className="flex-1 text-sm text-gray-800">{t.titulo}</span>
-            <span className={`text-[10px] font-bold px-2 py-0.5 ${ASSIGNEE_COLORS[t.asignado_a]}`}>
-              {ASSIGNEE_LABELS[t.asignado_a]}
+            <span className="text-[10px] font-bold px-2 py-0.5 bg-[#EEEBF3] text-[#2E1A47]">
+              {shortName(t.asignado_a_nombre)}
             </span>
             <span className="text-[10px] text-gray-400">{fmtDate(t.created_at)}</span>
             <button
@@ -165,8 +164,8 @@ export default function TasksSection({
                   </svg>
                 </button>
                 <span className="flex-1 text-sm text-gray-400 line-through">{t.titulo}</span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 opacity-50 ${ASSIGNEE_COLORS[t.asignado_a]}`}>
-                  {ASSIGNEE_LABELS[t.asignado_a]}
+                <span className="text-[10px] font-bold px-2 py-0.5 opacity-50 bg-[#EEEBF3] text-[#2E1A47]">
+                  {shortName(t.asignado_a_nombre)}
                 </span>
                 {t.completed_at && (
                   <span className="text-[10px] text-gray-300">

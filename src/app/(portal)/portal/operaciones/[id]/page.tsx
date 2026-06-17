@@ -87,7 +87,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
   if (!op) notFound();
 
   const [colab] = await db
-    .select({ puede_editar_ops: collaborators.puede_editar_ops, nivel_entidades: collaborators.nivel_entidades, logo_url: collaborators.logo_url })
+    .select({ nombre: collaborators.nombre, puede_editar_ops: collaborators.puede_editar_ops, nivel_entidades: collaborators.nivel_entidades, logo_url: collaborators.logo_url })
     .from(collaborators)
     .where(eq(collaborators.id, userId))
     .limit(1);
@@ -143,6 +143,11 @@ export default async function OperacionDetallePage({ params }: { params: Promise
     : [];
   const opInfoRequests = await db.select().from(infoRequests).where(eq(infoRequests.operation_id, id)).orderBy(infoRequests.created_at);
   const opTasks = await db.select().from(operationTasks).where(eq(operationTasks.operation_id, id)).orderBy(operationTasks.created_at);
+  const admins = await db.select({ id: collaborators.id, nombre: collaborators.nombre }).from(collaborators).where(eq(collaborators.role, "admin"));
+  const taskAssignees: { id: string; nombre: string }[] = [
+    { id: userId, nombre: colab?.nombre ?? "Colaborador" },
+    ...admins,
+  ];
 
   const clientFolder = sanitizeFolderName(op.client_nombre ?? "Sin cliente");
   const opFolder = `${clientFolder}/${sanitizeFolderName(op.codigo ?? id)}`;
@@ -499,7 +504,11 @@ export default async function OperacionDetallePage({ params }: { params: Promise
 
         {/* Col 2-3: Tasks + Notas + Docs */}
         <div className="col-span-2 flex flex-col gap-5">
-        <TasksSection initialTasks={opTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null }))} operationId={id} />
+        <TasksSection
+          initialTasks={opTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null }))}
+          operationId={id}
+          assignees={taskAssignees}
+        />
 
         <NotesSection
           notes={opNotes}

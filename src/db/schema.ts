@@ -504,6 +504,8 @@ export const operationTasks = pgTable("operation_tasks", {
   operation_id: uuid("operation_id").notNull().references(() => operations.id, { onDelete: "cascade" }),
   titulo: text("titulo").notNull(),
   asignado_a: taskAssigneeEnum("asignado_a").notNull(),
+  asignado_a_id: uuid("asignado_a_id"),
+  asignado_a_nombre: text("asignado_a_nombre"),
   completada: boolean("completada").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   completed_at: timestamp("completed_at"),

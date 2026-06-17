@@ -138,6 +138,15 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
 
   const opTasks = await db.select().from(operationTasks).where(eq(operationTasks.operation_id, id)).orderBy(operationTasks.created_at);
 
+  const admins = await db.select({ id: collaborators.id, nombre: collaborators.nombre }).from(collaborators).where(eq(collaborators.role, "admin"));
+  const taskAssignees: { id: string; nombre: string }[] = [];
+  if (op.colaborador_id && op.colaborador_nombre) {
+    taskAssignees.push({ id: op.colaborador_id, nombre: op.colaborador_nombre });
+  }
+  for (const a of admins) {
+    taskAssignees.push({ id: a.id, nombre: a.nombre });
+  }
+
   const clientFolder = sanitizeFolderName(op.client_nombre ?? "Sin cliente");
   const opFolder = `${clientFolder}/${sanitizeFolderName(op.codigo ?? id)}`;
   const avalFolder = `${opFolder}/Avalista`;
@@ -549,7 +558,11 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
 
         {/* Tasks + Notes + Docs */}
         <div className="col-span-2 flex flex-col gap-5">
-        <TasksSection initialTasks={opTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null }))} operationId={id} />
+        <TasksSection
+          initialTasks={opTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null }))}
+          operationId={id}
+          assignees={taskAssignees}
+        />
 
         <NotesSection
           notes={opNotes}

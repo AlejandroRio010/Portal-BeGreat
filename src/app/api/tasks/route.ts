@@ -9,19 +9,19 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const role = (session.user as any).role;
-  let assigneeFilter: "admin" | "colaborador";
-
+  let userId: string;
   if (role === "admin") {
-    assigneeFilter = "admin";
+    userId = (session.user as any).id;
   } else {
-    assigneeFilter = "colaborador";
+    userId = (session.user as any).collaboratorId;
   }
+  if (!userId) return NextResponse.json([]);
 
   const tasks = await db
     .select({
       id: operationTasks.id,
       titulo: operationTasks.titulo,
-      asignado_a: operationTasks.asignado_a,
+      asignado_a_nombre: operationTasks.asignado_a_nombre,
       completada: operationTasks.completada,
       created_at: operationTasks.created_at,
       operation_id: operationTasks.operation_id,
@@ -32,7 +32,7 @@ export async function GET() {
     .innerJoin(operations, eq(operationTasks.operation_id, operations.id))
     .where(
       and(
-        eq(operationTasks.asignado_a, assigneeFilter),
+        eq(operationTasks.asignado_a_id, userId),
         eq(operationTasks.completada, false)
       )
     )

@@ -41,13 +41,15 @@ export async function POST(
   if (!caller) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const { titulo, asignado_a } = await req.json();
+  const { titulo, asignado_a_id, asignado_a_nombre } = await req.json();
   if (!titulo?.trim()) return NextResponse.json({ error: "Título obligatorio" }, { status: 400 });
 
   const [task] = await db.insert(operationTasks).values({
     operation_id: id,
     titulo: titulo.trim(),
-    asignado_a: asignado_a || "admin",
+    asignado_a: caller.role === "admin" ? "admin" : "colaborador",
+    asignado_a_id: asignado_a_id || null,
+    asignado_a_nombre: asignado_a_nombre || null,
     created_by_role: caller.role,
     created_by_id: caller.id,
   }).returning();
