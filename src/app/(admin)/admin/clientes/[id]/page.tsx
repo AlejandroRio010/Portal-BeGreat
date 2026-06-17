@@ -74,6 +74,8 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
       aval_email: operations.aval_email,
       aval_telefono: operations.aval_telefono,
       aval_persona_contacto: operations.aval_persona_contacto,
+      aval_contact_id: operations.aval_contact_id,
+      aval_client_id: operations.aval_client_id,
     })
     .from(operations)
     .where(eq(operations.client_id, id))
@@ -316,7 +318,13 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
                           {a.aval_tipo === "empresa" ? "E" : "P"}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-gray-800">{a.aval_nombre}</p>
+                          {a.aval_contact_id ? (
+                            <Link href={`/admin/clientes/${id}/contactos/${a.aval_contact_id}`} className="text-sm font-semibold text-[#2E1A47] hover:underline">{a.aval_nombre}</Link>
+                          ) : a.aval_client_id ? (
+                            <Link href={`/admin/clientes/${a.aval_client_id}`} className="text-sm font-semibold text-[#2E1A47] hover:underline">{a.aval_nombre}</Link>
+                          ) : (
+                            <p className="text-sm font-semibold text-gray-800">{a.aval_nombre}</p>
+                          )}
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-[10px] text-gray-400 uppercase">{a.aval_tipo === "empresa" ? "Empresa" : "Persona física"}</span>
                             {a.aval_email && <><span className="text-[10px] text-gray-300">·</span><span className="text-[10px] text-gray-400">{a.aval_email}</span></>}
