@@ -192,22 +192,18 @@ export default function OpEditForm({
   const inputCls = "w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]";
   const labelCls = "block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1";
 
-  if (!open) {
-    return (
-      <button onClick={() => setOpen(true)}
-        className="text-xs text-[#2E1A47] font-semibold border border-[#2E1A47]/30 px-3 py-1.5 hover:bg-[#EEEBF3] transition-colors">
-        Editar datos
-      </button>
-    );
-  }
-
   return (
-    <div className="bg-white border border-gray-200">
-      <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Editar datos de la operación</h3>
-        <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-700 text-lg leading-none">×</button>
-      </div>
-      <form onSubmit={handleSubmit} className="px-5 py-4 space-y-3">
+    <div className="bg-white border border-gray-200 p-5 space-y-4">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center justify-between w-full text-left"
+      >
+        <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">Editar datos de la operación</p>
+        <span className="text-gray-400 text-sm">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+      <form onSubmit={handleSubmit} className="border-t border-gray-100 pt-4 space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={labelCls}>Importe (€)</label>
@@ -444,6 +440,7 @@ export default function OpEditForm({
           </button>
         </div>
       </form>
+      )}
     </div>
   );
 }

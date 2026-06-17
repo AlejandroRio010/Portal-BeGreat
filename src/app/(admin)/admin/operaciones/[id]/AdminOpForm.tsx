@@ -348,6 +348,7 @@ export default function AdminOpForm({
   const [savedNotas, setSavedNotas] = useState(false);
   const [savingCustom, setSavingCustom] = useState(false);
   const [savedCustom, setSavedCustom] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(true);
 
   // ── Custom fields ─────────────────────────────────────────────────────────
@@ -529,10 +530,16 @@ export default function AdminOpForm({
     <>
       {/* ── Datos básicos de la operación (editables por admin) ───────────── */}
       <div className="bg-white border border-gray-200 p-5 space-y-4 mb-0">
-        <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest pb-3 border-b border-gray-100">
-          Editar datos de la operación
-        </p>
+        <button
+          onClick={() => setEditOpen((v) => !v)}
+          className="flex items-center justify-between w-full text-left"
+        >
+          <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">Editar datos de la operación</p>
+          <span className="text-gray-400 text-sm">{editOpen ? "▲" : "▼"}</span>
+        </button>
 
+        {editOpen && (
+        <div className="border-t border-gray-100 pt-4">
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
             <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Nombre / referencia</label>
@@ -753,6 +760,8 @@ export default function AdminOpForm({
           {savingBasic ? "Guardando..." : "Guardar datos"}
         </button>
         {savedBasic && <p className="text-xs text-emerald-600 font-semibold text-center">Datos guardados.</p>}
+        </div>
+        )}
       </div>
 
       {/* ── Gestión admin ────────────────────────────────────────────────────── */}
