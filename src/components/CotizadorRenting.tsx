@@ -13,6 +13,14 @@ const FALLBACK: { meses: number; taeMin: number; taeMax: number }[] = [
 const PLAZOS_DEFAULT = [48, 60];
 const IMPORTE_INICIAL = 10000;
 
+function fmtInput(n: number): string {
+  return n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function parseInput(s: string): number {
+  return parseFloat(s.replace(/\./g, "").replace(",", ".")) || 0;
+}
+
 function calcularCuota(importe: number, meses: number, tae: number) {
   const r = tae / 12;
   return importe * (r / (1 - Math.pow(1 + r, -meses)));
@@ -29,7 +37,7 @@ function calcResultados(rangos: { meses: number; taeMin: number; taeMax: number 
 }
 
 export default function CotizadorRenting() {
-  const [cotImporte, setCotImporte] = useState(String(IMPORTE_INICIAL));
+  const [cotImporte, setCotImporte] = useState(fmtInput(IMPORTE_INICIAL));
   const [resultados, setResultados] = useState<Rango[]>(calcResultados(FALLBACK, IMPORTE_INICIAL));
   const [seleccionado, setSeleccionado] = useState<number>(48);
   const [expanded, setExpanded] = useState(false);
@@ -49,13 +57,14 @@ export default function CotizadorRenting() {
         return { meses: p, taeMin: Math.min(...taes), taeMax: Math.max(...taes) };
       });
       setRangos(merged);
-      setResultados(calcResultados(merged, parseFloat(cotImporte) || IMPORTE_INICIAL));
+      setResultados(calcResultados(merged, parseInput(cotImporte) || IMPORTE_INICIAL));
     });
   }, []);
 
   function calcular() {
-    const val = parseFloat(cotImporte.replace(",", "."));
+    const val = parseInput(cotImporte);
     if (!val || val <= 0) return;
+    setCotImporte(fmtInput(val));
     setResultados(calcResultados(rangos, val));
   }
 
@@ -71,7 +80,8 @@ export default function CotizadorRenting() {
           <div className="flex gap-3">
             <input value={cotImporte} onChange={e => setCotImporte(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); calcular(); } }}
-              type="number" step="any" inputMode="decimal"
+              onBlur={calcular}
+              type="text" inputMode="decimal"
               className="flex-1 px-4 py-3 bg-white text-sm text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-white/40"
               placeholder="10.000,00 €" />
             <button type="button" onClick={calcular}
