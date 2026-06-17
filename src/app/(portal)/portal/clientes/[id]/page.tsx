@@ -5,7 +5,7 @@ import ClienteEditFormPortal from "./ClienteEditFormPortal";
 import NuevoContactoForm from "./NuevoContactoForm";
 import NotesSection from "@/components/NotesSection";
 import DocumentsSection from "@/components/DocumentsSection";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, asc, or, isNotNull } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getCnaeByCode } from "@/lib/cnaes";
@@ -46,10 +46,16 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
       created_at: clients.created_at,
     })
     .from(clients)
-    .where(and(eq(clients.id, id), eq(clients.collaborator_id, userId)))
+    .where(eq(clients.id, id))
     .limit(1);
 
   if (!client) notFound();
+
+  // Verify access: own client, or linked via ops, or avalista in own ops
+  const isOwn = await db.select({ id: clients.id }).from(clients).where(and(eq(clients.id, id), eq(clients.collaborator_id, userId))).limit(1);
+  const isLinkedOp = await db.select({ id: operations.id }).from(operations).where(and(eq(operations.collaborator_id, userId), eq(operations.client_id, id))).limit(1);
+  const isAval = await db.select({ id: operations.id }).from(operations).where(and(eq(operations.collaborator_id, userId), eq(operations.aval_client_id, id))).limit(1);
+  if (isOwn.length === 0 && isLinkedOp.length === 0 && isAval.length === 0) notFound();
 
   const [colabPerms] = await db
     .select({ puede_editar_ops: collaborators.puede_editar_ops, nombre: collaborators.nombre, identificador: collaborators.identificador })
@@ -57,7 +63,9 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
     .where(eq(collaborators.id, userId))
     .limit(1);
 
-  const puedeEditar = colabPerms?.puede_editar_ops ?? false;
+  const puedeEditarOps = colabPerms?.puede_editar_ops ?? false;
+  const esClientePropio = isOwn.length > 0;
+  const puedeEditar = esClientePropio;
 
   const clientContacts = await db.select().from(contacts).where(eq(contacts.client_id, id)).orderBy(contacts.nombre);
 
@@ -369,7 +377,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
 
           <NotesSection
             notes={notes}
-            apiUrl={`/api/admin/clientes/${id}/notes`}
+            apiUrl={`/api/clientes/${id}/notes`}
             currentUserId={userId}
             placeholder="Añade una nota general sobre este cliente..."
           />

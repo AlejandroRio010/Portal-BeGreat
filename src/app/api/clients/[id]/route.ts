@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { clients, collaborators } from "@/db/schema";
+import { clients } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { formatDocId } from "@/lib/format";
 
@@ -18,13 +18,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .where(and(eq(clients.id, id), eq(clients.collaborator_id, userId)))
     .limit(1);
   if (!client) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-
-  const [colab] = await db
-    .select({ puede_editar_ops: collaborators.puede_editar_ops })
-    .from(collaborators)
-    .where(eq(collaborators.id, userId))
-    .limit(1);
-  if (!colab?.puede_editar_ops) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
 
   const body = await req.json();
   const { nombre, cif, email, telefono, web, linkedin, nombre_comercial, direccion, cnae } = body;
