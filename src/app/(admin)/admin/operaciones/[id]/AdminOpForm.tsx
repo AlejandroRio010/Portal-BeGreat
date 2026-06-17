@@ -834,16 +834,20 @@ export default function AdminOpForm({
                             </div>
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <span className="text-[9px] text-gray-400 uppercase">%</span>
-                                <input type="number" step="0.01" value={o.porcentaje} onChange={e => updateOrigen(i, "porcentaje", e.target.value)}
-                                  placeholder="0,00" className="w-full border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
-                                {o.porcentaje && <p className="text-[9px] text-gray-500 mt-0.5">{parseFloat(o.porcentaje).toLocaleString("es-ES", { minimumFractionDigits: 2 })}%</p>}
+                                <span className="text-[9px] text-gray-400 uppercase">Comisión</span>
+                                <div className="relative">
+                                  <input type="number" step="0.01" value={o.porcentaje} onChange={e => updateOrigen(i, "porcentaje", e.target.value)}
+                                    placeholder="0,00" className="w-full border border-gray-200 px-2 pr-6 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">%</span>
+                                </div>
                               </div>
                               <div>
-                                <span className="text-[9px] text-gray-400 uppercase">€</span>
-                                <input type="number" step="0.01" value={o.importe} onChange={e => updateOrigen(i, "importe", e.target.value)}
-                                  placeholder="0,00" className="w-full border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
-                                {o.importe && <p className="text-[9px] text-gray-500 mt-0.5">{parseFloat(o.importe).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>}
+                                <span className="text-[9px] text-gray-400 uppercase">Importe</span>
+                                <div className="relative">
+                                  <input type="number" step="0.01" value={o.importe} onChange={e => updateOrigen(i, "importe", e.target.value)}
+                                    placeholder="0,00" className="w-full border border-gray-200 px-2 pr-6 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">€</span>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -869,16 +873,20 @@ export default function AdminOpForm({
                         </div>
                       </div>
                       <div>
-                        <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Margen %</label>
-                        <input type="number" step="0.01" value={margenPct} onChange={e => updateMargenPct(e.target.value)}
-                          placeholder="0,00" className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                        {margenPct && <p className="text-[9px] text-gray-500 mt-0.5">{parseFloat(margenPct).toLocaleString("es-ES", { minimumFractionDigits: 2 })}%</p>}
+                        <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Margen</label>
+                        <div className="relative">
+                          <input type="number" step="0.01" value={margenPct} onChange={e => updateMargenPct(e.target.value)}
+                            placeholder="0,00" className="w-full border border-gray-200 px-3 pr-8 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">%</span>
+                        </div>
                       </div>
                       <div>
                         <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Importe facturado por BeGreat (sin IVA)</label>
-                        <input type="number" step="0.01" value={importeFacturadoBegreat} onChange={e => updateImporteFactura(e.target.value)}
-                          placeholder="Ej: 11500" className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                        {importeFactNum > 0 && <p className="text-[9px] text-gray-500 mt-0.5">{importeFactNum.toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>}
+                        <div className="relative">
+                          <input type="number" step="0.01" value={importeFacturadoBegreat} onChange={e => updateImporteFactura(e.target.value)}
+                            placeholder="0,00" className="w-full border border-gray-200 px-3 pr-8 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">€</span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <input type="checkbox" id="importeFacturadoVisible" checked={importeFacturadoVisible} onChange={e => setImporteFacturadoVisible(e.target.checked)}
@@ -913,16 +921,20 @@ export default function AdminOpForm({
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <span className="text-[9px] text-gray-400 uppercase">%</span>
-                            <input type="number" step="0.01" value={c.porcentaje} onChange={e => updateColab(i, "porcentaje", e.target.value)}
-                              placeholder="0,00" className="w-full border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
-                            {c.porcentaje && <p className="text-[9px] text-gray-500 mt-0.5">{parseFloat(c.porcentaje).toLocaleString("es-ES", { minimumFractionDigits: 2 })}%</p>}
+                            <span className="text-[9px] text-gray-400 uppercase">Comisión</span>
+                            <div className="relative">
+                              <input type="number" step="0.01" value={c.porcentaje} onChange={e => updateColab(i, "porcentaje", e.target.value)}
+                                placeholder="0,00" className="w-full border border-gray-200 px-2 pr-6 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">%</span>
+                            </div>
                           </div>
                           <div>
-                            <span className="text-[9px] text-gray-400 uppercase">€</span>
-                            <input type="number" step="0.01" value={c.importe} onChange={e => updateColab(i, "importe", e.target.value)}
-                              placeholder="0,00" className="w-full border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
-                            {c.importe && <p className="text-[9px] text-gray-500 mt-0.5">{parseFloat(c.importe).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>}
+                            <span className="text-[9px] text-gray-400 uppercase">Importe</span>
+                            <div className="relative">
+                              <input type="number" step="0.01" value={c.importe} onChange={e => updateColab(i, "importe", e.target.value)}
+                                placeholder="0,00" className="w-full border border-gray-200 px-2 pr-6 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">€</span>
+                            </div>
                           </div>
                         </div>
                       </div>
