@@ -252,14 +252,13 @@ export default function OpEditForm({
         {pipelineKey === "renting" && (
           <div>
             <label className={labelCls}>Modalidad</label>
-            <div className="grid grid-cols-3 gap-0 border border-gray-200">
+            <div className="grid grid-cols-2 gap-0 border border-gray-200">
               {([
                 ["begreat_comisiona", "BeGreat comisiona"],
                 ["begreat_factura", "BeGreat factura"],
-                ["begreat_factura_comisiona", "Factura & comisiona"],
               ] as const).map(([val, lbl], i) => (
                 <button key={val} type="button" onClick={() => set("modalidad_renting", val)}
-                  className={`py-2 text-[11px] font-semibold transition-all ${i > 0 ? "border-l border-gray-200" : ""} ${
+                  className={`py-2.5 text-[11px] font-semibold transition-all ${i > 0 ? "border-l border-gray-200" : ""} ${
                     form.modalidad_renting === val ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"
                   }`}>{lbl}</button>
               ))}

@@ -42,7 +42,11 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       fase: operations.fase,
       status: operations.status,
       comision_colaborador: operations.comision_colaborador,
+      comision_colaborador_pct: operations.comision_colaborador_pct,
       comision_begreat: operations.comision_begreat,
+      comision_begreat_pct: operations.comision_begreat_pct,
+      comision_origenes: operations.comision_origenes,
+      factura_destinatario: operations.factura_destinatario,
       entidad_financiera: operations.entidad_financiera,
       honorarios_firmado: operations.honorarios_firmado,
       descripcion: operations.descripcion,
@@ -495,7 +499,11 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialFase={op.fase ?? "Pre-análisis"}
             initialStatus={op.status}
             initialComisionColab={op.comision_colaborador}
+            initialComisionColabPct={op.comision_colaborador_pct ?? null}
             initialComisionBegreat={op.comision_begreat}
+            initialComisionBegreatPct={op.comision_begreat_pct ?? null}
+            initialComisionOrigenes={(op.comision_origenes as any) ?? []}
+            initialFacturaDestinatario={op.factura_destinatario ?? null}
             initialEntidad={op.entidad_financiera}
             initialEntityOfficeId={op.entity_office_id ?? null}
             initialHonorarios={op.honorarios_firmado}

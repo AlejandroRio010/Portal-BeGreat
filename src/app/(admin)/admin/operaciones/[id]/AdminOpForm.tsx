@@ -76,6 +76,10 @@ interface Props {
   initialImporteFacturadoVisible?: boolean;
   initialEntidadDestino?: string | null;
   initialEntidadVisible?: boolean;
+  initialComisionOrigenes?: { tipo: string; porcentaje: string; importe: string }[];
+  initialComisionColabPct?: string | null;
+  initialComisionBegreatPct?: string | null;
+  initialFacturaDestinatario?: string | null;
   // entity/office lists
   allEntities: EntityRow[];
   allOffices: OfficeRow[];
@@ -121,6 +125,10 @@ export default function AdminOpForm({
   initialImporteFacturadoVisible,
   initialEntidadDestino,
   initialEntidadVisible = true,
+  initialComisionOrigenes = [],
+  initialComisionColabPct,
+  initialComisionBegreatPct,
+  initialFacturaDestinatario,
   allEntities,
   allOffices,
   customFieldDefs = [],
@@ -133,7 +141,13 @@ export default function AdminOpForm({
   const [fase, setFase] = useState(initialFase);
   const [status, setStatus] = useState(initialStatus);
   const [comisionColab, setComisionColab] = useState(initialComisionColab ?? "");
+  const [comisionColabPct, setComisionColabPct] = useState(initialComisionColabPct ?? "");
   const [comisionBegreat, setComisionBegreat] = useState(initialComisionBegreat ?? "");
+  const [comisionBegreatPct, setComisionBegreatPct] = useState(initialComisionBegreatPct ?? "");
+  const [comisionOrigenes, setComisionOrigenes] = useState<{ tipo: string; porcentaje: string; importe: string }[]>(
+    initialComisionOrigenes.length > 0 ? initialComisionOrigenes : []
+  );
+  const [facturaDestinatario, setFacturaDestinatario] = useState(initialFacturaDestinatario ?? "proveedor");
   const [honorarios, setHonorarios] = useState(initialHonorarios ?? false);
   const [facturacionRenting, setFacturacionRenting] = useState(initialFacturacionRenting ?? "");
   const [esRenovacion, setEsRenovacion] = useState(initialEsRenovacion ?? false);
@@ -200,6 +214,54 @@ export default function AdminOpForm({
   const [avalEmpresaOpen, setAvalEmpresaOpen] = useState(false);
   const avalEmpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [avalEmpresaNueva, setAvalEmpresaNueva] = useState(false);
+
+  // ── Commission auto-calc helpers ───────────────────────────────────────────
+  const importeNum = parseFloat(importe) || 0;
+  const importeFactNum = parseFloat(importeFacturadoBegreat) || 0;
+  const isFactura = modalidadRenting === "begreat_factura";
+
+  function calcFeeTotal(): number {
+    if (isFactura) return importeFactNum - importeNum;
+    return comisionOrigenes.reduce((s, o) => s + (parseFloat(o.importe) || 0), 0);
+  }
+
+  function addOrigen() {
+    setComisionOrigenes([...comisionOrigenes, { tipo: "cliente", porcentaje: "", importe: "" }]);
+  }
+
+  function removeOrigen(i: number) {
+    setComisionOrigenes(comisionOrigenes.filter((_, idx) => idx !== i));
+  }
+
+  function updateOrigen(i: number, field: "tipo" | "porcentaje" | "importe", val: string) {
+    const next = [...comisionOrigenes];
+    next[i] = { ...next[i], [field]: val };
+    if (field === "porcentaje" && importeNum > 0) {
+      next[i].importe = (importeNum * parseFloat(val || "0") / 100).toFixed(2);
+    }
+    if (field === "importe" && importeNum > 0) {
+      next[i].porcentaje = (parseFloat(val || "0") / importeNum * 100).toFixed(2);
+    }
+    setComisionOrigenes(next);
+  }
+
+  function recalcComisionColab(pct: string) {
+    setComisionColabPct(pct);
+    setComisionColab((importeNum * (parseFloat(pct) || 0) / 100).toFixed(2));
+  }
+
+  function recalcComisionColabEur(eur: string) {
+    setComisionColab(eur);
+    if (importeNum > 0) setComisionColabPct(((parseFloat(eur) || 0) / importeNum * 100).toFixed(2));
+  }
+
+  function recalcBegreat() {
+    const feeTotal = calcFeeTotal();
+    const colabFee = parseFloat(comisionColab) || 0;
+    const bgFee = feeTotal - colabFee;
+    setComisionBegreat(bgFee > 0 ? bgFee.toFixed(2) : "0");
+    if (feeTotal > 0) setComisionBegreatPct((bgFee / feeTotal * 100).toFixed(2));
+  }
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [saving, setSaving] = useState(false);
@@ -316,9 +378,12 @@ export default function AdminOpForm({
         fase,
         status,
         comision_colaborador: comisionColab || null,
+        comision_colaborador_pct: comisionColabPct || null,
         comision_begreat: comisionBegreat || null,
+        comision_begreat_pct: comisionBegreatPct || null,
+        comision_origenes: comisionOrigenes.length > 0 ? comisionOrigenes : [],
+        factura_destinatario: isFactura ? facturaDestinatario : null,
         entity_office_id: selectedOfficeId || null,
-        // sync entidad_financiera text for collaborator display
         entidad_financiera: selectedEntity?.nombre ?? (initialEntidad || null),
         honorarios_firmado: honorarios,
         facturacion_renting: facturacionRenting || null,
@@ -441,14 +506,13 @@ export default function AdminOpForm({
           {pipelineKey === "renting" && (
             <div className="col-span-2">
               <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Modalidad</label>
-              <div className="grid grid-cols-3 gap-0 border border-gray-200">
+              <div className="grid grid-cols-2 gap-0 border border-gray-200">
                 {([
                   ["begreat_comisiona", "BeGreat comisiona"],
                   ["begreat_factura", "BeGreat factura"],
-                  ["begreat_factura_comisiona", "Factura & comisiona"],
                 ] as const).map(([val, lbl], i) => (
                   <button key={val} type="button" onClick={() => setModalidadRenting(val)}
-                    className={`py-2 text-[11px] font-semibold transition-all ${i > 0 ? "border-l border-gray-200" : ""} ${
+                    className={`py-2.5 text-[11px] font-semibold transition-all ${i > 0 ? "border-l border-gray-200" : ""} ${
                       modalidadRenting === val ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"
                     }`}>{lbl}</button>
                 ))}
@@ -687,19 +751,144 @@ export default function AdminOpForm({
                 </select>
               </div>
 
-              {/* Fee colaborador */}
-              <div>
-                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Fee colaborador (€)</label>
-                <input type="number" step="0.01" value={comisionColab} onChange={(e) => setComisionColab(e.target.value)} placeholder="0.00"
-                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-              </div>
+              {/* ── Panel de comisiones ── */}
+              {pipelineKey === "renting" && modalidadRenting && (
+                <div className="col-span-1 space-y-4 border border-gray-200 p-4 bg-gray-50/50">
+                  <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Comisiones</p>
 
-              {/* Fee BeGreat */}
-              <div>
-                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Fee BeGreat (€)</label>
-                <input type="number" step="0.01" value={comisionBegreat} onChange={(e) => setComisionBegreat(e.target.value)} placeholder="0.00"
-                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-              </div>
+                  {/* ── MODO COMISIONA ── */}
+                  {modalidadRenting === "begreat_comisiona" && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">¿A quién comisionamos?</label>
+                        {comisionOrigenes.map((o, i) => (
+                          <div key={i} className="flex gap-2 items-end mb-2">
+                            <div className="w-32">
+                              {i === 0 && <span className="text-[9px] text-gray-400 uppercase">Origen</span>}
+                              <select value={o.tipo} onChange={e => updateOrigen(i, "tipo", e.target.value)}
+                                className="w-full border border-gray-200 px-2 py-1.5 text-xs bg-white focus:outline-none focus:border-[#2E1A47]">
+                                <option value="cliente">Cliente</option>
+                                <option value="proveedor">Proveedor</option>
+                                <option value="entidad">Entidad financiera</option>
+                              </select>
+                            </div>
+                            <div className="w-20">
+                              {i === 0 && <span className="text-[9px] text-gray-400 uppercase">%</span>}
+                              <input type="number" step="0.01" value={o.porcentaje} onChange={e => updateOrigen(i, "porcentaje", e.target.value)}
+                                placeholder="%" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                            </div>
+                            <div className="flex-1">
+                              {i === 0 && <span className="text-[9px] text-gray-400 uppercase">€</span>}
+                              <input type="number" step="0.01" value={o.importe} onChange={e => updateOrigen(i, "importe", e.target.value)}
+                                placeholder="0.00" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                            </div>
+                            <button type="button" onClick={() => removeOrigen(i)}
+                              className="text-gray-400 hover:text-red-500 text-sm pb-1">✕</button>
+                          </div>
+                        ))}
+                        <button type="button" onClick={addOrigen}
+                          className="text-[10px] font-semibold text-[#2E1A47] hover:underline">+ Añadir origen de comisión</button>
+                      </div>
+                      {comisionOrigenes.length > 0 && (
+                        <div className="bg-[#EEEBF3] px-3 py-2">
+                          <p className="text-[10px] text-gray-500 uppercase">Fee total: <span className="font-bold text-[#2E1A47]">{calcFeeTotal().toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</span></p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── MODO FACTURA ── */}
+                  {isFactura && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Importe facturado por BeGreat (sin IVA)</label>
+                        <input type="number" step="0.01" value={importeFacturadoBegreat} onChange={e => setImporteFacturadoBegreat(e.target.value)}
+                          placeholder="Ej: 11500" className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                        <div className="flex items-center gap-2 mt-2">
+                          <input type="checkbox" id="importeFacturadoVisible" checked={importeFacturadoVisible} onChange={e => setImporteFacturadoVisible(e.target.checked)}
+                            className="w-4 h-4 accent-[#2E1A47]" />
+                          <label htmlFor="importeFacturadoVisible" className="text-xs text-gray-600 cursor-pointer">Visible para el colaborador</label>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">¿A quién se paga / abona?</label>
+                        <div className="grid grid-cols-2 gap-0 border border-gray-200">
+                          <button type="button" onClick={() => setFacturaDestinatario("proveedor")}
+                            className={`py-2 text-[11px] font-semibold transition-all ${facturaDestinatario === "proveedor" ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>Proveedor</button>
+                          <button type="button" onClick={() => setFacturaDestinatario("cliente")}
+                            className={`py-2 text-[11px] font-semibold transition-all border-l border-gray-200 ${facturaDestinatario === "cliente" ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>Cliente</button>
+                        </div>
+                        <p className="text-[9px] text-gray-400 mt-1">Importe {facturaDestinatario}: {importeNum.toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>
+                      </div>
+                      {importeFactNum > 0 && importeNum > 0 && (
+                        <div className="bg-[#EEEBF3] px-3 py-2">
+                          <p className="text-[10px] text-gray-500 uppercase">Margen BeGreat: <span className="font-bold text-[#2E1A47]">{(importeFactNum - importeNum).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</span></p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── Fee colaborador (ambos modos) ── */}
+                  <div className="border-t border-gray-200 pt-3">
+                    <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Fee colaborador</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-[9px] text-gray-400">%</span>
+                        <input type="number" step="0.01" value={comisionColabPct}
+                          onChange={e => recalcComisionColab(e.target.value)}
+                          placeholder="%" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-gray-400">€</span>
+                        <input type="number" step="0.01" value={comisionColab}
+                          onChange={e => recalcComisionColabEur(e.target.value)}
+                          placeholder="0.00" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                      </div>
+                    </div>
+                    <p className="text-[9px] text-gray-400 mt-1">Calculado sobre importe{isFactura ? " proveedor" : ""} ({importeNum.toLocaleString("es-ES")} €)</p>
+                  </div>
+
+                  {/* ── Fee BeGreat (auto = fee total - colab) ── */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] text-gray-400 uppercase tracking-wider">Fee BeGreat</label>
+                      <button type="button" onClick={recalcBegreat}
+                        className="text-[9px] font-semibold text-[#2E1A47] hover:underline">↻ Recalcular</button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-[9px] text-gray-400">%</span>
+                        <input type="number" step="0.01" value={comisionBegreatPct}
+                          onChange={e => { setComisionBegreatPct(e.target.value); const p = parseFloat(e.target.value) || 0; const total = calcFeeTotal(); setComisionBegreat((total * p / 100).toFixed(2)); }}
+                          placeholder="%" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-gray-400">€</span>
+                        <input type="number" step="0.01" value={comisionBegreat}
+                          onChange={e => setComisionBegreat(e.target.value)}
+                          placeholder="0.00" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                      </div>
+                    </div>
+                    <p className="text-[9px] text-gray-400 mt-1">Fee total ({calcFeeTotal().toLocaleString("es-ES", { minimumFractionDigits: 2 })} €) − Colaborador ({(parseFloat(comisionColab) || 0).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €)</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Fee colaborador / begreat simple (consultoría) */}
+              {pipelineKey === "consultoria" && (
+                <>
+                  <div>
+                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Fee colaborador (€)</label>
+                    <input type="number" step="0.01" value={comisionColab} onChange={(e) => setComisionColab(e.target.value)} placeholder="0.00"
+                      className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Fee BeGreat (€)</label>
+                    <input type="number" step="0.01" value={comisionBegreat} onChange={(e) => setComisionBegreat(e.target.value)} placeholder="0.00"
+                      className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                  </div>
+                </>
+              )}
 
               {/* Entidad financiera → Oficina */}
               <div className="space-y-2">
@@ -741,21 +930,7 @@ export default function AdminOpForm({
                 <p className="text-[10px] text-gray-400 mt-1">Ej: Tendrit → Credit Agricole. Solo visible para admin y colaboradores con permiso.</p>
               </div>
 
-              {/* Importe facturado por BeGreat (solo renting + BG factura) */}
-              {pipelineKey === "renting" && (modalidadRenting === "begreat_factura" || modalidadRenting === "begreat_factura_comisiona") && (
-                <div>
-                  <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Importe facturado por BeGreat (sin IVA)</label>
-                  <input type="number" step="0.01" value={importeFacturadoBegreat} onChange={(e) => setImporteFacturadoBegreat(e.target.value)}
-                    placeholder="Ej: 11500"
-                    className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                  <div className="flex items-center gap-2 mt-2">
-                    <input type="checkbox" id="importeFacturadoVisible" checked={importeFacturadoVisible} onChange={(e) => setImporteFacturadoVisible(e.target.checked)}
-                      className="w-4 h-4 accent-[#2E1A47]" />
-                    <label htmlFor="importeFacturadoVisible" className="text-xs text-gray-600 cursor-pointer">Visible para el colaborador</label>
-                  </div>
-                  <p className="text-[10px] text-gray-400 mt-1">Si no marcas la casilla, solo tú (admin) lo verás.</p>
-                </div>
-              )}
+              {/* Importe facturado section moved to commission panel */}
 
               {/* Honorarios firmados */}
               <div className="flex items-center gap-3">

@@ -22,7 +22,11 @@ export async function PATCH(
     fase,
     status,
     comision_colaborador,
+    comision_colaborador_pct,
     comision_begreat,
+    comision_begreat_pct,
+    comision_origenes,
+    factura_destinatario,
     entidad_financiera,
     entity_office_id,
     honorarios_firmado,
@@ -93,6 +97,14 @@ export async function PATCH(
     updateData.comision_colaborador = comision_colaborador === "" ? null : comision_colaborador;
   if (comision_begreat !== undefined)
     updateData.comision_begreat = comision_begreat === "" ? null : comision_begreat;
+  if (comision_colaborador_pct !== undefined)
+    updateData.comision_colaborador_pct = comision_colaborador_pct === "" ? null : comision_colaborador_pct;
+  if (comision_begreat_pct !== undefined)
+    updateData.comision_begreat_pct = comision_begreat_pct === "" ? null : comision_begreat_pct;
+  if (comision_origenes !== undefined)
+    updateData.comision_origenes = comision_origenes;
+  if (factura_destinatario !== undefined)
+    updateData.factura_destinatario = factura_destinatario || null;
   if (entidad_financiera !== undefined)
     updateData.entidad_financiera = entidad_financiera === "" ? null : entidad_financiera;
   if (entity_office_id !== undefined)
