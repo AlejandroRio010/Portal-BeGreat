@@ -68,7 +68,7 @@ export async function PATCH(
     const [note] = await db.select().from(notes).where(eq(notes.id, noteId)).limit(1);
     if (!note) return NextResponse.json({ error: "Nota no encontrada" }, { status: 404 });
 
-    if (userRole !== "admin" && note.author_id !== userId) {
+    if (note.author_id !== userId) {
       return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
     }
 

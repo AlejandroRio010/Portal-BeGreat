@@ -1,3 +1,4 @@
+import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { clients, collaborators, contacts, operations, customFields, customFieldValues, clientNotes, clientGroups, clientDocuments, avalDocuments } from "@/db/schema";
 import { eq, asc, sql } from "drizzle-orm";
@@ -24,6 +25,8 @@ const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> 
 
 export default async function AdminClienteFichaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const session = await auth();
+  const adminUserId = session?.user?.id as string;
 
   const [client] = await db
     .select({
@@ -379,6 +382,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
             apiUrl={`/api/admin/clientes/${id}/notes`}
             placeholder="Añade una nota general sobre este cliente..."
             isAdmin={true}
+            currentUserId={adminUserId}
           />
 
           <DocumentsSection docs={docs} apiUrl={`/api/clientes/${id}/documents`} oneDriveFolder={sanitizeFolderName(client.nombre)} />
