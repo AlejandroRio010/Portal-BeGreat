@@ -230,6 +230,10 @@ export default function AdminOpForm({
   const [avalEmpresaOpen, setAvalEmpresaOpen] = useState(false);
   const avalEmpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [avalEmpresaNueva, setAvalEmpresaNueva] = useState(false);
+  const [avalCif, setAvalCif] = useState("");
+  const [avalDireccion, setAvalDireccion] = useState("");
+  const [avalCnae, setAvalCnae] = useState("");
+  const [avalWeb, setAvalWeb] = useState("");
   const [pfEmpresaResults, setPfEmpresaResults] = useState<any[]>([]);
   const [pfEmpresaOpen, setPfEmpresaOpen] = useState(false);
   const pfEmpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -375,7 +379,11 @@ export default function AdminOpForm({
         aval_dni: tieneAval && avalTipo === "persona_fisica" ? (avalDni || null) : null,
         aval_empresa: tieneAval && avalTipo === "persona_fisica" ? (avalEmpresa || null) : null,
         aval_contact_id: tieneAval && avalTipo === "persona_fisica" ? (avalContactId || null) : null,
-        aval_client_id: tieneAval && avalTipo === "empresa" ? (avalClientId || null) : null });
+        aval_client_id: tieneAval && avalTipo === "empresa" ? (avalClientId || null) : null,
+        aval_cif: tieneAval && avalTipo === "empresa" ? (avalCif || null) : null,
+        aval_direccion: tieneAval && avalTipo === "empresa" ? (avalDireccion || null) : null,
+        aval_cnae: tieneAval && avalTipo === "empresa" ? (avalCnae || null) : null,
+        aval_web: tieneAval && avalTipo === "empresa" ? (avalWeb || null) : null });
       setSavedBasic(true);
     } catch { setError("Error al guardar datos básicos."); }
     finally { setSavingBasic(false); }
@@ -442,6 +450,7 @@ export default function AdminOpForm({
   function clearAvalEmpresa() {
     setAvalNombre(""); setAvalEmail(""); setAvalTelefono(""); setAvalPersonaContacto("");
     setAvalClientId(null); setAvalEmpresaNueva(false);
+    setAvalCif(""); setAvalDireccion(""); setAvalCnae(""); setAvalWeb("");
   }
 
   async function handleSave() {
@@ -705,6 +714,10 @@ export default function AdminOpForm({
                       setAvalNombre(data.nombre);
                       if (data.email) setAvalEmail(data.email);
                       if (data.telefono) setAvalTelefono(data.telefono);
+                      if (data.cif) setAvalCif(data.cif);
+                      if (data.direccion) setAvalDireccion(data.direccion);
+                      if (data.cnae) setAvalCnae(data.cnae);
+                      if (data.web) setAvalWeb(data.web);
                     }}
                     onCifDuplicate={() => {}}
                   />

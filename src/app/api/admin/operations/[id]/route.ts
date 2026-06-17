@@ -60,6 +60,7 @@ export async function PATCH(
     aval_empresa,
     aval_contact_id,
     aval_client_id,
+    aval_cif, aval_direccion, aval_cnae, aval_web,
     resultado,
     pipeline_key,
   } = body;
@@ -171,6 +172,10 @@ export async function PATCH(
           nombre: aval_nombre,
           email: aval_email || null,
           telefono: aval_telefono || null,
+          cif: aval_cif || null,
+          direccion: aval_direccion || null,
+          cnae: aval_cnae || null,
+          web: aval_web || null,
           collaborator_id: prevOp?.collaborator_id ?? null,
         }).returning();
         resolvedClientId = newClient.id;

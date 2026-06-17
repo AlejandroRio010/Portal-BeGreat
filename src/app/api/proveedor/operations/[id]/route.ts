@@ -24,7 +24,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { importe, descripcion, plazo_meses, lugar_entrega, equipo_tipo,
           resultado, pipeline_key, motivo_denegacion,
           tiene_aval, aval_tipo, aval_nombre, aval_email, aval_telefono, aval_persona_contacto,
-          aval_dni, aval_empresa, aval_contact_id, aval_client_id } = body;
+          aval_dni, aval_empresa, aval_contact_id, aval_client_id,
+          aval_cif, aval_direccion, aval_cnae, aval_web } = body;
 
   const data: Record<string, unknown> = { updated_at: new Date() };
 
@@ -93,6 +94,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           nombre: aval_nombre,
           email: aval_email || null,
           telefono: aval_telefono || null,
+          cif: aval_cif || null,
+          direccion: aval_direccion || null,
+          cnae: aval_cnae || null,
+          web: aval_web || null,
           collaborator_id: op.collaborator_id,
         }).returning();
         resolvedAvalClientId = newClient.id;
