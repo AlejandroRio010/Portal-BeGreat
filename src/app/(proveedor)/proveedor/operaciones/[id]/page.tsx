@@ -316,7 +316,7 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
         <div className="col-span-2 flex flex-col gap-5">
           <NotesSection
             notes={opNotes}
-            apiUrl={`/api/operations/${id}/notes`}
+            apiUrl={`/api/proveedor/operations/${id}/notes`}
             currentUserId={supplierId}
             canPin
             placeholder="Añade una nota sobre esta operación..."

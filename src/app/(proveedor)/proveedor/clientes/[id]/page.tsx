@@ -377,7 +377,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
 
           <NotesSection
             notes={notes}
-            apiUrl={`/api/admin/clientes/${id}/notes`}
+            apiUrl={`/api/proveedor/clientes/${id}/notes`}
             currentUserId={userId}
             placeholder="Añade una nota general sobre este cliente..."
           />
