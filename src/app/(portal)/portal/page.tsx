@@ -8,6 +8,7 @@ const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov"
 const FIRMADAS = ["Contrato firmado","Honorarios pagados","Transferencia realizada"];
 import Link from "next/link";
 import Image from "next/image";
+import PendingTasksWidget from "@/components/PendingTasksWidget";
 
 export const dynamic = "force-dynamic";
 
@@ -225,6 +226,11 @@ export default async function PortalHomePage({
             </div>
           </Link>
         ))}
+      </div>
+
+      {/* ── Tareas pendientes ── */}
+      <div className="mb-6">
+        <PendingTasksWidget basePath="/portal" />
       </div>
 
       {/* ── Últimas operaciones ─────────────────────────────────────── */}

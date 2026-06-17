@@ -496,6 +496,21 @@ export const customFieldValues = pgTable("custom_field_values", {
   valor: text("valor"),
 });
 
+// ─── Tareas de operación ─────────────────────────────────────────────────────
+export const taskAssigneeEnum = pgEnum("task_assignee", ["admin", "colaborador", "cliente"]);
+
+export const operationTasks = pgTable("operation_tasks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  operation_id: uuid("operation_id").notNull().references(() => operations.id, { onDelete: "cascade" }),
+  titulo: text("titulo").notNull(),
+  asignado_a: taskAssigneeEnum("asignado_a").notNull(),
+  completada: boolean("completada").default(false).notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  completed_at: timestamp("completed_at"),
+  created_by_role: text("created_by_role").notNull(),
+  created_by_id: uuid("created_by_id").notNull(),
+});
+
 // ─── Cotizador: deals de referencia para calibrar TAEs ────────────────────────
 export const cotizadorDeals = pgTable("cotizador_deals", {
   id: uuid("id").primaryKey().defaultRandom(),

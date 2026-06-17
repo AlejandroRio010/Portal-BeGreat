@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues, financialEntities, entityOffices, entityOfficeContacts, operationDocuments, clientDocuments, avalDocuments, contacts, infoRequests } from "@/db/schema";
+import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues, financialEntities, entityOffices, entityOfficeContacts, operationDocuments, clientDocuments, avalDocuments, contacts, infoRequests, operationTasks } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import AdminOpResultadoPanel from "./AdminOpResultadoPanel";
 import NotesSection from "@/components/NotesSection";
 import DocumentsSection from "@/components/DocumentsSection";
 import InfoRequestsSection from "@/components/InfoRequestsSection";
+import TasksSection from "@/components/TasksSection";
 import { auth } from "@/lib/auth";
 import CelebrationBanner from "@/components/CelebrationBanner";
 import { fmtEur, fmtNum } from "@/lib/format";
@@ -134,6 +135,8 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
     .from(infoRequests)
     .where(eq(infoRequests.operation_id, id))
     .orderBy(infoRequests.created_at);
+
+  const opTasks = await db.select().from(operationTasks).where(eq(operationTasks.operation_id, id)).orderBy(operationTasks.created_at);
 
   const clientFolder = sanitizeFolderName(op.client_nombre ?? "Sin cliente");
   const opFolder = `${clientFolder}/${sanitizeFolderName(op.codigo ?? id)}`;
@@ -544,8 +547,10 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
           />
         </div>
 
-        {/* Notes + Docs */}
+        {/* Tasks + Notes + Docs */}
         <div className="col-span-2 flex flex-col gap-5">
+        <TasksSection initialTasks={opTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null }))} operationId={id} />
+
         <NotesSection
           notes={opNotes}
           apiUrl={`/api/operations/${id}/notes`}

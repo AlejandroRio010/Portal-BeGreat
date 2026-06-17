@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments, clientDocuments, avalDocuments, financialEntities, entityOffices, entityOfficeContacts, contacts, infoRequests } from "@/db/schema";
+import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments, clientDocuments, avalDocuments, financialEntities, entityOffices, entityOfficeContacts, contacts, infoRequests, operationTasks } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -12,6 +12,7 @@ import OpResultadoPanel from "./OpResultadoPanel";
 import DocumentsSection from "@/components/DocumentsSection";
 import InfoRequestsSection from "@/components/InfoRequestsSection";
 import CelebrationBanner from "@/components/CelebrationBanner";
+import TasksSection from "@/components/TasksSection";
 
 const FASES_CONSULTORIA = ["Pre-análisis","Firma de honorarios","En estudio por entidad","Operación aprobada","Contrato firmado","Honorarios pagados"];
 const FASES_RENTING = ["Pre-análisis","En estudio por entidad","Operación aprobada","Condiciones aceptadas","Contrato firmado","Transferencia realizada"];
@@ -141,6 +142,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
     ? await db.select().from(avalDocuments).where(eq(avalDocuments.operation_id, id)).orderBy(avalDocuments.created_at)
     : [];
   const opInfoRequests = await db.select().from(infoRequests).where(eq(infoRequests.operation_id, id)).orderBy(infoRequests.created_at);
+  const opTasks = await db.select().from(operationTasks).where(eq(operationTasks.operation_id, id)).orderBy(operationTasks.created_at);
 
   const clientFolder = sanitizeFolderName(op.client_nombre ?? "Sin cliente");
   const opFolder = `${clientFolder}/${sanitizeFolderName(op.codigo ?? id)}`;
@@ -495,8 +497,10 @@ export default async function OperacionDetallePage({ params }: { params: Promise
           )}
         </div>
 
-        {/* Col 2-3: Notas + Docs */}
+        {/* Col 2-3: Tasks + Notas + Docs */}
         <div className="col-span-2 flex flex-col gap-5">
+        <TasksSection initialTasks={opTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null }))} operationId={id} />
+
         <NotesSection
           notes={opNotes}
           apiUrl={`/api/operations/${id}/notes`}

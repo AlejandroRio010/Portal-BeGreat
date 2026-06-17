@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { operations, collaborators, contacts } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { sendOperationValidatedEmail, sendOperationDeniedEmail } from "@/lib/email";
+import { sendOperationValidatedEmail, sendOperationDeniedEmail, sendOperationWonEmail } from "@/lib/email";
 import { fmtEur } from "@/lib/format";
 
 export async function PATCH(
@@ -181,8 +181,9 @@ export async function PATCH(
   if (prevOp) {
     const wasValidated = prevOp.status === "pendiente_de_validar" && status === "activa";
     const wasDenied = status === "archivada" && prevOp.status !== "archivada";
+    const wasWon = resultado === "ganada";
 
-    if (wasValidated || wasDenied) {
+    if (wasValidated || wasDenied || wasWon) {
       (async () => {
         try {
           const [colab] = await db
@@ -192,7 +193,12 @@ export async function PATCH(
             .limit(1);
           if (!colab) return;
 
-          if (wasValidated) {
+          if (wasWon) {
+            await sendOperationWonEmail(
+              colab.email, colab.nombre, prevOp.nombre ?? "Operación", id,
+              fmtEur(prevOp.importe), fmtEur(prevOp.comision_colaborador)
+            );
+          } else if (wasValidated) {
             await sendOperationValidatedEmail(colab.email, colab.nombre, prevOp.nombre ?? "Operación", id);
           } else if (wasDenied) {
             await sendOperationDeniedEmail(

@@ -4,6 +4,7 @@ import { eq, desc } from "drizzle-orm";
 import Link from "next/link";
 import { fmtEur } from "@/lib/format";
 import RankingColaboradores from "./RankingColaboradores";
+import PendingTasksWidget from "@/components/PendingTasksWidget";
 
 const MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const FIRMADAS      = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
@@ -283,6 +284,11 @@ export default async function AdminHomePage({
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* ── Tareas pendientes ── */}
+      <div className="mb-6">
+        <PendingTasksWidget basePath="/admin" />
       </div>
 
       {/* ── Ranking colaboradores ── */}
