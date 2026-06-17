@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { clients, collaborators, contacts, operations, customFields, customFieldValues, clientNotes, clientGroups, clientDocuments, avalDocuments } from "@/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import ClienteEditForm from "./ClienteEditForm";
@@ -104,6 +104,13 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
     .where(eq(operations.aval_client_id, id))
     .orderBy(operations.created_at);
 
+  // Colaboradores vinculados a este cliente (a través de operaciones)
+  const linkedColabs = await db
+    .select({ id: collaborators.id, nombre: collaborators.nombre })
+    .from(collaborators)
+    .where(sql`${collaborators.id} IN (SELECT DISTINCT ${operations.collaborator_id} FROM ${operations} WHERE ${operations.client_id} = ${id})`)
+    .orderBy(collaborators.nombre);
+
   const inicial = client.nombre.charAt(0).toUpperCase();
 
   const opsAprobadas = ops.filter((o) => FASES_APROBADAS.includes(o.fase));
@@ -138,7 +145,12 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
         </div>
         <div className="flex flex-col items-end gap-1.5">
           {client.colaborador_nombre && (
-            <span className="text-white/70 text-xs">Colaborador: <span className="text-white font-semibold">{client.colaborador_nombre}</span></span>
+            <span className="text-white/70 text-xs">Propietario: <span className="text-white font-semibold">{client.colaborador_nombre}</span></span>
+          )}
+          {linkedColabs.length > 0 && (
+            <span className="text-white/70 text-xs">Vinculados: {linkedColabs.map((c, i) => (
+              <span key={c.id}>{i > 0 && ", "}<Link href={`/admin/colaboradores/${c.id}`} className="text-white font-semibold hover:underline">{c.nombre}</Link></span>
+            ))}</span>
           )}
           <span className="text-white/50 text-xs">Alta: {fmtDate(client.created_at)}</span>
         </div>
