@@ -5,6 +5,7 @@ import { useState } from "react";
 type Task = {
   id: string;
   titulo: string;
+  asignado_a: string;
   asignado_a_id: string | null;
   asignado_a_nombre: string | null;
   completada: boolean;
@@ -101,10 +102,9 @@ export default function TasksSection({
   function daysBetween(a: string, b: string) {
     return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000);
   }
-  function shortName(nombre: string | null) {
-    if (!nombre) return "?";
-    const parts = nombre.split(" ");
-    return parts[0];
+  function shortName(nombre: string | null, fallbackRole?: string) {
+    if (!nombre) return fallbackRole === "colaborador" ? "Colab." : fallbackRole === "admin" ? "Admin" : "?";
+    return nombre.split(" ")[0];
   }
 
   return (
@@ -154,7 +154,7 @@ export default function TasksSection({
             />
             <span className="flex-1 text-sm text-gray-800">{t.titulo}</span>
             <span className="text-[10px] font-bold px-2 py-0.5 bg-[#EEEBF3] text-[#2E1A47]">
-              {shortName(t.asignado_a_nombre)}
+              {shortName(t.asignado_a_nombre, t.asignado_a)}
             </span>
             {t.asignado_a_id && (
               <button
@@ -196,7 +196,7 @@ export default function TasksSection({
                 </button>
                 <span className="flex-1 text-sm text-gray-400 line-through">{t.titulo}</span>
                 <span className="text-[10px] font-bold px-2 py-0.5 opacity-50 bg-[#EEEBF3] text-[#2E1A47]">
-                  {shortName(t.asignado_a_nombre)}
+                  {shortName(t.asignado_a_nombre, t.asignado_a)}
                 </span>
                 {t.completed_at && (
                   <span className="text-[10px] text-gray-300">
