@@ -80,6 +80,12 @@ interface Props {
   initialComisionColabPct?: string | null;
   initialComisionBegreatPct?: string | null;
   initialFacturaDestinatario?: string | null;
+  initialColaboradores?: { nombre: string; porcentaje: string; importe: string }[];
+  initialMargenPct?: string | null;
+  // context names
+  clientNombre?: string | null;
+  supplierNombre?: string | null;
+  colaboradorNombre?: string | null;
   // entity/office lists
   allEntities: EntityRow[];
   allOffices: OfficeRow[];
@@ -129,6 +135,11 @@ export default function AdminOpForm({
   initialComisionColabPct,
   initialComisionBegreatPct,
   initialFacturaDestinatario,
+  initialColaboradores = [],
+  initialMargenPct,
+  clientNombre,
+  supplierNombre,
+  colaboradorNombre,
   allEntities,
   allOffices,
   customFieldDefs = [],
@@ -148,6 +159,10 @@ export default function AdminOpForm({
     initialComisionOrigenes.length > 0 ? initialComisionOrigenes : []
   );
   const [facturaDestinatario, setFacturaDestinatario] = useState(initialFacturaDestinatario ?? "proveedor");
+  const [colaboradores, setColaboradores] = useState<{ nombre: string; porcentaje: string; importe: string }[]>(
+    initialColaboradores.length > 0 ? initialColaboradores : [{ nombre: colaboradorNombre ?? "", porcentaje: "", importe: "" }]
+  );
+  const [margenPct, setMargenPct] = useState(initialMargenPct ?? "");
   const [honorarios, setHonorarios] = useState(initialHonorarios ?? false);
   const [facturacionRenting, setFacturacionRenting] = useState(initialFacturacionRenting ?? "");
   const [esRenovacion, setEsRenovacion] = useState(initialEsRenovacion ?? false);
@@ -220,9 +235,23 @@ export default function AdminOpForm({
   const importeFactNum = parseFloat(importeFacturadoBegreat) || 0;
   const isFactura = modalidadRenting === "begreat_factura";
 
+  function origenLabel(tipo: string): string {
+    if (tipo === "cliente") return clientNombre || "Cliente";
+    if (tipo === "proveedor") return supplierNombre || "Proveedor";
+    if (tipo === "entidad") {
+      const ent = allEntities.find(e => e.id === selectedEntityId);
+      return ent?.nombre || initialEntidad || "Entidad financiera";
+    }
+    return tipo;
+  }
+
   function calcFeeTotal(): number {
     if (isFactura) return importeFactNum - importeNum;
     return comisionOrigenes.reduce((s, o) => s + (parseFloat(o.importe) || 0), 0);
+  }
+
+  function totalColabFee(): number {
+    return colaboradores.reduce((s, c) => s + (parseFloat(c.importe) || 0), 0);
   }
 
   function addOrigen() {
@@ -245,22 +274,50 @@ export default function AdminOpForm({
     setComisionOrigenes(next);
   }
 
-  function recalcComisionColab(pct: string) {
-    setComisionColabPct(pct);
-    setComisionColab((importeNum * (parseFloat(pct) || 0) / 100).toFixed(2));
+  function updateColab(i: number, field: "nombre" | "porcentaje" | "importe", val: string) {
+    const next = [...colaboradores];
+    next[i] = { ...next[i], [field]: val };
+    if (field === "porcentaje" && importeNum > 0) {
+      next[i].importe = (importeNum * parseFloat(val || "0") / 100).toFixed(2);
+    }
+    if (field === "importe" && importeNum > 0) {
+      next[i].porcentaje = (parseFloat(val || "0") / importeNum * 100).toFixed(2);
+    }
+    setColaboradores(next);
   }
 
-  function recalcComisionColabEur(eur: string) {
-    setComisionColab(eur);
-    if (importeNum > 0) setComisionColabPct(((parseFloat(eur) || 0) / importeNum * 100).toFixed(2));
+  function addColab() {
+    setColaboradores([...colaboradores, { nombre: "", porcentaje: "", importe: "" }]);
+  }
+
+  function removeColab(i: number) {
+    setColaboradores(colaboradores.filter((_, idx) => idx !== i));
   }
 
   function recalcBegreat() {
     const feeTotal = calcFeeTotal();
-    const colabFee = parseFloat(comisionColab) || 0;
-    const bgFee = feeTotal - colabFee;
+    const colabTotal = totalColabFee();
+    const bgFee = feeTotal - colabTotal;
     setComisionBegreat(bgFee > 0 ? bgFee.toFixed(2) : "0");
-    if (feeTotal > 0) setComisionBegreatPct((bgFee / feeTotal * 100).toFixed(2));
+    if (importeNum > 0) setComisionBegreatPct(((bgFee / importeNum) * 100).toFixed(2));
+    setComisionColab(colabTotal.toFixed(2));
+    if (importeNum > 0) setComisionColabPct((colabTotal / importeNum * 100).toFixed(2));
+  }
+
+  function updateMargenPct(pct: string) {
+    setMargenPct(pct);
+    if (importeNum > 0) {
+      const p = parseFloat(pct) || 0;
+      setImporteFacturadoBegreat((importeNum * (1 + p / 100)).toFixed(2));
+    }
+  }
+
+  function updateImporteFactura(val: string) {
+    setImporteFacturadoBegreat(val);
+    if (importeNum > 0) {
+      const v = parseFloat(val) || 0;
+      setMargenPct(((v - importeNum) / importeNum * 100).toFixed(2));
+    }
   }
 
   // ── UI state ──────────────────────────────────────────────────────────────
@@ -382,6 +439,8 @@ export default function AdminOpForm({
         comision_begreat: comisionBegreat || null,
         comision_begreat_pct: comisionBegreatPct || null,
         comision_origenes: comisionOrigenes.length > 0 ? comisionOrigenes : [],
+        colaboradores: colaboradores.filter(c => c.nombre || c.porcentaje || c.importe),
+        margen_pct: margenPct || null,
         factura_destinatario: isFactura ? facturaDestinatario : null,
         entity_office_id: selectedOfficeId || null,
         entidad_financiera: selectedEntity?.nombre ?? (initialEntidad || null),
@@ -760,24 +819,24 @@ export default function AdminOpForm({
                   {modalidadRenting === "begreat_comisiona" && (
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">¿A quién comisionamos?</label>
+                        <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Orígenes de comisión</label>
                         {comisionOrigenes.map((o, i) => (
                           <div key={i} className="flex gap-2 items-end mb-2">
-                            <div className="w-32">
+                            <div className="w-36">
                               {i === 0 && <span className="text-[9px] text-gray-400 uppercase">Origen</span>}
                               <select value={o.tipo} onChange={e => updateOrigen(i, "tipo", e.target.value)}
                                 className="w-full border border-gray-200 px-2 py-1.5 text-xs bg-white focus:outline-none focus:border-[#2E1A47]">
-                                <option value="cliente">Cliente</option>
-                                <option value="proveedor">Proveedor</option>
-                                <option value="entidad">Entidad financiera</option>
+                                <option value="cliente">{clientNombre || "Cliente"}</option>
+                                <option value="proveedor">{supplierNombre || "Proveedor"}</option>
+                                <option value="entidad">{(() => { const ent = allEntities.find(e => e.id === selectedEntityId); return ent?.nombre || initialEntidad || "Entidad financiera"; })()}</option>
                               </select>
                             </div>
-                            <div className="w-20">
+                            <div className="w-16">
                               {i === 0 && <span className="text-[9px] text-gray-400 uppercase">%</span>}
                               <input type="number" step="0.01" value={o.porcentaje} onChange={e => updateOrigen(i, "porcentaje", e.target.value)}
                                 placeholder="%" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
                             </div>
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-[100px]">
                               {i === 0 && <span className="text-[9px] text-gray-400 uppercase">€</span>}
                               <input type="number" step="0.01" value={o.importe} onChange={e => updateOrigen(i, "importe", e.target.value)}
                                 placeholder="0.00" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
@@ -802,7 +861,7 @@ export default function AdminOpForm({
                     <div className="space-y-3">
                       <div>
                         <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Importe facturado por BeGreat (sin IVA)</label>
-                        <input type="number" step="0.01" value={importeFacturadoBegreat} onChange={e => setImporteFacturadoBegreat(e.target.value)}
+                        <input type="number" step="0.01" value={importeFacturadoBegreat} onChange={e => updateImporteFactura(e.target.value)}
                           placeholder="Ej: 11500" className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
                         <div className="flex items-center gap-2 mt-2">
                           <input type="checkbox" id="importeFacturadoVisible" checked={importeFacturadoVisible} onChange={e => setImporteFacturadoVisible(e.target.checked)}
@@ -810,45 +869,60 @@ export default function AdminOpForm({
                           <label htmlFor="importeFacturadoVisible" className="text-xs text-gray-600 cursor-pointer">Visible para el colaborador</label>
                         </div>
                       </div>
-                      <div>
-                        <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">¿A quién se paga / abona?</label>
-                        <div className="grid grid-cols-2 gap-0 border border-gray-200">
-                          <button type="button" onClick={() => setFacturaDestinatario("proveedor")}
-                            className={`py-2 text-[11px] font-semibold transition-all ${facturaDestinatario === "proveedor" ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>Proveedor</button>
-                          <button type="button" onClick={() => setFacturaDestinatario("cliente")}
-                            className={`py-2 text-[11px] font-semibold transition-all border-l border-gray-200 ${facturaDestinatario === "cliente" ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>Cliente</button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Margen %</label>
+                          <input type="number" step="0.01" value={margenPct} onChange={e => updateMargenPct(e.target.value)}
+                            placeholder="%" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
                         </div>
-                        <p className="text-[9px] text-gray-400 mt-1">Importe {facturaDestinatario}: {importeNum.toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>
+                        <div>
+                          <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Importe proveedor</label>
+                          <input type="number" step="0.01" value={importe} readOnly
+                            className="w-full border border-gray-100 bg-gray-100 px-2 py-1.5 text-xs text-gray-500" />
+                        </div>
                       </div>
                       {importeFactNum > 0 && importeNum > 0 && (
                         <div className="bg-[#EEEBF3] px-3 py-2">
-                          <p className="text-[10px] text-gray-500 uppercase">Margen BeGreat: <span className="font-bold text-[#2E1A47]">{(importeFactNum - importeNum).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</span></p>
+                          <p className="text-[10px] text-gray-500 uppercase">Fee total (margen): <span className="font-bold text-[#2E1A47]">{(importeFactNum - importeNum).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</span></p>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* ── Fee colaborador (ambos modos) ── */}
+                  {/* ── Colaboradores (ambos modos) ── */}
                   <div className="border-t border-gray-200 pt-3">
-                    <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Fee colaborador</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <span className="text-[9px] text-gray-400">%</span>
-                        <input type="number" step="0.01" value={comisionColabPct}
-                          onChange={e => recalcComisionColab(e.target.value)}
-                          placeholder="%" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
-                      </div>
-                      <div>
-                        <span className="text-[9px] text-gray-400">€</span>
-                        <input type="number" step="0.01" value={comisionColab}
-                          onChange={e => recalcComisionColabEur(e.target.value)}
-                          placeholder="0.00" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
-                      </div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[10px] text-gray-400 uppercase tracking-wider">Colaboradores</label>
+                      <button type="button" onClick={addColab}
+                        className="text-[10px] font-semibold text-[#2E1A47] hover:underline">+ Añadir</button>
                     </div>
-                    <p className="text-[9px] text-gray-400 mt-1">Calculado sobre importe{isFactura ? " proveedor" : ""} ({importeNum.toLocaleString("es-ES")} €)</p>
+                    {colaboradores.map((c, i) => (
+                      <div key={i} className="flex gap-2 items-end mb-2">
+                        <div className="flex-1 min-w-[80px]">
+                          {i === 0 && <span className="text-[9px] text-gray-400 uppercase">Nombre</span>}
+                          <input type="text" value={c.nombre} onChange={e => updateColab(i, "nombre", e.target.value)}
+                            placeholder="Nombre" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                        </div>
+                        <div className="w-16">
+                          {i === 0 && <span className="text-[9px] text-gray-400 uppercase">%</span>}
+                          <input type="number" step="0.01" value={c.porcentaje} onChange={e => updateColab(i, "porcentaje", e.target.value)}
+                            placeholder="%" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                        </div>
+                        <div className="w-24">
+                          {i === 0 && <span className="text-[9px] text-gray-400 uppercase">€</span>}
+                          <input type="number" step="0.01" value={c.importe} onChange={e => updateColab(i, "importe", e.target.value)}
+                            placeholder="0.00" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                        </div>
+                        {colaboradores.length > 1 && (
+                          <button type="button" onClick={() => removeColab(i)}
+                            className="text-gray-400 hover:text-red-500 text-sm pb-1">✕</button>
+                        )}
+                      </div>
+                    ))}
+                    <p className="text-[9px] text-gray-400 mt-1">% calculado sobre importe proveedor ({importeNum.toLocaleString("es-ES")} €)</p>
                   </div>
 
-                  {/* ── Fee BeGreat (auto = fee total - colab) ── */}
+                  {/* ── Fee BeGreat (auto = fee total - colabs) ── */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-[10px] text-gray-400 uppercase tracking-wider">Fee BeGreat</label>
@@ -858,18 +932,16 @@ export default function AdminOpForm({
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <span className="text-[9px] text-gray-400">%</span>
-                        <input type="number" step="0.01" value={comisionBegreatPct}
-                          onChange={e => { setComisionBegreatPct(e.target.value); const p = parseFloat(e.target.value) || 0; const total = calcFeeTotal(); setComisionBegreat((total * p / 100).toFixed(2)); }}
-                          placeholder="%" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                        <input type="number" step="0.01" value={comisionBegreatPct} readOnly
+                          className="w-full border border-gray-100 bg-gray-100 px-2 py-1.5 text-xs text-gray-600" />
                       </div>
                       <div>
                         <span className="text-[9px] text-gray-400">€</span>
-                        <input type="number" step="0.01" value={comisionBegreat}
-                          onChange={e => setComisionBegreat(e.target.value)}
-                          placeholder="0.00" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                        <input type="number" step="0.01" value={comisionBegreat} readOnly
+                          className="w-full border border-gray-100 bg-gray-100 px-2 py-1.5 text-xs text-gray-600" />
                       </div>
                     </div>
-                    <p className="text-[9px] text-gray-400 mt-1">Fee total ({calcFeeTotal().toLocaleString("es-ES", { minimumFractionDigits: 2 })} €) − Colaborador ({(parseFloat(comisionColab) || 0).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €)</p>
+                    <p className="text-[9px] text-gray-400 mt-1">Fee total ({calcFeeTotal().toLocaleString("es-ES", { minimumFractionDigits: 2 })} €) − Colaboradores ({totalColabFee().toLocaleString("es-ES", { minimumFractionDigits: 2 })} €)</p>
                   </div>
                 </div>
               )}

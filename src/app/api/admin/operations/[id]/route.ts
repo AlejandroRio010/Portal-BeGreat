@@ -103,6 +103,10 @@ export async function PATCH(
     updateData.comision_begreat_pct = comision_begreat_pct === "" ? null : comision_begreat_pct;
   if (comision_origenes !== undefined)
     updateData.comision_origenes = comision_origenes;
+  if (body.colaboradores !== undefined)
+    updateData.colaboradores_comision = body.colaboradores;
+  if (body.margen_pct !== undefined)
+    updateData.margen_pct = body.margen_pct === "" ? null : body.margen_pct;
   if (factura_destinatario !== undefined)
     updateData.factura_destinatario = factura_destinatario || null;
   if (entidad_financiera !== undefined)

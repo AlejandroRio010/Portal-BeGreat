@@ -47,6 +47,8 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       comision_begreat_pct: operations.comision_begreat_pct,
       comision_origenes: operations.comision_origenes,
       factura_destinatario: operations.factura_destinatario,
+      colaboradores_comision: operations.colaboradores_comision,
+      margen_pct: operations.margen_pct,
       entidad_financiera: operations.entidad_financiera,
       honorarios_firmado: operations.honorarios_firmado,
       descripcion: operations.descripcion,
@@ -504,6 +506,11 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialComisionBegreatPct={op.comision_begreat_pct ?? null}
             initialComisionOrigenes={(op.comision_origenes as any) ?? []}
             initialFacturaDestinatario={op.factura_destinatario ?? null}
+            clientNombre={op.client_nombre ?? null}
+            supplierNombre={op.supplier_nombre ?? null}
+            colaboradorNombre={op.colaborador_nombre ?? null}
+            initialColaboradores={(op.colaboradores_comision as any) ?? []}
+            initialMargenPct={op.margen_pct ?? null}
             initialEntidad={op.entidad_financiera}
             initialEntityOfficeId={op.entity_office_id ?? null}
             initialHonorarios={op.honorarios_firmado}

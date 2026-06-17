@@ -364,6 +364,8 @@ export const operations = pgTable("operations", {
   comision_begreat: numeric("comision_begreat", { precision: 12, scale: 2 }),
   comision_begreat_pct: numeric("comision_begreat_pct", { precision: 5, scale: 2 }),
   comision_origenes: jsonb("comision_origenes").default([]),
+  colaboradores_comision: jsonb("colaboradores_comision").default([]),
+  margen_pct: numeric("margen_pct", { precision: 5, scale: 2 }),
   factura_destinatario: text("factura_destinatario"),
   entidad_financiera: text("entidad_financiera"),
   honorarios_firmado: boolean("honorarios_firmado").default(false),
