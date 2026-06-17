@@ -226,14 +226,6 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       {/* Celebration */}
       {isGanada && <CelebrationBanner opNombre={op.nombre ?? op.codigo ?? "Operación"} clientNombre={op.client_nombre ?? "Cliente"} colaboradorLogoUrl={colab?.logo_url ?? null} />}
 
-      {/* Motivo denegación */}
-      {isDenegada && op.motivo_denegacion && (
-        <div className="mb-6 bg-red-50 border border-red-200 px-5 py-4">
-          <p className="text-xs font-bold text-red-600 uppercase tracking-wider mb-1">Motivo de la denegación</p>
-          <p className="text-sm text-red-700">{op.motivo_denegacion}</p>
-        </div>
-      )}
-
       {/* KPIs */}
       <div className={`grid gap-4 mb-6 ${duracion ? "grid-cols-5" : "grid-cols-4"}`}>
         <div className="bg-[#2E1A47] p-5">
