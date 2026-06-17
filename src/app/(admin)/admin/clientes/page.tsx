@@ -50,6 +50,13 @@ export default async function AdminClientesPage({
     if (row.client_id) opCountMap.set(row.client_id, row.count);
   }
 
+  const avalClientIds = await db
+    .select({ aval_client_id: operations.aval_client_id })
+    .from(operations)
+    .where(sql`${operations.aval_client_id} is not null`)
+    .groupBy(operations.aval_client_id);
+  const avalSet = new Set(avalClientIds.map(r => r.aval_client_id!));
+
   return (
     <div>
       <NuevoClienteToggle colaboradores={allColaboradores} />
@@ -82,7 +89,7 @@ export default async function AdminClientesPage({
 
       <ClientesTabla esAdmin hrefBase="/admin/clientes" clientes={cls.map(c => ({
         id: c.id, nombre: c.nombre, codigo: c.codigo, cif: c.cif, email: c.email,
-        colaborador_nombre: c.colaborador_nombre, ops: opCountMap.get(c.id) ?? 0,
+        colaborador_nombre: c.colaborador_nombre, ops: opCountMap.get(c.id) ?? 0, esAvalista: avalSet.has(c.id),
       }))} />
     </div>
   );

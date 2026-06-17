@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { clients, contacts, operations } from "@/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, and, isNotNull } from "drizzle-orm";
 import Link from "next/link";
 import ClientesTabla from "@/components/ClientesTabla";
 import { NuevoClienteToggle } from "./NuevoClientePortal";
@@ -42,6 +42,13 @@ export default async function ClientesPage() {
     return acc;
   }, {});
 
+  const avalClientIds = await db
+    .select({ aval_client_id: operations.aval_client_id })
+    .from(operations)
+    .where(and(eq(operations.supplier_id, userId), isNotNull(operations.aval_client_id)))
+    .groupBy(operations.aval_client_id);
+  const avalSet = new Set(avalClientIds.map(r => r.aval_client_id).filter(Boolean) as string[]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -72,6 +79,7 @@ export default async function ClientesPage() {
           cif: c.cif ?? null,
           email: c.email ?? null,
           ops: (opsByClient[c.id] ?? []).length,
+          esAvalista: avalSet.has(c.id),
         }))} />
       )}
     </div>
