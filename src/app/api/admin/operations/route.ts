@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { operations, clients, suppliers, contacts } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { generateCodigoCLI, generateCodigoPRV, generateCodigoOP } from "@/lib/codigos";
 
 export async function POST(req: NextRequest) {
@@ -97,11 +97,24 @@ export async function POST(req: NextRequest) {
 
   const opCodigo = await generateCodigoOP(clientId);
 
+  // Auto-generate name
+  let displayName = cliente_nombre;
+  if (clientId) {
+    const [cli] = await db.select({ nombre: clients.nombre, nombre_comercial: clients.nombre_comercial }).from(clients).where(eq(clients.id, clientId)).limit(1);
+    if (cli) displayName = cli.nombre_comercial?.trim() || cli.nombre;
+  }
+  const [{ count: opCount }] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(operations)
+    .where(eq(operations.client_id, clientId!));
+  const opNum = Number(opCount) + 1;
+  const autoNombre = `${displayName} - OP ${opNum}`;
+
   const [op] = await db
     .insert(operations)
     .values({
       collaborator_id, pipeline_key,
-      nombre: nombre || null,
+      nombre: autoNombre,
       client_id: clientId, supplier_id: supplierId,
       producto: productoFinal || null, importe: importe || null,
       equipo_tipo: equipo_tipo || null,

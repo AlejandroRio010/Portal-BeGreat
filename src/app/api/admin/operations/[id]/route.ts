@@ -110,8 +110,21 @@ export async function PATCH(
     updateData.margen_pct = body.margen_pct === "" ? null : body.margen_pct;
   if (factura_destinatario !== undefined)
     updateData.factura_destinatario = factura_destinatario || null;
-  if (entidad_financiera !== undefined)
+  if (entidad_financiera !== undefined) {
     updateData.entidad_financiera = entidad_financiera === "" ? null : entidad_financiera;
+    // Auto-update operation name with entity
+    if (prevOp?.client_id) {
+      const [cli] = await db.select({ nombre: clients.nombre, nombre_comercial: clients.nombre_comercial }).from(clients).where(eq(clients.id, prevOp.client_id)).limit(1);
+      if (cli) {
+        const dn = cli.nombre_comercial?.trim() || cli.nombre;
+        const currentName = prevOp.nombre ?? "";
+        const opMatch = currentName.match(/- OP (\d+)/);
+        const opNum = opMatch ? opMatch[1] : "1";
+        const ent = entidad_financiera && entidad_financiera !== "" ? ` (${entidad_financiera})` : "";
+        updateData.nombre = `${dn} - OP ${opNum}${ent}`;
+      }
+    }
+  }
   if (entity_office_id !== undefined)
     updateData.entity_office_id = entity_office_id === "" ? null : entity_office_id;
   if (honorarios_firmado !== undefined) updateData.honorarios_firmado = honorarios_firmado;

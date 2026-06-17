@@ -116,8 +116,7 @@ export async function POST(req: NextRequest) {
   const [{ count: opCount }] = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(operations)
-    .innerJoin(clients, eq(operations.client_id, clients.id))
-    .where(eq(clients.nombre, cliente_nombre));
+    .where(eq(operations.client_id, clientId!));
   const opNum = Number(opCount) + 1;
   const autoNombre = `${displayName} - OP ${opNum}`;
 
