@@ -549,15 +549,6 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
           </select>
         </Section>
 
-        {/* Nombre de la operación */}
-        <Section title="Nombre de la operación">
-          <div>
-            <label className={label}>Nombre identificativo</label>
-            <input name="nombre" className={inp} placeholder="Ej: Empresa S.L. — Op01 — Banco Santander" />
-            <p className="text-xs text-gray-400 mt-1.5">Un nombre que ayude a identificar esta operación fácilmente. Si lo dejas vacío se genera automáticamente.</p>
-          </div>
-        </Section>
-
         {/* Estado inicial */}
         <Section title="Estado inicial">
           <select name="status" className={inp}>
