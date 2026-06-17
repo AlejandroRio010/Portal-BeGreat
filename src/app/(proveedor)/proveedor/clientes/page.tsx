@@ -42,12 +42,18 @@ export default async function ClientesPage() {
     return acc;
   }, {});
 
-  const avalClientIds = await db
+  const avalClientRows = await db
     .select({ aval_client_id: operations.aval_client_id })
     .from(operations)
     .where(and(eq(operations.supplier_id, userId), isNotNull(operations.aval_client_id)))
     .groupBy(operations.aval_client_id);
-  const avalSet = new Set(avalClientIds.map(r => r.aval_client_id).filter(Boolean) as string[]);
+  const avalSet = new Set(avalClientRows.map(r => r.aval_client_id).filter(Boolean) as string[]);
+
+  const missingAvalIds = [...avalSet].filter(id => !myClients.some(c => c.id === id));
+  const avalClients = missingAvalIds.length > 0
+    ? await db.select().from(clients).where(inArray(clients.id, missingAvalIds)).orderBy(clients.nombre)
+    : [];
+  const allClients = [...myClients, ...avalClients].sort((a, b) => a.nombre.localeCompare(b.nombre));
 
   return (
     <div>
@@ -72,7 +78,7 @@ export default async function ClientesPage() {
           <p className="text-xs text-gray-300 mt-1">Los clientes se crean al dar de alta una operación.</p>
         </div>
       ) : (
-        <ClientesTabla esAdmin={false} hrefBase="/proveedor/clientes" clientes={myClients.map(c => ({
+        <ClientesTabla esAdmin={false} hrefBase="/proveedor/clientes" clientes={allClients.map(c => ({
           id: c.id,
           nombre: c.nombre,
           codigo: c.codigo ?? null,
