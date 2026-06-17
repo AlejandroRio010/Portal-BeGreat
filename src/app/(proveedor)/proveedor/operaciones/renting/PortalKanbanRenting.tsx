@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import {
+  DndContext, DragEndEvent, DragOverlay,
+  PointerSensor, useSensor, useSensors, useDroppable, useDraggable,
+} from "@dnd-kit/core";
 import Link from "next/link";
 import { fmtNum } from "@/lib/format";
 
@@ -36,7 +40,7 @@ const FASE_BAR: Record<string, string> = {
   "Transferencia realizada":"bg-emerald-500",
 };
 
-function CardContent({ op }: { op: Op }) {
+function CardContent({ op, dragListeners, dragAttributes, canEdit }: { op: Op; dragListeners?: any; dragAttributes?: any; canEdit?: boolean }) {
   const displayName = op.nombre ?? op.client_nombre ?? "Sin nombre";
   const importe = Number(op.importe ?? 0);
   const importeFacturado = Number(op.importe_facturado_begreat ?? 0);
@@ -44,12 +48,21 @@ function CardContent({ op }: { op: Op }) {
   return (
     <div className="p-3 pt-2.5">
       <div className="flex items-start gap-1 mb-1.5">
+        {canEdit && (
+          <button {...dragListeners} {...dragAttributes} className="mt-0.5 flex-shrink-0 text-gray-200 hover:text-gray-400 cursor-grab active:cursor-grabbing touch-none" tabIndex={-1}>
+            <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
+              <circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/>
+              <circle cx="2" cy="6" r="1.2"/><circle cx="6" cy="6" r="1.2"/>
+              <circle cx="2" cy="10" r="1.2"/><circle cx="6" cy="10" r="1.2"/>
+            </svg>
+          </button>
+        )}
         <Link href={`/proveedor/operaciones/${op.id}`} className="text-[11px] font-semibold text-gray-800 hover:text-[#2E1A47] leading-tight line-clamp-2 flex-1">
           {displayName}
         </Link>
       </div>
-      {op.client_nombre && op.nombre && <p className="text-[9px] text-gray-400 mb-1.5 truncate">{op.client_nombre}</p>}
-      <div className="flex flex-col gap-0.5">
+      {op.client_nombre && op.nombre && <p className={`text-[9px] text-gray-400 mb-1.5 truncate ${canEdit ? "pl-4" : ""}`}>{op.client_nombre}</p>}
+      <div className={`flex flex-col gap-0.5 ${canEdit ? "pl-4" : ""}`}>
         {importe > 0 && (
           <div className="flex items-baseline gap-1">
             <span className="text-[8px] text-gray-400 uppercase">Importe</span>
@@ -75,12 +88,25 @@ function CardContent({ op }: { op: Op }) {
   );
 }
 
-function Column({ fase, ops }: { fase: string; ops: Op[] }) {
+function DraggableCard({ op, isDragging }: { op: Op; isDragging: boolean }) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: op.id });
+  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
+  const accent = FASE_ACCENT[op.fase] ?? "border-l-[#2E1A47]";
+  return (
+    <div ref={setNodeRef} style={style}
+      className={`bg-white border border-gray-100 border-l-[3px] ${accent} shadow-sm hover:shadow-md hover:border-gray-200 transition-all ${isDragging ? "opacity-40" : ""}`}>
+      <CardContent op={op} dragListeners={listeners} dragAttributes={attributes} canEdit />
+    </div>
+  );
+}
+
+function DroppableColumn({ fase, ops, activeId, canEdit }: { fase: string; ops: Op[]; activeId: string | null; canEdit: boolean }) {
+  const { setNodeRef, isOver } = useDroppable({ id: fase, disabled: !canEdit });
   const accent = FASE_ACCENT[fase] ?? "border-l-[#2E1A47]";
   const bar = FASE_BAR[fase] ?? "bg-[#2E1A47]";
   const totalImporte = ops.reduce((s, o) => s + Number(o.importe ?? 0), 0);
   return (
-    <div className="flex flex-col transition-colors relative overflow-hidden bg-[#fafafa]">
+    <div ref={setNodeRef} className={`flex flex-col transition-colors relative overflow-hidden ${isOver ? "bg-[#EEEBF3]/50" : "bg-[#fafafa]"}`}>
       <div className={`h-[3px] w-full flex-shrink-0 ${bar}`} />
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -94,27 +120,69 @@ function Column({ fase, ops }: { fase: string; ops: Op[] }) {
         </div>
       </div>
       <div className="flex-1 space-y-2 min-h-[640px] px-1.5 pt-2 pb-3">
-        {ops.map(op => (
-          <Link key={op.id} href={`/proveedor/operaciones/${op.id}`}
-            className={`block bg-white border border-gray-100 border-l-[3px] ${accent} shadow-sm hover:shadow-md hover:border-[#2E1A47]/30 transition-all`}>
-            <CardContent op={op} />
-          </Link>
-        ))}
+        {ops.map(op => canEdit
+          ? <DraggableCard key={op.id} op={op} isDragging={activeId === op.id} />
+          : (
+            <Link key={op.id} href={`/proveedor/operaciones/${op.id}`}
+              className={`block bg-white border border-gray-100 border-l-[3px] ${accent} shadow-sm hover:shadow-md hover:border-[#2E1A47]/30 transition-all`}>
+              <CardContent op={op} />
+            </Link>
+          )
+        )}
       </div>
     </div>
   );
 }
 
 export default function PortalKanbanRenting({ ops: initialOps, fases, canEdit = false }: { ops: Op[]; fases: string[]; canEdit?: boolean }) {
-  const [ops] = useState(initialOps);
+  const [ops, setOps] = useState(initialOps);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const activeOp = ops.find(o => o.id === activeId) ?? null;
 
   const pendientes = ops.filter(o => o.status === "pendiente_de_validar");
   const totalImporte = ops.reduce((s, o) => s + Number(o.importe ?? 0), 0);
+
+  async function handleDragEnd(e: DragEndEvent) {
+    setActiveId(null);
+    const { active, over } = e;
+    if (!over) return;
+    const opId = String(active.id);
+    const newFase = String(over.id);
+    const op = ops.find(o => o.id === opId);
+    if (!op || op.fase === newFase) return;
+    setOps(prev => prev.map(o => o.id === opId ? { ...o, fase: newFase } : o));
+    try {
+      await fetch(`/api/proveedor/operations/${opId}/fase`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fase: newFase }) });
+    } catch {
+      setOps(prev => prev.map(o => o.id === opId ? { ...o, fase: op.fase } : o));
+    }
+  }
 
   const opsByFase = fases.reduce<Record<string, Op[]>>((acc, f) => {
     acc[f] = ops.filter(o => o.fase === f);
     return acc;
   }, {});
+
+  const board = (
+    <div style={{ zoom: 0.9 }} className="flex pb-4 gap-0 border border-gray-200 bg-[#f8f7fb] overflow-hidden">
+      {fases.map((fase, i) => (
+        <div key={fase} className="flex items-stretch flex-1 min-w-0">
+          <div className="flex-1 min-w-0">
+            <DroppableColumn fase={fase} ops={opsByFase[fase] ?? []} activeId={activeId} canEdit={canEdit} />
+          </div>
+          {i < fases.length - 1 && (
+            <div className="flex-shrink-0 self-stretch flex items-center justify-center w-5 relative z-10">
+              <div className="absolute inset-y-0 left-0 w-px bg-gray-200" />
+              <svg width="10" height="18" viewBox="0 0 10 18" fill="none">
+                <path d="M1 0 L9 9 L1 18" stroke="#2E1A47" strokeOpacity="0.25" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+              </svg>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div>
@@ -125,6 +193,7 @@ export default function PortalKanbanRenting({ ops: initialOps, fases, canEdit = 
             <span className="text-xs text-gray-500">Importe total: <span className="font-bold text-[#2E1A47]">{fmtNum(totalImporte)} €</span></span>
           )}
           <span className="text-xs text-gray-400">{ops.length} operaciones</span>
+          {canEdit && <span className="text-[10px] text-gray-400 italic">Arrastra las tarjetas para cambiar de fase</span>}
         </div>
       </div>
 
@@ -137,23 +206,18 @@ export default function PortalKanbanRenting({ ops: initialOps, fases, canEdit = 
         </div>
       )}
 
-      <div style={{ zoom: 0.9 }} className="flex pb-4 gap-0 border border-gray-200 bg-[#f8f7fb] overflow-hidden">
-        {fases.map((fase, i) => (
-          <div key={fase} className="flex items-stretch flex-1 min-w-0">
-            <div className="flex-1 min-w-0">
-              <Column fase={fase} ops={opsByFase[fase] ?? []} />
-            </div>
-            {i < fases.length - 1 && (
-              <div className="flex-shrink-0 self-stretch flex items-center justify-center w-5 relative z-10">
-                <div className="absolute inset-y-0 left-0 w-px bg-gray-200" />
-                <svg width="10" height="18" viewBox="0 0 10 18" fill="none">
-                  <path d="M1 0 L9 9 L1 18" stroke="#2E1A47" strokeOpacity="0.25" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-                </svg>
+      {canEdit ? (
+        <DndContext sensors={sensors} onDragStart={e => setActiveId(String(e.active.id))} onDragEnd={handleDragEnd}>
+          {board}
+          <DragOverlay>
+            {activeOp && (
+              <div className={`bg-white border border-gray-100 border-l-[3px] ${FASE_ACCENT[activeOp.fase] ?? "border-l-[#2E1A47]"} shadow-xl w-[200px]`}>
+                <CardContent op={activeOp} canEdit />
               </div>
             )}
-          </div>
-        ))}
-      </div>
+          </DragOverlay>
+        </DndContext>
+      ) : board}
     </div>
   );
 }
