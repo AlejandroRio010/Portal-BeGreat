@@ -230,6 +230,24 @@ export default function AdminOpForm({
   const avalEmpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [avalEmpresaNueva, setAvalEmpresaNueva] = useState(false);
 
+  // ── Format helpers for display inside inputs ────────────────────────────────
+  function fmtPct(v: string): string {
+    const n = parseFloat(v);
+    if (isNaN(n)) return "";
+    return n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
+  }
+  function fmtEuro(v: string): string {
+    const n = parseFloat(v);
+    if (isNaN(n)) return "";
+    return n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+  }
+  function rawFromFmt(v: string): string {
+    return v.replace(/[€%\s.]/g, "").replace(",", ".");
+  }
+
+  // Focus: show raw number; Blur: show formatted
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+
   // ── Commission auto-calc helpers ───────────────────────────────────────────
   const importeNum = parseFloat(importe) || 0;
   const importeFactNum = parseFloat(importeFacturadoBegreat) || 0;
@@ -835,19 +853,21 @@ export default function AdminOpForm({
                             <div className="grid grid-cols-2 gap-2">
                               <div>
                                 <span className="text-[9px] text-gray-400 uppercase">Comisión</span>
-                                <div className="relative">
-                                  <input type="number" step="0.01" value={o.porcentaje} onChange={e => updateOrigen(i, "porcentaje", e.target.value)}
-                                    placeholder="0,00" className="w-full border border-gray-200 px-2 pr-6 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
-                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">%</span>
-                                </div>
+                                <input type="text" inputMode="decimal"
+                                  value={focusedField === `origen-pct-${i}` ? o.porcentaje : (o.porcentaje ? fmtPct(o.porcentaje) : "")}
+                                  onFocus={() => setFocusedField(`origen-pct-${i}`)}
+                                  onBlur={() => setFocusedField(null)}
+                                  onChange={e => { const v = rawFromFmt(e.target.value); updateOrigen(i, "porcentaje", v); }}
+                                  placeholder="0,00%" className="w-full border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
                               </div>
                               <div>
                                 <span className="text-[9px] text-gray-400 uppercase">Importe</span>
-                                <div className="relative">
-                                  <input type="number" step="0.01" value={o.importe} onChange={e => updateOrigen(i, "importe", e.target.value)}
-                                    placeholder="0,00" className="w-full border border-gray-200 px-2 pr-6 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
-                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">€</span>
-                                </div>
+                                <input type="text" inputMode="decimal"
+                                  value={focusedField === `origen-eur-${i}` ? o.importe : (o.importe ? fmtEuro(o.importe) : "")}
+                                  onFocus={() => setFocusedField(`origen-eur-${i}`)}
+                                  onBlur={() => setFocusedField(null)}
+                                  onChange={e => { const v = rawFromFmt(e.target.value); updateOrigen(i, "importe", v); }}
+                                  placeholder="0,00 €" className="w-full border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
                               </div>
                             </div>
                           </div>
@@ -874,19 +894,21 @@ export default function AdminOpForm({
                       </div>
                       <div>
                         <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Margen</label>
-                        <div className="relative">
-                          <input type="number" step="0.01" value={margenPct} onChange={e => updateMargenPct(e.target.value)}
-                            placeholder="0,00" className="w-full border border-gray-200 px-3 pr-8 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">%</span>
-                        </div>
+                        <input type="text" inputMode="decimal"
+                          value={focusedField === "margen-pct" ? margenPct : (margenPct ? fmtPct(margenPct) : "")}
+                          onFocus={() => setFocusedField("margen-pct")}
+                          onBlur={() => setFocusedField(null)}
+                          onChange={e => { const v = rawFromFmt(e.target.value); updateMargenPct(v); }}
+                          placeholder="0,00%" className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
                       </div>
                       <div>
                         <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Importe facturado por BeGreat (sin IVA)</label>
-                        <div className="relative">
-                          <input type="number" step="0.01" value={importeFacturadoBegreat} onChange={e => updateImporteFactura(e.target.value)}
-                            placeholder="0,00" className="w-full border border-gray-200 px-3 pr-8 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">€</span>
-                        </div>
+                        <input type="text" inputMode="decimal"
+                          value={focusedField === "imp-factura" ? importeFacturadoBegreat : (importeFacturadoBegreat ? fmtEuro(importeFacturadoBegreat) : "")}
+                          onFocus={() => setFocusedField("imp-factura")}
+                          onBlur={() => setFocusedField(null)}
+                          onChange={e => { const v = rawFromFmt(e.target.value); updateImporteFactura(v); }}
+                          placeholder="0,00 €" className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
                       </div>
                       <div className="flex items-center gap-2">
                         <input type="checkbox" id="importeFacturadoVisible" checked={importeFacturadoVisible} onChange={e => setImporteFacturadoVisible(e.target.checked)}
@@ -922,19 +944,21 @@ export default function AdminOpForm({
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <span className="text-[9px] text-gray-400 uppercase">Comisión</span>
-                            <div className="relative">
-                              <input type="number" step="0.01" value={c.porcentaje} onChange={e => updateColab(i, "porcentaje", e.target.value)}
-                                placeholder="0,00" className="w-full border border-gray-200 px-2 pr-6 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">%</span>
-                            </div>
+                            <input type="text" inputMode="decimal"
+                              value={focusedField === `colab-pct-${i}` ? c.porcentaje : (c.porcentaje ? fmtPct(c.porcentaje) : "")}
+                              onFocus={() => setFocusedField(`colab-pct-${i}`)}
+                              onBlur={() => setFocusedField(null)}
+                              onChange={e => { const v = rawFromFmt(e.target.value); updateColab(i, "porcentaje", v); }}
+                              placeholder="0,00%" className="w-full border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
                           </div>
                           <div>
                             <span className="text-[9px] text-gray-400 uppercase">Importe</span>
-                            <div className="relative">
-                              <input type="number" step="0.01" value={c.importe} onChange={e => updateColab(i, "importe", e.target.value)}
-                                placeholder="0,00" className="w-full border border-gray-200 px-2 pr-6 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">€</span>
-                            </div>
+                            <input type="text" inputMode="decimal"
+                              value={focusedField === `colab-eur-${i}` ? c.importe : (c.importe ? fmtEuro(c.importe) : "")}
+                              onFocus={() => setFocusedField(`colab-eur-${i}`)}
+                              onBlur={() => setFocusedField(null)}
+                              onChange={e => { const v = rawFromFmt(e.target.value); updateColab(i, "importe", v); }}
+                              placeholder="0,00 €" className="w-full border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
                           </div>
                         </div>
                       </div>
