@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatDocId } from "@/lib/format";
 
 type Colab = {
   id: string;
@@ -104,7 +105,7 @@ export default function ColaboradorEditForm({ colab }: { colab: Colab }) {
         </div>
         <div>
           <label className={lbl}>CIF</label>
-          <input value={form.cif} onChange={(e) => set("cif", e.target.value)} className={inp} />
+          <input value={form.cif} onChange={(e) => set("cif", e.target.value)} onBlur={e => set("cif", formatDocId(e.target.value))} className={inp} />
         </div>
         <div>
           <label className={lbl}>Teléfono</label>

@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import EmpresaSearchInput from "@/components/EmpresaSearchInput";
+import { fmtEuroInput, rawFromFmt } from "@/lib/format";
 
 const PLAZOS = [12, 24, 36, 48, 60, 72];
 
@@ -67,6 +68,7 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
   const [manualPrecio, setManualPrecio] = useState("");
   const [manualUnidades, setManualUnidades] = useState("1");
   const [importeTotal, setImporteTotal] = useState("");
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const importeCalculado = lineas.reduce((s, l) => s + l.precioUnitario * l.unidades, 0);
 
@@ -329,8 +331,14 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
                 </div>
                 <div>
                   <label className={labelCls}>Precio ud. €</label>
-                  <input value={manualPrecio} onChange={e => setManualPrecio(e.target.value)}
-                    type="number" step="any" className={inp + " w-28"} placeholder="0.00" />
+                  <input value={focusedField === "manualPrecio" ? manualPrecio : fmtEuroInput(manualPrecio)}
+                    onFocus={() => setFocusedField("manualPrecio")}
+                    onBlur={() => setFocusedField(null)}
+                    onChange={e => {
+                      const v = focusedField ? e.target.value : rawFromFmt(e.target.value);
+                      setManualPrecio(v);
+                    }}
+                    type="text" inputMode="decimal" className={inp + " w-28"} placeholder="0,00 €" />
                 </div>
                 <div>
                   <label className={labelCls}>Uds.</label>
@@ -375,8 +383,14 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
           {modoProducto === "total" && (
             <div className="mb-4">
               <label className={labelCls}>Importe venta total (sin IVA) * €</label>
-              <input value={importeTotal} onChange={e => setImporteTotal(e.target.value)}
-                type="number" step="any" inputMode="decimal" className={inp} placeholder="10.000" />
+              <input value={focusedField === "importeTotal" ? importeTotal : fmtEuroInput(importeTotal)}
+                onFocus={() => setFocusedField("importeTotal")}
+                onBlur={() => setFocusedField(null)}
+                onChange={e => {
+                  const v = focusedField ? e.target.value : rawFromFmt(e.target.value);
+                  setImporteTotal(v);
+                }}
+                type="text" inputMode="decimal" className={inp} placeholder="10.000,00 €" />
             </div>
           )}
 

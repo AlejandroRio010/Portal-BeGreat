@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import EmpresaSearchInput from "@/components/EmpresaSearchInput";
+import { formatDocId } from "@/lib/format";
 
 const inp = "w-full px-3 py-2.5 border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#2E1A47] focus:border-[#2E1A47] bg-white";
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5";
@@ -99,7 +100,7 @@ export default function NuevoClienteForm({ colaboradores, onClose }: { colaborad
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={labelCls}>CIF</label>
-            <input value={cif} onChange={e => setCif(e.target.value)} className={inp} placeholder="B12345678" />
+            <input value={cif} onChange={e => setCif(e.target.value)} onBlur={e => setCif(formatDocId(e.target.value))} className={inp} placeholder="B12345678" />
           </div>
           <div>
             <label className={labelCls}>Email</label>

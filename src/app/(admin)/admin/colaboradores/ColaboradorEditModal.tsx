@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatDocId } from "@/lib/format";
 
 const inp = "w-full px-3 py-2.5 border border-gray-200 text-sm focus:outline-none focus:border-[#2E1A47] bg-white";
 const lbl = "block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5";
@@ -91,7 +92,7 @@ export default function ColaboradorEditModal({ colab }: { colab: Colab }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className={lbl}>CIF</label>
-                    <input name="cif" defaultValue={colab.cif ?? ""} className={inp} placeholder="B12345678" />
+                    <input name="cif" defaultValue={colab.cif ?? ""} onBlur={e => { e.target.value = formatDocId(e.target.value); }} className={inp} placeholder="B12345678" />
                   </div>
                   <div>
                     <label className={lbl}>Email empresa</label>

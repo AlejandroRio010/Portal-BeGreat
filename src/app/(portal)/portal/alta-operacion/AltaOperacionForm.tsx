@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import EmpresaSearchInput from "@/components/EmpresaSearchInput";
+import { fmtEuroInput, rawFromFmt } from "@/lib/format";
 
 const PRODUCTOS_CONSULTORIA = [
   "Póliza de crédito",
@@ -71,6 +72,8 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
 
   // Entity preference (only for nivel 3-4)
   const [entidadPreferencia, setEntidadPreferencia] = useState("");
+  const [importe, setImporte] = useState("");
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -188,7 +191,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
       setLoading(false); return;
     }
     if (!clienteNombre.trim()) faltan.push("Nombre de la empresa");
-    if (!data.importe) faltan.push("Importe (€)");
+    if (!importe) faltan.push("Importe (€)");
     if (pipeline === "consultoria" && !producto) faltan.push("Producto de financiación");
     if (pipeline === "consultoria" && producto === "Otro" && !data.producto_otro?.trim()) faltan.push("Descripción del producto");
     if (pipeline === "renting" && !data.equipo_tipo) faltan.push("Tipo de equipo");
@@ -215,6 +218,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...data,
+        importe,
         pipeline_key: pipeline,
         producto: productoFinal,
         renting_rol: "colaborador",
@@ -351,7 +355,15 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>Importe (sin IVA) * €</label>
-                  <input name="importe" type="number" step="any" inputMode="decimal" className={inp} placeholder="50.000" />
+                  <input name="importe" type="text" inputMode="decimal"
+                    value={focusedField === "importe" ? importe : fmtEuroInput(importe)}
+                    onFocus={() => setFocusedField("importe")}
+                    onBlur={() => setFocusedField(null)}
+                    onChange={e => {
+                      const v = focusedField ? e.target.value : rawFromFmt(e.target.value);
+                      setImporte(v);
+                    }}
+                    className={inp} placeholder="50.000,00 €" />
                 </div>
               </div>
             </Section>
@@ -390,7 +402,15 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>Importe (sin IVA) * €</label>
-                  <input name="importe" type="number" step="any" inputMode="decimal" className={inp} placeholder="10.000" />
+                  <input name="importe" type="text" inputMode="decimal"
+                    value={focusedField === "importe" ? importe : fmtEuroInput(importe)}
+                    onFocus={() => setFocusedField("importe")}
+                    onBlur={() => setFocusedField(null)}
+                    onChange={e => {
+                      const v = focusedField ? e.target.value : rawFromFmt(e.target.value);
+                      setImporte(v);
+                    }}
+                    className={inp} placeholder="10.000,00 €" />
                 </div>
                 <div>
                   <label className={labelCls}>Plazo deseado *</label>

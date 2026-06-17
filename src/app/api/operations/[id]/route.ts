@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { operations, collaborators, contacts } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { formatDocId } from "@/lib/format";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -54,7 +55,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     data.aval_email = tiene_aval ? (aval_email || null) : null;
     data.aval_telefono = tiene_aval ? (aval_telefono || null) : null;
     data.aval_persona_contacto = tiene_aval ? (aval_persona_contacto || null) : null;
-    data.aval_dni = tiene_aval && aval_tipo === "persona_fisica" ? (aval_dni || null) : null;
+    data.aval_dni = tiene_aval && aval_tipo === "persona_fisica" ? (aval_dni ? formatDocId(aval_dni) : null) : null;
     data.aval_empresa = tiene_aval && aval_tipo === "persona_fisica" ? (aval_empresa || null) : null;
     // Auto-create contact if persona física avalista is new
     let resolvedContactId = aval_contact_id || null;

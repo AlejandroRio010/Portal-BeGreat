@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import EmpresaSearchInput from "@/components/EmpresaSearchInput";
+import { fmtPctInput, fmtEuroInput, rawFromFmt, formatDocId } from "@/lib/format";
 
 const FASES_CONSULTORIA = [
   "Pre-análisis",
@@ -229,21 +230,9 @@ export default function AdminOpForm({
   const [avalEmpresaOpen, setAvalEmpresaOpen] = useState(false);
   const avalEmpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [avalEmpresaNueva, setAvalEmpresaNueva] = useState(false);
-
-  // ── Format helpers for display inside inputs ────────────────────────────────
-  function fmtPct(v: string): string {
-    const n = parseFloat(v);
-    if (isNaN(n)) return "";
-    return n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
-  }
-  function fmtEuro(v: string): string {
-    const n = parseFloat(v);
-    if (isNaN(n)) return "";
-    return n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
-  }
-  function rawFromFmt(v: string): string {
-    return v.replace(/[€%\s.]/g, "").replace(",", ".");
-  }
+  const [pfEmpresaResults, setPfEmpresaResults] = useState<any[]>([]);
+  const [pfEmpresaOpen, setPfEmpresaOpen] = useState(false);
+  const pfEmpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Focus: show raw number; Blur: show formatted
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -437,6 +426,17 @@ export default function AdminOpForm({
     setAvalEmpresaResults([]);
     setAvalEmpresaOpen(false);
     setAvalEmpresaNueva(false);
+  }
+
+  function buscarPfEmpresa(q: string) {
+    setAvalEmpresa(q);
+    if (pfEmpTimer.current) clearTimeout(pfEmpTimer.current);
+    if (q.length < 2) { setPfEmpresaResults([]); setPfEmpresaOpen(false); return; }
+    pfEmpTimer.current = setTimeout(async () => {
+      const res = await fetch(`/api/search/clientes?q=${encodeURIComponent(q)}`).then(r => r.json()).catch(() => []);
+      setPfEmpresaResults(res);
+      setPfEmpresaOpen(res.length > 0);
+    }, 300);
   }
 
   function clearAvalEmpresa() {
@@ -650,12 +650,26 @@ export default function AdminOpForm({
                     <div>
                       <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">DNI / NIF</label>
                       <input value={avalDni} onChange={(e) => setAvalDni(e.target.value)}
+                        onBlur={e => setAvalDni(formatDocId(e.target.value))}
                         className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" placeholder="12345678A" />
                     </div>
-                    <div>
+                    <div className="relative">
                       <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Empresa</label>
-                      <input value={avalEmpresa} onChange={(e) => setAvalEmpresa(e.target.value)}
-                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" placeholder="Empresa del avalista" />
+                      <input value={avalEmpresa} onChange={(e) => buscarPfEmpresa(e.target.value)}
+                        onBlur={() => setTimeout(() => setPfEmpresaOpen(false), 200)}
+                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" placeholder="Buscar empresa..." />
+                      {pfEmpresaOpen && pfEmpresaResults.length > 0 && (
+                        <div className="absolute z-30 left-0 right-0 top-full bg-white border border-gray-200 shadow-lg max-h-40 overflow-y-auto">
+                          {pfEmpresaResults.map((c: any) => (
+                            <button key={c.id} type="button"
+                              onClick={() => { setAvalEmpresa(c.nombre); setPfEmpresaOpen(false); }}
+                              className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
+                              <p className="text-xs font-semibold text-gray-800">{c.nombre}</p>
+                              {c.cif && <p className="text-[10px] text-gray-400">{c.cif}</p>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
@@ -865,7 +879,7 @@ export default function AdminOpForm({
                               <div>
                                 <span className="text-[9px] text-gray-400 uppercase">Comisión</span>
                                 <input type="text" inputMode="decimal"
-                                  value={focusedField === `origen-pct-${i}` ? o.porcentaje : (o.porcentaje ? fmtPct(o.porcentaje) : "")}
+                                  value={focusedField === `origen-pct-${i}` ? o.porcentaje : (o.porcentaje ? fmtPctInput(o.porcentaje) : "")}
                                   onFocus={() => setFocusedField(`origen-pct-${i}`)}
                                   onBlur={() => setFocusedField(null)}
                                   onChange={e => { const v = rawFromFmt(e.target.value); updateOrigen(i, "porcentaje", v); }}
@@ -874,7 +888,7 @@ export default function AdminOpForm({
                               <div>
                                 <span className="text-[9px] text-gray-400 uppercase">Importe</span>
                                 <input type="text" inputMode="decimal"
-                                  value={focusedField === `origen-eur-${i}` ? o.importe : (o.importe ? fmtEuro(o.importe) : "")}
+                                  value={focusedField === `origen-eur-${i}` ? o.importe : (o.importe ? fmtEuroInput(o.importe) : "")}
                                   onFocus={() => setFocusedField(`origen-eur-${i}`)}
                                   onBlur={() => setFocusedField(null)}
                                   onChange={e => { const v = rawFromFmt(e.target.value); updateOrigen(i, "importe", v); }}
@@ -906,7 +920,7 @@ export default function AdminOpForm({
                       <div>
                         <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Margen</label>
                         <input type="text" inputMode="decimal"
-                          value={focusedField === "margen-pct" ? margenPct : (margenPct ? fmtPct(margenPct) : "")}
+                          value={focusedField === "margen-pct" ? margenPct : (margenPct ? fmtPctInput(margenPct) : "")}
                           onFocus={() => setFocusedField("margen-pct")}
                           onBlur={() => setFocusedField(null)}
                           onChange={e => { const v = rawFromFmt(e.target.value); updateMargenPct(v); }}
@@ -915,7 +929,7 @@ export default function AdminOpForm({
                       <div>
                         <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Importe facturado por BeGreat (sin IVA)</label>
                         <input type="text" inputMode="decimal"
-                          value={focusedField === "imp-factura" ? importeFacturadoBegreat : (importeFacturadoBegreat ? fmtEuro(importeFacturadoBegreat) : "")}
+                          value={focusedField === "imp-factura" ? importeFacturadoBegreat : (importeFacturadoBegreat ? fmtEuroInput(importeFacturadoBegreat) : "")}
                           onFocus={() => setFocusedField("imp-factura")}
                           onBlur={() => setFocusedField(null)}
                           onChange={e => { const v = rawFromFmt(e.target.value); updateImporteFactura(v); }}
@@ -956,7 +970,7 @@ export default function AdminOpForm({
                           <div>
                             <span className="text-[9px] text-gray-400 uppercase">Comisión</span>
                             <input type="text" inputMode="decimal"
-                              value={focusedField === `colab-pct-${i}` ? c.porcentaje : (c.porcentaje ? fmtPct(c.porcentaje) : "")}
+                              value={focusedField === `colab-pct-${i}` ? c.porcentaje : (c.porcentaje ? fmtPctInput(c.porcentaje) : "")}
                               onFocus={() => setFocusedField(`colab-pct-${i}`)}
                               onBlur={() => setFocusedField(null)}
                               onChange={e => { const v = rawFromFmt(e.target.value); updateColab(i, "porcentaje", v); }}
@@ -965,7 +979,7 @@ export default function AdminOpForm({
                           <div>
                             <span className="text-[9px] text-gray-400 uppercase">Importe</span>
                             <input type="text" inputMode="decimal"
-                              value={focusedField === `colab-eur-${i}` ? c.importe : (c.importe ? fmtEuro(c.importe) : "")}
+                              value={focusedField === `colab-eur-${i}` ? c.importe : (c.importe ? fmtEuroInput(c.importe) : "")}
                               onFocus={() => setFocusedField(`colab-eur-${i}`)}
                               onBlur={() => setFocusedField(null)}
                               onChange={e => { const v = rawFromFmt(e.target.value); updateColab(i, "importe", v); }}

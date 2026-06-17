@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatDocId } from "@/lib/format";
 
 interface Props {
   supplier: {
@@ -77,7 +78,9 @@ export default function SupplierDataForm({ supplier, user }: Props) {
           </div>
           <div>
             <label className={labelCls}>CIF</label>
-            <input value={form.cif} onChange={e => set("cif", e.target.value)} className={inputCls} />
+            <input value={form.cif} onChange={e => set("cif", e.target.value)}
+              onBlur={e => { const v = formatDocId(e.target.value); set("cif", v); }}
+              className={inputCls} />
           </div>
           <div>
             <label className={labelCls}>Email</label>

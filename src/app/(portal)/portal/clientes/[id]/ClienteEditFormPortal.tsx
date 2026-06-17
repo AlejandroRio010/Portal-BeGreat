@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import CnaeAutocomplete from "@/components/CnaeAutocomplete";
+import { formatDocId } from "@/lib/format";
 
 type Client = {
   id: string;
@@ -87,6 +88,7 @@ export default function ClienteEditFormPortal({ client }: { client: Client }) {
         <div>
           <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">CIF / NIF</label>
           <input value={form.cif} onChange={e => set("cif", e.target.value)}
+            onBlur={e => { const v = formatDocId(e.target.value); set("cif", v); }}
             className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
         </div>
 

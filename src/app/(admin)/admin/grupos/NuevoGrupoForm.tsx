@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatDocId } from "@/lib/format";
 
 export default function NuevoGrupoForm() {
   const router = useRouter();
@@ -58,6 +59,7 @@ export default function NuevoGrupoForm() {
         <div>
           <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">CIF matriz</label>
           <input value={form.cif_matriz} onChange={e => set("cif_matriz", e.target.value)}
+            onBlur={e => set("cif_matriz", formatDocId(e.target.value))}
             className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
         </div>
         <div className="col-span-2">

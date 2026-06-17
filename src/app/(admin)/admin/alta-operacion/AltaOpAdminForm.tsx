@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import EmpresaSearchInput from "@/components/EmpresaSearchInput";
+import { fmtEuroInput, rawFromFmt } from "@/lib/format";
 
 const PRODUCTOS_CONSULTORIA = ["Póliza de crédito", "Leasing", "Préstamo", "Confirming", "Factoring", "Otro"];
 const PLAZOS = [12, 24, 36, 48, 60, 72];
@@ -39,6 +40,8 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
   const [clienteProvincia, setClienteProvincia] = useState("");
   const [clienteDireccion, setClienteDireccion] = useState("");
   const [clienteNombreComercial, setClienteNombreComercial] = useState("");
+  const [importe, setImporte] = useState("");
+  const [focusedField, setFocusedField] = useState<string | null>(null);
   const [clienteMissingData, setClienteMissingData] = useState<string[]>([]);
   const [contactoNombre, setContactoNombre] = useState("");
   const [contactoEmail, setContactoEmail] = useState("");
@@ -226,6 +229,7 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...data,
+        importe: importe || data.importe,
         pipeline_key: pipeline,
         producto: productoFinal,
         cliente_nombre: clienteNombre,
@@ -601,7 +605,12 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
                 {renderClienteSection()}
                 <div>
                   <label className={label}>Importe (€)</label>
-                  <input name="importe" type="number" step="any" inputMode="decimal" className={inp} placeholder="50.000" />
+                  <input name="importe" type="text" inputMode="decimal"
+                    value={focusedField === "importe-con" ? importe : fmtEuroInput(importe)}
+                    onFocus={() => setFocusedField("importe-con")}
+                    onBlur={() => setFocusedField(null)}
+                    onChange={e => { const v = focusedField ? e.target.value : rawFromFmt(e.target.value); setImporte(v); }}
+                    className={inp} placeholder="50.000" />
                 </div>
                 {(clienteSeleccionado || !esNuevoCliente) && (
                   <>
@@ -652,7 +661,12 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={label}>Importe (€) *</label>
-                  <input name="importe" type="number" step="any" inputMode="decimal" className={inp} placeholder="10.000" />
+                  <input name="importe" type="text" inputMode="decimal"
+                    value={focusedField === "importe-ren" ? importe : fmtEuroInput(importe)}
+                    onFocus={() => setFocusedField("importe-ren")}
+                    onBlur={() => setFocusedField(null)}
+                    onChange={e => { const v = focusedField ? e.target.value : rawFromFmt(e.target.value); setImporte(v); }}
+                    className={inp} placeholder="10.000" />
                 </div>
                 <div>
                   <label className={label}>Plazo deseado *</label>

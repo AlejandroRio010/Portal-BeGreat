@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import EmpresaSearchInput from "@/components/EmpresaSearchInput";
+import { fmtEuroInput, rawFromFmt, formatDocId } from "@/lib/format";
 
 interface Props {
   opId: string;
@@ -67,6 +68,11 @@ export default function OpEditForm({
   const [avalEmpresaOpen, setAvalEmpresaOpen] = useState(false);
   const avalEmpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [avalEmpresaNueva, setAvalEmpresaNueva] = useState(false);
+  const [pfEmpresaResults, setPfEmpresaResults] = useState<any[]>([]);
+  const [pfEmpresaOpen, setPfEmpresaOpen] = useState(false);
+  const pfEmpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })); }
 
@@ -115,6 +121,17 @@ export default function OpEditForm({
     setAvalEmpresaResults([]);
     setAvalEmpresaOpen(false);
     setAvalEmpresaNueva(false);
+  }
+
+  function buscarPfEmpresa(q: string) {
+    setAvalEmpresa(q);
+    if (pfEmpTimer.current) clearTimeout(pfEmpTimer.current);
+    if (q.length < 2) { setPfEmpresaResults([]); setPfEmpresaOpen(false); return; }
+    pfEmpTimer.current = setTimeout(async () => {
+      const res = await fetch(`/api/search/clientes?q=${encodeURIComponent(q)}`).then(r => r.json()).catch(() => []);
+      setPfEmpresaResults(res);
+      setPfEmpresaOpen(res.length > 0);
+    }, 300);
   }
 
   function clearAvalEmpresa() {
@@ -178,8 +195,15 @@ export default function OpEditForm({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={labelCls}>Importe (sin IVA)</label>
-            <input type="number" step="0.01" value={form.importe} onChange={e => set("importe", e.target.value)}
-              className={inputCls} placeholder="0.00" />
+            <input type="text" inputMode="decimal"
+              value={focusedField === "importe" ? form.importe : fmtEuroInput(form.importe)}
+              onFocus={() => setFocusedField("importe")}
+              onBlur={() => setFocusedField(null)}
+              onChange={e => {
+                const v = focusedField ? e.target.value : rawFromFmt(e.target.value);
+                set("importe", v);
+              }}
+              className={inputCls} placeholder="0,00 €" />
           </div>
           <div>
             <label className={labelCls}>Tipo de equipo</label>
@@ -248,11 +272,27 @@ export default function OpEditForm({
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className={labelCls}>DNI / NIF</label>
-                      <input value={avalDni} onChange={e => setAvalDni(e.target.value)} className={inputCls} placeholder="12345678A" />
+                      <input value={avalDni} onChange={e => setAvalDni(e.target.value)}
+                        onBlur={e => { const v = formatDocId(e.target.value); setAvalDni(v); }}
+                        className={inputCls} placeholder="12345678A" />
                     </div>
-                    <div>
+                    <div className="relative">
                       <label className={labelCls}>Empresa</label>
-                      <input value={avalEmpresa} onChange={e => setAvalEmpresa(e.target.value)} className={inputCls} placeholder="Empresa del avalista" />
+                      <input value={avalEmpresa} onChange={e => buscarPfEmpresa(e.target.value)}
+                        onBlur={() => setTimeout(() => setPfEmpresaOpen(false), 200)}
+                        className={inputCls} placeholder="Buscar empresa..." />
+                      {pfEmpresaOpen && pfEmpresaResults.length > 0 && (
+                        <div className="absolute z-30 left-0 right-0 top-full bg-white border border-gray-200 shadow-lg max-h-40 overflow-y-auto">
+                          {pfEmpresaResults.map((c: any) => (
+                            <button key={c.id} type="button"
+                              onMouseDown={() => { setAvalEmpresa(c.nombre); setPfEmpresaOpen(false); }}
+                              className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
+                              <p className="text-xs font-semibold text-gray-800">{c.nombre}</p>
+                              {c.cif && <p className="text-[10px] text-gray-400">{c.cif}</p>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className={labelCls}>Email</label>
