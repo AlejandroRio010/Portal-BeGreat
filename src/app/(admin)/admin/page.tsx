@@ -3,6 +3,7 @@ import { operations, clients, collaborators } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import Link from "next/link";
 import { fmtEur } from "@/lib/format";
+import RankingColaboradores from "./RankingColaboradores";
 
 const MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const FIRMADAS      = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
@@ -43,20 +44,15 @@ export default async function AdminHomePage({
 
   const pendientes8 = pendientes.slice(0, 8);
 
-  // Ranking: total ops, aprobadas (firmadas), fee colaborador cobrado, fee begreat generado
-  const colabMap = new Map<string, { nombre: string; ops: number; aprobadas: number; feeColab: number; feeBegreat: number }>();
-  for (const op of allOps) {
-    if (!op.colaborador_id) continue;
-    const entry = colabMap.get(op.colaborador_id) ?? { nombre: op.colaborador_nombre ?? "—", ops: 0, aprobadas: 0, feeColab: 0, feeBegreat: 0 };
-    entry.ops += 1;
-    if (FIRMADAS.includes(op.fase ?? "")) {
-      entry.aprobadas += 1;
-      entry.feeColab += Number(op.comision_colaborador ?? 0);
-      entry.feeBegreat += Number(op.comision_begreat ?? 0);
-    }
-    colabMap.set(op.colaborador_id, entry);
-  }
-  const ranking = Array.from(colabMap.values()).sort((a, b) => b.feeBegreat - a.feeBegreat).slice(0, 10);
+  // Ranking data for client component
+  const rankingOps = allOps.map(o => ({
+    colaborador_id: o.colaborador_id,
+    colaborador_nombre: o.colaborador_nombre,
+    fase: o.fase,
+    comision_colaborador: o.comision_colaborador,
+    comision_begreat: o.comision_begreat,
+    created_at: o.created_at.toISOString(),
+  }));
 
   // Year filter
   const availableYears = Array.from(
@@ -290,39 +286,7 @@ export default async function AdminHomePage({
       </div>
 
       {/* ── Ranking colaboradores ── */}
-      <div className="bg-white border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">Ranking de colaboradores</p>
-        </div>
-        {ranking.length === 0 ? (
-          <div className="px-6 py-8 text-center text-sm text-gray-300">Sin datos.</div>
-        ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="bg-[#EEEBF3] border-b border-gray-100">
-                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">#</th>
-                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Colaborador</th>
-                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Ops enviadas</th>
-                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Aprobadas</th>
-                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fee colaborador</th>
-                <th className="text-left px-6 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fee BeGreat</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {ranking.map((c, i) => (
-                <tr key={i} className="hover:bg-[#EEEBF3]/30 transition-colors">
-                  <td className="px-6 py-3 text-xs font-bold text-gray-400">{i + 1}</td>
-                  <td className="px-6 py-3 text-sm font-medium text-gray-900">{c.nombre}</td>
-                  <td className="px-6 py-3 text-sm text-gray-600">{c.ops}</td>
-                  <td className="px-6 py-3 text-sm text-gray-600">{c.aprobadas}</td>
-                  <td className="px-6 py-3 text-sm text-gray-500">{fmtEur(c.feeColab)}</td>
-                  <td className="px-6 py-3 text-sm font-bold text-[#2E1A47]">{fmtEur(c.feeBegreat)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <RankingColaboradores ops={rankingOps} />
     </div>
   );
 }
