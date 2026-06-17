@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { operations, collaborators, contacts } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { sendOperationValidatedEmail, sendOperationDeniedEmail, sendOperationWonEmail } from "@/lib/email";
-import { fmtEur } from "@/lib/format";
+import { fmtEur, formatDocId } from "@/lib/format";
 
 export async function PATCH(
   req: NextRequest,
@@ -139,7 +139,7 @@ export async function PATCH(
     updateData.aval_email = tiene_aval ? (aval_email || null) : null;
     updateData.aval_telefono = tiene_aval ? (aval_telefono || null) : null;
     updateData.aval_persona_contacto = tiene_aval ? (aval_persona_contacto || null) : null;
-    updateData.aval_dni = tiene_aval && aval_tipo === "persona_fisica" ? (aval_dni || null) : null;
+    updateData.aval_dni = tiene_aval && aval_tipo === "persona_fisica" ? (aval_dni ? formatDocId(aval_dni) : null) : null;
     updateData.aval_empresa = tiene_aval && aval_tipo === "persona_fisica" ? (aval_empresa || null) : null;
     let resolvedContactId = aval_contact_id || null;
     if (tiene_aval && aval_tipo === "persona_fisica" && !aval_contact_id && aval_nombre && prevOp?.client_id) {

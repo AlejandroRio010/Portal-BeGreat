@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { clients, collaborators } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { formatDocId } from "@/lib/format";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -32,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   // El grupo empresarial lo gestiona el admin — no se toca aquí
   await db.update(clients).set({
     nombre: nombre.trim(),
-    cif: cif ? cif.replace(/^([A-Za-z])(?!-)(\d)/, "$1-$2").toUpperCase() : null,
+    cif: cif ? formatDocId(cif) : null,
     email: email || null,
     telefono: telefono || null,
     web: web || null,

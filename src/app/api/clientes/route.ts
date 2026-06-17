@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { clients, contacts } from "@/db/schema";
 import { generateCodigoCLI } from "@/lib/codigos";
+import { formatDocId } from "@/lib/format";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
   const [client] = await db.insert(clients).values({
     collaborator_id: collaboratorId,
     nombre: nombre.trim(),
-    cif: cif ? cif.replace(/^([A-Za-z])(?!-)(\d)/, "$1-$2").toUpperCase() : null,
+    cif: cif ? formatDocId(cif) : null,
     email: email || null,
     telefono: telefono || null,
     web: web || null,
