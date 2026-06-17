@@ -71,6 +71,27 @@ export default function TasksSection({
     });
   }
 
+  const [sendingTo, setSendingTo] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<string | null>(null);
+
+  async function sendReminder(assigneeId: string) {
+    setSendingTo(assigneeId);
+    setSentTo(null);
+    try {
+      const res = await fetch(`/api/operations/${operationId}/tasks/remind`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assigneeId }),
+      });
+      if (res.ok) {
+        setSentTo(assigneeId);
+        setTimeout(() => setSentTo(null), 3000);
+      }
+    } finally {
+      setSendingTo(null);
+    }
+  }
+
   const pending = tasks.filter((t) => !t.completada);
   const done = tasks.filter((t) => t.completada);
 
@@ -135,6 +156,16 @@ export default function TasksSection({
             <span className="text-[10px] font-bold px-2 py-0.5 bg-[#EEEBF3] text-[#2E1A47]">
               {shortName(t.asignado_a_nombre)}
             </span>
+            {t.asignado_a_id && (
+              <button
+                onClick={() => sendReminder(t.asignado_a_id!)}
+                disabled={sendingTo === t.asignado_a_id}
+                title={sentTo === t.asignado_a_id ? "Enviado" : `Enviar recordatorio a ${t.asignado_a_nombre}`}
+                className={`text-xs transition-colors ${sentTo === t.asignado_a_id ? "text-emerald-500" : "text-gray-300 hover:text-[#2E1A47]"} opacity-0 group-hover:opacity-100`}
+              >
+                {sendingTo === t.asignado_a_id ? "…" : sentTo === t.asignado_a_id ? "✓" : "✉"}
+              </button>
+            )}
             <span className="text-[10px] text-gray-400">{fmtDate(t.created_at)}</span>
             <button
               onClick={() => deleteTask(t.id)}

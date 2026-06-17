@@ -128,6 +128,30 @@ export async function sendOperationWonEmail(
   });
 }
 
+export async function sendTaskReminderEmail(
+  to: string, nombre: string, opNombre: string, opId: string,
+  tareas: string[], senderName: string
+) {
+  if (!resend) { console.error("RESEND_API_KEY no configurada"); return; }
+  const url = `${PORTAL_URL}/portal/operaciones/${opId}`;
+  const rows = tareas.map(t => `<tr><td style="padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #333;">• ${t}</td></tr>`).join("");
+  await resend.emails.send({
+    from: FROM, to,
+    subject: `Tareas pendientes — ${opNombre}`,
+    html: emailWrapper("Tareas pendientes",
+      `<p style="font-size: 16px; color: #1a1a1a; margin: 0 0 14px; font-weight: 600;">Hola${nombre ? " " + nombre.split(" ")[0] : ""},</p>
+      <p style="font-size: 14px; line-height: 1.65; color: #555; margin: 0 0 10px;">
+        <strong>${senderName}</strong> te recuerda que tienes tareas pendientes en la operación <strong>${opNombre}</strong>:
+      </p>
+      <table style="width: 100%; border-collapse: collapse; margin: 0 0 28px; background: #f8f7fb; border: 1px solid #E5E1EC;">
+        ${rows}
+      </table>`,
+      url, "Ver operación →",
+      "Recibes este email porque eres colaborador de BeGreat Consulting."
+    ),
+  });
+}
+
 export async function sendOperationDeniedEmail(
   to: string, nombre: string, opNombre: string, opId: string,
   motivo: string
