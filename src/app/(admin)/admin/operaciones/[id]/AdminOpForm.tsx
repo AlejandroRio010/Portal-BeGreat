@@ -859,28 +859,32 @@ export default function AdminOpForm({
                   {/* ── MODO FACTURA ── */}
                   {isFactura && (
                     <div className="space-y-3">
+                      {/* Importe proveedor (read-only, viene del alta) */}
                       <div>
-                        <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Importe facturado por BeGreat (sin IVA)</label>
-                        <input type="number" step="0.01" value={importeFacturadoBegreat} onChange={e => updateImporteFactura(e.target.value)}
-                          placeholder="Ej: 11500" className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                        <div className="flex items-center gap-2 mt-2">
-                          <input type="checkbox" id="importeFacturadoVisible" checked={importeFacturadoVisible} onChange={e => setImporteFacturadoVisible(e.target.checked)}
-                            className="w-4 h-4 accent-[#2E1A47]" />
-                          <label htmlFor="importeFacturadoVisible" className="text-xs text-gray-600 cursor-pointer">Visible para el colaborador</label>
-                        </div>
+                        <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Importe proveedor (sin IVA)</label>
+                        <input type="number" step="0.01" value={importe} readOnly
+                          className="w-full border border-gray-100 bg-gray-100 px-3 py-2 text-sm text-gray-500" />
                       </div>
+
+                      {/* Margen % ↔ Importe facturado bidireccional */}
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Margen %</label>
                           <input type="number" step="0.01" value={margenPct} onChange={e => updateMargenPct(e.target.value)}
-                            placeholder="%" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                            placeholder="%" className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
                         </div>
                         <div>
-                          <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Importe proveedor</label>
-                          <input type="number" step="0.01" value={importe} readOnly
-                            className="w-full border border-gray-100 bg-gray-100 px-2 py-1.5 text-xs text-gray-500" />
+                          <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Importe BeGreat factura</label>
+                          <input type="number" step="0.01" value={importeFacturadoBegreat} onChange={e => updateImporteFactura(e.target.value)}
+                            placeholder="Ej: 11500" className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <input type="checkbox" id="importeFacturadoVisible" checked={importeFacturadoVisible} onChange={e => setImporteFacturadoVisible(e.target.checked)}
+                          className="w-4 h-4 accent-[#2E1A47]" />
+                        <label htmlFor="importeFacturadoVisible" className="text-xs text-gray-600 cursor-pointer">Importe facturado visible para el colaborador</label>
+                      </div>
+
                       {importeFactNum > 0 && importeNum > 0 && (
                         <div className="bg-[#EEEBF3] px-3 py-2">
                           <p className="text-[10px] text-gray-500 uppercase">Fee total (margen): <span className="font-bold text-[#2E1A47]">{(importeFactNum - importeNum).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</span></p>
