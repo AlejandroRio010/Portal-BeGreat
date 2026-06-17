@@ -11,6 +11,7 @@ const FALLBACK: { meses: number; taeMin: number; taeMax: number }[] = [
 ];
 
 const PLAZOS_DEFAULT = [48, 60];
+const IMPORTE_INICIAL = 10000;
 
 function calcularCuota(importe: number, meses: number, tae: number) {
   const r = tae / 12;
@@ -19,12 +20,20 @@ function calcularCuota(importe: number, meses: number, tae: number) {
 
 type Rango = { plazo: number; cuotaMin: number; cuotaMax: number };
 
+function calcResultados(rangos: { meses: number; taeMin: number; taeMax: number }[], importe: number): Rango[] {
+  return rangos.map(r => ({
+    plazo: r.meses,
+    cuotaMin: calcularCuota(importe, r.meses, r.taeMin),
+    cuotaMax: calcularCuota(importe, r.meses, r.taeMax),
+  }));
+}
+
 export default function CotizadorRenting() {
-  const [cotImporte, setCotImporte] = useState("");
-  const [resultados, setResultados] = useState<Rango[] | null>(null);
+  const [cotImporte, setCotImporte] = useState(String(IMPORTE_INICIAL));
+  const [resultados, setResultados] = useState<Rango[]>(calcResultados(FALLBACK, IMPORTE_INICIAL));
   const [seleccionado, setSeleccionado] = useState<number>(48);
   const [expanded, setExpanded] = useState(false);
-  const [rangos, setRangos] = useState<{ meses: number; taeMin: number; taeMax: number }[]>(FALLBACK);
+  const [rangos, setRangos] = useState(FALLBACK);
 
   useEffect(() => {
     fetch("/api/cotizador").then(r => r.ok ? r.json() : null).then((data: Record<string, { meses: number; tae: number }[]> | null) => {
@@ -40,17 +49,14 @@ export default function CotizadorRenting() {
         return { meses: p, taeMin: Math.min(...taes), taeMax: Math.max(...taes) };
       });
       setRangos(merged);
+      setResultados(calcResultados(merged, parseFloat(cotImporte) || IMPORTE_INICIAL));
     });
   }, []);
 
   function calcular() {
     const val = parseFloat(cotImporte.replace(",", "."));
     if (!val || val <= 0) return;
-    setResultados(rangos.map(r => ({
-      plazo: r.meses,
-      cuotaMin: calcularCuota(val, r.meses, r.taeMin),
-      cuotaMax: calcularCuota(val, r.meses, r.taeMax),
-    })));
+    setResultados(calcResultados(rangos, val));
   }
 
   const fmt = (n: number) => n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -58,8 +64,8 @@ export default function CotizadorRenting() {
   const plazosVisibles = expanded ? rangos.map(r => r.meses) : PLAZOS_DEFAULT;
 
   return (
-    <div>
-      <div className="bg-[#2E1A47] aspect-[4/3] max-h-[520px] flex flex-col">
+    <div className="max-w-[680px] mx-auto">
+      <div className="bg-[#2E1A47]">
         <div className="p-6 pb-4">
           <p className="text-white/50 text-[10px] font-bold uppercase tracking-[0.2em] mb-4">Importe de factura (neto)</p>
           <div className="flex gap-3">
@@ -70,19 +76,19 @@ export default function CotizadorRenting() {
               placeholder="10.000,00 €" />
             <button type="button" onClick={calcular}
               className="px-8 py-3 bg-white/20 text-white text-sm font-bold uppercase tracking-wider hover:bg-white/30 transition-colors whitespace-nowrap border border-white/30">
-              Calcular operación
+              Calcular
             </button>
           </div>
         </div>
 
-        <div className="flex-1 px-6 pb-4 flex flex-col">
+        <div className="px-6 pb-2">
           <div className="flex border-b border-white/20 pb-2 mb-1">
             <p className="flex-1 text-[10px] font-bold text-white/50 uppercase tracking-wider">Plazo</p>
             <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider">Cuota estimada / mes</p>
           </div>
-          <div className="divide-y divide-white/10 flex-1">
+          <div className="divide-y divide-white/10">
             {plazosVisibles.map(p => {
-              const r = resultados?.find(x => x.plazo === p);
+              const r = resultados.find(x => x.plazo === p);
               return (
                 <label key={p}
                   className={`flex items-center py-3.5 cursor-pointer transition-all ${seleccionado === p ? "bg-white/10 -mx-3 px-3" : "hover:bg-white/5 -mx-3 px-3"}`}>
@@ -104,7 +110,7 @@ export default function CotizadorRenting() {
           </div>
 
           <button type="button" onClick={() => setExpanded(!expanded)}
-            className="py-2 flex items-center justify-center gap-1.5 text-white/40 hover:text-white/70 transition-colors">
+            className="w-full py-3 flex items-center justify-center gap-1.5 text-white/40 hover:text-white/70 transition-colors">
             <span className="text-[10px] font-bold uppercase tracking-wider">{expanded ? "Ver menos" : "Ver todos los plazos"}</span>
             <svg className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
