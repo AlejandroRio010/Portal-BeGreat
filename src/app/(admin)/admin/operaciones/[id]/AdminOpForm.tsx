@@ -821,30 +821,31 @@ export default function AdminOpForm({
                       <div>
                         <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Orígenes de comisión</label>
                         {comisionOrigenes.map((o, i) => (
-                          <div key={i} className="flex gap-2 items-end mb-2">
-                            <div className="w-36">
-                              {i === 0 && <span className="text-[9px] text-gray-400 uppercase">Origen</span>}
+                          <div key={i} className="mb-3 p-2 bg-white border border-gray-100 relative">
+                            <button type="button" onClick={() => removeOrigen(i)}
+                              className="absolute top-1 right-1 text-gray-400 hover:text-red-500 text-xs">✕</button>
+                            <div className="mb-1.5">
                               <select value={o.tipo} onChange={e => updateOrigen(i, "tipo", e.target.value)}
-                                className="w-full border border-gray-200 px-2 py-1.5 text-xs bg-white focus:outline-none focus:border-[#2E1A47]">
+                                className="w-full border border-gray-200 px-2 py-1.5 text-xs font-medium bg-white focus:outline-none focus:border-[#2E1A47]">
                                 <option value="cliente">{clientNombre || "Cliente"}</option>
                                 <option value="proveedor">{supplierNombre || "Proveedor"}</option>
                                 <option value="entidad">{(() => { const ent = allEntities.find(e => e.id === selectedEntityId); return ent?.nombre || initialEntidad || "Entidad financiera"; })()}</option>
                               </select>
                             </div>
-                            <div className="w-20">
-                              {i === 0 && <span className="text-[9px] text-gray-400 uppercase">%</span>}
-                              <input type="number" step="0.01" value={o.porcentaje} onChange={e => updateOrigen(i, "porcentaje", e.target.value)}
-                                placeholder="0,00" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
-                              {o.porcentaje && <span className="text-[9px] text-gray-500">{parseFloat(o.porcentaje).toLocaleString("es-ES", { minimumFractionDigits: 2 })}%</span>}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <span className="text-[9px] text-gray-400 uppercase">%</span>
+                                <input type="number" step="0.01" value={o.porcentaje} onChange={e => updateOrigen(i, "porcentaje", e.target.value)}
+                                  placeholder="0,00" className="w-full border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                                {o.porcentaje && <p className="text-[9px] text-gray-500 mt-0.5">{parseFloat(o.porcentaje).toLocaleString("es-ES", { minimumFractionDigits: 2 })}%</p>}
+                              </div>
+                              <div>
+                                <span className="text-[9px] text-gray-400 uppercase">€</span>
+                                <input type="number" step="0.01" value={o.importe} onChange={e => updateOrigen(i, "importe", e.target.value)}
+                                  placeholder="0,00" className="w-full border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                                {o.importe && <p className="text-[9px] text-gray-500 mt-0.5">{parseFloat(o.importe).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>}
+                              </div>
                             </div>
-                            <div className="flex-1 min-w-[100px]">
-                              {i === 0 && <span className="text-[9px] text-gray-400 uppercase">€</span>}
-                              <input type="number" step="0.01" value={o.importe} onChange={e => updateOrigen(i, "importe", e.target.value)}
-                                placeholder="0,00" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
-                              {o.importe && <span className="text-[9px] text-gray-500">{parseFloat(o.importe).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</span>}
-                            </div>
-                            <button type="button" onClick={() => removeOrigen(i)}
-                              className="text-gray-400 hover:text-red-500 text-sm pb-1">✕</button>
                           </div>
                         ))}
                         <button type="button" onClick={addOrigen}
@@ -901,28 +902,29 @@ export default function AdminOpForm({
                         className="text-[10px] font-semibold text-[#2E1A47] hover:underline">+ Añadir</button>
                     </div>
                     {colaboradores.map((c, i) => (
-                      <div key={i} className="flex gap-2 items-end mb-2">
-                        <div className="flex-1 min-w-[80px]">
-                          {i === 0 && <span className="text-[9px] text-gray-400 uppercase">Nombre</span>}
-                          <input type="text" value={c.nombre} onChange={e => updateColab(i, "nombre", e.target.value)}
-                            placeholder="Nombre" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
-                        </div>
-                        <div className="w-20">
-                          {i === 0 && <span className="text-[9px] text-gray-400 uppercase">%</span>}
-                          <input type="number" step="0.01" value={c.porcentaje} onChange={e => updateColab(i, "porcentaje", e.target.value)}
-                            placeholder="0,00" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
-                          {c.porcentaje && <span className="text-[9px] text-gray-500">{parseFloat(c.porcentaje).toLocaleString("es-ES", { minimumFractionDigits: 2 })}%</span>}
-                        </div>
-                        <div className="w-28">
-                          {i === 0 && <span className="text-[9px] text-gray-400 uppercase">€</span>}
-                          <input type="number" step="0.01" value={c.importe} onChange={e => updateColab(i, "importe", e.target.value)}
-                            placeholder="0,00" className="w-full border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47]" />
-                          {c.importe && <span className="text-[9px] text-gray-500">{parseFloat(c.importe).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</span>}
-                        </div>
+                      <div key={i} className="mb-3 p-2 bg-white border border-gray-100 relative">
                         {colaboradores.length > 1 && (
                           <button type="button" onClick={() => removeColab(i)}
-                            className="text-gray-400 hover:text-red-500 text-sm pb-1">✕</button>
+                            className="absolute top-1 right-1 text-gray-400 hover:text-red-500 text-xs">✕</button>
                         )}
+                        <div className="mb-1.5">
+                          <input type="text" value={c.nombre} onChange={e => updateColab(i, "nombre", e.target.value)}
+                            placeholder="Nombre del colaborador" className="w-full border border-gray-200 px-2 py-1.5 text-xs font-medium focus:outline-none focus:border-[#2E1A47]" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-[9px] text-gray-400 uppercase">%</span>
+                            <input type="number" step="0.01" value={c.porcentaje} onChange={e => updateColab(i, "porcentaje", e.target.value)}
+                              placeholder="0,00" className="w-full border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                            {c.porcentaje && <p className="text-[9px] text-gray-500 mt-0.5">{parseFloat(c.porcentaje).toLocaleString("es-ES", { minimumFractionDigits: 2 })}%</p>}
+                          </div>
+                          <div>
+                            <span className="text-[9px] text-gray-400 uppercase">€</span>
+                            <input type="number" step="0.01" value={c.importe} onChange={e => updateColab(i, "importe", e.target.value)}
+                              placeholder="0,00" className="w-full border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
+                            {c.importe && <p className="text-[9px] text-gray-500 mt-0.5">{parseFloat(c.importe).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>}
+                          </div>
+                        </div>
                       </div>
                     ))}
                     <p className="text-[9px] text-gray-400 mt-1">% calculado sobre importe proveedor ({importeNum.toLocaleString("es-ES", { minimumFractionDigits: 2 })} €)</p>
