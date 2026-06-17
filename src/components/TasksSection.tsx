@@ -161,7 +161,7 @@ export default function TasksSection({
                 onClick={() => sendReminder(t.asignado_a_id!)}
                 disabled={sendingTo === t.asignado_a_id}
                 title={sentTo === t.asignado_a_id ? "Enviado" : `Enviar recordatorio a ${t.asignado_a_nombre}`}
-                className={`text-xs transition-colors ${sentTo === t.asignado_a_id ? "text-emerald-500" : "text-gray-300 hover:text-[#2E1A47]"} opacity-0 group-hover:opacity-100`}
+                className={`text-sm transition-colors ${sentTo === t.asignado_a_id ? "text-emerald-500" : "text-gray-400 hover:text-[#2E1A47]"}`}
               >
                 {sendingTo === t.asignado_a_id ? "…" : sentTo === t.asignado_a_id ? "✓" : "✉"}
               </button>
