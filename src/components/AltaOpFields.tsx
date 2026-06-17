@@ -157,7 +157,6 @@ export function ContactoInline({ nombre, setNombre, email, setEmail, telefono, s
               <button key={i} type="button" onMouseDown={() => seleccionar(p)}
                 className="w-full text-left px-3 py-2.5 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
                 <p className="text-sm font-semibold text-gray-800">{p.nombre}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{[p.rol, p.email, p.telefono].filter(Boolean).join(" · ")}</p>
               </button>
             ))}
           </div>

@@ -411,12 +411,8 @@ export default function AdminOpForm({
     if (avalEmpTimer.current) clearTimeout(avalEmpTimer.current);
     if (q.length < 2) { setAvalEmpresaResults([]); setAvalEmpresaOpen(false); return; }
     avalEmpTimer.current = setTimeout(async () => {
-      const [dbRes, apiRes] = await Promise.all([
-        fetch(`/api/search/clientes?q=${encodeURIComponent(q)}`).then(r => r.json()).catch(() => []),
-        q.length >= 3 ? fetch(`/api/search/empresas?q=${encodeURIComponent(q)}`).then(r => r.json()).catch(() => []) : Promise.resolve([]),
-      ]);
-      const apiMapped = (apiRes as any[]).map((e: any) => ({ ...e, _fromApi: true }));
-      setAvalEmpresaResults([...dbRes, ...apiMapped]);
+      const dbRes = await fetch(`/api/search/clientes?q=${encodeURIComponent(q)}`).then(r => r.json()).catch(() => []);
+      setAvalEmpresaResults(dbRes);
       setAvalEmpresaOpen(true);
     }, 300);
   }
@@ -643,7 +639,6 @@ export default function AdminOpForm({
                           <button key={i} type="button" onMouseDown={() => selectPersonaAval(p)}
                             className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
                             <p className="text-xs font-semibold text-gray-800">{p.nombre}</p>
-                            <p className="text-[10px] text-gray-400">{[p.rol, p.email, p.empresa || p.client_nombre].filter(Boolean).join(" · ")}</p>
                           </button>
                         ))}
                       </div>
@@ -741,34 +736,16 @@ export default function AdminOpForm({
                       placeholder="Buscar empresa..." autoComplete="off" />
                     {avalEmpresaOpen && (
                       <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-gray-200 shadow-lg max-h-60 overflow-y-auto">
-                        {avalEmpresaResults.filter((c: any) => !c._fromApi).length > 0 && (
-                          <p className="px-3 py-1 text-[9px] font-bold text-gray-400 uppercase bg-gray-50">Base de datos</p>
-                        )}
-                        {avalEmpresaResults.filter((c: any) => !c._fromApi).map((c: any) => (
+                        {avalEmpresaResults.map((c: any) => (
                           <button key={c.id} type="button" onMouseDown={() => selectClienteAval(c)}
                             className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
                             <p className="text-xs font-semibold text-gray-800">{c.nombre}</p>
-                            <p className="text-[10px] text-gray-400">{[c.codigo, c.cif, c.email].filter(Boolean).join(" · ")}</p>
+                            <p className="text-[10px] text-gray-400">{[c.codigo, c.cif].filter(Boolean).join(" · ")}</p>
                           </button>
                         ))}
-                        {avalEmpresaResults.filter((c: any) => c._fromApi).length > 0 && (
-                          <>
-                            <p className="px-3 py-1 text-[9px] font-bold text-blue-500 uppercase bg-blue-50">API externa</p>
-                            {avalEmpresaResults.filter((c: any) => c._fromApi).map((c: any, i: number) => (
-                              <button key={`api-${i}`} type="button" onMouseDown={() => {
-                                setAvalNombre(c.nombre); setAvalEmail(c.email ?? ""); setAvalTelefono(c.telefono ?? "");
-                                setAvalClientId(null); setAvalEmpresaResults([]); setAvalEmpresaOpen(false); setAvalEmpresaNueva(true);
-                              }}
-                                className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-gray-50 last:border-0">
-                                <p className="text-xs font-semibold text-gray-800">{c.nombre}</p>
-                                <p className="text-[10px] text-gray-400">{[c.cif, c.direccion, c.provincia].filter(Boolean).join(" · ")}</p>
-                              </button>
-                            ))}
-                          </>
-                        )}
                         <button type="button" onMouseDown={() => { setAvalEmpresaOpen(false); setAvalEmpresaNueva(true); }}
                           className="w-full text-left px-3 py-2.5 bg-emerald-50 hover:bg-emerald-100 border-t border-gray-200">
-                          <p className="text-xs font-bold text-emerald-700">+ Añadir nueva empresa manualmente</p>
+                          <p className="text-xs font-bold text-emerald-700">+ Nueva empresa (buscar en API)</p>
                         </button>
                       </div>
                     )}
