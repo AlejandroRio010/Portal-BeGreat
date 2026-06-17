@@ -23,7 +23,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   await db.update(clients).set({
     nombre: nombre.trim(),
-    cif: cif || null,
+    cif: cif ? cif.replace(/^([A-Za-z])(?!-)(\d)/, "$1-$2").toUpperCase() : null,
     email: email || null,
     telefono: telefono || null,
     web: web || null,

@@ -544,11 +544,13 @@ export default function AdminOpForm({
             <input type="number" step="0.01" value={importe} onChange={(e) => setImporte(e.target.value)} placeholder="0.00"
               className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
           </div>
-          <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Producto</label>
-            <input value={producto} onChange={(e) => setProducto(e.target.value)} placeholder="Línea ICO, leasing..."
-              className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-          </div>
+          {pipelineKey === "consultoria" && (
+            <div>
+              <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Producto</label>
+              <input value={producto} onChange={(e) => setProducto(e.target.value)} placeholder="Línea ICO, leasing..."
+                className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+            </div>
+          )}
           {pipelineKey === "renting" && (
             <>
               <div>

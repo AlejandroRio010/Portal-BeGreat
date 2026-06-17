@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   const [client] = await db.insert(clients).values({
     collaborator_id,
     nombre: nombre.trim(),
-    cif: cif || null,
+    cif: cif ? cif.replace(/^([A-Za-z])(?!-)(\d)/, "$1-$2").toUpperCase() : null,
     email: email || null,
     telefono: telefono || null,
     web: web || null,

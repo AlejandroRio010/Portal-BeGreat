@@ -247,11 +247,15 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       {/* Celebration */}
       {isGanada && <CelebrationBanner opNombre={op.nombre ?? op.codigo ?? "Operación"} clientNombre={op.client_nombre ?? "Cliente"} colaboradorLogoUrl={colabLogo} />}
 
-      {/* Motivo denegación */}
-      {op.status === "archivada" && op.motivo_denegacion && (
-        <div className="mb-6 bg-red-50 border border-red-200 px-5 py-4">
-          <p className="text-xs font-bold text-red-600 uppercase tracking-wider mb-1">Motivo de la denegación</p>
-          <p className="text-sm text-red-700">{op.motivo_denegacion}</p>
+      {/* Resultado (denegada/ganada/en curso) */}
+      {!isPendiente && (
+        <div className="mb-6">
+          <AdminOpResultadoPanel
+            opId={op.id}
+            pipelineKey={op.pipeline_key}
+            currentResultado={isGanada ? "ganada" : op.status === "archivada" ? "denegada" : "en_curso"}
+            motivoDenegacion={op.motivo_denegacion ?? null}
+          />
         </div>
       )}
 
@@ -302,8 +306,8 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
         )}
       </div>
 
-      {/* Progress bar */}
-      {!isPendiente && op.status !== "archivada" && (
+      {/* Progress bar — ocultar en ganadas */}
+      {!isPendiente && op.status !== "archivada" && !isGanada && (
         <div className="bg-white border border-gray-200 p-5 mb-6">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Fase de la operación</p>
           <div className="flex items-center gap-0">
@@ -334,15 +338,6 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             })}
           </div>
         </div>
-      )}
-
-      {!isPendiente && (
-        <AdminOpResultadoPanel
-          opId={op.id}
-          pipelineKey={op.pipeline_key}
-          currentResultado={isGanada ? "ganada" : op.status === "archivada" ? "denegada" : "en_curso"}
-          motivoDenegacion={op.motivo_denegacion ?? null}
-        />
       )}
 
       {/* Main grid: fields + notes + admin panel */}
