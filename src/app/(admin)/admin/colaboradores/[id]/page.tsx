@@ -299,6 +299,7 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
           puedeEditarOps={colab.puede_editar_ops ?? false}
           nivelEntidades={colab.nivel_entidades ?? 4}
           puedePublicarSinValidar={colab.puede_publicar_sin_validar ?? false}
+          puedeEnviarRecordatorios={colab.puede_enviar_recordatorios ?? false}
         />
       </div>
 

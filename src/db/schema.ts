@@ -44,6 +44,7 @@ export const collaborators = pgTable("collaborators", {
   puede_ver_entidades: boolean("puede_ver_entidades").notNull().default(false),
   nivel_entidades: integer("nivel_entidades").notNull().default(4),
   puede_publicar_sin_validar: boolean("puede_publicar_sin_validar").notNull().default(false),
+  puede_enviar_recordatorios: boolean("puede_enviar_recordatorios").notNull().default(false),
   codigo: text("codigo").unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });

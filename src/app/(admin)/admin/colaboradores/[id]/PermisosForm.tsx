@@ -8,6 +8,7 @@ interface Props {
   puedeEditarOps: boolean;
   nivelEntidades: number;
   puedePublicarSinValidar: boolean;
+  puedeEnviarRecordatorios: boolean;
 }
 
 const NIVELES_ENTIDADES = [
@@ -17,11 +18,12 @@ const NIVELES_ENTIDADES = [
   { value: 4, label: "Nivel 4 — Mínimo", desc: "Sin sección. Solo ve nombre del banco en sus ops (sin oficina). Se puede ocultar el nombre." },
 ];
 
-export default function PermisosForm({ colaboradorId, puedeEditarOps, nivelEntidades, puedePublicarSinValidar }: Props) {
+export default function PermisosForm({ colaboradorId, puedeEditarOps, nivelEntidades, puedePublicarSinValidar, puedeEnviarRecordatorios }: Props) {
   const router = useRouter();
   const [editarOps, setEditarOps] = useState(puedeEditarOps);
   const [nivel, setNivel] = useState(nivelEntidades);
   const [publicarSinValidar, setPublicarSinValidar] = useState(puedePublicarSinValidar);
+  const [enviarRecordatorios, setEnviarRecordatorios] = useState(puedeEnviarRecordatorios);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -126,6 +128,29 @@ export default function PermisosForm({ colaboradorId, puedeEditarOps, nivelEntid
             <span
               className={`inline-block h-4 w-4 bg-white transition-transform ${
                 publicarSinValidar ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className="border-t border-gray-100" />
+
+        {/* Puede enviar recordatorios */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-gray-800">Enviar recordatorios de tareas</p>
+            <p className="text-xs text-gray-400 mt-0.5">El colaborador puede enviar emails de recordatorio de tareas pendientes desde las fichas de operación.</p>
+          </div>
+          <button
+            onClick={() => toggleBool("puede_enviar_recordatorios", enviarRecordatorios, setEnviarRecordatorios)}
+            disabled={saving}
+            className={`flex-shrink-0 relative inline-flex h-6 w-11 items-center transition-colors focus:outline-none disabled:opacity-50 ${
+              enviarRecordatorios ? "bg-[#2E1A47]" : "bg-gray-200"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 bg-white transition-transform ${
+                enviarRecordatorios ? "translate-x-6" : "translate-x-1"
               }`}
             />
           </button>

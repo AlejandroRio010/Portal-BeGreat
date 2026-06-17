@@ -19,10 +19,12 @@ export default function TasksSection({
   initialTasks,
   operationId,
   assignees,
+  canSendReminders = false,
 }: {
   initialTasks: Task[];
   operationId: string;
   assignees: Assignee[];
+  canSendReminders?: boolean;
 }) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [titulo, setTitulo] = useState("");
@@ -156,7 +158,7 @@ export default function TasksSection({
             <span className="text-[10px] font-bold px-2 py-0.5 bg-[#EEEBF3] text-[#2E1A47]">
               {shortName(t.asignado_a_nombre, t.asignado_a)}
             </span>
-            {t.asignado_a_id && (
+            {canSendReminders && t.asignado_a_id && (
               <button
                 onClick={() => sendReminder(t.asignado_a_id!)}
                 disabled={sendingTo === t.asignado_a_id}

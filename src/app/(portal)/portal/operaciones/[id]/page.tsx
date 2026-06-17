@@ -87,7 +87,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
   if (!op) notFound();
 
   const [colab] = await db
-    .select({ nombre: collaborators.nombre, puede_editar_ops: collaborators.puede_editar_ops, nivel_entidades: collaborators.nivel_entidades, logo_url: collaborators.logo_url })
+    .select({ nombre: collaborators.nombre, puede_editar_ops: collaborators.puede_editar_ops, puede_enviar_recordatorios: collaborators.puede_enviar_recordatorios, nivel_entidades: collaborators.nivel_entidades, logo_url: collaborators.logo_url })
     .from(collaborators)
     .where(eq(collaborators.id, userId))
     .limit(1);
@@ -500,6 +500,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
           initialTasks={opTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null }))}
           operationId={id}
           assignees={taskAssignees}
+          canSendReminders={colab?.puede_enviar_recordatorios ?? false}
         />
 
         <NotesSection

@@ -562,6 +562,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
           initialTasks={opTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null }))}
           operationId={id}
           assignees={taskAssignees}
+          canSendReminders
         />
 
         <NotesSection
