@@ -54,6 +54,7 @@ function TablaHead({ esAdmin }: { esAdmin: boolean }) {
 
 export default function ClientesTabla({ clientes, esAdmin, hrefBase }: { clientes: ClienteRow[]; esAdmin: boolean; hrefBase: string }) {
   const [q, setQ] = useState("");
+  const [tab, setTab] = useState<"clientes" | "avalistas">("clientes");
   const ql = q.toLowerCase().trim();
 
   let filtered = ql
@@ -67,50 +68,48 @@ export default function ClientesTabla({ clientes, esAdmin, hrefBase }: { cliente
 
   const clientesNormales = filtered.filter(c => !(c.esAvalista && c.ops === 0));
   const soloAvalistas = filtered.filter(c => c.esAvalista && c.ops === 0);
+  const rows = tab === "clientes" ? clientesNormales : soloAvalistas;
 
   return (
     <div>
-      <div className="mb-4">
+      <div className="flex items-center gap-4 mb-4">
+        <div className="flex bg-gray-100 p-0.5">
+          <button
+            onClick={() => setTab("clientes")}
+            className={`px-4 py-2 text-sm font-semibold transition-colors ${tab === "clientes" ? "bg-[#2E1A47] text-white" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            Clientes ({clientesNormales.length})
+          </button>
+          <button
+            onClick={() => setTab("avalistas")}
+            className={`px-4 py-2 text-sm font-semibold transition-colors ${tab === "avalistas" ? "bg-amber-500 text-white" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            Avalistas ({soloAvalistas.length})
+          </button>
+        </div>
         <input
           value={q}
           onChange={e => setQ(e.target.value)}
           placeholder="Buscar por nombre, código, CIF o email..."
-          className="w-full px-4 py-2.5 border border-gray-200 text-sm focus:outline-none focus:border-[#2E1A47] bg-white"
+          className="flex-1 px-4 py-2.5 border border-gray-200 text-sm focus:outline-none focus:border-[#2E1A47] bg-white"
         />
       </div>
 
-      {clientesNormales.length === 0 && soloAvalistas.length === 0 ? (
-        <div className="bg-white border border-gray-200 p-10 text-center"><p className="text-gray-400 text-sm">No se encontraron clientes.</p></div>
+      {rows.length === 0 ? (
+        <div className="bg-white border border-gray-200 p-10 text-center">
+          <p className="text-gray-400 text-sm">
+            {tab === "clientes" ? "No se encontraron clientes." : "No hay empresas que sean solo avalistas."}
+          </p>
+        </div>
       ) : (
-        <>
-          {clientesNormales.length > 0 && (
-            <div className="bg-white border border-gray-200 overflow-hidden">
-              <table className="w-full">
-                <TablaHead esAdmin={esAdmin} />
-                <tbody className="divide-y divide-gray-50">
-                  <TablaRows rows={clientesNormales} hrefBase={hrefBase} esAdmin={esAdmin} />
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {soloAvalistas.length > 0 && (
-            <div className="mt-8">
-              <p className="text-xs font-bold text-amber-700 uppercase tracking-widest mb-3 flex items-center gap-2">
-                <span className="inline-block w-2 h-2 bg-amber-400 rounded-full" />
-                Solo avalistas ({soloAvalistas.length})
-              </p>
-              <div className="bg-white border border-amber-200 overflow-hidden">
-                <table className="w-full">
-                  <TablaHead esAdmin={esAdmin} />
-                  <tbody className="divide-y divide-gray-50">
-                    <TablaRows rows={soloAvalistas} hrefBase={hrefBase} esAdmin={esAdmin} />
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </>
+        <div className={`bg-white border overflow-hidden ${tab === "avalistas" ? "border-amber-200" : "border-gray-200"}`}>
+          <table className="w-full">
+            <TablaHead esAdmin={esAdmin} />
+            <tbody className="divide-y divide-gray-50">
+              <TablaRows rows={rows} hrefBase={hrefBase} esAdmin={esAdmin} />
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
