@@ -54,7 +54,7 @@ export default async function RentingPage() {
       ) : (
         <PortalKanbanRenting
           ops={ops.map(o => ({ ...o, importe: o.importe ?? null, comision_colaborador: o.comision_colaborador ?? null, facturacion_renting: o.facturacion_renting ?? null, modalidad_renting: o.modalidad_renting ?? null, importe_facturado_begreat: o.importe_facturado_begreat ?? null, importe_facturado_visible: o.importe_facturado_visible ?? false, plazo_meses: o.plazo_meses ?? null }))}
-          fases={fases}
+          fases={fases.filter(f => f !== "Transferencia realizada")}
           canEdit={false}
         />
       )}

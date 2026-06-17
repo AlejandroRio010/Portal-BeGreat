@@ -98,7 +98,7 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
 
   const isPendiente = op.status === "pendiente_de_validar";
   const isArchivada = op.status === "archivada";
-  const FASES_GANADAS = ["Contrato firmado", "Transferencia realizada"];
+  const FASES_GANADAS = ["Honorarios pagados", "Transferencia realizada"];
   const isGanada = FASES_GANADAS.includes(op.fase ?? "");
   const isDenegada = isArchivada && !isGanada;
 

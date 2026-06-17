@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { operations, clients, collaborators, pipelines } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, notInArray } from "drizzle-orm";
 import KanbanBoard from "./KanbanBoard";
 
 const FASES_CONSULTORIA_DEFAULT = [
@@ -27,7 +27,7 @@ export default async function AdminConsultoriaKanbanPage() {
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
     .leftJoin(collaborators, eq(operations.collaborator_id, collaborators.id))
-    .where(and(eq(operations.pipeline_key, "consultoria"), eq(operations.status, "activa")))
+    .where(and(eq(operations.pipeline_key, "consultoria"), eq(operations.status, "activa"), notInArray(operations.fase, ["Honorarios pagados"])))
     .orderBy(operations.created_at);
 
   return (
@@ -36,7 +36,7 @@ export default async function AdminConsultoriaKanbanPage() {
         <h1 className="text-2xl font-bold text-gray-900">Consultoría — Kanban</h1>
         <p className="text-sm text-gray-400 mt-1">Arrastra las operaciones entre columnas para actualizar su fase.</p>
       </div>
-      <KanbanBoard fases={fases} initialOps={ops.map((op) => ({
+      <KanbanBoard fases={fases.filter(f => f !== "Honorarios pagados")} initialOps={ops.map((op) => ({
         ...op,
         importe: op.importe ?? null,
         comision_colaborador: op.comision_colaborador ?? null,
