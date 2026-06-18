@@ -498,7 +498,7 @@ export const customFieldValues = pgTable("custom_field_values", {
 });
 
 // ─── Tareas de operación ─────────────────────────────────────────────────────
-export const taskAssigneeEnum = pgEnum("task_assignee", ["admin", "colaborador", "cliente"]);
+export const taskAssigneeEnum = pgEnum("task_assignee", ["admin", "colaborador", "cliente", "avalista"]);
 
 export const operationTasks = pgTable("operation_tasks", {
   id: uuid("id").primaryKey().defaultRandom(),

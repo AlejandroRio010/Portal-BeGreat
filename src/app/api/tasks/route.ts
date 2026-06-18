@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { operationTasks, operations } from "@/db/schema";
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, inArray } from "drizzle-orm";
 
 export async function GET() {
   const session = await auth();
@@ -38,7 +38,7 @@ export async function GET() {
         or(
           eq(operationTasks.asignado_a_id, userId),
           and(
-            eq(operationTasks.asignado_a, "cliente"),
+            inArray(operationTasks.asignado_a, ["cliente", "avalista"]),
             isAdmin
               ? undefined
               : eq(operations.collaborator_id, userId)

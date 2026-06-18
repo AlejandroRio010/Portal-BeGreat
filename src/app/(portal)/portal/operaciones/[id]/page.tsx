@@ -149,7 +149,11 @@ export default async function OperacionDetallePage({ params }: { params: Promise
     ...admins,
   ];
   if (op.client_nombre) {
-    taskAssignees.push({ id: "__cliente__", nombre: `Cliente (${op.client_nombre})` });
+    taskAssignees.push({ id: "__cliente__", nombre: op.client_nombre });
+  }
+  if (op.tiene_aval) {
+    const avalName = op.aval_empresa || op.aval_nombre || "Avalista";
+    taskAssignees.push({ id: "__avalista__", nombre: avalName });
   }
 
   const clientFolder = sanitizeFolderName(op.client_nombre ?? "Sin cliente");

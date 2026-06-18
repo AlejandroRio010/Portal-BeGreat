@@ -45,11 +45,13 @@ export async function POST(
   if (!titulo?.trim()) return NextResponse.json({ error: "Título obligatorio" }, { status: 400 });
 
   const isCliente = asignado_a_id === "__cliente__";
+  const isAvalista = asignado_a_id === "__avalista__";
+  const asignado_a_role = isCliente ? "cliente" : isAvalista ? "avalista" : (caller.role === "admin" ? "admin" : "colaborador");
   const [task] = await db.insert(operationTasks).values({
     operation_id: id,
     titulo: titulo.trim(),
-    asignado_a: isCliente ? "cliente" : (caller.role === "admin" ? "admin" : "colaborador"),
-    asignado_a_id: isCliente ? null : (asignado_a_id || null),
+    asignado_a: asignado_a_role,
+    asignado_a_id: (isCliente || isAvalista) ? null : (asignado_a_id || null),
     asignado_a_nombre: asignado_a_nombre || null,
     created_by_role: caller.role,
     created_by_id: caller.id,
