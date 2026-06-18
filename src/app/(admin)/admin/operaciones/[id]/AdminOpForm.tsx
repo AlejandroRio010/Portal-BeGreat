@@ -866,7 +866,7 @@ export default function AdminOpForm({
               </div>
 
               {/* ── Panel de comisiones ── */}
-              {(pipelineKey === "consultoria" || (pipelineKey === "renting" && modalidadRenting)) && (
+              {(pipelineKey === "consultoria" || pipelineKey === "renting") && (
                 <div className="col-span-1 space-y-4 border border-gray-200 p-4 bg-gray-50/50">
                   <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Comisiones</p>
 
