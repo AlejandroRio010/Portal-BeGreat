@@ -188,6 +188,8 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
               </div>
             </div>
           )}
+
+          <DocChecklistPanel entityType="proveedor" entityId={id} templates={docTemplates} customItems={docCustomItems} entries={docEntries} />
         </div>
 
         {/* Operaciones */}
@@ -235,7 +237,6 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
               </tbody>
             </table>
           )}
-          <DocChecklistPanel entityType="proveedor" entityId={id} templates={docTemplates} customItems={docCustomItems} entries={docEntries} />
         </div>
       </div>
     </div>

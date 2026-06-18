@@ -256,6 +256,8 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
             </div>
             {puedeEditar && <div className="px-5 py-4"><NuevoContactoForm clientId={id} /></div>}
           </div>
+
+          <DocChecklistPanel entityType="cliente" entityId={id} templates={docTemplates} customItems={docCustomItems} entries={docEntries} />
         </div>
 
         {/* Col 2-3: Operaciones + Notas */}
@@ -379,8 +381,6 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
               </div>
             </div>
           )}
-
-          <DocChecklistPanel entityType="cliente" entityId={id} templates={docTemplates} customItems={docCustomItems} entries={docEntries} />
 
           <NotesSection
             notes={notes}

@@ -168,10 +168,10 @@ export default function DocChecklistPanel({ entityType, entityId, templates, cus
         <label className="flex items-center gap-2.5 cursor-pointer flex-1">
           <button type="button" onClick={() => toggle(templateId, customItemId)}
             disabled={saving === key}
-            className={`w-5 h-5 border-2 flex items-center justify-center flex-shrink-0 transition-all ${checked ? CHECK_ON : CHECK_OFF}`}>
-            {checked && <CheckSvg />}
+            className={`w-4 h-4 border-2 flex items-center justify-center flex-shrink-0 transition-all ${checked ? CHECK_ON : CHECK_OFF}`}>
+            {checked && <CheckSvg size="w-3 h-3" />}
           </button>
-          <span className={`text-sm ${checked ? "text-gray-500 line-through" : "text-gray-800"}`}>{label}</span>
+          <span className={`text-xs ${checked ? "text-gray-500 line-through" : "text-gray-800"}`}>{label}</span>
         </label>
         {onDelete && (
           <button onClick={onDelete}
@@ -200,10 +200,10 @@ export default function DocChecklistPanel({ entityType, entityId, templates, cus
           className="w-full flex items-center justify-between py-2.5 px-3 hover:bg-gray-50 transition-colors text-left"
           style={{ paddingLeft: 12 + indent * 20 }}>
           <div className="flex items-center gap-2.5">
-            <div className={`w-5 h-5 border-2 flex items-center justify-center flex-shrink-0 ${anyCheck ? CHECK_ON : "border-gray-300"}`}>
-              {anyCheck && total > 0 && <span className="text-[8px] font-bold text-white">{total}</span>}
+            <div className={`w-4 h-4 border-2 flex items-center justify-center flex-shrink-0 ${anyCheck ? CHECK_ON : "border-gray-300"}`}>
+              {anyCheck && total > 0 && <span className="text-[7px] font-bold text-white">{total}</span>}
             </div>
-            <span className="text-sm text-gray-800 font-medium">{item.nombre}</span>
+            <span className="text-xs text-gray-800 font-medium">{item.nombre}</span>
           </div>
           <div className="flex items-center gap-2">
             {total > 0 && <span className="text-[10px] text-emerald-600 font-semibold">{total} doc{total !== 1 ? "s" : ""}</span>}

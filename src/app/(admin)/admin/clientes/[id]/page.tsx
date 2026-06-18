@@ -257,6 +257,8 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
               linkedin: c.linkedin ?? null,
             }))}
           />
+
+          <DocChecklistPanel entityType="cliente" entityId={id} templates={docTemplates} customItems={docCustomItems} entries={docEntries} />
         </div>
 
         {/* Col 2-3: Operaciones */}
@@ -382,8 +384,6 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
               </div>
             </div>
           )}
-
-          <DocChecklistPanel entityType="cliente" entityId={id} templates={docTemplates} customItems={docCustomItems} entries={docEntries} />
 
           <NotesSection
             notes={notes}
