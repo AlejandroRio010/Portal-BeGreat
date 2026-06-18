@@ -383,6 +383,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
             placeholder="Añade una nota general sobre este cliente..."
             isAdmin={true}
             currentUserId={adminUserId}
+            canPin
           />
 
           <DocumentsSection docs={docs} apiUrl={`/api/clientes/${id}/documents`} oneDriveFolder={sanitizeFolderName(client.nombre)} />

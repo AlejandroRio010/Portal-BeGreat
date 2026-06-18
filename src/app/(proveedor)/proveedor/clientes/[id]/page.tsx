@@ -379,6 +379,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
             notes={notes}
             apiUrl={`/api/proveedor/clientes/${id}/notes`}
             currentUserId={userId}
+            canPin
             placeholder="Añade una nota general sobre este cliente..."
           />
 
