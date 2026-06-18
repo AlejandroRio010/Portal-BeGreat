@@ -11,6 +11,7 @@ import InfoRequestsSection from "@/components/InfoRequestsSection";
 import TasksSection from "@/components/TasksSection";
 import { auth } from "@/lib/auth";
 import CelebrationBanner from "@/components/CelebrationBanner";
+import DuplicateButton from "./DuplicateButton";
 import { fmtEur, fmtNum } from "@/lib/format";
 import { sanitizeFolderName } from "@/lib/onedrive";
 
@@ -247,20 +248,23 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
           )}
           <p className="text-sm text-gray-400 mt-1">{isConsultoria ? "Consultoría financiera" : "Renting de equipos"}</p>
         </div>
-        {isPendiente ? (
-          <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-            Pendiente de validar
-          </span>
-        ) : op.status === "archivada" ? (
-          <span className="px-3 py-1.5 text-xs font-semibold border bg-red-50 border-red-200 text-red-600">
-            Archivada
-          </span>
-        ) : (
-          <span className={`px-3 py-1.5 text-xs font-semibold border ${faseStyle.bg} ${faseStyle.text} ${faseStyle.border}`}>
-            {op.fase}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          <DuplicateButton opId={op.id} />
+          {isPendiente ? (
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              Pendiente de validar
+            </span>
+          ) : op.status === "archivada" ? (
+            <span className="px-3 py-1.5 text-xs font-semibold border bg-red-50 border-red-200 text-red-600">
+              Archivada
+            </span>
+          ) : (
+            <span className={`px-3 py-1.5 text-xs font-semibold border ${faseStyle.bg} ${faseStyle.text} ${faseStyle.border}`}>
+              {op.fase}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Celebration */}
