@@ -48,9 +48,17 @@ export function fmtPctInput(v: string): string {
   return n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
 }
 
-/** Elimina formateo de input para obtener valor numérico crudo */
+/** Elimina formateo de input para obtener valor numérico crudo (acepta coma como decimal) */
 export function rawFromFmt(v: string): string {
-  return v.replace(/[€%\s.]/g, "").replace(",", ".");
+  // Remove currency/percent symbols and whitespace
+  let clean = v.replace(/[€%\s]/g, "");
+  // If there's a dot AND a comma, dot is thousands separator → remove it
+  if (clean.includes(".") && clean.includes(",")) {
+    clean = clean.replace(/\./g, "");
+  }
+  // Replace comma with dot for numeric storage
+  clean = clean.replace(",", ".");
+  return clean;
 }
 
 /** Auto-hyphen para CIF/NIF/DNI: inserta - entre letra y número */
