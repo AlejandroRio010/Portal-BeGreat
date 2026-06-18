@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operationTasks } from "@/db/schema";
+import { operationTasks, operations } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 async function getCallerInfo(session: any) {
@@ -14,13 +14,24 @@ async function getCallerInfo(session: any) {
   return null;
 }
 
+async function verifyOpAccess(opId: string, caller: { role: string; id: string }) {
+  if (caller.role === "admin") return true;
+  const field = caller.role === "colaborador" ? operations.collaborator_id : operations.supplier_id;
+  const [op] = await db.select({ id: operations.id }).from(operations)
+    .where(and(eq(operations.id, opId), eq(field, caller.id))).limit(1);
+  return !!op;
+}
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const caller = await getCallerInfo(session);
+  if (!caller) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
+  if (!await verifyOpAccess(id, caller)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const tasks = await db
     .select()
@@ -41,6 +52,7 @@ export async function POST(
   if (!caller) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
+  if (!await verifyOpAccess(id, caller)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { titulo, asignado_a_id, asignado_a_nombre } = await req.json();
   if (!titulo?.trim()) return NextResponse.json({ error: "Título obligatorio" }, { status: 400 });
 
@@ -66,8 +78,11 @@ export async function PATCH(
 ) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const caller = await getCallerInfo(session);
+  if (!caller) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
+  if (!await verifyOpAccess(id, caller)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { taskId, completada } = await req.json();
 
   const updateData: Record<string, unknown> = { completada };
@@ -87,8 +102,11 @@ export async function DELETE(
 ) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const caller = await getCallerInfo(session);
+  if (!caller) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
+  if (!await verifyOpAccess(id, caller)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { taskId } = await req.json();
   await db.delete(operationTasks).where(
     and(eq(operationTasks.id, taskId), eq(operationTasks.operation_id, id))

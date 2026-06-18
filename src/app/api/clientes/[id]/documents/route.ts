@@ -39,6 +39,13 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
+  const role = (session.user as any).role;
+  if (role !== "admin") {
+    const userId = (session.user as any).collaboratorId as string;
+    const [client] = await db.select({ id: clients.id }).from(clients)
+      .where(and(eq(clients.id, id), eq(clients.collaborator_id, userId))).limit(1);
+    if (!client) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const { docId } = await req.json();
   const [existing] = await db.select({ url: clientDocuments.url }).from(clientDocuments).where(eq(clientDocuments.id, docId)).limit(1);
   await db.delete(clientDocuments).where(and(eq(clientDocuments.id, docId), eq(clientDocuments.client_id, id)));

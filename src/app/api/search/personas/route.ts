@@ -16,6 +16,10 @@ export async function GET(req: NextRequest) {
 
   const results: Array<{ id?: string; nombre: string; rol: string | null; email: string | null; telefono: string | null; linkedin?: string | null; client_id?: string; client_nombre?: string }> = [];
 
+  const role = (session.user as any).role;
+  const ccWhere = role === "admin"
+    ? ilike(contacts.nombre, pattern)
+    : and(ilike(contacts.nombre, pattern), eq(clients.collaborator_id, userId));
   const cc = await db
     .select({
       id: contacts.id,
@@ -28,7 +32,7 @@ export async function GET(req: NextRequest) {
     })
     .from(contacts)
     .innerJoin(clients, eq(contacts.client_id, clients.id))
-    .where(ilike(contacts.nombre, pattern))
+    .where(ccWhere)
     .limit(10);
   results.push(...cc);
 
