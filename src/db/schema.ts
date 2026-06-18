@@ -539,6 +539,7 @@ export const docChecklistTemplates = pgTable("doc_checklist_templates", {
   id: uuid("id").primaryKey().defaultRandom(),
   nombre: text("nombre").notNull(),
   tipo: docChecklistTypeEnum("tipo").notNull().default("simple"),
+  parent_id: uuid("parent_id"),
   orden: serial("orden"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });

@@ -6,6 +6,7 @@ interface Template {
   id: string;
   nombre: string;
   tipo: "simple" | "anual" | "trimestral";
+  parent_id: string | null;
   orden: number;
 }
 
@@ -38,6 +39,15 @@ const YEARS = Array.from({ length: CURRENT_YEAR - 2023 + 1 }, (_, i) => 2023 + i
 const QUARTERS = [1, 2, 3, 4];
 const Q_LABELS = ["T1", "T2", "T3", "T4"];
 
+const CHECK_ON = "bg-emerald-500 border-emerald-500";
+const CHECK_OFF = "border-gray-300 hover:border-[#2E1A47]";
+const CheckSvg = ({ size = "w-3.5 h-3.5" }: { size?: string }) => (
+  <svg className={`${size} text-white`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+);
+const ChevronSvg = ({ open }: { open: boolean }) => (
+  <svg className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+);
+
 export default function DocChecklistPanel({ entityType, entityId, templates, customItems: initialCustom, entries: initialEntries }: Props) {
   const [entries, setEntries] = useState<Entry[]>(initialEntries);
   const [customItems, setCustomItems] = useState<CustomItem[]>(initialCustom);
@@ -46,6 +56,10 @@ export default function DocChecklistPanel({ entityType, entityId, templates, cus
   const [newName, setNewName] = useState("");
   const [newTipo, setNewTipo] = useState<"simple" | "anual" | "trimestral">("simple");
   const [saving, setSaving] = useState<string | null>(null);
+
+  const rootTemplates = templates.filter(t => !t.parent_id);
+  const childrenOf = (parentId: string) => templates.filter(t => t.parent_id === parentId).sort((a, b) => a.orden - b.orden);
+  const hasChildren = (id: string) => templates.some(t => t.parent_id === id);
 
   const isChecked = useCallback((templateId: string | null, customItemId: string | null, year?: number, quarter?: number) => {
     return entries.some(e =>
@@ -56,6 +70,22 @@ export default function DocChecklistPanel({ entityType, entityId, templates, cus
       e.checked
     );
   }, [entries]);
+
+  function countCheckedForTree(id: string): number {
+    const children = childrenOf(id);
+    if (children.length === 0) {
+      return entries.filter(e => e.template_id === id && e.checked).length;
+    }
+    return children.reduce((sum, c) => sum + countCheckedForTree(c.id), 0);
+  }
+
+  function hasAnyCheckInTree(id: string): boolean {
+    const children = childrenOf(id);
+    if (children.length === 0) {
+      return entries.some(e => e.template_id === id && e.checked);
+    }
+    return children.some(c => hasAnyCheckInTree(c.id));
+  }
 
   async function toggle(templateId: string | null, customItemId: string | null, year?: number, quarter?: number) {
     const key = `${templateId ?? customItemId}-${year ?? ""}-${quarter ?? ""}`;
@@ -122,14 +152,6 @@ export default function DocChecklistPanel({ entityType, entityId, templates, cus
     setOpenItems(prev => ({ ...prev, [id]: !prev[id] }));
   }
 
-  function hasAnyCheck(templateId: string | null, customItemId: string | null) {
-    return entries.some(e =>
-      e.template_id === templateId &&
-      e.custom_item_id === customItemId &&
-      e.checked
-    );
-  }
-
   function countChecked(templateId: string | null, customItemId: string | null) {
     return entries.filter(e =>
       e.template_id === templateId &&
@@ -138,63 +160,151 @@ export default function DocChecklistPanel({ entityType, entityId, templates, cus
     ).length;
   }
 
-  function renderItem(item: { id: string; nombre: string; tipo: string }, isTemplate: boolean) {
-    const templateId = isTemplate ? item.id : null;
-    const customItemId = isTemplate ? null : item.id;
+  function renderSimpleCheck(templateId: string | null, customItemId: string | null, label: string, indent: number, onDelete?: () => void) {
+    const checked = isChecked(templateId, customItemId);
+    const key = `${templateId ?? customItemId}--`;
+    return (
+      <div className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 group" style={{ paddingLeft: 12 + indent * 20 }}>
+        <label className="flex items-center gap-2.5 cursor-pointer flex-1">
+          <button type="button" onClick={() => toggle(templateId, customItemId)}
+            disabled={saving === key}
+            className={`w-5 h-5 border-2 flex items-center justify-center flex-shrink-0 transition-all ${checked ? CHECK_ON : CHECK_OFF}`}>
+            {checked && <CheckSvg />}
+          </button>
+          <span className={`text-sm ${checked ? "text-gray-500 line-through" : "text-gray-800"}`}>{label}</span>
+        </label>
+        {onDelete && (
+          <button onClick={onDelete}
+            className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs ml-2">✕</button>
+        )}
+      </div>
+    );
+  }
+
+  function renderTemplate(item: Template, indent: number = 0): React.ReactNode {
+    const children = childrenOf(item.id);
     const isOpen = openItems[item.id];
 
-    if (item.tipo === "simple") {
-      const checked = isChecked(templateId, customItemId);
-      const key = `${templateId ?? customItemId}--`;
-      return (
-        <div key={item.id} className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 group">
-          <label className="flex items-center gap-2.5 cursor-pointer flex-1">
-            <button type="button" onClick={() => toggle(templateId, customItemId)}
-              disabled={saving === key}
-              className={`w-5 h-5 border-2 flex items-center justify-center flex-shrink-0 transition-all ${checked ? "bg-emerald-500 border-emerald-500" : "border-gray-300 hover:border-[#2E1A47]"}`}>
-              {checked && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-            </button>
-            <span className={`text-sm ${checked ? "text-gray-500 line-through" : "text-gray-800"}`}>{item.nombre}</span>
-          </label>
-          {!isTemplate && (
-            <button onClick={() => deleteCustomItem(item.id)}
-              className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs ml-2">✕</button>
-          )}
-        </div>
-      );
+    // Leaf node with no children: render based on tipo
+    if (children.length === 0 && item.tipo === "simple") {
+      return <div key={item.id}>{renderSimpleCheck(item.id, null, item.nombre, indent)}</div>;
     }
 
-    const anyCheck = hasAnyCheck(templateId, customItemId);
-    const total = countChecked(templateId, customItemId);
+    // Has children OR is anual/trimestral: render as collapsible
+    const total = children.length > 0 ? countCheckedForTree(item.id) : countChecked(item.id, null);
+    const anyCheck = children.length > 0 ? hasAnyCheckInTree(item.id) : entries.some(e => e.template_id === item.id && e.checked);
 
     return (
       <div key={item.id} className="border-b border-gray-50 last:border-0">
         <button onClick={() => toggleOpen(item.id)}
-          className="w-full flex items-center justify-between py-2.5 px-3 hover:bg-gray-50 transition-colors text-left">
+          className="w-full flex items-center justify-between py-2.5 px-3 hover:bg-gray-50 transition-colors text-left"
+          style={{ paddingLeft: 12 + indent * 20 }}>
           <div className="flex items-center gap-2.5">
-            <div className={`w-5 h-5 border-2 flex items-center justify-center flex-shrink-0 ${anyCheck ? "bg-emerald-500 border-emerald-500" : "border-gray-300"}`}>
-              {anyCheck && (total > 0) && <span className="text-[8px] font-bold text-white">{total}</span>}
+            <div className={`w-5 h-5 border-2 flex items-center justify-center flex-shrink-0 ${anyCheck ? CHECK_ON : "border-gray-300"}`}>
+              {anyCheck && total > 0 && <span className="text-[8px] font-bold text-white">{total}</span>}
             </div>
             <span className="text-sm text-gray-800 font-medium">{item.nombre}</span>
           </div>
           <div className="flex items-center gap-2">
             {total > 0 && <span className="text-[10px] text-emerald-600 font-semibold">{total} doc{total !== 1 ? "s" : ""}</span>}
-            <svg className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            <ChevronSvg open={!!isOpen} />
           </div>
         </button>
+        {isOpen && (
+          <div>
+            {children.length > 0 ? (
+              children.map(child => renderTemplate(child, indent + 1))
+            ) : (
+              <div className="px-3 pb-3">
+                {item.tipo === "anual" && (
+                  <div className="ml-7 space-y-1">
+                    {YEARS.map(y => {
+                      const checked = isChecked(item.id, null, y);
+                      const key = `${item.id}-${y}-`;
+                      return (
+                        <label key={y} className="flex items-center gap-2 cursor-pointer py-1 hover:bg-gray-50 px-2 -mx-2">
+                          <button type="button" onClick={() => toggle(item.id, null, y)}
+                            disabled={saving === key}
+                            className={`w-4 h-4 border-2 flex items-center justify-center flex-shrink-0 transition-all ${checked ? CHECK_ON : CHECK_OFF}`}>
+                            {checked && <CheckSvg size="w-3 h-3" />}
+                          </button>
+                          <span className={`text-xs ${checked ? "text-gray-400 line-through" : "text-gray-700"}`}>{y}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+                {item.tipo === "trimestral" && (
+                  <div className="ml-7 space-y-2">
+                    {YEARS.map(y => (
+                      <div key={y}>
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">{y}</p>
+                        <div className="grid grid-cols-4 gap-1">
+                          {QUARTERS.map((q, qi) => {
+                            const checked = isChecked(item.id, null, y, q);
+                            const key = `${item.id}-${y}-${q}`;
+                            return (
+                              <button key={q} type="button" onClick={() => toggle(item.id, null, y, q)}
+                                disabled={saving === key}
+                                className={`py-1.5 text-[11px] font-semibold border transition-all ${checked ? "bg-emerald-500 border-emerald-500 text-white" : "border-gray-200 text-gray-600 hover:border-[#2E1A47] hover:text-[#2E1A47]"}`}>
+                                {Q_LABELS[qi]}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function renderCustomItem(item: CustomItem) {
+    if (item.tipo === "simple") {
+      return <div key={item.id}>{renderSimpleCheck(null, item.id, item.nombre, 0, () => deleteCustomItem(item.id))}</div>;
+    }
+
+    const isOpen = openItems[item.id];
+    const total = countChecked(null, item.id);
+    const anyCheck = entries.some(e => e.custom_item_id === item.id && e.checked);
+
+    return (
+      <div key={item.id} className="border-b border-gray-50 last:border-0">
+        <div className="flex items-center">
+          <button onClick={() => toggleOpen(item.id)}
+            className="flex-1 flex items-center justify-between py-2.5 px-3 hover:bg-gray-50 transition-colors text-left">
+            <div className="flex items-center gap-2.5">
+              <div className={`w-5 h-5 border-2 flex items-center justify-center flex-shrink-0 ${anyCheck ? CHECK_ON : "border-gray-300"}`}>
+                {anyCheck && total > 0 && <span className="text-[8px] font-bold text-white">{total}</span>}
+              </div>
+              <span className="text-sm text-gray-800 font-medium">{item.nombre}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {total > 0 && <span className="text-[10px] text-emerald-600 font-semibold">{total} doc{total !== 1 ? "s" : ""}</span>}
+              <ChevronSvg open={!!isOpen} />
+            </div>
+          </button>
+          <button onClick={() => deleteCustomItem(item.id)}
+            className="text-gray-300 hover:text-red-500 text-xs px-2 opacity-0 hover:opacity-100">✕</button>
+        </div>
         {isOpen && (
           <div className="px-3 pb-3">
             {item.tipo === "anual" && (
               <div className="ml-7 space-y-1">
                 {YEARS.map(y => {
-                  const checked = isChecked(templateId, customItemId, y);
-                  const key = `${templateId ?? customItemId}-${y}-`;
+                  const checked = isChecked(null, item.id, y);
+                  const key = `${item.id}-${y}-`;
                   return (
                     <label key={y} className="flex items-center gap-2 cursor-pointer py-1 hover:bg-gray-50 px-2 -mx-2">
-                      <button type="button" onClick={() => toggle(templateId, customItemId, y)}
+                      <button type="button" onClick={() => toggle(null, item.id, y)}
                         disabled={saving === key}
-                        className={`w-4 h-4 border-2 flex items-center justify-center flex-shrink-0 transition-all ${checked ? "bg-emerald-500 border-emerald-500" : "border-gray-300 hover:border-[#2E1A47]"}`}>
-                        {checked && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                        className={`w-4 h-4 border-2 flex items-center justify-center flex-shrink-0 transition-all ${checked ? CHECK_ON : CHECK_OFF}`}>
+                        {checked && <CheckSvg size="w-3 h-3" />}
                       </button>
                       <span className={`text-xs ${checked ? "text-gray-400 line-through" : "text-gray-700"}`}>{y}</span>
                     </label>
@@ -209,10 +319,10 @@ export default function DocChecklistPanel({ entityType, entityId, templates, cus
                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">{y}</p>
                     <div className="grid grid-cols-4 gap-1">
                       {QUARTERS.map((q, qi) => {
-                        const checked = isChecked(templateId, customItemId, y, q);
-                        const key = `${templateId ?? customItemId}-${y}-${q}`;
+                        const checked = isChecked(null, item.id, y, q);
+                        const key = `${item.id}-${y}-${q}`;
                         return (
-                          <button key={q} type="button" onClick={() => toggle(templateId, customItemId, y, q)}
+                          <button key={q} type="button" onClick={() => toggle(null, item.id, y, q)}
                             disabled={saving === key}
                             className={`py-1.5 text-[11px] font-semibold border transition-all ${checked ? "bg-emerald-500 border-emerald-500 text-white" : "border-gray-200 text-gray-600 hover:border-[#2E1A47] hover:text-[#2E1A47]"}`}>
                             {Q_LABELS[qi]}
@@ -224,12 +334,6 @@ export default function DocChecklistPanel({ entityType, entityId, templates, cus
                 ))}
               </div>
             )}
-          </div>
-        )}
-        {!isTemplate && !isOpen && (
-          <div className="px-3 pb-1">
-            <button onClick={() => deleteCustomItem(item.id)}
-              className="text-[10px] text-gray-300 hover:text-red-500 transition-colors">Eliminar item</button>
           </div>
         )}
       </div>
@@ -245,8 +349,8 @@ export default function DocChecklistPanel({ entityType, entityId, templates, cus
       </div>
 
       <div className="divide-y divide-gray-100">
-        {templates.map(t => renderItem(t, true))}
-        {customItems.map(c => renderItem(c, false))}
+        {rootTemplates.map(t => renderTemplate(t))}
+        {customItems.map(c => renderCustomItem(c))}
       </div>
 
       {addingItem && (
