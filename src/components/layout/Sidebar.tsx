@@ -45,13 +45,13 @@ const adminNav = [
   { href: "/admin/historial",               label: "Historial & Resumen",   exact: false },
   { href: "/admin/operaciones/consultoria", label: "Consultoría financiera", exact: false, sub: true },
   { href: "/admin/operaciones/renting",     label: "Renting de equipos",     exact: false, sub: true },
+  { href: "/admin/cotizador",     label: "Cotizador renting",    exact: false },
   { href: "/admin/colaboradores", label: "Colaboradores",  exact: false },
   { href: "/admin/clientes",      label: "Clientes",             exact: false },
   { href: "/admin/contactos",     label: "Personas de contacto", exact: false },
   { href: "/admin/grupos",        label: "Grupos empresariales", exact: false },
   { href: "/admin/proveedores",   label: "Proveedores",          exact: false },
   { href: "/admin/entidades",     label: "Entidades financieras",exact: false },
-  { href: "/admin/cotizador",     label: "Cotizador renting",    exact: false },
   { href: "/admin/configuracion", label: "Configuración",        exact: false },
 ];
 
