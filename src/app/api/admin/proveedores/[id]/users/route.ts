@@ -33,14 +33,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id: supplierId } = await params;
-  const { nombre, email } = await req.json();
+  const { nombre, email, password } = await req.json();
 
   if (!nombre || !email)
     return NextResponse.json({ error: "Nombre y email requeridos" }, { status: 400 });
 
   const emailNorm = email.toLowerCase().trim();
-  const tempPassword = crypto.randomBytes(16).toString("hex");
-  const password_hash = await bcrypt.hash(tempPassword, 12);
+  const finalPassword = password?.trim() || crypto.randomBytes(16).toString("hex");
+  const password_hash = await bcrypt.hash(finalPassword, 12);
 
   try {
     const [user] = await db
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       .values({ supplier_id: supplierId, nombre, email: emailNorm, password_hash })
       .returning({ id: supplierUsers.id, nombre: supplierUsers.nombre, email: supplierUsers.email, activo: supplierUsers.activo, created_at: supplierUsers.created_at });
 
-    return NextResponse.json({ ...user, tempPassword }, { status: 201 });
+    return NextResponse.json({ ...user, tempPassword: password ? undefined : finalPassword }, { status: 201 });
   } catch (e: any) {
     if (e?.message?.includes("unique") || e?.code === "23505")
       return NextResponse.json({ error: "Ya existe un usuario con ese email" }, { status: 409 });
@@ -62,9 +62,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id: supplierId } = await params;
-  const { userId, activo } = await req.json();
+  const { userId, activo, password } = await req.json();
 
   if (!userId) return NextResponse.json({ error: "userId requerido" }, { status: 400 });
+
+  if (password) {
+    const password_hash = await bcrypt.hash(password.trim(), 12);
+    await db
+      .update(supplierUsers)
+      .set({ password_hash })
+      .where(and(eq(supplierUsers.id, userId), eq(supplierUsers.supplier_id, supplierId)));
+    return NextResponse.json({ ok: true });
+  }
 
   await db
     .update(supplierUsers)

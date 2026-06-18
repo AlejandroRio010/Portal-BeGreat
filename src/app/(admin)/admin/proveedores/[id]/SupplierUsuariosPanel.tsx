@@ -18,8 +18,14 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo, contac
   const [showForm, setShowForm] = useState(false);
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const [pwUserId, setPwUserId] = useState<string | null>(null);
+  const [pwValue, setPwValue] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwOk, setPwOk] = useState(false);
 
   // Access link state (per user)
   const [linkUserId, setLinkUserId] = useState<string | null>(null);
@@ -42,7 +48,7 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo, contac
     const res = await fetch(`/api/admin/proveedores/${supplierId}/users`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre: nombre.trim(), email: email.trim() }),
+      body: JSON.stringify({ nombre: nombre.trim(), email: email.trim(), ...(password.trim() ? { password: password.trim() } : {}) }),
     });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
@@ -54,6 +60,7 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo, contac
     setUsers((prev) => [...prev, user]);
     setNombre("");
     setEmail("");
+    setPassword("");
     setShowForm(false);
     setSaving(false);
   }
@@ -75,6 +82,19 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo, contac
       body: JSON.stringify({ userId }),
     });
     setUsers((prev) => prev.filter((u) => u.id !== userId));
+  }
+
+  async function setPasswordForUser() {
+    if (!pwUserId || !pwValue.trim()) return;
+    setPwSaving(true);
+    await fetch(`/api/admin/proveedores/${supplierId}/users`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: pwUserId, password: pwValue.trim() }),
+    });
+    setPwSaving(false);
+    setPwOk(true);
+    setTimeout(() => { setPwOk(false); setPwUserId(null); setPwValue(""); }, 2000);
   }
 
   async function generarEnlace(userId: string, tipo: "invitacion" | "reset", enviarEmail = false) {
@@ -151,6 +171,13 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo, contac
               type="email"
               className="w-full px-3 py-2 text-sm border border-gray-200 focus:outline-none focus:border-[#2E1A47]"
             />
+            <input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Contraseña (opcional — si vacío se genera automática)"
+              type="text"
+              className="w-full px-3 py-2 text-sm border border-gray-200 focus:outline-none focus:border-[#2E1A47]"
+            />
             {error && <p className="text-xs text-red-600">{error}</p>}
             <button
               onClick={addUser}
@@ -216,7 +243,47 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo, contac
               >
                 Eliminar
               </button>
+              <button
+                onClick={() => { setPwUserId(pwUserId === u.id ? null : u.id); setPwValue(""); setPwOk(false); }}
+                className="py-1.5 px-3 border border-amber-200 text-[11px] font-semibold text-amber-600 hover:bg-amber-50 transition-colors"
+              >
+                Establecer contraseña
+              </button>
             </div>
+
+            {pwUserId === u.id && (
+              <div className="border border-amber-200 bg-amber-50 p-3 space-y-2">
+                {pwOk ? (
+                  <p className="text-xs text-emerald-700 font-semibold">Contraseña establecida correctamente</p>
+                ) : (
+                  <>
+                    <p className="text-xs text-amber-700 font-semibold">Nueva contraseña para {u.nombre}</p>
+                    <div className="flex gap-2">
+                      <input
+                        value={pwValue}
+                        onChange={(e) => setPwValue(e.target.value)}
+                        placeholder="Nueva contraseña"
+                        type="text"
+                        className="flex-1 px-3 py-2 text-sm border border-gray-200 bg-white focus:outline-none focus:border-[#2E1A47]"
+                      />
+                      <button
+                        onClick={setPasswordForUser}
+                        disabled={pwSaving || !pwValue.trim()}
+                        className="px-3 py-2 bg-[#2E1A47] text-white text-xs font-semibold hover:bg-[#3d2460] disabled:opacity-50"
+                      >
+                        {pwSaving ? "..." : "Guardar"}
+                      </button>
+                      <button
+                        onClick={() => { setPwUserId(null); setPwValue(""); }}
+                        className="px-3 py-2 border border-gray-200 text-xs text-gray-500 hover:bg-gray-50"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
 
             {linkUserId === u.id && emailEnviado && (
               <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-2 font-semibold">
