@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { clientGroups, clients } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import Link from "next/link";
-import NuevoGrupoForm from "./NuevoGrupoForm";
+import NuevoGrupoForm from "@/components/NuevoGrupoForm";
 
 export const dynamic = "force-dynamic";
 

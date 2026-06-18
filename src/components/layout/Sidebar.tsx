@@ -34,6 +34,7 @@ const proveedorNav = [
   { href: "/proveedor/operaciones/renting",      label: "Funnel de renting",     exact: false },
   { href: "/proveedor/cotizador",                label: "Cotizador renting",     exact: false },
   { href: "/proveedor/clientes",                 label: "Mis clientes",          exact: false },
+  { href: "/proveedor/grupos",                   label: "Grupos empresariales",  exact: false },
   { href: "/proveedor/historial",                label: "Historial de operaciones", exact: false },
   { href: "/proveedor/perfil",                   label: "Mi perfil",             exact: false },
   { href: "/proveedor/contacto",                 label: "Contacto",              exact: false },
