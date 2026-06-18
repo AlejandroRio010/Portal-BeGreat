@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { clientNotes, clients } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { clientNotes, clients, operations } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -16,8 +16,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (role !== "admin") {
     const collabId = (session.user as any).collaboratorId ?? session.user!.id;
     const [client] = await db.select({ collaborator_id: clients.collaborator_id }).from(clients).where(eq(clients.id, client_id)).limit(1);
-    if (!client || client.collaborator_id !== collabId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!client) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (client.collaborator_id !== collabId) {
+      const linkedOp = await db.select({ id: operations.id }).from(operations).where(and(eq(operations.collaborator_id, collabId), eq(operations.client_id, client_id))).limit(1);
+      const avalOp = await db.select({ id: operations.id }).from(operations).where(and(eq(operations.collaborator_id, collabId), eq(operations.aval_client_id, client_id))).limit(1);
+      if (linkedOp.length === 0 && avalOp.length === 0) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
   }
 

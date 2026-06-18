@@ -132,7 +132,7 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
           {nivel <= 2 && (
             <NotesSection
               notes={notes}
-              apiUrl={`/api/admin/entidades/${id}/notes`}
+              apiUrl={`/api/portal/entidades/${id}/notes`}
               currentUserId={userId}
               readOnly={nivel === 2}
             />
