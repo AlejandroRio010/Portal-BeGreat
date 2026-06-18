@@ -52,7 +52,7 @@ export async function sendAccessInviteEmail(to: string, nombre: string, accessUr
 
 // ─── Operation notification emails ──────────────────────────────────────────
 
-const PORTAL_URL = process.env.NEXTAUTH_URL || "https://portal.begreatconsulting.es";
+const PORTAL_URL = process.env.PORTAL_PUBLIC_URL || "https://portal.begreatconsulting.es";
 
 export async function sendOperationValidatedEmail(
   to: string, nombre: string, opNombre: string, opId: string
