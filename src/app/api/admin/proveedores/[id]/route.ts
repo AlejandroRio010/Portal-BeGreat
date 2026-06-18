@@ -11,7 +11,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   const { id } = await params;
   const body = await req.json();
-  const { nombre, email, telefono, web, persona_contacto, contacto_email, contacto_telefono, portal_activo, puede_ver_entidades } = body;
+  const { nombre, email, telefono, web, persona_contacto, contacto_email, contacto_telefono, portal_activo, puede_ver_entidades, cif, cnae, direccion, provincia, nombre_comercial } = body;
 
   // Toggle-only updates (from SupplierPortalToggle)
   if (portal_activo !== undefined || puede_ver_entidades !== undefined) {
@@ -29,6 +29,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     email: email || null,
     telefono: telefono || null,
     web: web || null,
+    cif: cif || null,
+    cnae: cnae || null,
+    direccion: direccion || null,
+    provincia: provincia || null,
+    nombre_comercial: nombre_comercial || null,
     persona_contacto: persona_contacto || null,
     contacto_email: contacto_email || null,
     contacto_telefono: contacto_telefono || null,

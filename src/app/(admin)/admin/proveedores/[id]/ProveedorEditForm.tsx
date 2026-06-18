@@ -9,10 +9,18 @@ type Proveedor = {
   email: string | null;
   telefono: string | null;
   web: string | null;
+  cif: string | null;
+  cnae: string | null;
+  direccion: string | null;
+  provincia: string | null;
+  nombre_comercial: string | null;
   persona_contacto: string | null;
   contacto_email: string | null;
   contacto_telefono: string | null;
 };
+
+const fld = "w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]";
+const lbl = "block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1";
 
 export default function ProveedorEditForm({ proveedor }: { proveedor: Proveedor }) {
   const router = useRouter();
@@ -24,6 +32,11 @@ export default function ProveedorEditForm({ proveedor }: { proveedor: Proveedor 
     email: proveedor.email ?? "",
     telefono: proveedor.telefono ?? "",
     web: proveedor.web ?? "",
+    cif: proveedor.cif ?? "",
+    cnae: proveedor.cnae ?? "",
+    direccion: proveedor.direccion ?? "",
+    provincia: proveedor.provincia ?? "",
+    nombre_comercial: proveedor.nombre_comercial ?? "",
     persona_contacto: proveedor.persona_contacto ?? "",
     contacto_email: proveedor.contacto_email ?? "",
     contacto_telefono: proveedor.contacto_telefono ?? "",
@@ -70,42 +83,55 @@ export default function ProveedorEditForm({ proveedor }: { proveedor: Proveedor 
       </div>
       <form onSubmit={handleSubmit} className="px-5 py-4 grid grid-cols-2 gap-3">
         <div className="col-span-2">
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nombre <span className="text-red-500">*</span></label>
-          <input value={form.nombre} onChange={(e) => set("nombre", e.target.value)} required
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+          <label className={lbl}>Nombre <span className="text-red-500">*</span></label>
+          <input value={form.nombre} onChange={(e) => set("nombre", e.target.value)} required className={fld} />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Email</label>
-          <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)}
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+          <label className={lbl}>CIF</label>
+          <input value={form.cif} onChange={(e) => set("cif", e.target.value)} className={fld} placeholder="B12345678" />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Teléfono</label>
-          <input value={form.telefono} onChange={(e) => set("telefono", e.target.value)}
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+          <label className={lbl}>Nombre comercial</label>
+          <input value={form.nombre_comercial} onChange={(e) => set("nombre_comercial", e.target.value)} className={fld} />
+        </div>
+        <div>
+          <label className={lbl}>Email</label>
+          <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className={fld} />
+        </div>
+        <div>
+          <label className={lbl}>Teléfono</label>
+          <input value={form.telefono} onChange={(e) => set("telefono", e.target.value)} className={fld} />
         </div>
         <div className="col-span-2">
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Web</label>
-          <input value={form.web} onChange={(e) => set("web", e.target.value)}
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" placeholder="https://" />
+          <label className={lbl}>Web</label>
+          <input value={form.web} onChange={(e) => set("web", e.target.value)} className={fld} placeholder="https://" />
+        </div>
+        <div>
+          <label className={lbl}>CNAE</label>
+          <input value={form.cnae} onChange={(e) => set("cnae", e.target.value)} className={fld} placeholder="4511" />
+        </div>
+        <div>
+          <label className={lbl}>Provincia</label>
+          <input value={form.provincia} onChange={(e) => set("provincia", e.target.value)} className={fld} />
+        </div>
+        <div className="col-span-2">
+          <label className={lbl}>Dirección</label>
+          <input value={form.direccion} onChange={(e) => set("direccion", e.target.value)} className={fld} placeholder="Calle, número, CP, ciudad" />
         </div>
         <div className="col-span-2 border-t border-gray-100 pt-3">
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Persona de contacto</p>
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nombre</label>
-          <input value={form.persona_contacto} onChange={(e) => set("persona_contacto", e.target.value)}
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+          <label className={lbl}>Nombre</label>
+          <input value={form.persona_contacto} onChange={(e) => set("persona_contacto", e.target.value)} className={fld} />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Email contacto</label>
-          <input type="email" value={form.contacto_email} onChange={(e) => set("contacto_email", e.target.value)}
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+          <label className={lbl}>Email contacto</label>
+          <input type="email" value={form.contacto_email} onChange={(e) => set("contacto_email", e.target.value)} className={fld} />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Teléfono contacto</label>
-          <input value={form.contacto_telefono} onChange={(e) => set("contacto_telefono", e.target.value)}
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]" />
+          <label className={lbl}>Teléfono contacto</label>
+          <input value={form.contacto_telefono} onChange={(e) => set("contacto_telefono", e.target.value)} className={fld} />
         </div>
         <div className="col-span-2 flex justify-end gap-2 pt-1">
           <button type="button" onClick={() => setOpen(false)}

@@ -56,6 +56,9 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
   const [proveedorTelefono, setProveedorTelefono] = useState("");
   const [proveedorWeb, setProveedorWeb] = useState("");
   const [proveedorCnae, setProveedorCnae] = useState("");
+  const [proveedorCif, setProveedorCif] = useState("");
+  const [proveedorDireccion, setProveedorDireccion] = useState("");
+  const [proveedorProvincia, setProveedorProvincia] = useState("");
   const [esNuevoProveedor, setEsNuevoProveedor] = useState(false);
   const [proveedorMissingData, setProveedorMissingData] = useState<string[]>([]);
   const [proformaFile, setProformaFile] = useState<File | null>(null);
@@ -247,6 +250,9 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
         proveedor_telefono: proveedorTelefono || null,
         proveedor_web: proveedorWeb || null,
         proveedor_cnae: proveedorCnae || null,
+        proveedor_cif: proveedorCif || null,
+        proveedor_direccion: proveedorDireccion || null,
+        proveedor_provincia: proveedorProvincia || null,
         es_nuevo_proveedor: esNuevoProveedor,
         proveedor_contacto_nombre: provContactoNombre || null,
         proveedor_contacto_puesto: provContactoPuesto || null,
@@ -489,6 +495,9 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
                 proveedorTelefono={proveedorTelefono} setProveedorTelefono={setProveedorTelefono}
                 proveedorWeb={proveedorWeb} setProveedorWeb={setProveedorWeb}
                 proveedorCnae={proveedorCnae} setProveedorCnae={setProveedorCnae}
+                proveedorCif={proveedorCif} setProveedorCif={setProveedorCif}
+                proveedorDireccion={proveedorDireccion} setProveedorDireccion={setProveedorDireccion}
+                proveedorProvincia={proveedorProvincia} setProveedorProvincia={setProveedorProvincia}
                 proveedorSeleccionado={proveedorSeleccionado}
                 esNuevoProveedor={esNuevoProveedor} setEsNuevoProveedor={setEsNuevoProveedor}
                 proveedorMissingData={proveedorMissingData}
@@ -1012,7 +1021,8 @@ function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClie
 }
 
 function ProveedorSection({ proveedorNombre, setProveedorNombre, proveedorEmail, setProveedorEmail, proveedorTelefono, setProveedorTelefono,
-  proveedorWeb, setProveedorWeb, proveedorCnae, setProveedorCnae, proveedorSeleccionado, esNuevoProveedor, setEsNuevoProveedor,
+  proveedorWeb, setProveedorWeb, proveedorCnae, setProveedorCnae, proveedorCif, setProveedorCif, proveedorDireccion, setProveedorDireccion,
+  proveedorProvincia, setProveedorProvincia, proveedorSeleccionado, esNuevoProveedor, setEsNuevoProveedor,
   proveedorMissingData, onSelect, onClear, provContactoNombre, setProvContactoNombre, provContactoPuesto, setProvContactoPuesto,
   provContactoEmail, setProvContactoEmail, provContactoTelefono, setProvContactoTelefono, proformaFile, setProformaFile, inp, labelCls,
 }: any) {
@@ -1057,6 +1067,10 @@ function ProveedorSection({ proveedorNombre, setProveedorNombre, proveedorEmail,
                       if (data.telefono) setProveedorTelefono(data.telefono);
                       if (data.email) setProveedorEmail(data.email);
                       if (data.web) setProveedorWeb(data.web);
+                      if (data.cnae && setProveedorCnae) setProveedorCnae(data.cnae);
+                      if (data.cif && setProveedorCif) setProveedorCif(data.cif);
+                      if (data.direccion && setProveedorDireccion) setProveedorDireccion(data.direccion);
+                      if (data.provincia && setProveedorProvincia) setProveedorProvincia(data.provincia);
                     }}
                     onCifDuplicate={() => {}}
                   />

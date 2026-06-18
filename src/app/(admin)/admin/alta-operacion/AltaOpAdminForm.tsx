@@ -55,6 +55,11 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
   const [proveedorEmail, setProveedorEmail] = useState("");
   const [proveedorTelefono, setProveedorTelefono] = useState("");
   const [proveedorWeb, setProveedorWeb] = useState("");
+  const [proveedorCif, setProveedorCif] = useState("");
+  const [proveedorCnae, setProveedorCnae] = useState("");
+  const [proveedorDireccion, setProveedorDireccion] = useState("");
+  const [proveedorProvincia, setProveedorProvincia] = useState("");
+  const [proveedorNombreComercial, setProveedorNombreComercial] = useState("");
   const [esNuevoProveedor, setEsNuevoProveedor] = useState(false);
   const [proveedorMissingData, setProveedorMissingData] = useState<string[]>([]);
   const [proformaFile, setProformaFile] = useState<File | null>(null);
@@ -256,6 +261,11 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
         proveedor_email: proveedorEmail || null,
         proveedor_telefono: proveedorTelefono || null,
         proveedor_web: proveedorWeb || null,
+        proveedor_cif: proveedorCif || null,
+        proveedor_cnae: proveedorCnae || null,
+        proveedor_direccion: proveedorDireccion || null,
+        proveedor_provincia: proveedorProvincia || null,
+        proveedor_nombre_comercial: proveedorNombreComercial || null,
         proveedor_contacto_nombre: proveedorContacto || null,
         proveedor_contacto_email: provContactoEmail || null,
         proveedor_contacto_telefono: provContactoTelefono || null,
@@ -484,6 +494,10 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
                     if (data.telefono) setProveedorTelefono(data.telefono);
                     if (data.email) setProveedorEmail(data.email);
                     if (data.web) setProveedorWeb(data.web);
+                    if (data.cif) setProveedorCif(data.cif);
+                    if (data.cnae) setProveedorCnae(data.cnae);
+                    if (data.direccion) setProveedorDireccion(data.direccion);
+                    if (data.provincia) setProveedorProvincia(data.provincia);
                   }}
                   onCifDuplicate={() => {}}
                 />

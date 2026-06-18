@@ -34,6 +34,11 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
       email: suppliers.email,
       telefono: suppliers.telefono,
       web: suppliers.web,
+      cif: suppliers.cif,
+      cnae: suppliers.cnae,
+      direccion: suppliers.direccion,
+      provincia: suppliers.provincia,
+      nombre_comercial: suppliers.nombre_comercial,
       persona_contacto: suppliers.persona_contacto,
       contacto_email: suppliers.contacto_email,
       contacto_telefono: suppliers.contacto_telefono,
@@ -130,9 +135,14 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
             </div>
             <div className="px-5 py-4 divide-y divide-gray-50">
               {[
+                ["CIF", prov.cif],
+                ["Nombre comercial", prov.nombre_comercial],
                 ["Email", prov.email],
                 ["Teléfono", prov.telefono],
                 ["Web", prov.web],
+                ["CNAE", prov.cnae],
+                ["Provincia", prov.provincia],
+                ["Dirección", prov.direccion],
               ].map(([label, value]) =>
                 value ? (
                   <div key={label} className="py-2.5 flex flex-col gap-0.5">
@@ -147,7 +157,7 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
               )}
             </div>
             <div className="px-5 pb-4">
-              <ProveedorEditForm proveedor={{ id: prov.id, nombre: prov.nombre, email: prov.email ?? null, telefono: prov.telefono ?? null, web: prov.web ?? null, persona_contacto: prov.persona_contacto ?? null, contacto_email: prov.contacto_email ?? null, contacto_telefono: prov.contacto_telefono ?? null }} />
+              <ProveedorEditForm proveedor={{ id: prov.id, nombre: prov.nombre, email: prov.email ?? null, telefono: prov.telefono ?? null, web: prov.web ?? null, cif: prov.cif ?? null, cnae: prov.cnae ?? null, direccion: prov.direccion ?? null, provincia: prov.provincia ?? null, nombre_comercial: prov.nombre_comercial ?? null, persona_contacto: prov.persona_contacto ?? null, contacto_email: prov.contacto_email ?? null, contacto_telefono: prov.contacto_telefono ?? null }} />
             </div>
           </div>
 
