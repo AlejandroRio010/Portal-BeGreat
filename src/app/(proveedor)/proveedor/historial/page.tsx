@@ -26,7 +26,6 @@ export default async function HistorialPage({
       equipo_tipo: operations.equipo_tipo,
       fase: operations.fase,
       status: operations.status,
-      comision_colaborador: operations.comision_colaborador,
       importe: operations.importe,
       created_at: operations.created_at,
       fecha_cierre: operations.fecha_cierre,
@@ -133,10 +132,10 @@ export default async function HistorialPage({
         </form>
       </div>
 
-      <HistorialTabla esAdmin={false} hrefBase="/proveedor/operaciones" ops={filtered.map(o => ({
+      <HistorialTabla esAdmin={false} ocultarComisiones hrefBase="/proveedor/operaciones" ops={filtered.map(o => ({
         id: o.id, nombre: o.nombre, client_nombre: o.client_nombre, pipeline_key: o.pipeline_key,
         fase: o.fase, status: o.status, fecha_cierre: o.fecha_cierre, created_at: o.created_at,
-        comision_colaborador: o.comision_colaborador, comision_begreat: null,
+        comision_colaborador: null, comision_begreat: null,
       }))} />
     </div>
   );

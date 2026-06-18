@@ -24,7 +24,7 @@ function formatDate(d: string | Date) {
   return new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export default function HistorialTabla({ ops, esAdmin, hrefBase }: { ops: HistOp[]; esAdmin: boolean; hrefBase: string }) {
+export default function HistorialTabla({ ops, esAdmin, hrefBase, ocultarComisiones = false }: { ops: HistOp[]; esAdmin: boolean; hrefBase: string; ocultarComisiones?: boolean }) {
   const [q, setQ] = useState("");
   const ql = q.toLowerCase().trim();
   const filtered = ql
@@ -55,7 +55,7 @@ export default function HistorialTabla({ ops, esAdmin, hrefBase }: { ops: HistOp
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Estado</th>
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fecha cierre</th>
                 {esAdmin && <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fee BeGreat</th>}
-                <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">{esAdmin ? "Fee Colab." : "Comisión"}</th>
+                {!ocultarComisiones && <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">{esAdmin ? "Fee Colab." : "Comisión"}</th>}
                 <th className="px-6 py-3.5" />
               </tr>
             </thead>
@@ -82,7 +82,7 @@ export default function HistorialTabla({ ops, esAdmin, hrefBase }: { ops: HistOp
                     <td className="px-6 py-4"><span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold ${badge.c}`}>{badge.l}</span></td>
                     <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{formatDate(op.fecha_cierre ?? op.created_at)}</td>
                     {esAdmin && <td className="px-6 py-4 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(op.comision_begreat)}</td>}
-                    <td className="px-6 py-4 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(op.comision_colaborador)}</td>
+                    {!ocultarComisiones && <td className="px-6 py-4 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(op.comision_colaborador)}</td>}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link href={`${hrefBase}/${op.id}`} className="text-[#2E1A47] text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity hover:underline">Ver →</Link>
                     </td>
