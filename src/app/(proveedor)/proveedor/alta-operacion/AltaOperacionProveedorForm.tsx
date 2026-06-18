@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import EmpresaSearchInput from "@/components/EmpresaSearchInput";
+import CuotaEstimada from "@/components/CuotaEstimada";
 import { fmtEuroInput, rawFromFmt } from "@/lib/format";
 
 const PLAZOS = [12, 24, 36, 48, 60, 72];
@@ -68,6 +69,7 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
   const [manualPrecio, setManualPrecio] = useState("");
   const [manualUnidades, setManualUnidades] = useState("1");
   const [importeTotal, setImporteTotal] = useState("");
+  const [plazoMeses, setPlazoMeses] = useState<number | null>(null);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const importeCalculado = lineas.reduce((s, l) => s + l.precioUnitario * l.unidades, 0);
@@ -398,11 +400,16 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Plazo deseado *</label>
-              <select name="plazo_meses" className={inp}>
+              <select name="plazo_meses" value={plazoMeses ?? ""} onChange={e => setPlazoMeses(e.target.value ? Number(e.target.value) : null)} className={inp}>
                 <option value="">Seleccionar</option>
                 {PLAZOS.map((m) => <option key={m} value={m}>{m} meses</option>)}
               </select>
             </div>
+            {importeTotal && plazoMeses && (
+              <div className="col-span-2">
+                <CuotaEstimada importe={importeTotal} plazo={plazoMeses} />
+              </div>
+            )}
             <div>
               <label className={labelCls}>Lugar de instalación / entrega</label>
               <input name="lugar_entrega" className={inp} placeholder="Dirección completa" />

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import EmpresaSearchInput from "@/components/EmpresaSearchInput";
+import CuotaEstimada from "@/components/CuotaEstimada";
 import { fmtEuroInput, rawFromFmt } from "@/lib/format";
 
 const PRODUCTOS_CONSULTORIA = [
@@ -73,6 +74,7 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
   // Entity preference (only for nivel 3-4)
   const [entidadPreferencia, setEntidadPreferencia] = useState("");
   const [importe, setImporte] = useState("");
+  const [plazoMeses, setPlazoMeses] = useState<number | null>(null);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -415,11 +417,16 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
                 </div>
                 <div>
                   <label className={labelCls}>Plazo deseado *</label>
-                  <select name="plazo_meses" className={inp}>
+                  <select name="plazo_meses" value={plazoMeses ?? ""} onChange={e => setPlazoMeses(e.target.value ? Number(e.target.value) : null)} className={inp}>
                     <option value="">Seleccionar</option>
                     {PLAZOS.map((m) => <option key={m} value={m}>{m} meses</option>)}
                   </select>
                 </div>
+                {importe && plazoMeses && (
+                  <div className="col-span-2">
+                    <CuotaEstimada importe={importe} plazo={plazoMeses} />
+                  </div>
+                )}
                 <div className="col-span-2">
                   <label className={labelCls}>Lugar de instalación / entrega</label>
                   <input name="lugar_entrega" className={inp} placeholder="Dirección completa" />
