@@ -41,18 +41,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const colab = await getCollaborator(session);
   if (!colab || (colab.nivel_entidades ?? 4) > 1) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
 
-  const { id } = await params;
-  const body = await req.json();
+  await params;
+  const { noteId, texto, pinned } = await req.json();
+  if (!noteId) return NextResponse.json({ error: "Datos requeridos" }, { status: 400 });
 
-  const [note] = await db.select().from(entityNotes).where(eq(entityNotes.id, id)).limit(1);
+  const [note] = await db.select().from(entityNotes).where(eq(entityNotes.id, noteId)).limit(1);
   if (!note) return NextResponse.json({ error: "No encontrada" }, { status: 404 });
   if (note.author_id !== colab.id) return NextResponse.json({ error: "Solo el autor puede editar" }, { status: 403 });
 
   const updates: Record<string, any> = {};
-  if (body.texto !== undefined) updates.texto = body.texto.trim();
-  if (body.pinned !== undefined) updates.pinned = body.pinned;
+  if (texto !== undefined) updates.texto = texto.trim();
+  if (pinned !== undefined) updates.pinned = pinned;
   if (Object.keys(updates).length === 0) return NextResponse.json(note);
 
-  const [updated] = await db.update(entityNotes).set(updates).where(eq(entityNotes.id, id)).returning();
+  const [updated] = await db.update(entityNotes).set(updates).where(eq(entityNotes.id, noteId)).returning();
   return NextResponse.json(updated);
 }
