@@ -11,6 +11,7 @@ import DocumentsSection from "@/components/DocumentsSection";
 import { getCnaeByCode } from "@/lib/cnaes";
 import { fmtEur } from "@/lib/format";
 import { sanitizeFolderName } from "@/lib/onedrive";
+import AsignarResponsable from "@/components/AsignarResponsable";
 
 function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
@@ -147,9 +148,9 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
           </div>
         </div>
         <div className="flex flex-col items-end gap-1.5">
-          {client.colaborador_nombre && (
-            <span className="text-white/70 text-xs">Propietario: <span className="text-white font-semibold">{client.colaborador_nombre}</span></span>
-          )}
+          <div className="text-white/70 text-xs flex items-center gap-1">
+            Propietario: <AsignarResponsable currentId={client.colaborador_id} currentNombre={client.colaborador_nombre} patchUrl={`/api/admin/clientes/${id}`} />
+          </div>
           {linkedColabs.length > 0 && (
             <span className="text-white/70 text-xs">Vinculados: {linkedColabs.map((c, i) => (
               <span key={c.id}>{i > 0 && ", "}<Link href={`/admin/colaboradores/${c.id}`} className="text-white font-semibold hover:underline">{c.nombre}</Link></span>

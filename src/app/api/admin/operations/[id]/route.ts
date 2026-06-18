@@ -63,6 +63,8 @@ export async function PATCH(
     aval_cif, aval_direccion, aval_cnae, aval_web,
     resultado,
     pipeline_key,
+    collaborator_id,
+    supplier_id,
   } = body;
 
   // Fetch current state before update (for email triggers)
@@ -146,6 +148,8 @@ export async function PATCH(
   if (typeof entidad_visible === "boolean") updateData.entidad_visible = entidad_visible;
   if (importe_facturado_begreat !== undefined) updateData.importe_facturado_begreat = importe_facturado_begreat || null;
   if (typeof importe_facturado_visible === "boolean") updateData.importe_facturado_visible = importe_facturado_visible;
+  if (collaborator_id !== undefined) updateData.collaborator_id = collaborator_id || null;
+  if (supplier_id !== undefined) updateData.supplier_id = supplier_id || null;
   if (typeof tiene_aval === "boolean") {
     updateData.tiene_aval = tiene_aval;
     updateData.aval_tipo = tiene_aval ? (aval_tipo || null) : null;

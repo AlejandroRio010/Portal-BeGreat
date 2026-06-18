@@ -12,7 +12,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   const { id } = await params;
   const body = await req.json();
-  const { nombre, cif, email, telefono, web, linkedin, nombre_comercial, direccion, cnae, group_id } = body;
+  const { nombre, cif, email, telefono, web, linkedin, nombre_comercial, direccion, cnae, group_id, collaborator_id } = body;
+
+  if (collaborator_id !== undefined) {
+    await db.update(clients).set({ collaborator_id }).where(eq(clients.id, id));
+    if (Object.keys(body).length === 1) return NextResponse.json({ ok: true });
+  }
+
   if (!nombre?.trim()) return NextResponse.json({ error: "Nombre obligatorio" }, { status: 400 });
 
   // Derivar nombre del grupo desde group_id

@@ -6,6 +6,7 @@ import Link from "next/link";
 import ProveedorEditForm from "./ProveedorEditForm";
 import SupplierPortalToggle from "./SupplierPortalToggle";
 import SupplierUsuariosPanel from "./SupplierUsuariosPanel";
+import AsignarResponsable from "@/components/AsignarResponsable";
 import { fmtEur } from "@/lib/format";
 
 function fmtDate(d: Date | null | undefined) {
@@ -100,9 +101,9 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
           </div>
         </div>
         <div className="flex flex-col items-end gap-1.5">
-          {prov.colaborador_nombre && (
-            <span className="text-white/70 text-xs">Colaborador: <span className="text-white font-semibold">{prov.colaborador_nombre}</span></span>
-          )}
+          <div className="text-white/70 text-xs flex items-center gap-1">
+            Responsable: <AsignarResponsable currentId={prov.colaborador_id} currentNombre={prov.colaborador_nombre} patchUrl={`/api/admin/proveedores/${prov.id}`} />
+          </div>
           <span className="text-white/50 text-xs">Alta: {fmtDate(prov.created_at)}</span>
         </div>
       </div>
@@ -123,7 +124,7 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
       {/* Portal access + Users */}
       <div className="mx-8 mb-6 grid grid-cols-2 gap-4">
         <SupplierPortalToggle supplierId={prov.id} portalActivo={prov.portal_activo} puedeVerEntidades={prov.puede_ver_entidades} />
-        <SupplierUsuariosPanel supplierId={prov.id} portalActivo={prov.portal_activo} />
+        <SupplierUsuariosPanel supplierId={prov.id} portalActivo={prov.portal_activo} contacto={{ nombre: prov.persona_contacto ?? null, email: prov.contacto_email ?? null, telefono: prov.contacto_telefono ?? null }} />
       </div>
 
       <div className="mx-8 mb-6 grid grid-cols-3 gap-4 items-start">

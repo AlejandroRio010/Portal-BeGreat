@@ -14,6 +14,7 @@ import CelebrationBanner from "@/components/CelebrationBanner";
 import DuplicateButton from "./DuplicateButton";
 import { fmtEur, fmtNum } from "@/lib/format";
 import { sanitizeFolderName } from "@/lib/onedrive";
+import AsignarResponsable from "@/components/AsignarResponsable";
 
 const FASE_COLOR: Record<string, { bg: string; text: string; border: string }> = {
   "Pre-análisis":        { bg: "bg-gray-100",     text: "text-gray-600",    border: "border-gray-200" },
@@ -385,7 +386,6 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
               const campos: Campo[] = [];
 
               if (isRenting) {
-                campos.push({ label: "Colaborador", value: op.colaborador_nombre });
                 campos.push({ label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/admin/clientes/${op.client_id}` : undefined });
                 campos.push({ label: "Persona de contacto (cliente)", value: clienteContacto?.nombre ?? null, href: clienteContacto && op.client_id ? `/admin/clientes/${op.client_id}` : undefined });
                 campos.push({ label: "Fecha de alta", value: fmtFecha(op.created_at) });
@@ -405,7 +405,6 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
                 campos.push({ label: "Fee colaborador", value: fmtEuro(op.comision_colaborador) });
                 campos.push({ label: "Fee BeGreat", value: fmtEuro(op.comision_begreat) });
               } else {
-                campos.push({ label: "Colaborador", value: op.colaborador_nombre });
                 campos.push({ label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/admin/clientes/${op.client_id}` : undefined });
                 campos.push({ label: "Persona de contacto", value: clienteContacto?.nombre ?? null, href: clienteContacto && op.client_id ? `/admin/clientes/${op.client_id}` : undefined });
                 campos.push({ label: "Fecha de alta", value: fmtFecha(op.created_at) });
@@ -420,6 +419,10 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
 
               return (
                 <dl className="space-y-3">
+                  <div>
+                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Colaborador</dt>
+                    <dd><AsignarResponsable currentId={op.colaborador_id} currentNombre={op.colaborador_nombre} patchUrl={`/api/admin/operations/${op.id}`} /></dd>
+                  </div>
                   {campos.map(field => field.value != null && field.value !== "" ? (
                     <div key={field.label}>
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">{field.label}</dt>

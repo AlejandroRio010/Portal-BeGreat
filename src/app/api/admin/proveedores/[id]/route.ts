@@ -11,9 +11,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   const { id } = await params;
   const body = await req.json();
-  const { nombre, email, telefono, web, persona_contacto, contacto_email, contacto_telefono, portal_activo, puede_ver_entidades, cif, cnae, direccion, provincia, nombre_comercial } = body;
+  const { nombre, email, telefono, web, persona_contacto, contacto_email, contacto_telefono, portal_activo, puede_ver_entidades, cif, cnae, direccion, provincia, nombre_comercial, collaborator_id } = body;
 
-  // Toggle-only updates (from SupplierPortalToggle)
+  // Single-field updates
+  if (collaborator_id !== undefined && Object.keys(body).length === 1) {
+    await db.update(suppliers).set({ collaborator_id: collaborator_id || null }).where(eq(suppliers.id, id));
+    return NextResponse.json({ ok: true });
+  }
   if (portal_activo !== undefined || puede_ver_entidades !== undefined) {
     const set: Record<string, any> = {};
     if (portal_activo !== undefined) set.portal_activo = portal_activo;

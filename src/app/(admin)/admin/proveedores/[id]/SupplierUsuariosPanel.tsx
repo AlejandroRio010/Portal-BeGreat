@@ -10,7 +10,9 @@ type User = {
   created_at: string;
 };
 
-export default function SupplierUsuariosPanel({ supplierId, portalActivo }: { supplierId: string; portalActivo: boolean }) {
+type ContactInfo = { nombre: string | null; email: string | null; telefono: string | null };
+
+export default function SupplierUsuariosPanel({ supplierId, portalActivo, contacto }: { supplierId: string; portalActivo: boolean; contacto?: ContactInfo | null }) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -128,6 +130,14 @@ export default function SupplierUsuariosPanel({ supplierId, portalActivo }: { su
 
         {showForm && (
           <div className="border border-gray-100 p-3 space-y-2">
+            {contacto?.nombre && contacto?.email && !nombre && !email && (
+              <button type="button"
+                onClick={() => { setNombre(contacto.nombre!); setEmail(contacto.email!); }}
+                className="w-full text-left px-3 py-2 bg-[#EEEBF3] hover:bg-[#e0dae8] transition-colors text-xs">
+                <p className="font-semibold text-[#2E1A47]">Usar persona de contacto</p>
+                <p className="text-gray-500 mt-0.5">{contacto.nombre} · {contacto.email}</p>
+              </button>
+            )}
             <input
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
