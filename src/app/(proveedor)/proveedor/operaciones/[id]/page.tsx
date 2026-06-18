@@ -182,6 +182,15 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
       {/* Celebration */}
       {isGanada && <CelebrationBanner opNombre={op.nombre ?? op.codigo ?? "Operación"} clientNombre={op.client_nombre ?? "Cliente"} />}
 
+      {!isPendiente && (
+        <div className="mb-6">
+          <OpResultadoPanel
+            currentResultado={isGanada ? "ganada" : isDenegada ? "denegada" : "en_curso"}
+            motivoDenegacion={op.motivo_denegacion ?? null}
+          />
+        </div>
+      )}
+
       {/* KPIs */}
       <div className={`grid gap-4 mb-6 ${duracion ? "grid-cols-5" : supplier?.puede_ver_entidades ? "grid-cols-4" : "grid-cols-4"}`}>
         <div className="bg-[#2E1A47] p-5">
@@ -243,13 +252,6 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
             })}
           </div>
         </div>
-      )}
-
-      {!isPendiente && (
-        <OpResultadoPanel
-          currentResultado={isGanada ? "ganada" : isDenegada ? "denegada" : "en_curso"}
-          motivoDenegacion={op.motivo_denegacion ?? null}
-        />
       )}
 
       {/* Main grid */}

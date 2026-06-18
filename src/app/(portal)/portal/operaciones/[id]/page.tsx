@@ -234,6 +234,17 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       {/* Celebration */}
       {isGanada && <CelebrationBanner opNombre={op.nombre ?? op.codigo ?? "Operación"} clientNombre={op.client_nombre ?? "Cliente"} colaboradorLogoUrl={colab?.logo_url ?? null} />}
 
+      {puedeEditar && !isPendiente && (
+        <div className="mb-6">
+          <OpResultadoPanel
+            opId={op.id}
+            pipelineKey={op.pipeline_key}
+            currentResultado={isGanada ? "ganada" : isDenegada ? "denegada" : "en_curso"}
+            motivoDenegacion={op.motivo_denegacion ?? null}
+          />
+        </div>
+      )}
+
       {/* KPIs */}
       <div className={`grid gap-4 mb-6 ${duracion ? "grid-cols-5" : "grid-cols-4"}`}>
         <div className="bg-[#2E1A47] p-5">
@@ -307,15 +318,6 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             })}
           </div>
         </div>
-      )}
-
-      {puedeEditar && !isPendiente && (
-        <OpResultadoPanel
-          opId={op.id}
-          pipelineKey={op.pipeline_key}
-          currentResultado={isGanada ? "ganada" : isDenegada ? "denegada" : "en_curso"}
-          motivoDenegacion={op.motivo_denegacion ?? null}
-        />
       )}
 
       {/* Main grid */}
