@@ -214,8 +214,8 @@ export async function PATCH(
 
   // ─── Email notifications (fire-and-forget) ─────────────────────────────────
   if (prevOp) {
-    const wasValidated = prevOp.status === "pendiente_de_validar" && status === "activa";
-    const wasDenied = status === "archivada" && prevOp.status !== "archivada";
+    const wasValidated = prevOp.status === "pendiente_de_validar" && (status === "activa" || resultado === "en_curso");
+    const wasDenied = resultado === "denegada" || (status === "archivada" && prevOp.status !== "archivada");
     const wasWon = resultado === "ganada";
 
     if (wasValidated || wasDenied || wasWon) {
