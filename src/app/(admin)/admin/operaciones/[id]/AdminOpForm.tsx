@@ -1112,22 +1112,6 @@ export default function AdminOpForm({
                 )}
               </div>
 
-              {/* Modalidad facturación renting */}
-              {pipelineKey === "renting" && (
-                <div>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <label className="block text-xs text-gray-400 uppercase tracking-wider">Modalidad de facturación</label>
-                    <span className="text-[10px] bg-[#EEEBF3] text-[#2E1A47] px-1.5 py-0.5 font-semibold">Solo admin</span>
-                  </div>
-                  <select value={facturacionRenting} onChange={(e) => setFacturacionRenting(e.target.value)}
-                    className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-[#2E1A47]">
-                    <option value="">Sin especificar</option>
-                    <option value="begreat">BeGreat factura y paga al proveedor</option>
-                    <option value="financiera">La financiera paga directamente al proveedor</option>
-                  </select>
-                </div>
-              )}
-
               <button onClick={handleSave} disabled={saving}
                 className="w-full py-2.5 bg-[#2E1A47] text-white text-sm font-semibold hover:bg-[#3d2460] transition-colors disabled:opacity-50">
                 {saving ? "Guardando..." : "Guardar gestión admin"}
