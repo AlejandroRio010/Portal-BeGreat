@@ -7,6 +7,7 @@ type DashTask = {
   id: string;
   titulo: string;
   asignado_a?: string;
+  asignado_a_nombre?: string | null;
   created_at: string;
   operation_id: string;
   op_nombre: string | null;
