@@ -405,9 +405,9 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
                 {PLAZOS.map((m) => <option key={m} value={m}>{m} meses</option>)}
               </select>
             </div>
-            {importeTotal && plazoMeses && (
+            {plazoMeses && (modoProducto === "total" ? importeTotal : importeCalculado > 0) && (
               <div className="col-span-2">
-                <CuotaEstimada importe={importeTotal} plazo={plazoMeses} />
+                <CuotaEstimada importe={modoProducto === "total" ? importeTotal : String(importeCalculado)} plazo={plazoMeses} />
               </div>
             )}
             <div>
