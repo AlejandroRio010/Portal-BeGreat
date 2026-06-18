@@ -53,6 +53,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (plazo_meses !== undefined) data.plazo_meses = plazo_meses ? Number(plazo_meses) : null;
   if (lugar_entrega !== undefined) data.lugar_entrega = lugar_entrega || null;
   if (equipo_tipo !== undefined) data.equipo_tipo = equipo_tipo || null;
+  if (body.cuota_mensual !== undefined) data.cuota_mensual = body.cuota_mensual || null;
 
   if (typeof tiene_aval === "boolean") {
     data.tiene_aval = tiene_aval;

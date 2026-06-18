@@ -51,6 +51,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       lugar_entrega: operations.lugar_entrega,
       plazo_meses: operations.plazo_meses,
       equipo_tipo: operations.equipo_tipo,
+      cuota_mensual: operations.cuota_mensual,
       facturacion_renting: operations.facturacion_renting,
       modalidad_renting: operations.modalidad_renting,
       importe_facturado_begreat: operations.importe_facturado_begreat,
@@ -326,7 +327,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             {(() => {
               const fmtFecha = (d: Date | string | null) => d ? new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }) : null;
               const fmtEuro = (v: string | null) => { const r = fmtEur(v); return r === "-" ? null : r; };
-              const cuota = op.importe && op.plazo_meses ? `${fmtNum(Number(op.importe) / op.plazo_meses)} €/mes` : null;
+              const cuota = op.cuota_mensual ? `${fmtNum(Number(op.cuota_mensual))} €/mes` : (op.importe && op.plazo_meses ? `${fmtNum(Number(op.importe) / op.plazo_meses)} €/mes` : null);
               const isRenting = op.pipeline_key === "renting";
 
               const modalidadLabel: Record<string, string> = {
@@ -497,7 +498,8 @@ export default async function OperacionDetallePage({ params }: { params: Promise
               initialAvalEmpresa={op.aval_empresa ?? null}
               initialAvalContactId={op.aval_contact_id ?? null}
               initialAvalClientId={op.aval_client_id ?? null}
-              initialModalidadRenting={op.modalidad_renting ?? null} />
+              initialModalidadRenting={op.modalidad_renting ?? null}
+              initialCuotaMensual={op.cuota_mensual ?? null} />
           )}
         </div>
 

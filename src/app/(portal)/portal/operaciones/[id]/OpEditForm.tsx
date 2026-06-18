@@ -28,6 +28,7 @@ interface Props {
   initialAvalContactId?: string | null;
   initialAvalClientId?: string | null;
   initialModalidadRenting?: string | null;
+  initialCuotaMensual?: string | null;
 }
 
 export default function OpEditForm({
@@ -39,7 +40,7 @@ export default function OpEditForm({
   initialAvalNombre, initialAvalEmail, initialAvalTelefono,
   initialAvalPersonaContacto, initialAvalDni, initialAvalEmpresa,
   initialAvalContactId, initialAvalClientId,
-  initialModalidadRenting,
+  initialModalidadRenting, initialCuotaMensual,
 }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -55,6 +56,7 @@ export default function OpEditForm({
     equipo_tipo: initialEquipoTipo ?? "",
     necesidad: initialNecesidad ?? "",
     modalidad_renting: initialModalidadRenting ?? "",
+    cuota_mensual: initialCuotaMensual ?? "",
   });
   const [esRenov, setEsRenov] = useState(!!initialEsRenovacion);
   const [opOriginal, setOpOriginal] = useState(initialOpOriginal ?? null);
@@ -189,6 +191,7 @@ export default function OpEditForm({
           equipo_tipo: form.equipo_tipo || null,
           necesidad: form.necesidad || null,
           modalidad_renting: form.modalidad_renting || null,
+          cuota_mensual: form.cuota_mensual || null,
           es_renovacion: esRenov,
           operacion_original_id: esRenov ? (opOriginal?.id ?? null) : null,
           tiene_aval: tieneAval,
@@ -259,6 +262,15 @@ export default function OpEditForm({
                 <label className={labelCls}>Plazo (meses)</label>
                 <input type="number" value={form.plazo_meses} onChange={e => set("plazo_meses", e.target.value)}
                   className={inputCls} placeholder="24" />
+              </div>
+              <div>
+                <label className={labelCls}>Cuota mensual (€)</label>
+                <input type="text" inputMode="decimal"
+                  value={focusedField === "cuota_mensual" ? form.cuota_mensual : fmtEuroInput(form.cuota_mensual)}
+                  onFocus={() => setFocusedField("cuota_mensual")}
+                  onBlur={() => setFocusedField(null)}
+                  onChange={e => { const v = focusedField ? e.target.value : rawFromFmt(e.target.value); set("cuota_mensual", v); }}
+                  className={inputCls} placeholder="0,00 €" />
               </div>
               <div>
                 <label className={labelCls}>Lugar de entrega</label>

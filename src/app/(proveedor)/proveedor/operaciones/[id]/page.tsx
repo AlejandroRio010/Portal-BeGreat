@@ -49,6 +49,7 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
       lugar_entrega: operations.lugar_entrega,
       plazo_meses: operations.plazo_meses,
       equipo_tipo: operations.equipo_tipo,
+      cuota_mensual: operations.cuota_mensual,
       motivo_denegacion: operations.motivo_denegacion,
       entidad_financiera: operations.entidad_financiera,
       entidad_destino: operations.entidad_destino,
@@ -133,7 +134,7 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
 
   const fmtFecha = (d: Date | string | null) => d ? new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }) : null;
   const fmtEuro = (v: string | null) => { const r = fmtEur(v); return r === "-" ? null : r; };
-  const cuota = op.importe && op.plazo_meses ? `${fmtNum(Number(op.importe) / op.plazo_meses)} €/mes` : null;
+  const cuota = op.cuota_mensual ? `${fmtNum(Number(op.cuota_mensual))} €/mes` : (op.importe && op.plazo_meses ? `${fmtNum(Number(op.importe) / op.plazo_meses)} €/mes` : null);
 
   type Campo = { label: string; value: string | null; href?: string };
   const campos: Campo[] = [];
@@ -328,7 +329,8 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
             initialAvalDni={op.aval_dni ?? null}
             initialAvalEmpresa={op.aval_empresa ?? null}
             initialAvalContactId={op.aval_contact_id ?? null}
-            initialAvalClientId={op.aval_client_id ?? null} />
+            initialAvalClientId={op.aval_client_id ?? null}
+            initialCuotaMensual={op.cuota_mensual ?? null} />
         </div>
 
         <div className="col-span-2 flex flex-col gap-5">

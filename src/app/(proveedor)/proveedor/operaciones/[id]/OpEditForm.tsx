@@ -22,12 +22,13 @@ interface Props {
   initialAvalEmpresa?: string | null;
   initialAvalContactId?: string | null;
   initialAvalClientId?: string | null;
+  initialCuotaMensual?: string | null;
 }
 
 export default function OpEditForm({
   opId,
   initialImporte, initialDescripcion,
-  initialPlazoMeses, initialLugarEntrega, initialEquipoTipo,
+  initialPlazoMeses, initialLugarEntrega, initialEquipoTipo, initialCuotaMensual,
   initialTieneAval, initialAvalTipo,
   initialAvalNombre, initialAvalEmail, initialAvalTelefono,
   initialAvalPersonaContacto, initialAvalDni, initialAvalEmpresa,
@@ -44,6 +45,7 @@ export default function OpEditForm({
     plazo_meses: initialPlazoMeses ? String(initialPlazoMeses) : "",
     lugar_entrega: initialLugarEntrega ?? "",
     equipo_tipo: initialEquipoTipo ?? "",
+    cuota_mensual: initialCuotaMensual ?? "",
   });
 
   // Aval state
@@ -157,6 +159,7 @@ export default function OpEditForm({
           plazo_meses: form.plazo_meses || null,
           lugar_entrega: form.lugar_entrega || null,
           equipo_tipo: form.equipo_tipo || null,
+          cuota_mensual: form.cuota_mensual || null,
           tiene_aval: tieneAval,
           aval_tipo: tieneAval ? avalTipo : null,
           aval_nombre: tieneAval ? (avalNombre || null) : null,
@@ -223,6 +226,18 @@ export default function OpEditForm({
             <label className={labelCls}>Plazo (meses)</label>
             <input type="number" value={form.plazo_meses} onChange={e => set("plazo_meses", e.target.value)}
               className={inputCls} placeholder="24" />
+          </div>
+          <div>
+            <label className={labelCls}>Cuota mensual</label>
+            <input type="text" inputMode="decimal"
+              value={focusedField === "cuota_mensual" ? form.cuota_mensual : fmtEuroInput(form.cuota_mensual)}
+              onFocus={() => setFocusedField("cuota_mensual")}
+              onBlur={() => setFocusedField(null)}
+              onChange={e => {
+                const v = focusedField ? e.target.value : rawFromFmt(e.target.value);
+                set("cuota_mensual", v);
+              }}
+              className={inputCls} placeholder="0,00 €" />
           </div>
           <div>
             <label className={labelCls}>Lugar de entrega</label>

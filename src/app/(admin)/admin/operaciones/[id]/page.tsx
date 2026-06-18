@@ -60,6 +60,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       renting_rol: operations.renting_rol,
       equipo_tipo: operations.equipo_tipo,
       plazo_meses: operations.plazo_meses,
+      cuota_mensual: operations.cuota_mensual,
       notas_admin: operations.notas_admin,
       facturacion_renting: operations.facturacion_renting,
       es_renovacion: operations.es_renovacion,
@@ -373,7 +374,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             {(() => {
               const fmtFecha = (d: Date | string | null) => d ? new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }) : null;
               const fmtEuro = (v: string | null) => { const r = fmtEur(v); return r === "-" ? null : r; };
-              const cuota = op.importe && op.plazo_meses ? `${fmtNum(Number(op.importe) / op.plazo_meses)} €/mes` : null;
+              const cuota = op.cuota_mensual ? `${fmtNum(Number(op.cuota_mensual))} €/mes` : (op.importe && op.plazo_meses ? `${fmtNum(Number(op.importe) / op.plazo_meses)} €/mes` : null);
               const isRenting = op.pipeline_key === "renting";
 
               const modalidadLabel: Record<string, string> = {
