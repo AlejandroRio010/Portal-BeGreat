@@ -145,7 +145,7 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
   campos.push({ label: "Tipo de equipo", value: op.equipo_tipo ? op.equipo_tipo : null });
   campos.push({ label: "Importe venta (sin IVA)", value: fmtEuro(op.importe) });
   campos.push({ label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null });
-  campos.push({ label: "Cuota estimada", value: cuota });
+  campos.push({ label: "Cuota mensual", value: cuota });
   campos.push({ label: "Lugar de instalación", value: op.lugar_entrega });
 
   return (

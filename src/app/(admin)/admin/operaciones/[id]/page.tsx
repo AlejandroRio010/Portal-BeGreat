@@ -401,6 +401,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
                   campos.push({ label: "Importe facturado por BeGreat", value: fmtEuro(op.importe_facturado_begreat) });
                 }
                 campos.push({ label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null });
+                campos.push({ label: "Cuota mensual", value: cuota });
                 campos.push({ label: "Lugar de instalación", value: op.lugar_entrega });
                 campos.push({ label: "Modalidad", value: op.modalidad_renting ? (modalidadLabel[op.modalidad_renting] ?? op.modalidad_renting) : null });
                 campos.push({ label: "Fee colaborador", value: fmtEuro(op.comision_colaborador) });
