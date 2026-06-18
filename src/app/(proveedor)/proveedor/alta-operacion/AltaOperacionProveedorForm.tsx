@@ -6,7 +6,7 @@ import EmpresaSearchInput from "@/components/EmpresaSearchInput";
 import CuotaEstimada from "@/components/CuotaEstimada";
 import { fmtEuroInput, rawFromFmt } from "@/lib/format";
 
-const PLAZOS = [12, 24, 36, 48, 60, 72];
+const PLAZOS = [24, 36, 48, 60, 72];
 
 const inp = "w-full px-3 py-2.5 border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#2E1A47] focus:border-[#2E1A47] bg-white";
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5";

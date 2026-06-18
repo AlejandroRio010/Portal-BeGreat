@@ -7,7 +7,7 @@ import CuotaEstimada from "@/components/CuotaEstimada";
 import { fmtEuroInput, rawFromFmt } from "@/lib/format";
 
 const PRODUCTOS_CONSULTORIA = ["Póliza de crédito", "Leasing", "Préstamo", "Confirming", "Factoring", "Otro"];
-const PLAZOS = [12, 24, 36, 48, 60, 72];
+const PLAZOS = [24, 36, 48, 60, 72];
 const PROVINCIAS = [
   "A Coruña","Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz",
   "Barcelona","Bizkaia","Burgos","Cáceres","Cádiz","Cantabria","Castellón","Ceuta",
@@ -57,6 +57,7 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
   const [proveedorWeb, setProveedorWeb] = useState("");
   const [esNuevoProveedor, setEsNuevoProveedor] = useState(false);
   const [proveedorMissingData, setProveedorMissingData] = useState<string[]>([]);
+  const [proformaFile, setProformaFile] = useState<File | null>(null);
   const [proveedorContacto, setProveedorContacto] = useState("");
   const [provContactoEmail, setProvContactoEmail] = useState("");
   const [provContactoTelefono, setProvContactoTelefono] = useState("");
@@ -216,6 +217,7 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
     if (pipeline === "consultoria" && producto === "Otro" && !data.producto_otro?.trim()) faltan.push("Descripción del producto");
     if (pipeline === "renting" && !data.equipo_tipo) faltan.push("Tipo de equipo");
     if (pipeline === "renting" && !data.plazo_meses) faltan.push("Plazo deseado");
+    if (pipeline === "renting" && !proveedorNombre && !proformaFile) faltan.push("Proveedor o factura proforma");
 
     if (esNuevoCliente && !clienteCif.trim()) faltan.push("CIF de la empresa");
 
@@ -261,13 +263,31 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
       }),
     });
 
-    setLoading(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
       setError(j.error ?? "Error al crear la operación.");
-      return;
+      setLoading(false); return;
     }
     const op = await res.json();
+
+    if (proformaFile && op?.id) {
+      try {
+        const fd = new FormData();
+        fd.append("file", proformaFile);
+        fd.append("folder", `Operaciones/${op.id}/Proformas`);
+        const upRes = await fetch("/api/upload", { method: "POST", body: fd });
+        if (upRes.ok) {
+          const { url, filename, size } = await upRes.json();
+          await fetch(`/api/operations/${op.id}/documents`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url, filename, size }),
+          });
+        }
+      } catch {}
+    }
+
+    setLoading(false);
     router.push(`/admin/operaciones/${op.id}`);
   }
 
@@ -719,6 +739,7 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
             </Section>
 
             <Section title="Proveedor de los equipos">
+              <p className="text-xs text-gray-500 mb-3">Selecciona un proveedor <strong>o</strong> sube una factura proforma. Al menos una de las dos opciones es obligatoria.</p>
               <div className="grid grid-cols-2 gap-4">
                 {renderProveedorSection()}
                 {(proveedorSeleccionado || !esNuevoProveedor) && proveedorSeleccionado && (
@@ -748,9 +769,26 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
                   </div>
                 </div>
               )}
-              <p className="text-xs text-gray-400 mt-3">
-                Si el proveedor ya está registrado, búscalo por su nombre. Si es nuevo, haz clic en &quot;Añadir&quot; para darlo de alta con búsqueda de empresa.
-              </p>
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider mb-2">Factura proforma</p>
+                {proformaFile ? (
+                  <div className="flex items-center justify-between border border-emerald-300 bg-emerald-50 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-emerald-600 text-sm">📄</span>
+                      <span className="text-sm text-emerald-800 font-medium">{proformaFile.name}</span>
+                      <span className="text-xs text-gray-400">({(proformaFile.size / 1024).toFixed(0)} KB)</span>
+                    </div>
+                    <button type="button" onClick={() => setProformaFile(null)} className="text-xs text-gray-400 hover:text-red-500">✕ Quitar</button>
+                  </div>
+                ) : (
+                  <label className="flex items-center justify-center border-2 border-dashed border-gray-300 hover:border-[#2E1A47] px-4 py-3 cursor-pointer transition-colors">
+                    <span className="text-sm text-gray-500">Haz clic para subir la factura proforma</span>
+                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                      onChange={e => { if (e.target.files?.[0]) setProformaFile(e.target.files[0]); e.target.value = ""; }} />
+                  </label>
+                )}
+                <p className="text-xs text-gray-400 mt-1">Si no tienes proveedor, sube la factura proforma del equipo.</p>
+              </div>
             </Section>
           </>
         )}

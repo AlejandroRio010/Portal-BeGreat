@@ -53,9 +53,12 @@ export default function CuotaEstimada({ importe, plazo }: { importe: string; pla
   if (!resultado) return null;
 
   return (
-    <p className="text-xs text-[#2E1A47] bg-[#EEEBF3] px-3 py-2 mt-2 font-medium">
-      Cuota estimada: <span className="font-bold">{fmt(resultado.min)} – {fmt(resultado.max)} €/mes</span>
-      <span className="text-[10px] text-gray-500 ml-1">(a {plazo} meses)*</span>
-    </p>
+    <div className="mt-2">
+      <p className="text-xs text-[#2E1A47] bg-[#EEEBF3] px-3 py-2 font-medium">
+        Cuota estimada: <span className="font-bold">{fmt(resultado.min)} – {fmt(resultado.max)} €/mes</span>
+        <span className="text-[10px] text-gray-500 ml-1">(a {plazo} meses)*</span>
+      </p>
+      <p className="text-[9px] text-gray-400 leading-tight mt-1 px-1">* Cuota provisional sujeta a la aprobación del estudio crediticio del cliente, la elegibilidad de los activos por parte de la entidad financiera y las condiciones vigentes en el momento de la formalización. BeGreat Consulting no garantiza la cuota indicada ni la aprobación de la operación.</p>
+    </div>
   );
 }
