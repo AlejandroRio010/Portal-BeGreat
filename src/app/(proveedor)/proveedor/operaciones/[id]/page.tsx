@@ -9,6 +9,7 @@ import { fmtEur, fmtNum } from "@/lib/format";
 import OpResultadoPanel from "./OpResultadoPanel";
 import DocumentsSection from "@/components/DocumentsSection";
 import InfoRequestsSection from "@/components/InfoRequestsSection";
+import CelebrationBanner from "@/components/CelebrationBanner";
 import { sanitizeFolderName } from "@/lib/onedrive";
 
 const FASES_RENTING = ["Pre-análisis","En estudio por entidad","Operación aprobada","Condiciones aceptadas","Contrato firmado","Transferencia realizada"];
@@ -190,10 +191,10 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
         </div>
       )}
 
+      {isGanada && <CelebrationBanner opNombre={op.nombre ?? op.codigo ?? "Operación"} clientNombre={op.client_nombre ?? "Cliente"} />}
+
       {!isPendiente && (
         <OpResultadoPanel
-          opId={op.id}
-          pipelineKey={op.pipeline_key}
           currentResultado={isGanada ? "ganada" : isDenegada ? "denegada" : "en_curso"}
           motivoDenegacion={op.motivo_denegacion ?? null}
         />
