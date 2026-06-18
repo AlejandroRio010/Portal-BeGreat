@@ -148,6 +148,9 @@ export default async function OperacionDetallePage({ params }: { params: Promise
     { id: userId, nombre: colab?.nombre ?? "Colaborador" },
     ...admins,
   ];
+  if (op.client_nombre) {
+    taskAssignees.push({ id: "__cliente__", nombre: `Cliente (${op.client_nombre})` });
+  }
 
   const clientFolder = sanitizeFolderName(op.client_nombre ?? "Sin cliente");
   const opFolder = `${clientFolder}/${sanitizeFolderName(op.codigo ?? id)}`;

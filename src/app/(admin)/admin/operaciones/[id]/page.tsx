@@ -146,6 +146,9 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
   for (const a of admins) {
     taskAssignees.push({ id: a.id, nombre: a.nombre });
   }
+  if (op.client_nombre) {
+    taskAssignees.push({ id: "__cliente__", nombre: `Cliente (${op.client_nombre})` });
+  }
 
   const clientFolder = sanitizeFolderName(op.client_nombre ?? "Sin cliente");
   const opFolder = `${clientFolder}/${sanitizeFolderName(op.codigo ?? id)}`;
