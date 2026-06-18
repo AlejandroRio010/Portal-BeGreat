@@ -75,7 +75,7 @@ export default function PendingTasksWidget({ basePath }: { basePath: string }) {
                     {t.titulo}
                   </p>
                   <p className="text-[10px] text-gray-400 truncate">
-                    {t.op_codigo ?? t.op_nombre ?? "Operación"}
+                    {[t.op_codigo, t.op_nombre].filter(Boolean).join(" — ") || "Operación"}
                   </p>
                 </div>
                 <span className={`text-[10px] font-medium flex-shrink-0 ${days > 3 ? "text-red-500" : "text-gray-400"}`}>
