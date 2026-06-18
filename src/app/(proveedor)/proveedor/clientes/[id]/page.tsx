@@ -1,10 +1,11 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { clients, contacts, operations, suppliers, clientNotes, customFields, customFieldValues, clientDocuments, avalDocuments } from "@/db/schema";
+import { clients, contacts, operations, suppliers, clientNotes, customFields, customFieldValues, clientDocuments, avalDocuments, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries } from "@/db/schema";
 import ClienteEditFormPortal from "./ClienteEditFormPortal";
 import NuevoContactoForm from "./NuevoContactoForm";
 import NotesSection from "@/components/NotesSection";
 import DocumentsSection from "@/components/DocumentsSection";
+import DocChecklistPanel from "@/components/DocChecklistPanel";
 import { eq, and, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -97,6 +98,10 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
   const clienteCustomValues = await db.select().from(customFieldValues).where(eq(customFieldValues.entity_id, id));
   const notes = await db.select().from(clientNotes).where(eq(clientNotes.client_id, id)).orderBy(clientNotes.created_at);
   const docs = await db.select().from(clientDocuments).where(eq(clientDocuments.client_id, id)).orderBy(clientDocuments.created_at);
+
+  const docTemplates = await db.select().from(docChecklistTemplates).orderBy(asc(docChecklistTemplates.orden));
+  const docCustomItems = await db.select().from(docChecklistCustomItems).where(and(eq(docChecklistCustomItems.entity_type, "cliente"), eq(docChecklistCustomItems.entity_id, id))).orderBy(asc(docChecklistCustomItems.orden));
+  const docEntries = await db.select().from(docChecklistEntries).where(and(eq(docChecklistEntries.entity_type, "cliente"), eq(docChecklistEntries.entity_id, id)));
 
   const opsAvaladoras = await db.select({
     id: operations.id,
@@ -374,6 +379,8 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
               </div>
             </div>
           )}
+
+          <DocChecklistPanel entityType="cliente" entityId={id} templates={docTemplates} customItems={docCustomItems} entries={docEntries} />
 
           <NotesSection
             notes={notes}

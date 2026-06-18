@@ -8,6 +8,7 @@ import {
   integer,
   jsonb,
   pgEnum,
+  serial,
 } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("role", ["admin", "colaborador"]);
@@ -526,5 +527,40 @@ export const cotizadorDeals = pgTable("cotizador_deals", {
   importe: numeric("importe", { precision: 12, scale: 2 }).notNull(),
   cuota: numeric("cuota", { precision: 10, scale: 2 }).notNull(),
   plazo_meses: integer("plazo_meses").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Checklist documental ────────────────────────────────────────────────────
+
+export const docChecklistTypeEnum = pgEnum("doc_checklist_type", ["simple", "anual", "trimestral"]);
+export const docEntityTypeEnum = pgEnum("doc_entity_type", ["cliente", "proveedor", "avalista"]);
+
+export const docChecklistTemplates = pgTable("doc_checklist_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nombre: text("nombre").notNull(),
+  tipo: docChecklistTypeEnum("tipo").notNull().default("simple"),
+  orden: serial("orden"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const docChecklistCustomItems = pgTable("doc_checklist_custom_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entity_type: docEntityTypeEnum("entity_type").notNull(),
+  entity_id: uuid("entity_id").notNull(),
+  nombre: text("nombre").notNull(),
+  tipo: docChecklistTypeEnum("tipo").notNull().default("simple"),
+  orden: serial("orden"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const docChecklistEntries = pgTable("doc_checklist_entries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entity_type: docEntityTypeEnum("entity_type").notNull(),
+  entity_id: uuid("entity_id").notNull(),
+  template_id: uuid("template_id").references(() => docChecklistTemplates.id, { onDelete: "cascade" }),
+  custom_item_id: uuid("custom_item_id").references(() => docChecklistCustomItems.id, { onDelete: "cascade" }),
+  year: integer("year"),
+  quarter: integer("quarter"),
+  checked: boolean("checked").notNull().default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });

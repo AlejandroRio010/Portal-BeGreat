@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { clients, collaborators, contacts, operations, customFields, customFieldValues, clientNotes, clientGroups, clientDocuments, avalDocuments } from "@/db/schema";
-import { eq, asc, sql } from "drizzle-orm";
+import { clients, collaborators, contacts, operations, customFields, customFieldValues, clientNotes, clientGroups, clientDocuments, avalDocuments, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries } from "@/db/schema";
+import { eq, asc, and, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import ClienteEditForm from "./ClienteEditForm";
@@ -12,6 +12,7 @@ import { getCnaeByCode } from "@/lib/cnaes";
 import { fmtEur } from "@/lib/format";
 import { sanitizeFolderName } from "@/lib/onedrive";
 import AsignarResponsable from "@/components/AsignarResponsable";
+import DocChecklistPanel from "@/components/DocChecklistPanel";
 
 function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
@@ -93,6 +94,10 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
   const notes = await db.select().from(clientNotes).where(eq(clientNotes.client_id, id)).orderBy(clientNotes.created_at);
   const docs = await db.select().from(clientDocuments).where(eq(clientDocuments.client_id, id)).orderBy(clientDocuments.created_at);
   const grupos = await db.select({ id: clientGroups.id, nombre: clientGroups.nombre }).from(clientGroups).orderBy(clientGroups.nombre);
+
+  const docTemplates = await db.select().from(docChecklistTemplates).orderBy(asc(docChecklistTemplates.orden));
+  const docCustomItems = await db.select().from(docChecklistCustomItems).where(and(eq(docChecklistCustomItems.entity_type, "cliente"), eq(docChecklistCustomItems.entity_id, id))).orderBy(asc(docChecklistCustomItems.orden));
+  const docEntries = await db.select().from(docChecklistEntries).where(and(eq(docChecklistEntries.entity_type, "cliente"), eq(docChecklistEntries.entity_id, id)));
 
   const opsAvaladoras = await db.select({
     id: operations.id,
@@ -377,6 +382,8 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
               </div>
             </div>
           )}
+
+          <DocChecklistPanel entityType="cliente" entityId={id} templates={docTemplates} customItems={docCustomItems} entries={docEntries} />
 
           <NotesSection
             notes={notes}

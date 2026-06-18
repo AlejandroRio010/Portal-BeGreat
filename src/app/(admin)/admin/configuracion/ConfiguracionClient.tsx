@@ -43,7 +43,7 @@ interface Props {
   initialUsers: UserRow[];
 }
 
-type Tab = "campos" | "fases" | "usuarios" | "cotizador";
+type Tab = "campos" | "fases" | "usuarios" | "cotizador" | "documentacion";
 
 const TIPO_LABELS: Record<string, string> = {
   texto: "Texto",
@@ -461,6 +461,7 @@ export default function ConfiguracionClient({ initialFields, pipelineConsultoria
     { key: "fases", label: "Fases del pipeline" },
     { key: "usuarios", label: "Usuarios y accesos" },
     { key: "cotizador", label: "Cotizador" },
+    { key: "documentacion", label: "Documentación" },
   ];
 
   return (
@@ -676,6 +677,8 @@ export default function ConfiguracionClient({ initialFields, pipelineConsultoria
       )}
 
       {tab === "cotizador" && <CotizadorDealsPanel />}
+
+      {tab === "documentacion" && <DocTemplatesPanel />}
     </div>
   );
 }
@@ -829,6 +832,98 @@ function CotizadorDealsPanel() {
             className="px-5 py-2.5 bg-[#2E1A47] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#3d2560] disabled:opacity-40 transition-colors">
             {adding ? "Añadiendo..." : "Añadir"}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Doc checklist templates panel ────────────────────────────────────────────
+
+const TIPO_DOC_LABELS: Record<string, string> = {
+  simple: "Simple (check)",
+  anual: "Con años",
+  trimestral: "Trimestral",
+};
+
+function DocTemplatesPanel() {
+  const [templates, setTemplates] = useState<{ id: string; nombre: string; tipo: string; orden: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [nombre, setNombre] = useState("");
+  const [tipo, setTipo] = useState<"simple" | "anual" | "trimestral">("simple");
+  const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/doc-checklist-templates").then(r => r.json()).then(d => { setTemplates(d); setLoading(false); });
+  }, []);
+
+  async function handleAdd() {
+    if (!nombre.trim()) return;
+    setAdding(true);
+    const res = await fetch("/api/admin/doc-checklist-templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre: nombre.trim(), tipo }),
+    });
+    if (res.ok) {
+      const t = await res.json();
+      setTemplates(prev => [...prev, t]);
+      setNombre("");
+      setTipo("simple");
+    }
+    setAdding(false);
+  }
+
+  async function handleDelete(id: string) {
+    await fetch("/api/admin/doc-checklist-templates", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    setTemplates(prev => prev.filter(t => t.id !== id));
+  }
+
+  if (loading) return <p className="text-sm text-gray-400">Cargando...</p>;
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white border border-gray-200">
+        <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
+          <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Documentos requeridos (globales)</h3>
+          <p className="text-[10px] text-gray-500 mt-0.5">Estos items aparecen automáticamente en todas las fichas de clientes, proveedores y avalistas.</p>
+        </div>
+        <div className="divide-y divide-gray-100">
+          {templates.map(t => (
+            <div key={t.id} className="flex items-center justify-between px-5 py-3 group hover:bg-gray-50">
+              <div>
+                <p className="text-sm font-medium text-gray-800">{t.nombre}</p>
+                <p className="text-[10px] text-gray-400">{TIPO_DOC_LABELS[t.tipo] ?? t.tipo}</p>
+              </div>
+              <button onClick={() => handleDelete(t.id)}
+                className="text-xs text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">Eliminar</button>
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-gray-200 px-5 py-4 space-y-3">
+          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Añadir nuevo documento</p>
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
+              <input value={nombre} onChange={e => setNombre(e.target.value)}
+                placeholder="Nombre del documento..."
+                className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]"
+                onKeyDown={e => e.key === "Enter" && handleAdd()} />
+            </div>
+            <select value={tipo} onChange={e => setTipo(e.target.value as any)}
+              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#2E1A47]">
+              <option value="simple">Simple</option>
+              <option value="anual">Con años</option>
+              <option value="trimestral">Trimestral</option>
+            </select>
+            <button onClick={handleAdd} disabled={adding || !nombre.trim()}
+              className="px-5 py-2 bg-[#2E1A47] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#3d2560] disabled:opacity-40 transition-colors">
+              {adding ? "..." : "Añadir"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

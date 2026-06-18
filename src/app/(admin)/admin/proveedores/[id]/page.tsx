@@ -1,12 +1,13 @@
 import { db } from "@/db";
-import { suppliers, collaborators, operations, clients } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { suppliers, collaborators, operations, clients, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries } from "@/db/schema";
+import { eq, asc, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import ProveedorEditForm from "./ProveedorEditForm";
 import SupplierPortalToggle from "./SupplierPortalToggle";
 import SupplierUsuariosPanel from "./SupplierUsuariosPanel";
 import AsignarResponsable from "@/components/AsignarResponsable";
+import DocChecklistPanel from "@/components/DocChecklistPanel";
 import { fmtEur } from "@/lib/format";
 
 function fmtDate(d: Date | null | undefined) {
@@ -56,6 +57,10 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
     .limit(1);
 
   if (!prov) notFound();
+
+  const docTemplates = await db.select().from(docChecklistTemplates).orderBy(asc(docChecklistTemplates.orden));
+  const docCustomItems = await db.select().from(docChecklistCustomItems).where(and(eq(docChecklistCustomItems.entity_type, "proveedor"), eq(docChecklistCustomItems.entity_id, id))).orderBy(asc(docChecklistCustomItems.orden));
+  const docEntries = await db.select().from(docChecklistEntries).where(and(eq(docChecklistEntries.entity_type, "proveedor"), eq(docChecklistEntries.entity_id, id)));
 
   const ops = await db
     .select({
@@ -230,6 +235,7 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
               </tbody>
             </table>
           )}
+          <DocChecklistPanel entityType="proveedor" entityId={id} templates={docTemplates} customItems={docCustomItems} entries={docEntries} />
         </div>
       </div>
     </div>
