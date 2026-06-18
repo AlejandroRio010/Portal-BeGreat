@@ -19,7 +19,7 @@ export default function ProveedoresTabla({ proveedores, esAdmin, hrefBase, colab
   proveedores: ProveedorRow[];
   esAdmin: boolean;
   hrefBase: string;
-  colaboradores?: { id: string; nombre: string }[];
+  colaboradores?: { id: string; nombre: string; role?: string }[];
 }) {
   const [q, setQ] = useState("");
   const [colab, setColab] = useState("");

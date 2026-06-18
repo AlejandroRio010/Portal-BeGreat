@@ -24,9 +24,8 @@ export default async function AdminProveedoresPage() {
     .orderBy(suppliers.nombre);
 
   const colabs = await db
-    .select({ id: collaborators.id, nombre: collaborators.nombre })
+    .select({ id: collaborators.id, nombre: collaborators.nombre, role: collaborators.role })
     .from(collaborators)
-    .where(eq(collaborators.role, "colaborador"))
     .orderBy(collaborators.nombre);
 
   return (

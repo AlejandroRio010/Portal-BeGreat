@@ -7,7 +7,7 @@ import EmpresaSearchInput from "@/components/EmpresaSearchInput";
 const inp = "w-full px-3 py-2.5 border border-gray-200 text-sm focus:outline-none focus:border-[#2E1A47] bg-white";
 const lbl = "block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5";
 
-export default function NuevoProveedorModal({ colaboradores }: { colaboradores: { id: string; nombre: string }[] }) {
+export default function NuevoProveedorModal({ colaboradores }: { colaboradores: { id: string; nombre: string; role: string }[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -168,10 +168,10 @@ export default function NuevoProveedorModal({ colaboradores }: { colaboradores: 
               </div>
 
               <div className="border-t border-gray-100 pt-4">
-                <label className={lbl}>Colaborador asignado</label>
+                <label className={lbl}>Responsable asignado</label>
                 <select name="collaborator_id" className={inp}>
                   <option value="">Sin asignar</option>
-                  {colaboradores.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  {colaboradores.map(c => <option key={c.id} value={c.id}>{c.nombre}{c.role === "admin" ? " (Admin)" : ""}</option>)}
                 </select>
               </div>
 
