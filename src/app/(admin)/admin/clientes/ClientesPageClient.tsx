@@ -3,7 +3,7 @@
 import { useState } from "react";
 import NuevoClienteForm from "./NuevoClienteForm";
 
-interface Colab { id: string; nombre: string }
+interface Colab { id: string; nombre: string; role?: string }
 
 export function NuevoClienteButton({ onClick }: { onClick: () => void }) {
   return (

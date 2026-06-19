@@ -16,9 +16,9 @@ export default async function AdminClientesPage({
   const colaboradorFilter = sp.colaborador;
 
   const allColaboradores = await db
-    .select({ id: collaborators.id, nombre: collaborators.nombre })
+    .select({ id: collaborators.id, nombre: collaborators.nombre, role: collaborators.role })
     .from(collaborators)
-    .where(eq(collaborators.role, "colaborador"))
+    .where(eq(collaborators.activo, true))
     .orderBy(collaborators.nombre);
 
   // Fetch clients with collaborator name

@@ -8,7 +8,7 @@ import { formatDocId } from "@/lib/format";
 const inp = "w-full px-3 py-2.5 border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#2E1A47] focus:border-[#2E1A47] bg-white";
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5";
 
-interface Colab { id: string; nombre: string }
+interface Colab { id: string; nombre: string; role?: string }
 
 export default function NuevoClienteForm({ colaboradores, onClose }: { colaboradores: Colab[]; onClose: () => void }) {
   const router = useRouter();
@@ -72,7 +72,7 @@ export default function NuevoClienteForm({ colaboradores, onClose }: { colaborad
           <select value={collaboratorId} onChange={e => setCollaboratorId(e.target.value)} required className={inp}>
             <option value="">— Seleccionar colaborador —</option>
             {colaboradores.map(c => (
-              <option key={c.id} value={c.id}>{c.nombre}</option>
+              <option key={c.id} value={c.id}>{c.nombre}{c.role === "admin" ? " (Admin)" : ""}</option>
             ))}
           </select>
         </div>
