@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 
 const FALLBACK: { meses: number; taeMin: number; taeMax: number }[] = [
-  { meses: 24, taeMin: 0.128, taeMax: 0.226 },
-  { meses: 36, taeMin: 0.118, taeMax: 0.200 },
-  { meses: 48, taeMin: 0.110, taeMax: 0.171 },
-  { meses: 60, taeMin: 0.105, taeMax: 0.161 },
-  { meses: 72, taeMin: 0.098, taeMax: 0.148 },
+  { meses: 24, taeMin: 0.060, taeMax: 0.225 },
+  { meses: 36, taeMin: 0.055, taeMax: 0.195 },
+  { meses: 48, taeMin: 0.050, taeMax: 0.165 },
+  { meses: 60, taeMin: 0.048, taeMax: 0.150 },
+  { meses: 72, taeMin: 0.045, taeMax: 0.140 },
 ];
 
 const PLAZOS_DEFAULT = [48, 60];
