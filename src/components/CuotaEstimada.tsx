@@ -3,11 +3,11 @@
 import { useState, useEffect, useMemo } from "react";
 
 const FALLBACK = [
-  { meses: 24, taeMin: 0.128, taeMax: 0.226 },
-  { meses: 36, taeMin: 0.118, taeMax: 0.200 },
-  { meses: 48, taeMin: 0.110, taeMax: 0.171 },
-  { meses: 60, taeMin: 0.105, taeMax: 0.161 },
-  { meses: 72, taeMin: 0.098, taeMax: 0.148 },
+  { meses: 24, taeMin: 0.105, taeMax: 0.228 },
+  { meses: 36, taeMin: 0.100, taeMax: 0.2017 },
+  { meses: 48, taeMin: 0.0957, taeMax: 0.1734 },
+  { meses: 60, taeMin: 0.0983, taeMax: 0.1684 },
+  { meses: 72, taeMin: 0.095, taeMax: 0.1475 },
 ];
 
 function calcularCuota(importe: number, meses: number, tae: number) {
