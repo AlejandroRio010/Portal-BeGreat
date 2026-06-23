@@ -216,22 +216,21 @@ export async function PATCH(
 
   await db.update(operations).set(updateData).where(eq(operations.id, id));
 
-  // ─── Email notifications (fire-and-forget) ─────────────────────────────────
+  // ─── Email notifications ────────────────────────────────────────────────────
   if (prevOp) {
     const wasValidated = prevOp.status === "pendiente_de_validar" && (status === "activa" || resultado === "en_curso");
     const wasDenied = resultado === "denegada" || (status === "archivada" && prevOp.status !== "archivada");
     const wasWon = resultado === "ganada";
 
     if (wasValidated || wasDenied || wasWon) {
-      (async () => {
-        try {
-          const [colab] = await db
-            .select({ email: collaborators.email, nombre: collaborators.nombre })
-            .from(collaborators)
-            .where(eq(collaborators.id, prevOp.collaborator_id))
-            .limit(1);
-          if (!colab) return;
+      try {
+        const [colab] = await db
+          .select({ email: collaborators.email, nombre: collaborators.nombre })
+          .from(collaborators)
+          .where(eq(collaborators.id, prevOp.collaborator_id))
+          .limit(1);
 
+        if (colab) {
           if (wasWon) {
             await sendOperationWonEmail(
               colab.email, colab.nombre, prevOp.nombre ?? "Operación", id,
@@ -245,10 +244,10 @@ export async function PATCH(
               (motivo_denegacion as string) ?? ""
             );
           }
-        } catch (e: any) {
-          console.error("[OpEmail]", e.message);
         }
-      })();
+      } catch (e: any) {
+        console.error("[OpEmail]", e.message);
+      }
     }
   }
 
