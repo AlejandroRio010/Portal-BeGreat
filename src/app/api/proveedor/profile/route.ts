@@ -19,6 +19,7 @@ export async function PATCH(req: NextRequest) {
   if (body.web !== undefined) data.web = body.web || null;
   if (body.cif !== undefined) data.cif = body.cif || null;
   if (body.razon_social !== undefined) data.razon_social = body.razon_social || null;
+  if (body.logo_url !== undefined) data.logo_url = body.logo_url || null;
 
   if (Object.keys(data).length === 0)
     return NextResponse.json({ error: "No data" }, { status: 400 });
