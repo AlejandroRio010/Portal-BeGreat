@@ -11,6 +11,7 @@ interface SidebarProps {
   role: "admin" | "colaborador" | "proveedor";
   puedeVerEntidades?: boolean;
   nivelEntidades?: number;
+  logoUrl?: string | null;
 }
 
 const colaboradorNav = [
@@ -56,7 +57,7 @@ const adminNav = [
   { href: "/admin/configuracion", label: "Configuración",        exact: false },
 ];
 
-export default function Sidebar({ nombre, identificador, role, puedeVerEntidades, nivelEntidades }: SidebarProps) {
+export default function Sidebar({ nombre, identificador, role, puedeVerEntidades, nivelEntidades, logoUrl }: SidebarProps) {
   const pathname = usePathname();
   const baseNav = role === "admin" ? adminNav : role === "proveedor" ? proveedorNav : colaboradorNav;
   const showEntidades = nivelEntidades !== undefined ? nivelEntidades <= 2 : puedeVerEntidades;
@@ -85,9 +86,14 @@ export default function Sidebar({ nombre, identificador, role, puedeVerEntidades
       {/* User info */}
       <div className="px-5 py-4 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-white/15 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 uppercase">
-            {nombre.charAt(0)}
-          </div>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt={nombre} className="w-8 h-8 object-contain flex-shrink-0 bg-white/10 p-0.5" />
+          ) : (
+            <div className="w-8 h-8 bg-white/15 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 uppercase">
+              {nombre.charAt(0)}
+            </div>
+          )}
           <div className="min-w-0">
             <p className="text-sm font-semibold text-white truncate leading-tight">{nombre}</p>
             <p className="text-xs text-white/35 mt-0.5">{identificador}</p>
