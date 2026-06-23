@@ -50,6 +50,8 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
       plazo_meses: operations.plazo_meses,
       equipo_tipo: operations.equipo_tipo,
       cuota_mensual: operations.cuota_mensual,
+      fecha_contrato: operations.fecha_contrato,
+      fecha_fin_contrato: operations.fecha_fin_contrato,
       motivo_denegacion: operations.motivo_denegacion,
       entidad_financiera: operations.entidad_financiera,
       entidad_destino: operations.entidad_destino,
@@ -146,6 +148,8 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
   campos.push({ label: "Importe venta (sin IVA)", value: fmtEuro(op.importe) });
   campos.push({ label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null });
   campos.push({ label: "Cuota mensual", value: cuota });
+  campos.push({ label: "Fecha inicio contrato", value: fmtFecha(op.fecha_contrato) });
+  campos.push({ label: "Fecha fin contrato", value: fmtFecha(op.fecha_fin_contrato) });
   campos.push({ label: "Lugar de instalación", value: op.lugar_entrega });
 
   return (

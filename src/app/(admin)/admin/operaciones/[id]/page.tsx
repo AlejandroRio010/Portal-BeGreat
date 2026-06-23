@@ -61,6 +61,8 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       equipo_tipo: operations.equipo_tipo,
       plazo_meses: operations.plazo_meses,
       cuota_mensual: operations.cuota_mensual,
+      fecha_contrato: operations.fecha_contrato,
+      fecha_fin_contrato: operations.fecha_fin_contrato,
       notas_admin: operations.notas_admin,
       facturacion_renting: operations.facturacion_renting,
       es_renovacion: operations.es_renovacion,
@@ -402,6 +404,8 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
                 }
                 campos.push({ label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null });
                 campos.push({ label: "Cuota mensual", value: cuota });
+                campos.push({ label: "Fecha inicio contrato", value: fmtFecha(op.fecha_contrato) });
+                campos.push({ label: "Fecha fin contrato", value: fmtFecha(op.fecha_fin_contrato) });
                 campos.push({ label: "Lugar de instalación", value: op.lugar_entrega });
                 campos.push({ label: "Modalidad", value: op.modalidad_renting ? (modalidadLabel[op.modalidad_renting] ?? op.modalidad_renting) : null });
                 campos.push({ label: "Fee colaborador", value: fmtEuro(op.comision_colaborador) });
@@ -547,6 +551,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialImporte={op.importe ?? null}
             initialProducto={op.producto ?? null}
             initialPlazoMeses={op.plazo_meses ?? null}
+            initialFechaContrato={op.fecha_contrato ? new Date(op.fecha_contrato).toISOString().split("T")[0] : null}
             initialLugarEntrega={op.lugar_entrega ?? null}
             initialEquipoTipo={op.equipo_tipo ?? null}
             initialNecesidad={op.necesidad ?? null}

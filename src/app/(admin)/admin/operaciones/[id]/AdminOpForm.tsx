@@ -59,6 +59,7 @@ interface Props {
   initialImporte: string | null;
   initialProducto: string | null;
   initialPlazoMeses: number | null;
+  initialFechaContrato: string | null;
   initialLugarEntrega: string | null;
   initialEquipoTipo: string | null;
   initialNecesidad?: string | null;
@@ -114,6 +115,7 @@ export default function AdminOpForm({
   initialImporte,
   initialProducto,
   initialPlazoMeses,
+  initialFechaContrato,
   initialLugarEntrega,
   initialEquipoTipo,
   initialNecesidad,
@@ -203,6 +205,7 @@ export default function AdminOpForm({
   const [importe, setImporte] = useState(initialImporte ?? "");
   const [producto, setProducto] = useState(initialProducto ?? "");
   const [plazoMeses, setPlazoMeses] = useState(initialPlazoMeses ? String(initialPlazoMeses) : "");
+  const [fechaContrato, setFechaContrato] = useState(initialFechaContrato ?? "");
   const [lugarEntrega, setLugarEntrega] = useState(initialLugarEntrega ?? "");
   const [equipoTipo, setEquipoTipo] = useState(initialEquipoTipo ?? "");
   const [necesidad, setNecesidad] = useState(initialNecesidad ?? "");
@@ -367,8 +370,14 @@ export default function AdminOpForm({
     setSavedBasic(false);
     setError(null);
     try {
+      const fechaFin = fechaContrato && plazoMeses ? (() => {
+        const d = new Date(fechaContrato);
+        d.setMonth(d.getMonth() + parseInt(plazoMeses));
+        return d.toISOString();
+      })() : null;
       await patch({ nombre: nombre || null, descripcion: descripcion || null, importe: importe || null, producto: producto || null,
-        plazo_meses: plazoMeses || null, lugar_entrega: lugarEntrega || null, equipo_tipo: equipoTipo || null,
+        plazo_meses: plazoMeses || null, fecha_contrato: fechaContrato || null, fecha_fin_contrato: fechaFin,
+        lugar_entrega: lugarEntrega || null, equipo_tipo: equipoTipo || null,
         necesidad: necesidad || null, modalidad_renting: modalidadRenting || null,
         tiene_aval: tieneAval,
         aval_tipo: tieneAval ? avalTipo : null,
@@ -573,6 +582,16 @@ export default function AdminOpForm({
                 <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Plazo (meses)</label>
                 <input type="number" value={plazoMeses} onChange={(e) => setPlazoMeses(e.target.value)} placeholder="24"
                   className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Fecha inicio contrato</label>
+                <input type="date" value={fechaContrato} onChange={(e) => setFechaContrato(e.target.value)}
+                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                {fechaContrato && plazoMeses && (
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Fin contrato: {(() => { const d = new Date(fechaContrato); d.setMonth(d.getMonth() + parseInt(plazoMeses)); return d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" }); })()}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Tipo de equipo</label>

@@ -48,6 +48,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (necesidad !== undefined) data.necesidad = necesidad || null;
   if (modalidad_renting !== undefined) data.modalidad_renting = modalidad_renting || null;
   if (body.cuota_mensual !== undefined) data.cuota_mensual = body.cuota_mensual || null;
+  if (body.fecha_contrato !== undefined) data.fecha_contrato = body.fecha_contrato ? new Date(body.fecha_contrato) : null;
+  if (body.fecha_fin_contrato !== undefined) data.fecha_fin_contrato = body.fecha_fin_contrato ? new Date(body.fecha_fin_contrato) : null;
   if (typeof es_renovacion === "boolean") data.es_renovacion = es_renovacion;
   if (operacion_original_id !== undefined) data.operacion_original_id = operacion_original_id || null;
   if (typeof tiene_aval === "boolean") {

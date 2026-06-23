@@ -52,6 +52,8 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       plazo_meses: operations.plazo_meses,
       equipo_tipo: operations.equipo_tipo,
       cuota_mensual: operations.cuota_mensual,
+      fecha_contrato: operations.fecha_contrato,
+      fecha_fin_contrato: operations.fecha_fin_contrato,
       facturacion_renting: operations.facturacion_renting,
       modalidad_renting: operations.modalidad_renting,
       importe_facturado_begreat: operations.importe_facturado_begreat,
@@ -357,6 +359,8 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                 }
                 campos.push({ label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null });
                 campos.push({ label: "Cuota mensual", value: cuota });
+                campos.push({ label: "Fecha inicio contrato", value: fmtFecha(op.fecha_contrato) });
+                campos.push({ label: "Fecha fin contrato", value: fmtFecha(op.fecha_fin_contrato) });
                 campos.push({ label: "Lugar de instalación", value: op.lugar_entrega });
                 campos.push({ label: "Modalidad", value: op.modalidad_renting ? (modalidadLabel[op.modalidad_renting] ?? op.modalidad_renting) : null });
                 campos.push({ label: "Fee colaborador", value: fmtEuro(op.comision_colaborador) });
