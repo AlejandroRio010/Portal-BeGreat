@@ -85,14 +85,11 @@ function CardContent({ op, dragListeners, dragAttributes, canEdit }: { op: Op; d
           </div>
         )}
         {fee > 0 && <span className="text-[9px] text-[#2E1A47] font-semibold whitespace-nowrap">Fee: {fmtNum(fee)} €</span>}
-        <div className="flex items-center gap-1">
-          {op.facturacion_renting && (
-            <span className={`text-[9px] font-bold px-1 py-0.5 uppercase ${op.facturacion_renting === "begreat" ? "bg-[#EEEBF3] text-[#2E1A47]" : "bg-amber-50 text-amber-700"}`}>
-              {op.facturacion_renting === "begreat" ? "BG" : "Fin"}
-            </span>
-          )}
-          {op.status === "pendiente_de_validar" && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />}
-        </div>
+        {op.status === "pendiente_de_validar" && (
+          <div className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+          </div>
+        )}
       </div>
     </div>
   );
