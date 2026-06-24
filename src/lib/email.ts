@@ -286,9 +286,13 @@ export async function sendSupplierOperationApprovedEmail(
 }
 
 export async function sendSupplierContractSignedEmail(
-  to: string, nombre: string, opNombre: string
+  to: string, nombre: string, opNombre: string,
+  importe: string, descripcionEquipos: string | null
 ) {
   if (!resend) { console.error("RESEND_API_KEY no configurada"); return; }
+  const equiposHtml = descripcionEquipos
+    ? `<tr><td style="padding: 4px 0; color: #888;">Equipos</td><td style="text-align: right; font-weight: bold;">${descripcionEquipos.split("\n").filter(l => l.trim() && l.trim() !== "---").join("<br>")}</td></tr>`
+    : "";
   await resend.emails.send({
     from: FROM, to,
     subject: `¡Contrato firmado! — ${opNombre}`,
@@ -297,6 +301,12 @@ export async function sendSupplierContractSignedEmail(
       <p style="font-size: 14px; line-height: 1.65; color: #555; margin: 0 0 10px;">
         ¡Enhorabuena! La operación <strong>${opNombre}</strong> ya tiene el <strong style="color: #059669;">contrato firmado</strong>.
       </p>
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 16px; margin: 0 0 16px;">
+        <table style="width: 100%; font-size: 14px; color: #333;">
+          <tr><td style="padding: 4px 0; color: #888;">Importe de la operación</td><td style="text-align: right; font-weight: bold;">${importe}</td></tr>
+          ${equiposHtml}
+        </table>
+      </div>
       <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 16px; margin: 0 0 28px;">
         <p style="font-size: 14px; color: #166534; margin: 0; line-height: 1.65;">
           El proceso de tramitación ha finalizado con éxito. En los próximos días recibirás la transferencia correspondiente conforme a las condiciones acordadas.

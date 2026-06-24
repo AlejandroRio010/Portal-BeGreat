@@ -31,6 +31,7 @@ export async function PATCH(
       collaborator_id: operations.collaborator_id,
       supplier_id: operations.supplier_id,
       importe: operations.importe,
+      descripcion: operations.descripcion,
       comision_colaborador: operations.comision_colaborador,
     })
     .from(operations)
@@ -93,7 +94,7 @@ export async function PATCH(
               if (isApproved) {
                 await sendSupplierOperationApprovedEmail(u.email, u.nombre, prevOp.nombre ?? "Operación");
               } else {
-                await sendSupplierContractSignedEmail(u.email, u.nombre, prevOp.nombre ?? "Operación");
+                await sendSupplierContractSignedEmail(u.email, u.nombre, prevOp.nombre ?? "Operación", fmtEur(prevOp.importe), prevOp.descripcion);
               }
             }
           } catch (e: any) { console.error("[SupplierEmail]", e.message); }
