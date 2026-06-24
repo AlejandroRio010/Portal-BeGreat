@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, collaborators, contacts, clients } from "@/db/schema";
+import { operations, collaborators, contacts, clients, supplierUsers } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { sendOperationValidatedEmail, sendOperationDeniedEmail, sendOperationWonEmail } from "@/lib/email";
+import { sendOperationValidatedEmail, sendOperationDeniedEmail, sendOperationWonEmail, sendSupplierOperationDeniedEmail } from "@/lib/email";
 import { fmtEur, formatDocId } from "@/lib/format";
 
 export async function PATCH(
@@ -74,6 +74,7 @@ export async function PATCH(
       nombre: operations.nombre,
       collaborator_id: operations.collaborator_id,
       client_id: operations.client_id,
+      supplier_id: operations.supplier_id,
       importe: operations.importe,
       comision_colaborador: operations.comision_colaborador,
     })
@@ -252,6 +253,20 @@ export async function PATCH(
       } catch (e: any) {
         console.error("[OpEmail]", e.message);
       }
+    }
+
+    // Supplier email on deny
+    if (wasDenied && prevOp.supplier_id) {
+      (async () => {
+        try {
+          const users = await db.select({ email: supplierUsers.email, nombre: supplierUsers.nombre })
+            .from(supplierUsers)
+            .where(and(eq(supplierUsers.supplier_id, prevOp.supplier_id!), eq(supplierUsers.activo, true)));
+          for (const u of users) {
+            await sendSupplierOperationDeniedEmail(u.email, u.nombre, prevOp.nombre ?? "Operación", (motivo_denegacion as string) ?? "");
+          }
+        } catch (e: any) { console.error("[SupplierEmail]", e.message); }
+      })();
     }
   }
 

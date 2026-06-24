@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, collaborators } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { sendOperationValidatedEmail, sendOperationApprovedEmail } from "@/lib/email";
+import { operations, collaborators, supplierUsers } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+import { sendOperationValidatedEmail, sendOperationApprovedEmail, sendSupplierOperationApprovedEmail, sendSupplierContractSignedEmail } from "@/lib/email";
 import { fmtEur } from "@/lib/format";
 
 const FASES_FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
@@ -29,6 +29,7 @@ export async function PATCH(
       fase: operations.fase,
       nombre: operations.nombre,
       collaborator_id: operations.collaborator_id,
+      supplier_id: operations.supplier_id,
       importe: operations.importe,
       comision_colaborador: operations.comision_colaborador,
     })
@@ -77,6 +78,28 @@ export async function PATCH(
         console.error("[OpEmail]", e.message);
       }
     })();
+
+    // Supplier emails: approved + contract signed
+    if (prevOp.supplier_id) {
+      const isApproved = fase === "Operación aprobada" && prevOp.fase !== "Operación aprobada";
+      const isContractSigned = fase === "Contrato firmado" && prevOp.fase !== "Contrato firmado";
+      if (isApproved || isContractSigned) {
+        (async () => {
+          try {
+            const users = await db.select({ email: supplierUsers.email, nombre: supplierUsers.nombre })
+              .from(supplierUsers)
+              .where(and(eq(supplierUsers.supplier_id, prevOp.supplier_id!), eq(supplierUsers.activo, true)));
+            for (const u of users) {
+              if (isApproved) {
+                await sendSupplierOperationApprovedEmail(u.email, u.nombre, prevOp.nombre ?? "Operación");
+              } else {
+                await sendSupplierContractSignedEmail(u.email, u.nombre, prevOp.nombre ?? "Operación");
+              }
+            }
+          } catch (e: any) { console.error("[SupplierEmail]", e.message); }
+        })();
+      }
+    }
   }
 
   return NextResponse.json({ ok: true });

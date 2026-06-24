@@ -231,6 +231,86 @@ export async function sendPendingValidationDigest(
   });
 }
 
+// ─── Supplier notification emails ──────────────────────────────────────────
+
+export async function sendSupplierOperationDeniedEmail(
+  to: string, nombre: string, opNombre: string, motivo: string
+) {
+  if (!resend) { console.error("RESEND_API_KEY no configurada"); return; }
+  await resend.emails.send({
+    from: FROM, to,
+    subject: `Operación denegada — ${opNombre}`,
+    html: emailWrapper("Operación denegada",
+      `<p style="font-size: 16px; color: #1a1a1a; margin: 0 0 14px; font-weight: 600;">Hola${nombre ? " " + nombre.split(" ")[0] : ""},</p>
+      <p style="font-size: 14px; line-height: 1.65; color: #555; margin: 0 0 10px;">
+        Lamentamos comunicarte que la operación <strong>${opNombre}</strong> ha sido <strong style="color: #dc2626;">denegada</strong> por la entidad financiera.
+      </p>
+      <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 16px; margin: 0 0 28px;">
+        <p style="font-size: 11px; color: #dc2626; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; margin: 0 0 6px;">Motivo</p>
+        <p style="font-size: 14px; color: #7f1d1d; margin: 0;">${motivo || "No especificado"}</p>
+      </div>
+      <p style="font-size: 14px; line-height: 1.65; color: #555; margin: 0 0 28px;">
+        Si tienes alguna duda, no dudes en ponerte en contacto con nosotros.
+      </p>`,
+      PORTAL_URL, "Ir al portal →",
+      "Recibes este email porque eres proveedor de BeGreat Consulting."
+    ),
+  });
+}
+
+export async function sendSupplierOperationApprovedEmail(
+  to: string, nombre: string, opNombre: string
+) {
+  if (!resend) { console.error("RESEND_API_KEY no configurada"); return; }
+  await resend.emails.send({
+    from: FROM, to,
+    subject: `¡Operación aprobada! — ${opNombre}`,
+    html: emailWrapper("Operación aprobada",
+      `<p style="font-size: 16px; color: #1a1a1a; margin: 0 0 14px; font-weight: 600;">Hola${nombre ? " " + nombre.split(" ")[0] : ""},</p>
+      <p style="font-size: 14px; line-height: 1.65; color: #555; margin: 0 0 10px;">
+        Nos complace informarte de que la operación <strong>${opNombre}</strong> ha sido <strong style="color: #059669;">aprobada</strong> por la entidad financiera.
+      </p>
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 16px; margin: 0 0 28px;">
+        <p style="font-size: 14px; color: #166534; margin: 0; line-height: 1.65;">
+          El siguiente paso es que el cliente acepte las condiciones de la operación.
+          Una vez aceptadas, te solicitaremos la documentación necesaria para proceder al cierre de la operación.
+        </p>
+      </div>
+      <p style="font-size: 14px; line-height: 1.65; color: #555; margin: 0 0 28px;">
+        Te mantendremos informado del avance. Gracias por tu colaboración.
+      </p>`,
+      PORTAL_URL, "Ir al portal →",
+      "Recibes este email porque eres proveedor de BeGreat Consulting."
+    ),
+  });
+}
+
+export async function sendSupplierContractSignedEmail(
+  to: string, nombre: string, opNombre: string
+) {
+  if (!resend) { console.error("RESEND_API_KEY no configurada"); return; }
+  await resend.emails.send({
+    from: FROM, to,
+    subject: `¡Contrato firmado! — ${opNombre}`,
+    html: emailWrapper("Contrato firmado",
+      `<p style="font-size: 16px; color: #1a1a1a; margin: 0 0 14px; font-weight: 600;">Hola${nombre ? " " + nombre.split(" ")[0] : ""},</p>
+      <p style="font-size: 14px; line-height: 1.65; color: #555; margin: 0 0 10px;">
+        ¡Enhorabuena! La operación <strong>${opNombre}</strong> ya tiene el <strong style="color: #059669;">contrato firmado</strong>.
+      </p>
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 16px; margin: 0 0 28px;">
+        <p style="font-size: 14px; color: #166534; margin: 0; line-height: 1.65;">
+          El proceso de tramitación ha finalizado con éxito. En los próximos días recibirás la transferencia correspondiente conforme a las condiciones acordadas.
+        </p>
+      </div>
+      <p style="font-size: 14px; line-height: 1.65; color: #555; margin: 0 0 28px;">
+        Gracias por confiar en BeGreat Consulting. Ha sido un placer trabajar contigo en esta operación.
+      </p>`,
+      PORTAL_URL, "Ir al portal →",
+      "Recibes este email porque eres proveedor de BeGreat Consulting."
+    ),
+  });
+}
+
 function emailWrapper(tagline: string, body: string, url: string, buttonText: string, footer: string) {
   return `
     <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #ffffff; border: 1px solid #ECECEC;">
