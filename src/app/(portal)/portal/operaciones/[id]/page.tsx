@@ -518,7 +518,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
           initialTasks={opTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null }))}
           operationId={id}
           assignees={taskAssignees}
-          canSendReminders={colab?.puede_enviar_recordatorios ?? false}
+          canSendReminders
         />
 
         <NotesSection
