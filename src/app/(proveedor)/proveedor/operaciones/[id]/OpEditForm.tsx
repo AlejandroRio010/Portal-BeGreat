@@ -25,6 +25,8 @@ interface Props {
   initialCuotaMensual?: string | null;
   initialFechaContrato?: string | null;
   initialFechaFinContrato?: string | null;
+  initialCreatedAt?: string | null;
+  initialFechaCierre?: string | null;
 }
 
 export default function OpEditForm({
@@ -32,6 +34,7 @@ export default function OpEditForm({
   initialImporte, initialDescripcion,
   initialPlazoMeses, initialLugarEntrega, initialEquipoTipo, initialCuotaMensual,
   initialFechaContrato, initialFechaFinContrato,
+  initialCreatedAt, initialFechaCierre,
   initialTieneAval, initialAvalTipo,
   initialAvalNombre, initialAvalEmail, initialAvalTelefono,
   initialAvalPersonaContacto, initialAvalDni, initialAvalEmpresa,
@@ -52,6 +55,8 @@ export default function OpEditForm({
   });
   const [fechaContrato, setFechaContrato] = useState(initialFechaContrato ?? "");
   const [fechaFinContrato, setFechaFinContrato] = useState(initialFechaFinContrato ?? "");
+  const [fechaAlta, setFechaAlta] = useState(initialCreatedAt ?? "");
+  const [fechaCierre, setFechaCierre] = useState(initialFechaCierre ?? "");
 
   // Aval state
   const [tieneAval, setTieneAval] = useState(!!initialTieneAval);
@@ -167,6 +172,8 @@ export default function OpEditForm({
           cuota_mensual: form.cuota_mensual || null,
           fecha_contrato: fechaContrato || null,
           fecha_fin_contrato: fechaFinContrato || null,
+          created_at: fechaAlta || null,
+          fecha_cierre: fechaCierre || null,
           tiene_aval: tieneAval,
           aval_tipo: tieneAval ? avalTipo : null,
           aval_nombre: tieneAval ? (avalNombre || null) : null,
@@ -268,6 +275,14 @@ export default function OpEditForm({
             {fechaContrato && form.plazo_meses && (
               <p className="text-[9px] text-gray-400 mt-0.5">Auto-calculada: inicio + {form.plazo_meses} meses</p>
             )}
+          </div>
+          <div>
+            <label className={labelCls}>Fecha de alta</label>
+            <input type="date" value={fechaAlta} onChange={e => setFechaAlta(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Fecha de cierre</label>
+            <input type="date" value={fechaCierre} onChange={e => setFechaCierre(e.target.value)} className={inputCls} />
           </div>
         </div>
 

@@ -338,7 +338,9 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
             initialAvalClientId={op.aval_client_id ?? null}
             initialCuotaMensual={op.cuota_mensual ?? null}
             initialFechaContrato={op.fecha_contrato ? op.fecha_contrato.toISOString().split("T")[0] : null}
-            initialFechaFinContrato={op.fecha_fin_contrato ? op.fecha_fin_contrato.toISOString().split("T")[0] : null} />
+            initialFechaFinContrato={op.fecha_fin_contrato ? op.fecha_fin_contrato.toISOString().split("T")[0] : null}
+            initialCreatedAt={new Date(op.created_at).toISOString().split("T")[0]}
+            initialFechaCierre={op.fecha_cierre ? new Date(op.fecha_cierre).toISOString().split("T")[0] : null} />
         </div>
 
         <div className="col-span-2 flex flex-col gap-5">

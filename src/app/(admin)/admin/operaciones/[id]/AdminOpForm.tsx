@@ -61,6 +61,8 @@ interface Props {
   initialPlazoMeses: number | null;
   initialFechaContrato: string | null;
   initialFechaFinContrato: string | null;
+  initialCreatedAt: string | null;
+  initialFechaCierre: string | null;
   initialLugarEntrega: string | null;
   initialEquipoTipo: string | null;
   initialNecesidad?: string | null;
@@ -120,6 +122,8 @@ export default function AdminOpForm({
   initialPlazoMeses,
   initialFechaContrato,
   initialFechaFinContrato,
+  initialCreatedAt,
+  initialFechaCierre,
   initialLugarEntrega,
   initialEquipoTipo,
   initialNecesidad,
@@ -213,6 +217,8 @@ export default function AdminOpForm({
   const [plazoMeses, setPlazoMeses] = useState(initialPlazoMeses ? String(initialPlazoMeses) : "");
   const [fechaContrato, setFechaContrato] = useState(initialFechaContrato ?? "");
   const [fechaFinContrato, setFechaFinContrato] = useState(initialFechaFinContrato ?? "");
+  const [fechaAlta, setFechaAlta] = useState(initialCreatedAt ?? "");
+  const [fechaCierre, setFechaCierre] = useState(initialFechaCierre ?? "");
   const [lugarEntrega, setLugarEntrega] = useState(initialLugarEntrega ?? "");
   const [equipoTipo, setEquipoTipo] = useState(initialEquipoTipo ?? "");
   const [necesidad, setNecesidad] = useState(initialNecesidad ?? "");
@@ -386,6 +392,7 @@ export default function AdminOpForm({
     try {
       await patch({ nombre: nombre || null, descripcion: descripcion || null, importe: importe || null, producto: producto || null,
         plazo_meses: plazoMeses || null, fecha_contrato: fechaContrato || null, fecha_fin_contrato: fechaFinContrato || null,
+        created_at: fechaAlta || null, fecha_cierre: fechaCierre || null,
         lugar_entrega: lugarEntrega || null, equipo_tipo: equipoTipo || null,
         necesidad: necesidad || null, modalidad_renting: modalidadRenting || null,
         tiene_aval: tieneAval,
@@ -652,6 +659,16 @@ export default function AdminOpForm({
               </div>
             </div>
           )}
+          <div>
+            <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Fecha de alta</label>
+            <input type="date" value={fechaAlta} onChange={(e) => setFechaAlta(e.target.value)}
+              className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Fecha de cierre</label>
+            <input type="date" value={fechaCierre} onChange={(e) => setFechaCierre(e.target.value)}
+              className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+          </div>
         </div>
 
         {/* Aval */}

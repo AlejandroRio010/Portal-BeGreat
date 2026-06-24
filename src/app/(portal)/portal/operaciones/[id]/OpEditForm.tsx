@@ -31,6 +31,8 @@ interface Props {
   initialCuotaMensual?: string | null;
   initialFechaContrato?: string | null;
   initialFechaFinContrato?: string | null;
+  initialCreatedAt?: string | null;
+  initialFechaCierre?: string | null;
 }
 
 export default function OpEditForm({
@@ -44,6 +46,7 @@ export default function OpEditForm({
   initialAvalContactId, initialAvalClientId,
   initialModalidadRenting, initialCuotaMensual,
   initialFechaContrato, initialFechaFinContrato,
+  initialCreatedAt, initialFechaCierre,
 }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -101,6 +104,8 @@ export default function OpEditForm({
 
   const [fechaContrato, setFechaContrato] = useState(initialFechaContrato ?? "");
   const [fechaFinContrato, setFechaFinContrato] = useState(initialFechaFinContrato ?? "");
+  const [fechaAlta, setFechaAlta] = useState(initialCreatedAt ?? "");
+  const [fechaCierre, setFechaCierre] = useState(initialFechaCierre ?? "");
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })); }
@@ -199,6 +204,8 @@ export default function OpEditForm({
           cuota_mensual: form.cuota_mensual || null,
           fecha_contrato: fechaContrato || null,
           fecha_fin_contrato: fechaFinContrato || null,
+          created_at: fechaAlta || null,
+          fecha_cierre: fechaCierre || null,
           es_renovacion: esRenov,
           operacion_original_id: esRenov ? (opOriginal?.id ?? null) : null,
           tiene_aval: tieneAval,
@@ -304,6 +311,14 @@ export default function OpEditForm({
               </div>
             </>
           )}
+          <div>
+            <label className={labelCls}>Fecha de alta</label>
+            <input type="date" value={fechaAlta} onChange={e => setFechaAlta(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Fecha de cierre</label>
+            <input type="date" value={fechaCierre} onChange={e => setFechaCierre(e.target.value)} className={inputCls} />
+          </div>
         </div>
 
         {/* Necesidad / Descripción */}
