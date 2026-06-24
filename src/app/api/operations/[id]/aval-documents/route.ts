@@ -10,13 +10,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const userId = (session.user as any).collaboratorId as string;
   const role = (session.user as any).role;
   const nombre = (session.user as any).nombre ?? "Usuario";
 
   if (role !== "admin") {
+    const userId = (session.user as any).collaboratorId ?? (session.user as any).supplierId;
+    const field = (session.user as any).collaboratorId ? operations.collaborator_id : operations.supplier_id;
     const [op] = await db.select({ id: operations.id }).from(operations)
-      .where(and(eq(operations.id, id), eq(operations.collaborator_id, userId))).limit(1);
+      .where(and(eq(operations.id, id), eq(field, userId))).limit(1);
     if (!op) return NextResponse.json({ error: "No encontrada" }, { status: 404 });
   }
 
