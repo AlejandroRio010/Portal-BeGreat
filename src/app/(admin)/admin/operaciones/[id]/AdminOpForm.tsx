@@ -60,6 +60,7 @@ interface Props {
   initialProducto: string | null;
   initialPlazoMeses: number | null;
   initialFechaContrato: string | null;
+  initialFechaFinContrato: string | null;
   initialLugarEntrega: string | null;
   initialEquipoTipo: string | null;
   initialNecesidad?: string | null;
@@ -118,6 +119,7 @@ export default function AdminOpForm({
   initialProducto,
   initialPlazoMeses,
   initialFechaContrato,
+  initialFechaFinContrato,
   initialLugarEntrega,
   initialEquipoTipo,
   initialNecesidad,
@@ -210,6 +212,7 @@ export default function AdminOpForm({
   const [producto, setProducto] = useState(initialProducto ?? "");
   const [plazoMeses, setPlazoMeses] = useState(initialPlazoMeses ? String(initialPlazoMeses) : "");
   const [fechaContrato, setFechaContrato] = useState(initialFechaContrato ?? "");
+  const [fechaFinContrato, setFechaFinContrato] = useState(initialFechaFinContrato ?? "");
   const [lugarEntrega, setLugarEntrega] = useState(initialLugarEntrega ?? "");
   const [equipoTipo, setEquipoTipo] = useState(initialEquipoTipo ?? "");
   const [necesidad, setNecesidad] = useState(initialNecesidad ?? "");
@@ -381,13 +384,8 @@ export default function AdminOpForm({
     setSavedBasic(false);
     setError(null);
     try {
-      const fechaFin = fechaContrato && plazoMeses ? (() => {
-        const d = new Date(fechaContrato);
-        d.setMonth(d.getMonth() + parseInt(plazoMeses));
-        return d.toISOString();
-      })() : null;
       await patch({ nombre: nombre || null, descripcion: descripcion || null, importe: importe || null, producto: producto || null,
-        plazo_meses: plazoMeses || null, fecha_contrato: fechaContrato || null, fecha_fin_contrato: fechaFin,
+        plazo_meses: plazoMeses || null, fecha_contrato: fechaContrato || null, fecha_fin_contrato: fechaFinContrato || null,
         lugar_entrega: lugarEntrega || null, equipo_tipo: equipoTipo || null,
         necesidad: necesidad || null, modalidad_renting: modalidadRenting || null,
         tiene_aval: tieneAval,
@@ -596,12 +594,22 @@ export default function AdminOpForm({
               </div>
               <div>
                 <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Fecha inicio contrato</label>
-                <input type="date" value={fechaContrato} onChange={(e) => setFechaContrato(e.target.value)}
+                <input type="date" value={fechaContrato} onChange={(e) => {
+                  setFechaContrato(e.target.value);
+                  if (e.target.value && plazoMeses) {
+                    const d = new Date(e.target.value);
+                    d.setMonth(d.getMonth() + parseInt(plazoMeses));
+                    setFechaFinContrato(d.toISOString().split("T")[0]);
+                  }
+                }}
+                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Fecha fin contrato</label>
+                <input type="date" value={fechaFinContrato} onChange={(e) => setFechaFinContrato(e.target.value)}
                   className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
                 {fechaContrato && plazoMeses && (
-                  <p className="text-[10px] text-gray-400 mt-1">
-                    Fin contrato: {(() => { const d = new Date(fechaContrato); d.setMonth(d.getMonth() + parseInt(plazoMeses)); return d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" }); })()}
-                  </p>
+                  <p className="text-[10px] text-gray-400 mt-1">Auto-calculada: inicio + {plazoMeses} meses</p>
                 )}
               </div>
               <div>

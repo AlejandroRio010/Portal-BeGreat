@@ -554,6 +554,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialProducto={op.producto ?? null}
             initialPlazoMeses={op.plazo_meses ?? null}
             initialFechaContrato={op.fecha_contrato ? new Date(op.fecha_contrato).toISOString().split("T")[0] : null}
+            initialFechaFinContrato={op.fecha_fin_contrato ? new Date(op.fecha_fin_contrato).toISOString().split("T")[0] : null}
             initialLugarEntrega={op.lugar_entrega ?? null}
             initialEquipoTipo={op.equipo_tipo ?? null}
             initialNecesidad={op.necesidad ?? null}

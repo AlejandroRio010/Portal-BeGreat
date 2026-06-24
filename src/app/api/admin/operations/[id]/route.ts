@@ -141,6 +141,8 @@ export async function PATCH(
   if (plazo_meses !== undefined) updateData.plazo_meses = plazo_meses === "" ? null : plazo_meses ? Number(plazo_meses) : null;
   if (lugar_entrega !== undefined) updateData.lugar_entrega = lugar_entrega || null;
   if (equipo_tipo !== undefined) updateData.equipo_tipo = equipo_tipo || null;
+  if (body.fecha_contrato !== undefined) updateData.fecha_contrato = body.fecha_contrato ? new Date(body.fecha_contrato) : null;
+  if (body.fecha_fin_contrato !== undefined) updateData.fecha_fin_contrato = body.fecha_fin_contrato ? new Date(body.fecha_fin_contrato) : null;
   if (motivo_denegacion !== undefined) updateData.motivo_denegacion = motivo_denegacion || null;
   if (necesidad !== undefined) updateData.necesidad = necesidad || null;
   if (modalidad_renting !== undefined) updateData.modalidad_renting = modalidad_renting || null;
