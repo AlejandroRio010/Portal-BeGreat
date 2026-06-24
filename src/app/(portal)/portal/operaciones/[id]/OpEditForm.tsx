@@ -29,6 +29,8 @@ interface Props {
   initialAvalClientId?: string | null;
   initialModalidadRenting?: string | null;
   initialCuotaMensual?: string | null;
+  initialFechaContrato?: string | null;
+  initialFechaFinContrato?: string | null;
 }
 
 export default function OpEditForm({
@@ -41,6 +43,7 @@ export default function OpEditForm({
   initialAvalPersonaContacto, initialAvalDni, initialAvalEmpresa,
   initialAvalContactId, initialAvalClientId,
   initialModalidadRenting, initialCuotaMensual,
+  initialFechaContrato, initialFechaFinContrato,
 }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -96,6 +99,8 @@ export default function OpEditForm({
   const [pfEmpresaOpen, setPfEmpresaOpen] = useState(false);
   const pfEmpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [fechaContrato, setFechaContrato] = useState(initialFechaContrato ?? "");
+  const [fechaFinContrato, setFechaFinContrato] = useState(initialFechaFinContrato ?? "");
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })); }
@@ -192,6 +197,8 @@ export default function OpEditForm({
           necesidad: form.necesidad || null,
           modalidad_renting: form.modalidad_renting || null,
           cuota_mensual: form.cuota_mensual || null,
+          fecha_contrato: fechaContrato || null,
+          fecha_fin_contrato: fechaFinContrato || null,
           es_renovacion: esRenov,
           operacion_original_id: esRenov ? (opOriginal?.id ?? null) : null,
           tiene_aval: tieneAval,
@@ -276,6 +283,24 @@ export default function OpEditForm({
                 <label className={labelCls}>Lugar de entrega</label>
                 <input value={form.lugar_entrega} onChange={e => set("lugar_entrega", e.target.value)}
                   className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Fecha inicio contrato</label>
+                <input type="date" value={fechaContrato} onChange={e => {
+                  setFechaContrato(e.target.value);
+                  if (e.target.value && form.plazo_meses) {
+                    const d = new Date(e.target.value);
+                    d.setMonth(d.getMonth() + Number(form.plazo_meses));
+                    setFechaFinContrato(d.toISOString().split("T")[0]);
+                  }
+                }} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Fecha fin contrato</label>
+                <input type="date" value={fechaFinContrato} onChange={e => setFechaFinContrato(e.target.value)} className={inputCls} />
+                {fechaContrato && form.plazo_meses && (
+                  <p className="text-[9px] text-gray-400 mt-0.5">Auto-calculada: inicio + {form.plazo_meses} meses</p>
+                )}
               </div>
             </>
           )}

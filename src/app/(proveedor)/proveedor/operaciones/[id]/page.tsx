@@ -336,7 +336,9 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
             initialAvalEmpresa={op.aval_empresa ?? null}
             initialAvalContactId={op.aval_contact_id ?? null}
             initialAvalClientId={op.aval_client_id ?? null}
-            initialCuotaMensual={op.cuota_mensual ?? null} />
+            initialCuotaMensual={op.cuota_mensual ?? null}
+            initialFechaContrato={op.fecha_contrato ? op.fecha_contrato.toISOString().split("T")[0] : null}
+            initialFechaFinContrato={op.fecha_fin_contrato ? op.fecha_fin_contrato.toISOString().split("T")[0] : null} />
         </div>
 
         <div className="col-span-2 flex flex-col gap-5">

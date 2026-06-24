@@ -141,6 +141,7 @@ export async function POST(req: NextRequest) {
       fase: "Pre-análisis",
       status: "activa",
       codigo: opCodigo,
+      fecha_contrato: new Date(),
     })
     .returning();
 

@@ -205,6 +205,7 @@ export async function POST(req: NextRequest) {
       fase: "Pre-análisis",
       status: statusInicial,
       codigo: opCodigo,
+      ...(pipeline_key === "renting" ? { fecha_contrato: new Date() } : {}),
     })
     .returning();
 

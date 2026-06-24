@@ -506,7 +506,9 @@ export default async function OperacionDetallePage({ params }: { params: Promise
               initialAvalContactId={op.aval_contact_id ?? null}
               initialAvalClientId={op.aval_client_id ?? null}
               initialModalidadRenting={op.modalidad_renting ?? null}
-              initialCuotaMensual={op.cuota_mensual ?? null} />
+              initialCuotaMensual={op.cuota_mensual ?? null}
+              initialFechaContrato={op.fecha_contrato ? op.fecha_contrato.toISOString().split("T")[0] : null}
+              initialFechaFinContrato={op.fecha_fin_contrato ? op.fecha_fin_contrato.toISOString().split("T")[0] : null} />
           )}
         </div>
 
