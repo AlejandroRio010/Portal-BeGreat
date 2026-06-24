@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, clients, contacts, collaborators, suppliers } from "@/db/schema";
+import { operations, clients, contacts, collaborators, suppliers, supplierProducts } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { generateCodigoCLI, generateCodigoOP } from "@/lib/codigos";
 
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     descripcion_equipo,
     contacto_directo,
     client_id: bodyClientId,
+    lineas_productos,
   } = body;
 
   if (!cliente_nombre)
@@ -144,6 +145,30 @@ export async function POST(req: NextRequest) {
       fecha_contrato: new Date(),
     })
     .returning();
+
+  if (Array.isArray(lineas_productos)) {
+    const manualLines = lineas_productos.filter((l: any) => !l.fromCatalog && l.nombre?.trim());
+    if (manualLines.length > 0) {
+      const existing = await db
+        .select({ nombre: supplierProducts.nombre })
+        .from(supplierProducts)
+        .where(eq(supplierProducts.supplier_id, supplierId));
+      const existingNames = new Set(existing.map((e) => e.nombre.toLowerCase()));
+
+      const newProducts = manualLines
+        .filter((l: any) => !existingNames.has(l.nombre.trim().toLowerCase()))
+        .map((l: any) => ({
+          supplier_id: supplierId,
+          nombre: l.nombre.trim(),
+          tipo: equipo_tipo || null,
+          precio_venta: String(l.precioUnitario),
+        }));
+
+      if (newProducts.length > 0) {
+        await db.insert(supplierProducts).values(newProducts);
+      }
+    }
+  }
 
   return NextResponse.json(op, { status: 201 });
 }
