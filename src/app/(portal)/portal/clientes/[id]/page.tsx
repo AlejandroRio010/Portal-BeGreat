@@ -1,12 +1,12 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { clients, contacts, operations, collaborators, clientNotes, customFields, customFieldValues, clientDocuments, avalDocuments, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries } from "@/db/schema";
+import { clients, contacts, operations, collaborators, clientNotes, customFields, customFieldValues, clientDocuments, operationDocuments, avalDocuments, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries } from "@/db/schema";
 import ClienteEditFormPortal from "./ClienteEditFormPortal";
 import NuevoContactoForm from "./NuevoContactoForm";
 import NotesSection from "@/components/NotesSection";
 import DocumentsSection from "@/components/DocumentsSection";
 import DocChecklistPanel from "@/components/DocChecklistPanel";
-import { eq, and, asc, or, isNotNull } from "drizzle-orm";
+import { eq, and, asc, or, isNotNull, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getCnaeByCode } from "@/lib/cnaes";
@@ -97,6 +97,17 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
   const clienteCustomValues = await db.select().from(customFieldValues).where(eq(customFieldValues.entity_id, id));
   const notes = await db.select().from(clientNotes).where(eq(clientNotes.client_id, id)).orderBy(clientNotes.created_at);
   const docs = await db.select().from(clientDocuments).where(eq(clientDocuments.client_id, id)).orderBy(clientDocuments.created_at);
+
+  const opIds = ops.map(o => o.id);
+  const opDocsAll = opIds.length > 0
+    ? await db.select().from(operationDocuments).where(inArray(operationDocuments.operation_id, opIds)).orderBy(operationDocuments.created_at)
+    : [];
+  const opDocsMap = new Map<string, typeof opDocsAll>();
+  for (const d of opDocsAll) {
+    const arr = opDocsMap.get(d.operation_id) ?? [];
+    arr.push(d);
+    opDocsMap.set(d.operation_id, arr);
+  }
 
   const docTemplates = await db.select().from(docChecklistTemplates).orderBy(asc(docChecklistTemplates.orden));
   const docCustomItems = await db.select().from(docChecklistCustomItems).where(and(eq(docChecklistCustomItems.entity_type, "cliente"), eq(docChecklistCustomItems.entity_id, id))).orderBy(asc(docChecklistCustomItems.orden));
@@ -391,6 +402,46 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
           />
 
           <DocumentsSection docs={docs} apiUrl={`/api/clientes/${id}/documents`} oneDriveFolder={sanitizeFolderName(client.nombre)} />
+
+          {ops.filter(o => (opDocsMap.get(o.id) ?? []).length > 0).length > 0 && (
+            <div className="bg-white border border-gray-200 p-5">
+              <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">
+                Documentación de operaciones ({ops.filter(o => (opDocsMap.get(o.id) ?? []).length > 0).length})
+              </p>
+              <div className="space-y-4">
+                {ops.filter(o => (opDocsMap.get(o.id) ?? []).length > 0).map(o => (
+                  <div key={o.id} className="border border-gray-200">
+                    <div className="bg-[#EEEBF3] px-4 py-2.5 flex items-center justify-between">
+                      <Link href={`/portal/operaciones/${o.id}`} className="text-xs font-bold text-[#2E1A47] hover:underline">{o.nombre ?? "Sin nombre"}</Link>
+                      <span className="text-[10px] text-gray-400">{(opDocsMap.get(o.id) ?? []).length} docs</span>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {(opDocsMap.get(o.id) ?? []).map(d => (
+                        <div key={d.id} className="flex items-center justify-between px-4 py-2.5">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <span className="text-lg flex-shrink-0">📄</span>
+                            <div className="min-w-0">
+                              <a href={`/api/download?docId=${d.id}`} target="_blank" rel="noopener noreferrer"
+                                className="text-sm font-semibold text-gray-800 hover:text-[#2E1A47] hover:underline truncate block">
+                                {d.filename}
+                              </a>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                {d.size && <span className="text-[10px] text-gray-400">{d.size < 1024 * 1024 ? `${(d.size / 1024).toFixed(0)} KB` : `${(d.size / (1024 * 1024)).toFixed(1)} MB`}</span>}
+                                <span className="text-[10px] text-gray-400">·</span>
+                                <span className="text-[10px] text-gray-400">{d.uploaded_by}</span>
+                                <span className="text-[10px] text-gray-400">·</span>
+                                <span className="text-[10px] text-gray-400">{new Date(d.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
