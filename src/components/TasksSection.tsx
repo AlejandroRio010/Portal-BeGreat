@@ -107,6 +107,10 @@ export default function TasksSection({
   function fmtDate(d: string) {
     return new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "short" });
   }
+  function fmtDateTime(d: string) {
+    const dt = new Date(d);
+    return dt.toLocaleDateString("es-ES", { day: "numeric", month: "short" }) + " " + dt.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  }
   function daysBetween(a: string, b: string) {
     return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000);
   }
@@ -160,10 +164,10 @@ export default function TasksSection({
           <div className="flex items-center gap-2 mt-2 pl-1">
             <span className="text-xs text-gray-500">Recordatorio para:</span>
             <input
-              type="date"
+              type="datetime-local"
               value={fechaProgramada}
               onChange={(e) => setFechaProgramada(e.target.value)}
-              min={new Date().toISOString().split("T")[0]}
+              min={new Date().toISOString().slice(0, 16)}
               className="text-xs border border-gray-200 px-2 py-1.5 focus:outline-none focus:border-[#2E1A47]"
             />
             {fechaProgramada && (
@@ -190,8 +194,8 @@ export default function TasksSection({
             </span>
             {t.fecha_programada && (
               <span className={`text-[10px] px-1.5 py-0.5 font-semibold ${t.recordatorio_enviado ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}
-                title={t.recordatorio_enviado ? "Recordatorio enviado" : `Programado para ${fmtDate(t.fecha_programada)}`}>
-                🕐 {fmtDate(t.fecha_programada)}{t.recordatorio_enviado ? " ✓" : ""}
+                title={t.recordatorio_enviado ? "Recordatorio enviado" : `Programado para ${fmtDateTime(t.fecha_programada)}`}>
+                🕐 {fmtDateTime(t.fecha_programada)}{t.recordatorio_enviado ? " ✓" : ""}
               </span>
             )}
             {canSendReminders && t.asignado_a_id && (
