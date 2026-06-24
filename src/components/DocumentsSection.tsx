@@ -34,6 +34,9 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
   const [success, setSuccess] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const [duplicates, setDuplicates] = useState<string[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+
   const DIRECT_UPLOAD_THRESHOLD = 4 * 1024 * 1024; // 4MB
   const CHUNK_SIZE = 3_276_800; // 3.125MB (multiple of 320KB)
 
@@ -128,16 +131,39 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
     router.refresh();
   }
 
+  function checkDuplicatesAndUpload(files: File[]) {
+    const existingNames = new Set(docs.map(d => d.filename.toLowerCase()));
+    const dupes = files.filter(f => existingNames.has(f.name.toLowerCase()));
+    if (dupes.length > 0) {
+      setDuplicates(dupes.map(f => f.name));
+      setPendingFiles(files);
+    } else {
+      uploadFiles(files);
+    }
+  }
+
+  function confirmUpload() {
+    const files = pendingFiles;
+    setDuplicates([]);
+    setPendingFiles([]);
+    uploadFiles(files);
+  }
+
+  function cancelUpload() {
+    setDuplicates([]);
+    setPendingFiles([]);
+  }
+
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragOver(false);
     const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) uploadFiles(files);
+    if (files.length > 0) checkDuplicatesAndUpload(files);
   }
 
   function handleSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
-    if (files.length > 0) uploadFiles(files);
+    if (files.length > 0) checkDuplicatesAndUpload(files);
     e.target.value = "";
   }
 
@@ -157,34 +183,77 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
       </p>
 
       {/* Files list */}
-      {docs.length > 0 && (
-        <div className="space-y-2 mb-4">
-          {docs.map(d => (
-            <div key={d.id} className="flex items-center justify-between bg-gray-50 border border-gray-100 px-4 py-3 group">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <span className="text-lg flex-shrink-0">📄</span>
-                <div className="min-w-0">
-                  <a href={`/api/download?docId=${d.id}`} target="_blank" rel="noopener noreferrer"
-                    className="text-sm font-semibold text-gray-800 hover:text-[#2E1A47] hover:underline truncate block">
-                    {d.filename}
-                  </a>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {d.size && <span className="text-[10px] text-gray-400">{fmtSize(d.size)}</span>}
-                    <span className="text-[10px] text-gray-400">·</span>
-                    <span className="text-[10px] text-gray-400">{d.uploaded_by}</span>
-                    <span className="text-[10px] text-gray-400">·</span>
-                    <span className="text-[10px] text-gray-400">
-                      {new Date(d.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
-                    </span>
+      {docs.length > 0 && (() => {
+        const nameCounts = new Map<string, number>();
+        docs.forEach(d => {
+          const key = d.filename.toLowerCase();
+          nameCounts.set(key, (nameCounts.get(key) ?? 0) + 1);
+        });
+        return (
+          <div className="space-y-2 mb-4">
+            {docs.map(d => {
+              const isDupe = (nameCounts.get(d.filename.toLowerCase()) ?? 0) > 1;
+              return (
+                <div key={d.id} className={`flex items-center justify-between px-4 py-3 group ${isDupe ? "bg-amber-50 border border-amber-200" : "bg-gray-50 border border-gray-100"}`}>
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <span className="text-lg flex-shrink-0">📄</span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <a href={`/api/download?docId=${d.id}`} target="_blank" rel="noopener noreferrer"
+                          className="text-sm font-semibold text-gray-800 hover:text-[#2E1A47] hover:underline truncate">
+                          {d.filename}
+                        </a>
+                        {isDupe && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-700 flex-shrink-0">
+                            DUPLICADO
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {d.size && <span className="text-[10px] text-gray-400">{fmtSize(d.size)}</span>}
+                        <span className="text-[10px] text-gray-400">·</span>
+                        <span className="text-[10px] text-gray-400">{d.uploaded_by}</span>
+                        <span className="text-[10px] text-gray-400">·</span>
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(d.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
+                        </span>
+                      </div>
+                    </div>
                   </div>
+                  <button onClick={() => handleDelete(d.id)}
+                    className="text-[10px] text-red-400 hover:text-red-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                    Eliminar
+                  </button>
                 </div>
-              </div>
-              <button onClick={() => handleDelete(d.id)}
-                className="text-[10px] text-red-400 hover:text-red-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-                Eliminar
-              </button>
-            </div>
-          ))}
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* Duplicate warning */}
+      {duplicates.length > 0 && (
+        <div className="mb-3 bg-amber-50 border border-amber-300 px-4 py-3">
+          <p className="text-xs font-bold text-amber-800 mb-2">
+            ⚠ {duplicates.length === 1 ? "Este archivo ya existe" : `${duplicates.length} archivos ya existen`}:
+          </p>
+          <ul className="space-y-1 mb-3">
+            {duplicates.map(name => (
+              <li key={name} className="text-xs text-amber-700 flex items-center gap-1.5">
+                <span className="text-amber-500">•</span> {name}
+              </li>
+            ))}
+          </ul>
+          <div className="flex gap-2">
+            <button onClick={confirmUpload}
+              className="text-xs font-bold px-3 py-1.5 bg-amber-600 text-white hover:bg-amber-700 transition-colors">
+              Subir de todos modos
+            </button>
+            <button onClick={cancelUpload}
+              className="text-xs font-bold px-3 py-1.5 bg-white text-amber-700 border border-amber-300 hover:bg-amber-50 transition-colors">
+              Cancelar
+            </button>
+          </div>
         </div>
       )}
 
