@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operationDocuments, clientDocuments, avalDocuments, operations, clients } from "@/db/schema";
+import { operationDocuments, clientDocuments, avalDocuments, supplierDocuments, operations, clients } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { downloadFile } from "@/lib/onedrive";
 
@@ -58,6 +58,17 @@ export async function GET(req: NextRequest) {
         if (!op) return NextResponse.json({ error: "Sin acceso" }, { status: 403 });
       }
       doc = { filename: aDoc.filename, url: aDoc.url };
+    }
+  }
+
+  // 4) Try supplier_documents — admin only
+  if (!doc) {
+    const [sDoc] = await db
+      .select({ filename: supplierDocuments.filename, url: supplierDocuments.url })
+      .from(supplierDocuments).where(eq(supplierDocuments.id, docId)).limit(1);
+    if (sDoc) {
+      if (role !== "admin") return NextResponse.json({ error: "Sin acceso" }, { status: 403 });
+      doc = { filename: sDoc.filename, url: sDoc.url };
     }
   }
 

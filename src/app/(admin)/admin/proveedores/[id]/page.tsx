@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { suppliers, collaborators, operations, clients, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries, supplierNotes } from "@/db/schema";
+import { suppliers, collaborators, operations, clients, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries, supplierNotes, supplierDocuments } from "@/db/schema";
 import { eq, asc, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -9,8 +9,10 @@ import SupplierPortalToggle from "./SupplierPortalToggle";
 import SupplierUsuariosPanel from "./SupplierUsuariosPanel";
 import AsignarResponsable from "@/components/AsignarResponsable";
 import DocChecklistPanel from "@/components/DocChecklistPanel";
+import DocumentsSection from "@/components/DocumentsSection";
 import NotesSection from "@/components/NotesSection";
 import { fmtEur } from "@/lib/format";
+import { sanitizeFolderName } from "@/lib/onedrive";
 
 function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
@@ -67,6 +69,8 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
   const docEntries = await db.select().from(docChecklistEntries).where(and(eq(docChecklistEntries.entity_type, "proveedor"), eq(docChecklistEntries.entity_id, id)));
 
   const notes = await db.select().from(supplierNotes).where(eq(supplierNotes.supplier_id, id)).orderBy(supplierNotes.created_at);
+
+  const docs = await db.select().from(supplierDocuments).where(eq(supplierDocuments.supplier_id, id)).orderBy(supplierDocuments.created_at);
 
   const ops = await db
     .select({
@@ -196,6 +200,8 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
           )}
 
           <DocChecklistPanel entityType="proveedor" entityId={id} templates={docTemplates} customItems={docCustomItems} entries={docEntries} />
+
+          <DocumentsSection docs={docs} apiUrl={`/api/admin/proveedores/${id}/documents`} oneDriveFolder={sanitizeFolderName(prov.nombre)} />
         </div>
 
         {/* Operaciones + Notas */}
