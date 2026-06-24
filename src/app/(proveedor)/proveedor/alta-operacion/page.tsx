@@ -13,7 +13,7 @@ export default async function AltaOperacionProveedorPage() {
 
   const supplierId = (session.user as any).supplierId as string;
   const productos = await db
-    .select({ id: supplierProducts.id, nombre: supplierProducts.nombre, tipo: supplierProducts.tipo, precio_venta: supplierProducts.precio_venta })
+    .select({ id: supplierProducts.id, nombre: supplierProducts.nombre, descripcion: supplierProducts.descripcion, tipo: supplierProducts.tipo, precio_venta: supplierProducts.precio_venta })
     .from(supplierProducts)
     .where(and(eq(supplierProducts.supplier_id, supplierId), eq(supplierProducts.activo, true)))
     .orderBy(supplierProducts.nombre);

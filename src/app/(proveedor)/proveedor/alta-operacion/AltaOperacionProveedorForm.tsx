@@ -37,7 +37,7 @@ const CNAE_CODES = [
   "8510 Educación preprimaria","8610 Actividades hospitalarias",
 ];
 
-type CatalogoProducto = { id: string; nombre: string; tipo: string | null; precio_venta: string | null };
+type CatalogoProducto = { id: string; nombre: string; descripcion: string | null; tipo: string | null; precio_venta: string | null };
 type LineaProducto = { id?: string; nombre: string; precioUnitario: number; unidades: number; fromCatalog: boolean };
 
 export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: { catalogoProductos?: CatalogoProducto[] }) {
@@ -63,7 +63,7 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
   const [contactoTelefono, setContactoTelefono] = useState("");
 
   // Product mode: "catalogo" | "manual" | "total"
-  const [modoProducto, setModoProducto] = useState<"catalogo" | "manual" | "total">(catalogoProductos.length > 0 ? "catalogo" : "total");
+  const [modoProducto, setModoProducto] = useState<"catalogo" | "manual" | "total">(catalogoProductos.length > 0 ? "catalogo" : "manual");
   const [lineas, setLineas] = useState<LineaProducto[]>([]);
   const [manualNombre, setManualNombre] = useState("");
   const [manualPrecio, setManualPrecio] = useState("");
@@ -73,6 +73,10 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const importeCalculado = lineas.reduce((s, l) => s + l.precioUnitario * l.unidades, 0);
+
+  const catalogMatch = manualNombre.trim().length >= 2
+    ? catalogoProductos.filter(p => p.nombre.toLowerCase().includes(manualNombre.trim().toLowerCase()))
+    : [];
 
   function addFromCatalog(p: CatalogoProducto) {
     setLineas(prev => [...prev, { id: p.id, nombre: p.nombre, precioUnitario: Number(p.precio_venta ?? 0), unidades: 1, fromCatalog: true }]);
@@ -296,21 +300,22 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
           {modoProducto === "catalogo" && (
             <div className="mb-4 border border-gray-200 p-4 space-y-3">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Selecciona productos de tu catálogo</p>
-              <div className="max-h-48 overflow-y-auto divide-y divide-gray-50">
+              <div className="max-h-72 overflow-y-auto space-y-2">
                 {catalogoProductos.map(p => (
-                    <div key={p.id} className="flex items-center justify-between py-2 gap-2">
+                    <div key={p.id} className="flex items-center justify-between gap-3 p-3 border border-gray-100 bg-gray-50/50 hover:bg-[#EEEBF3]/30 transition-colors">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800">{p.nombre}</p>
-                        <p className="text-xs text-gray-400">{p.tipo ?? ""} · {Number(p.precio_venta ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €/ud.</p>
+                        <p className="text-sm font-semibold text-gray-900 leading-snug">{p.nombre}</p>
+                        {p.descripcion && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{p.descripcion}</p>}
+                        <p className="text-xs text-gray-400 mt-1">{p.tipo ?? "Sin tipo"} · {Number(p.precio_venta ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €/ud.</p>
                       </div>
                       <input type="number" min="1" defaultValue="1" id={`cat-qty-${p.id}`}
-                        className="w-16 px-2 py-1 text-sm border border-gray-200 text-center focus:outline-none focus:border-[#2E1A47]" />
+                        className="w-16 px-2 py-1.5 text-sm border border-gray-200 text-center focus:outline-none focus:border-[#2E1A47]" />
                       <button type="button"
                         onClick={() => {
                           const qty = Number((document.getElementById(`cat-qty-${p.id}`) as HTMLInputElement)?.value) || 1;
                           setLineas(prev => [...prev, { id: p.id, nombre: p.nombre, precioUnitario: Number(p.precio_venta ?? 0), unidades: qty, fromCatalog: true }]);
                         }}
-                        className="px-3 py-1 text-xs font-semibold bg-[#2E1A47] text-white hover:bg-[#3d2460] whitespace-nowrap">
+                        className="px-4 py-2 text-xs font-semibold bg-[#2E1A47] text-white hover:bg-[#3d2460] whitespace-nowrap">
                         + Añadir
                       </button>
                     </div>
@@ -354,27 +359,50 @@ export default function AltaOperacionProveedorForm({ catalogoProductos = [] }: {
                   + Añadir
                 </button>
               </div>
+              {catalogMatch.length > 0 && (
+                <div className="border border-[#2E1A47]/20 bg-[#EEEBF3]/40 p-3 space-y-2">
+                  <p className="text-xs font-semibold text-[#2E1A47]">Ya tienes productos similares en tu catálogo:</p>
+                  {catalogMatch.map(p => (
+                    <div key={p.id} className="flex items-center justify-between gap-3 p-2 bg-white border border-gray-100">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{p.nombre}</p>
+                        <p className="text-xs text-gray-400">{Number(p.precio_venta ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €/ud.</p>
+                      </div>
+                      <button type="button"
+                        onClick={() => {
+                          setLineas(prev => [...prev, { id: p.id, nombre: p.nombre, precioUnitario: Number(p.precio_venta ?? 0), unidades: Number(manualUnidades) || 1, fromCatalog: true }]);
+                          setManualNombre("");
+                          setManualPrecio("");
+                          setManualUnidades("1");
+                        }}
+                        className="px-3 py-1.5 text-xs font-semibold bg-[#2E1A47] text-white hover:bg-[#3d2460] whitespace-nowrap">
+                        Usar del catálogo
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* Lista de productos añadidos */}
           {modoProducto !== "total" && lineas.length > 0 && (
             <div className="mb-4 border border-gray-200">
-              <div className="bg-[#EEEBF3] px-4 py-2 flex items-center justify-between">
-                <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Productos añadidos</p>
+              <div className="bg-[#EEEBF3] px-4 py-3 flex items-center justify-between">
+                <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Productos añadidos ({lineas.length})</p>
                 <p className="text-sm font-bold text-[#2E1A47]">Total: {importeCalculado.toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>
               </div>
-              <div className="divide-y divide-gray-50">
+              <div className="space-y-0">
                 {lineas.map((l, i) => (
-                  <div key={i} className="flex items-center justify-between px-4 py-2.5">
-                    <div>
-                      <p className="text-sm text-gray-800">{l.nombre}</p>
-                      <p className="text-xs text-gray-400">{l.unidades} ud. × {l.precioUnitario.toLocaleString("es-ES", { minimumFractionDigits: 2 })} € · {l.fromCatalog ? "Catálogo" : "Manual"}</p>
+                  <div key={i} className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-b-0">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 leading-snug">{l.nombre}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{l.unidades} ud. × {l.precioUnitario.toLocaleString("es-ES", { minimumFractionDigits: 2 })} € · <span className={l.fromCatalog ? "text-[#2E1A47]" : "text-amber-600"}>{l.fromCatalog ? "Catálogo" : "Manual"}</span></p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <p className="text-sm font-semibold text-gray-700">{(l.precioUnitario * l.unidades).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>
+                    <div className="flex items-center gap-4">
+                      <p className="text-sm font-bold text-gray-800">{(l.precioUnitario * l.unidades).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>
                       <button type="button" onClick={() => removeLinea(i)}
-                        className="text-xs text-red-400 hover:text-red-600">✕</button>
+                        className="text-sm text-red-400 hover:text-red-600 p-1">✕</button>
                     </div>
                   </div>
                 ))}
