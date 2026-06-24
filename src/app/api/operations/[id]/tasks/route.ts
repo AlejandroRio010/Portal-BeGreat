@@ -84,11 +84,17 @@ export async function PATCH(
 
   const { id } = await params;
   if (!await verifyOpAccess(id, caller)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const { taskId, completada } = await req.json();
+  const { taskId, completada, fecha_programada } = await req.json();
 
-  const updateData: Record<string, unknown> = { completada };
-  if (completada) updateData.completed_at = new Date();
-  else updateData.completed_at = null;
+  const updateData: Record<string, unknown> = {};
+  if (completada !== undefined) {
+    updateData.completada = completada;
+    updateData.completed_at = completada ? new Date() : null;
+  }
+  if (fecha_programada !== undefined) {
+    updateData.fecha_programada = fecha_programada ? new Date(fecha_programada) : null;
+    updateData.recordatorio_enviado = false;
+  }
 
   await db.update(operationTasks).set(updateData).where(
     and(eq(operationTasks.id, taskId), eq(operationTasks.operation_id, id))
