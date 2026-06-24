@@ -12,7 +12,7 @@ import DocumentsSection from "@/components/DocumentsSection";
 import InfoRequestsSection from "@/components/InfoRequestsSection";
 import CelebrationBanner from "@/components/CelebrationBanner";
 import TasksSection from "@/components/TasksSection";
-import { sanitizeFolderName } from "@/lib/onedrive";
+import { sanitizeFolderName, clientFolderPath } from "@/lib/onedrive";
 
 const FASES_RENTING = ["Pre-análisis","En estudio por entidad","Operación aprobada","Condiciones aceptadas","Contrato firmado","Transferencia realizada"];
 const FASE_COLOR: Record<string, { bg: string; text: string; border: string }> = {
@@ -108,7 +108,7 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
     taskAssignees.push({ id: "__avalista__", nombre: avalName });
   }
 
-  const clientFolder = sanitizeFolderName(op.client_nombre ?? "Sin cliente");
+  const clientFolder = clientFolderPath(op.client_nombre ?? "Sin cliente");
   const opFolder = `${clientFolder}/${sanitizeFolderName(op.codigo ?? id)}`;
   const avalFolder = `${opFolder}/Avalista`;
 

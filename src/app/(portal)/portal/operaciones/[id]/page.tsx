@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import NotesSection from "@/components/NotesSection";
 import { fmtEur, fmtNum } from "@/lib/format";
-import { sanitizeFolderName } from "@/lib/onedrive";
+import { sanitizeFolderName, clientFolderPath } from "@/lib/onedrive";
 import OpEditForm from "./OpEditForm";
 import OpResultadoPanel from "./OpResultadoPanel";
 import DocumentsSection from "@/components/DocumentsSection";
@@ -159,7 +159,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
     taskAssignees.push({ id: "__avalista__", nombre: avalName });
   }
 
-  const clientFolder = sanitizeFolderName(op.client_nombre ?? "Sin cliente");
+  const clientFolder = clientFolderPath(op.client_nombre ?? "Sin cliente");
   const opFolder = `${clientFolder}/${sanitizeFolderName(op.codigo ?? id)}`;
   const avalFolder = `${opFolder}/Avalista`;
 

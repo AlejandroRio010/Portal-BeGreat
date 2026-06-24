@@ -10,7 +10,7 @@ import NotesSection from "@/components/NotesSection";
 import DocumentsSection from "@/components/DocumentsSection";
 import { getCnaeByCode } from "@/lib/cnaes";
 import { fmtEur } from "@/lib/format";
-import { sanitizeFolderName } from "@/lib/onedrive";
+import { clientFolderPath } from "@/lib/onedrive";
 import AsignarResponsable from "@/components/AsignarResponsable";
 import DocChecklistPanel from "@/components/DocChecklistPanel";
 
@@ -406,7 +406,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
             canPin
           />
 
-          <DocumentsSection docs={docs} apiUrl={`/api/clientes/${id}/documents`} oneDriveFolder={sanitizeFolderName(client.nombre)} />
+          <DocumentsSection docs={docs} apiUrl={`/api/clientes/${id}/documents`} oneDriveFolder={clientFolderPath(client.nombre)} />
 
           {ops.filter(o => (opDocsMap.get(o.id) ?? []).length > 0).length > 0 && (
             <div className="bg-white border border-gray-200 p-5">

@@ -2,6 +2,12 @@ export function sanitizeFolderName(name: string): string {
   return name.replace(/[<>:"/\\|?*]/g, "_").replace(/\s+/g, " ").trim();
 }
 
+export function clientFolderPath(clientName: string): string {
+  const sanitized = sanitizeFolderName(clientName);
+  const letter = sanitized.charAt(0).toUpperCase();
+  return `${letter}/${sanitized}`;
+}
+
 function env(key: string): string {
   const v = process.env[key];
   if (!v) throw new Error(`Missing env var: ${key}`);
@@ -36,7 +42,7 @@ async function getToken(): Promise<string> {
 }
 
 function driveUrl(path: string) {
-  const base = process.env.ONEDRIVE_BASE_FOLDER ?? "Clientes 2026/Portal BeGreat";
+  const base = process.env.ONEDRIVE_BASE_FOLDER ?? `Clientes ${new Date().getFullYear()}`;
   return `https://graph.microsoft.com/v1.0/users/${DRIVE_USER_ID}/drive/root:/${encodeURIComponent(base).replace(/%2F/g, "/")}/${path}`;
 }
 
@@ -50,7 +56,7 @@ export async function ensureFolder(folderPath: string): Promise<void> {
     const check = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (check.ok) continue;
     const parentUrl = currentPath === part
-      ? `https://graph.microsoft.com/v1.0/users/${DRIVE_USER_ID}/drive/root:/${encodeURIComponent(process.env.ONEDRIVE_BASE_FOLDER ?? "Clientes 2026/Portal BeGreat").replace(/%2F/g, "/")}:/children`
+      ? `https://graph.microsoft.com/v1.0/users/${DRIVE_USER_ID}/drive/root:/${encodeURIComponent(process.env.ONEDRIVE_BASE_FOLDER ?? `Clientes ${new Date().getFullYear()}`).replace(/%2F/g, "/")}:/children`
       : `${driveUrl(currentPath.substring(0, currentPath.lastIndexOf("/")))}:/children`;
     await fetch(parentUrl, {
       method: "POST",
