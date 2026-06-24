@@ -53,7 +53,7 @@ export async function POST(
 
   const { id } = await params;
   if (!await verifyOpAccess(id, caller)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const { titulo, asignado_a_id, asignado_a_nombre } = await req.json();
+  const { titulo, asignado_a_id, asignado_a_nombre, fecha_programada } = await req.json();
   if (!titulo?.trim()) return NextResponse.json({ error: "Título obligatorio" }, { status: 400 });
 
   const isCliente = asignado_a_id === "__cliente__";
@@ -67,6 +67,7 @@ export async function POST(
     asignado_a_nombre: asignado_a_nombre || null,
     created_by_role: caller.role,
     created_by_id: caller.id,
+    fecha_programada: fecha_programada ? new Date(fecha_programada) : null,
   }).returning();
 
   return NextResponse.json(task);

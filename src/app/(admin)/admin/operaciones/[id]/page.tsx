@@ -579,7 +579,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
         {/* Tasks + Notes + Docs */}
         <div className="col-span-2 flex flex-col gap-5">
         <TasksSection
-          initialTasks={opTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null }))}
+          initialTasks={opTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null, fecha_programada: t.fecha_programada?.toISOString() ?? null }))}
           operationId={id}
           assignees={taskAssignees}
           canSendReminders

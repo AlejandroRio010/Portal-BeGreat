@@ -540,6 +540,8 @@ export const operationTasks = pgTable("operation_tasks", {
   completed_at: timestamp("completed_at"),
   created_by_role: text("created_by_role").notNull(),
   created_by_id: uuid("created_by_id").notNull(),
+  fecha_programada: timestamp("fecha_programada"),
+  recordatorio_enviado: boolean("recordatorio_enviado").default(false).notNull(),
 });
 
 // ─── Cotizador: deals de referencia para calibrar TAEs ────────────────────────

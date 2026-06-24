@@ -11,6 +11,8 @@ type Task = {
   completada: boolean;
   created_at: string;
   completed_at: string | null;
+  fecha_programada: string | null;
+  recordatorio_enviado: boolean;
 };
 
 type Assignee = { id: string; nombre: string };
@@ -30,6 +32,8 @@ export default function TasksSection({
   const [titulo, setTitulo] = useState("");
   const [asignadoId, setAsignadoId] = useState(assignees[0]?.id ?? "");
   const [adding, setAdding] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [fechaProgramada, setFechaProgramada] = useState("");
 
   async function addTask() {
     if (!titulo.trim() || !asignadoId) return;
@@ -38,12 +42,14 @@ export default function TasksSection({
       const res = await fetch(`/api/operations/${operationId}/tasks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ titulo, asignado_a_id: asignadoId, asignado_a_nombre: assignees.find(a => a.id === asignadoId)?.nombre }),
+        body: JSON.stringify({ titulo, asignado_a_id: asignadoId, asignado_a_nombre: assignees.find(a => a.id === asignadoId)?.nombre, fecha_programada: fechaProgramada || null }),
       });
       if (res.ok) {
         const task = await res.json();
         setTasks((prev) => [...prev, task]);
         setTitulo("");
+        setFechaProgramada("");
+        setShowSchedule(false);
       }
     } finally {
       setAdding(false);
@@ -116,31 +122,55 @@ export default function TasksSection({
       </p>
 
       {/* Add task */}
-      <div className="flex gap-2 mb-4">
-        <input
-          type="text"
-          value={titulo}
-          onChange={(e) => setTitulo(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addTask()}
-          placeholder="Nueva tarea..."
-          className="flex-1 text-sm border border-gray-200 px-3 py-2 focus:outline-none focus:border-[#2E1A47]"
-        />
-        <select
-          value={asignadoId}
-          onChange={(e) => setAsignadoId(e.target.value)}
-          className="text-xs border border-gray-200 px-2 py-2 bg-white focus:outline-none focus:border-[#2E1A47] max-w-[140px]"
-        >
-          {assignees.map((a) => (
-            <option key={a.id} value={a.id}>{a.nombre}</option>
-          ))}
-        </select>
-        <button
-          onClick={addTask}
-          disabled={adding || !titulo.trim()}
-          className="bg-[#2E1A47] text-white text-xs font-bold px-4 py-2 hover:bg-[#3d2460] disabled:opacity-40 transition-colors"
-        >
-          +
-        </button>
+      <div className="mb-4">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addTask()}
+            placeholder="Nueva tarea..."
+            className="flex-1 text-sm border border-gray-200 px-3 py-2 focus:outline-none focus:border-[#2E1A47]"
+          />
+          <select
+            value={asignadoId}
+            onChange={(e) => setAsignadoId(e.target.value)}
+            className="text-xs border border-gray-200 px-2 py-2 bg-white focus:outline-none focus:border-[#2E1A47] max-w-[140px]"
+          >
+            {assignees.map((a) => (
+              <option key={a.id} value={a.id}>{a.nombre}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => setShowSchedule(!showSchedule)}
+            title={showSchedule ? "Quitar programación" : "Programar recordatorio"}
+            className={`text-sm px-2 py-2 border transition-colors ${showSchedule ? "border-[#2E1A47] bg-[#EEEBF3] text-[#2E1A47]" : "border-gray-200 text-gray-400 hover:text-[#2E1A47] hover:border-[#2E1A47]"}`}
+          >
+            🕐
+          </button>
+          <button
+            onClick={addTask}
+            disabled={adding || !titulo.trim()}
+            className="bg-[#2E1A47] text-white text-xs font-bold px-4 py-2 hover:bg-[#3d2460] disabled:opacity-40 transition-colors"
+          >
+            +
+          </button>
+        </div>
+        {showSchedule && (
+          <div className="flex items-center gap-2 mt-2 pl-1">
+            <span className="text-xs text-gray-500">Recordatorio para:</span>
+            <input
+              type="date"
+              value={fechaProgramada}
+              onChange={(e) => setFechaProgramada(e.target.value)}
+              min={new Date().toISOString().split("T")[0]}
+              className="text-xs border border-gray-200 px-2 py-1.5 focus:outline-none focus:border-[#2E1A47]"
+            />
+            {fechaProgramada && (
+              <button onClick={() => { setFechaProgramada(""); setShowSchedule(false); }} className="text-xs text-gray-400 hover:text-red-500">✕</button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Pending */}
@@ -158,6 +188,12 @@ export default function TasksSection({
             <span className="text-[10px] font-bold px-2 py-0.5 bg-[#EEEBF3] text-[#2E1A47]">
               {shortName(t.asignado_a_nombre, t.asignado_a)}
             </span>
+            {t.fecha_programada && (
+              <span className={`text-[10px] px-1.5 py-0.5 font-semibold ${t.recordatorio_enviado ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}
+                title={t.recordatorio_enviado ? "Recordatorio enviado" : `Programado para ${fmtDate(t.fecha_programada)}`}>
+                🕐 {fmtDate(t.fecha_programada)}{t.recordatorio_enviado ? " ✓" : ""}
+              </span>
+            )}
             {canSendReminders && t.asignado_a_id && (
               <button
                 onClick={() => sendReminder(t.asignado_a_id!)}
