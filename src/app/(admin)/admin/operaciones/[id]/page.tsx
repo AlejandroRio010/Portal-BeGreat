@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues, financialEntities, entityOffices, entityOfficeContacts, operationDocuments, clientDocuments, avalDocuments, contacts, infoRequests, operationTasks } from "@/db/schema";
+import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues, financialEntities, entityOffices, entityOfficeContacts, operationDocuments, clientDocuments, avalDocuments, contacts, operationTasks } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -7,7 +7,6 @@ import AdminOpForm from "./AdminOpForm";
 import AdminOpResultadoPanel from "./AdminOpResultadoPanel";
 import NotesSection from "@/components/NotesSection";
 import DocumentsSection from "@/components/DocumentsSection";
-import InfoRequestsSection from "@/components/InfoRequestsSection";
 import TasksSection from "@/components/TasksSection";
 import { auth } from "@/lib/auth";
 import CelebrationBanner from "@/components/CelebrationBanner";
@@ -134,12 +133,6 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
     .from(notes)
     .where(eq(notes.operation_id, id))
     .orderBy(notes.created_at);
-
-  const opInfoRequests = await db
-    .select()
-    .from(infoRequests)
-    .where(eq(infoRequests.operation_id, id))
-    .orderBy(infoRequests.created_at);
 
   const opTasks = await db.select().from(operationTasks).where(eq(operationTasks.operation_id, id)).orderBy(operationTasks.created_at);
 
@@ -606,12 +599,6 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{op.descripcion}</p>
           </div>
         )}
-
-        <InfoRequestsSection
-          requests={opInfoRequests}
-          apiUrl={`/api/operations/${id}/requests`}
-          isAdmin={true}
-        />
 
         {op.client_id && (
           <DocumentsSection

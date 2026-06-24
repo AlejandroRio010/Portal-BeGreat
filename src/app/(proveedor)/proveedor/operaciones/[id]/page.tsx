@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, operationDocuments, clientDocuments, avalDocuments, contacts, infoRequests, operationTasks, collaborators } from "@/db/schema";
+import { operations, clients, suppliers, notes, operationDocuments, clientDocuments, avalDocuments, contacts, operationTasks, collaborators } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -9,7 +9,6 @@ import { fmtEur, fmtNum } from "@/lib/format";
 import OpResultadoPanel from "./OpResultadoPanel";
 import OpEditForm from "./OpEditForm";
 import DocumentsSection from "@/components/DocumentsSection";
-import InfoRequestsSection from "@/components/InfoRequestsSection";
 import CelebrationBanner from "@/components/CelebrationBanner";
 import TasksSection from "@/components/TasksSection";
 import { sanitizeFolderName, clientFolderPath } from "@/lib/onedrive";
@@ -93,7 +92,6 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
   const avalDocs = op.tiene_aval
     ? await db.select().from(avalDocuments).where(eq(avalDocuments.operation_id, id)).orderBy(avalDocuments.created_at)
     : [];
-  const opInfoRequests = await db.select().from(infoRequests).where(eq(infoRequests.operation_id, id)).orderBy(infoRequests.created_at);
   const opTasks = await db.select().from(operationTasks).where(eq(operationTasks.operation_id, id)).orderBy(operationTasks.created_at);
   const admins = await db.select({ id: collaborators.id, nombre: collaborators.nombre }).from(collaborators).where(eq(collaborators.role, "admin"));
   const taskAssignees: { id: string; nombre: string }[] = [
@@ -364,14 +362,6 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
               <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-3 pb-3 border-b border-gray-100">Descripción del equipo</p>
               <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{op.descripcion}</p>
             </div>
-          )}
-
-          {opInfoRequests.length > 0 && (
-            <InfoRequestsSection
-              requests={opInfoRequests}
-              apiUrl={`/api/operations/${id}/requests`}
-              isAdmin={false}
-            />
           )}
 
           {op.client_id && (
