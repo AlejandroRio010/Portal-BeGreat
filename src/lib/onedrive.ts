@@ -60,29 +60,90 @@ export async function ensureFolder(folderPath: string): Promise<void> {
   }
 }
 
+const SIMPLE_UPLOAD_LIMIT = 4 * 1024 * 1024; // 4MB
+
 export async function uploadFile(folderPath: string, filename: string, buffer: Buffer): Promise<string> {
   const token = await getToken();
   await ensureFolder(folderPath);
 
   const safeName = filename.replace(/[<>:"/\\|?*]/g, "_");
-  const uploadUrl = `${driveUrl(`${folderPath}/${safeName}`)}:/content`;
 
-  const res = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/octet-stream",
-    },
-    body: new Uint8Array(buffer),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`OneDrive upload failed: ${res.status} ${err}`);
+  if (buffer.length <= SIMPLE_UPLOAD_LIMIT) {
+    const uploadUrl = `${driveUrl(`${folderPath}/${safeName}`)}:/content`;
+    const res = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/octet-stream",
+      },
+      body: new Uint8Array(buffer),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`OneDrive upload failed: ${res.status} ${err}`);
+    }
+    const item = await res.json();
+    return item.id as string;
   }
 
-  const item = await res.json();
-  return item.id as string;
+  const sessionUrl = `${driveUrl(`${folderPath}/${safeName}`)}:/createUploadSession`;
+  const sessionRes = await fetch(sessionUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ item: { "@microsoft.graph.conflictBehavior": "rename" } }),
+  });
+  if (!sessionRes.ok) {
+    const err = await sessionRes.text();
+    throw new Error(`OneDrive upload session failed: ${sessionRes.status} ${err}`);
+  }
+  const { uploadUrl } = await sessionRes.json();
+
+  const CHUNK_SIZE = 3_276_800; // 3.125MB (must be multiple of 320KB)
+  let offset = 0;
+  let itemId = "";
+
+  while (offset < buffer.length) {
+    const end = Math.min(offset + CHUNK_SIZE, buffer.length);
+    const chunk = buffer.subarray(offset, end);
+    const res = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Length": String(chunk.length),
+        "Content-Range": `bytes ${offset}-${end - 1}/${buffer.length}`,
+      },
+      body: new Uint8Array(chunk),
+    });
+    if (!res.ok && res.status !== 202) {
+      const err = await res.text();
+      throw new Error(`OneDrive chunk upload failed: ${res.status} ${err}`);
+    }
+    const data = await res.json();
+    if (data.id) itemId = data.id;
+    offset = end;
+  }
+
+  return itemId;
+}
+
+export async function createUploadSession(folderPath: string, filename: string): Promise<{ uploadUrl: string }> {
+  const token = await getToken();
+  await ensureFolder(folderPath);
+  const safeName = filename.replace(/[<>:"/\\|?*]/g, "_");
+  const sessionUrl = `${driveUrl(`${folderPath}/${safeName}`)}:/createUploadSession`;
+  const res = await fetch(sessionUrl, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ item: { "@microsoft.graph.conflictBehavior": "rename" } }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`OneDrive session failed: ${res.status} ${err}`);
+  }
+  const data = await res.json();
+  return { uploadUrl: data.uploadUrl };
 }
 
 export async function downloadFile(itemId: string): Promise<{ buffer: Buffer; contentType: string }> {

@@ -34,6 +34,48 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
   const [success, setSuccess] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const DIRECT_UPLOAD_THRESHOLD = 4 * 1024 * 1024; // 4MB
+  const CHUNK_SIZE = 3_276_800; // 3.125MB (multiple of 320KB)
+
+  async function uploadDirect(file: File): Promise<{ url: string; filename: string; size: number }> {
+    const sessionRes = await fetch("/api/upload/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: file.name, folder: oneDriveFolder || undefined }),
+    });
+    if (!sessionRes.ok) {
+      const j = await sessionRes.json().catch(() => ({}));
+      throw new Error(j.error ?? `Error ${sessionRes.status}`);
+    }
+    const { uploadUrl } = await sessionRes.json();
+
+    const buffer = await file.arrayBuffer();
+    let offset = 0;
+    let itemId = "";
+
+    while (offset < buffer.byteLength) {
+      const end = Math.min(offset + CHUNK_SIZE, buffer.byteLength);
+      const chunk = buffer.slice(offset, end);
+      const res = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Length": String(chunk.byteLength),
+          "Content-Range": `bytes ${offset}-${end - 1}/${buffer.byteLength}`,
+        },
+        body: chunk,
+      });
+      if (!res.ok && res.status !== 202) {
+        const err = await res.text();
+        throw new Error(`Upload chunk failed: ${res.status} ${err}`);
+      }
+      const data = await res.json();
+      if (data.id) itemId = data.id;
+      offset = end;
+    }
+
+    return { url: `onedrive:${itemId}`, filename: file.name, size: file.size };
+  }
+
   async function uploadFiles(files: File[]) {
     setUploading(true);
     setError(null);
@@ -44,29 +86,34 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
       const file = files[i];
       setUploadProgress(`${i + 1} de ${files.length}: ${file.name}`);
       try {
-        const formData = new FormData();
-        formData.append("file", file);
-        if (oneDriveFolder) formData.append("folder", oneDriveFolder);
+        let result: { url: string; filename: string; size: number };
 
-        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-        if (!uploadRes.ok) {
-          const j = await uploadRes.json().catch(() => ({}));
-          errors.push(`${file.name}: ${j.error ?? `Error ${uploadRes.status}`}`);
-          continue;
+        if (file.size > DIRECT_UPLOAD_THRESHOLD) {
+          result = await uploadDirect(file);
+        } else {
+          const formData = new FormData();
+          formData.append("file", file);
+          if (oneDriveFolder) formData.append("folder", oneDriveFolder);
+          const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+          if (!uploadRes.ok) {
+            const j = await uploadRes.json().catch(() => ({}));
+            errors.push(`${file.name}: ${j.error ?? `Error ${uploadRes.status}`}`);
+            continue;
+          }
+          result = await uploadRes.json();
         }
-        const { url, filename, size } = await uploadRes.json();
 
         const res = await fetch(`${resolvedApiUrl}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url, filename, size }),
+          body: JSON.stringify(result),
         });
         if (!res.ok) {
           const j = await res.json().catch(() => ({}));
           errors.push(`${file.name}: ${j.error ?? `Error ${res.status}`}`);
         }
-      } catch {
-        errors.push(`${file.name}: Error de red`);
+      } catch (e: any) {
+        errors.push(`${file.name}: ${e.message ?? "Error de red"}`);
       }
     }
 
