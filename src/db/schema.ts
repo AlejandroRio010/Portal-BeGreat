@@ -236,6 +236,17 @@ export const supplierProducts = pgTable("supplier_products", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── Supplier documents ─────────────────────────────────────────────────────
+export const supplierDocuments = pgTable("supplier_documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  supplier_id: uuid("supplier_id").notNull().references(() => suppliers.id, { onDelete: "cascade" }),
+  filename: text("filename").notNull(),
+  url: text("url").notNull(),
+  size: integer("size"),
+  uploaded_by: text("uploaded_by").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Financial entities ───────────────────────────────────────────────────────
 export const financialEntities = pgTable("financial_entities", {
   id: uuid("id").primaryKey().defaultRandom(),
