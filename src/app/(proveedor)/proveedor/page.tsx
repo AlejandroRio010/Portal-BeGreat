@@ -96,7 +96,7 @@ export default async function ProveedorHomePage({
         <div className="relative z-10 text-right">
           <p className="text-white/40 text-xs uppercase tracking-[0.2em] mb-1">Portal de proveedores</p>
           <h1 className="text-3xl font-bold text-white mb-1">
-            Bienvenido, {supplier?.nombre?.split(" ")[0]}
+            Bienvenido, {((session!.user as any).nombre ?? supplier?.nombre ?? "").split(" ")[0]}
           </h1>
           <p className="text-white/30 text-xs">{supplier?.codigo}</p>
         </div>

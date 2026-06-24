@@ -16,7 +16,7 @@ export default async function ProveedorLayout({ children }: { children: React.Re
     .where(eq(suppliers.id, supplierId))
     .limit(1);
 
-  const nombre = supplier?.nombre ?? (session.user as any).nombre ?? "";
+  const nombre = (session.user as any).nombre ?? supplier?.nombre ?? "";
   const identificador = supplier?.codigo ?? (session.user as any).identificador ?? "";
 
   return (

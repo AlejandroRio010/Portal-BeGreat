@@ -30,6 +30,12 @@ export default async function PerfilProveedorPage() {
     .where(eq(supplierProducts.supplier_id, supplierId))
     .orderBy(supplierProducts.created_at);
 
+  const teamUsers = await db
+    .select({ id: supplierUsers.id, nombre: supplierUsers.nombre, email: supplierUsers.email, activo: supplierUsers.activo })
+    .from(supplierUsers)
+    .where(eq(supplierUsers.supplier_id, supplierId))
+    .orderBy(supplierUsers.nombre);
+
   return (
     <div className="max-w-2xl">
       <div className="mb-8">
@@ -39,6 +45,31 @@ export default async function PerfilProveedorPage() {
 
       <div className="space-y-6">
         <SupplierDataForm supplier={supplier} user={user} />
+
+        <div className="bg-white border border-gray-200">
+          <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
+            <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Equipo con acceso al portal ({teamUsers.filter(u => u.activo).length})</h3>
+          </div>
+          <div className="px-5 py-4 space-y-2">
+            {teamUsers.map(u => (
+              <div key={u.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-b-0">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 bg-[#2E1A47] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    {u.nombre.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">{u.nombre} {u.id === userId && <span className="text-[10px] text-[#2E1A47] font-bold">(Tú)</span>}</p>
+                    <p className="text-xs text-gray-400">{u.email}</p>
+                  </div>
+                </div>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 border ${u.activo ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-gray-100 text-gray-400 border-gray-200"}`}>
+                  {u.activo ? "Activo" : "Inactivo"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <ProductCatalog products={products} />
       </div>
     </div>
