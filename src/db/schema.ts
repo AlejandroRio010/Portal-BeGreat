@@ -334,6 +334,16 @@ export const officeContactNotes = pgTable("office_contact_notes", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── Supplier notes ──────────────────────────────────────────────────────────
+export const supplierNotes = pgTable("supplier_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  supplier_id: uuid("supplier_id").notNull().references(() => suppliers.id, { onDelete: "cascade" }),
+  author_id: uuid("author_id").notNull(),
+  author_name: text("author_name").notNull(),
+  texto: text("texto").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Collaborator notes ───────────────────────────────────────────────────────
 export const collaboratorNotes = pgTable("collaborator_notes", {
   id: uuid("id").primaryKey().defaultRandom(),

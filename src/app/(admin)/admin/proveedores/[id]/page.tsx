@@ -1,5 +1,6 @@
+import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { suppliers, collaborators, operations, clients, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries } from "@/db/schema";
+import { suppliers, collaborators, operations, clients, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries, supplierNotes } from "@/db/schema";
 import { eq, asc, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -8,6 +9,7 @@ import SupplierPortalToggle from "./SupplierPortalToggle";
 import SupplierUsuariosPanel from "./SupplierUsuariosPanel";
 import AsignarResponsable from "@/components/AsignarResponsable";
 import DocChecklistPanel from "@/components/DocChecklistPanel";
+import NotesSection from "@/components/NotesSection";
 import { fmtEur } from "@/lib/format";
 
 function fmtDate(d: Date | null | undefined) {
@@ -28,6 +30,8 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default async function ProveedorFichaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const session = await auth();
+  const adminUserId = session?.user?.id as string;
 
   const [prov] = await db
     .select({
@@ -61,6 +65,8 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
   const docTemplates = await db.select().from(docChecklistTemplates).orderBy(asc(docChecklistTemplates.orden));
   const docCustomItems = await db.select().from(docChecklistCustomItems).where(and(eq(docChecklistCustomItems.entity_type, "proveedor"), eq(docChecklistCustomItems.entity_id, id))).orderBy(asc(docChecklistCustomItems.orden));
   const docEntries = await db.select().from(docChecklistEntries).where(and(eq(docChecklistEntries.entity_type, "proveedor"), eq(docChecklistEntries.entity_id, id)));
+
+  const notes = await db.select().from(supplierNotes).where(eq(supplierNotes.supplier_id, id)).orderBy(supplierNotes.created_at);
 
   const ops = await db
     .select({
@@ -192,8 +198,9 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
           <DocChecklistPanel entityType="proveedor" entityId={id} templates={docTemplates} customItems={docCustomItems} entries={docEntries} />
         </div>
 
-        {/* Operaciones */}
-        <div className="col-span-2 bg-white border border-gray-200">
+        {/* Operaciones + Notas */}
+        <div className="col-span-2 flex flex-col gap-6 min-w-0">
+        <div className="bg-white border border-gray-200">
           <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
             <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Operaciones asociadas</h3>
           </div>
@@ -237,6 +244,15 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
               </tbody>
             </table>
           )}
+        </div>
+
+          <NotesSection
+            notes={notes}
+            apiUrl={`/api/admin/proveedores/${id}/notes`}
+            placeholder="Añade una nota sobre este proveedor..."
+            isAdmin={true}
+            currentUserId={adminUserId}
+          />
         </div>
       </div>
     </div>
