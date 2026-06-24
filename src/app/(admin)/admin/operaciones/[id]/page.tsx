@@ -144,6 +144,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
   const opTasks = await db.select().from(operationTasks).where(eq(operationTasks.operation_id, id)).orderBy(operationTasks.created_at);
 
   const admins = await db.select({ id: collaborators.id, nombre: collaborators.nombre }).from(collaborators).where(eq(collaborators.role, "admin"));
+  const allColaboradores = await db.select({ id: collaborators.id, nombre: collaborators.nombre, role: collaborators.role }).from(collaborators).where(eq(collaborators.activo, true)).orderBy(collaborators.nombre);
   const taskAssignees: { id: string; nombre: string }[] = [];
   if (op.colaborador_id && op.colaborador_nombre) {
     taskAssignees.push({ id: op.colaborador_id, nombre: op.colaborador_nombre });
@@ -536,6 +537,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             clientNombre={op.client_nombre ?? null}
             supplierNombre={op.supplier_nombre ?? null}
             colaboradorNombre={op.colaborador_nombre ?? null}
+            colaboradorId={op.colaborador_id ?? null}
             initialColaboradores={(op.colaboradores_comision as any) ?? []}
             initialMargenPct={op.margen_pct ?? null}
             initialEntidad={op.entidad_financiera}
@@ -572,6 +574,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialEntidadVisible={op.entidad_visible ?? true}
             allEntities={allEntities}
             allOffices={allOffices}
+            allColaboradores={allColaboradores}
             customFieldDefs={opCustomFields}
             customFieldValues={opCustomValues.map((v) => ({ field_id: v.field_id, valor: v.valor ?? null }))}
           />

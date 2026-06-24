@@ -82,15 +82,17 @@ interface Props {
   initialComisionColabPct?: string | null;
   initialComisionBegreatPct?: string | null;
   initialFacturaDestinatario?: string | null;
-  initialColaboradores?: { nombre: string; porcentaje: string; importe: string }[];
+  initialColaboradores?: { id?: string; nombre: string; porcentaje: string; importe: string }[];
   initialMargenPct?: string | null;
   // context names
   clientNombre?: string | null;
   supplierNombre?: string | null;
   colaboradorNombre?: string | null;
+  colaboradorId?: string | null;
   // entity/office lists
   allEntities: EntityRow[];
   allOffices: OfficeRow[];
+  allColaboradores?: { id: string; nombre: string; role: string }[];
   customFieldDefs?: CustomField[];
   customFieldValues?: CustomFieldValue[];
 }
@@ -143,8 +145,10 @@ export default function AdminOpForm({
   clientNombre,
   supplierNombre,
   colaboradorNombre,
+  colaboradorId,
   allEntities,
   allOffices,
+  allColaboradores = [],
   customFieldDefs = [],
   customFieldValues: initialCustomFieldValues = [],
 }: Props) {
@@ -162,8 +166,8 @@ export default function AdminOpForm({
     initialComisionOrigenes.length > 0 ? initialComisionOrigenes : []
   );
   const [facturaDestinatario, setFacturaDestinatario] = useState(initialFacturaDestinatario ?? "proveedor");
-  const [colaboradores, setColaboradores] = useState<{ nombre: string; porcentaje: string; importe: string }[]>(
-    initialColaboradores.length > 0 ? initialColaboradores : [{ nombre: colaboradorNombre ?? "", porcentaje: "", importe: "" }]
+  const [colaboradores, setColaboradores] = useState<{ id?: string; nombre: string; porcentaje: string; importe: string }[]>(
+    initialColaboradores.length > 0 ? initialColaboradores : [{ id: colaboradorId ?? "", nombre: colaboradorNombre ?? "", porcentaje: "", importe: "" }]
   );
   const [margenPct, setMargenPct] = useState(initialMargenPct ?? "");
   const [honorarios, setHonorarios] = useState(initialHonorarios ?? false);
@@ -288,7 +292,14 @@ export default function AdminOpForm({
     setComisionOrigenes(next);
   }
 
-  function updateColab(i: number, field: "nombre" | "porcentaje" | "importe", val: string) {
+  function selectColab(i: number, colabId: string) {
+    const next = [...colaboradores];
+    const found = allColaboradores.find(c => c.id === colabId);
+    next[i] = { ...next[i], id: colabId, nombre: found?.nombre ?? "" };
+    setColaboradores(next);
+  }
+
+  function updateColab(i: number, field: "porcentaje" | "importe", val: string) {
     const next = [...colaboradores];
     next[i] = { ...next[i], [field]: val };
     if (field === "porcentaje" && importeNum > 0) {
@@ -301,7 +312,7 @@ export default function AdminOpForm({
   }
 
   function addColab() {
-    setColaboradores([...colaboradores, { nombre: "", porcentaje: "", importe: "" }]);
+    setColaboradores([...colaboradores, { id: "", nombre: "", porcentaje: "", importe: "" }]);
   }
 
   function removeColab(i: number) {
@@ -994,8 +1005,15 @@ export default function AdminOpForm({
                             className="absolute top-1 right-1 text-gray-400 hover:text-red-500 text-xs">✕</button>
                         )}
                         <div className="mb-1.5">
-                          <input type="text" value={c.nombre} onChange={e => updateColab(i, "nombre", e.target.value)}
-                            placeholder="Nombre del colaborador" className="w-full border border-gray-200 px-2 py-1.5 text-xs font-medium focus:outline-none focus:border-[#2E1A47]" />
+                          <select value={c.id ?? ""} onChange={e => selectColab(i, e.target.value)}
+                            className="w-full border border-gray-200 px-2 py-1.5 text-xs font-medium focus:outline-none focus:border-[#2E1A47] bg-white">
+                            <option value="">Seleccionar persona...</option>
+                            {allColaboradores.map(ac => (
+                              <option key={ac.id} value={ac.id}>
+                                {ac.nombre}{ac.role === "admin" ? " (Admin)" : ""}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
