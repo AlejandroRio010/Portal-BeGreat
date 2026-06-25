@@ -159,16 +159,19 @@ export default async function ProveedorHomePage({
                     <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-[#2E1A47] text-white text-[9px] px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-lg">
                       <span className="block font-bold">{opsCount} op{opsCount !== 1 ? "s" : ""}</span>
                       {importeMes > 0 && <span className="block text-white/70">Vendido: {fmtEur(importeMes)}</span>}
+                      <span className="block text-white/40 mt-0.5">Click para ver detalle</span>
                     </div>
                   )}
                   <div className="w-full transition-all group-hover:opacity-80"
                     style={{ height: h > 0 ? `${h}px` : "3px", backgroundColor: h > 0 ? "#2E1A47" : "#EEEBF3" }} />
                 </div>
               );
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
+              return opsCount > 0 ? (
+                <Link key={i} href={`/proveedor/firmadas/${selectedYear}/${i + 1}`} className="flex-1 flex flex-col items-center gap-1 group relative cursor-pointer">
                   {bar}
-                </div>
+                </Link>
+              ) : (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">{bar}</div>
               );
             })}
           </div>
