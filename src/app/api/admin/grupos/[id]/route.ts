@@ -10,7 +10,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;
-  const { nombre, descripcion, web, cif_matriz } = await req.json();
+  const { nombre, descripcion, web, cif_matriz, collaborator_id } = await req.json();
   if (!nombre?.trim()) return NextResponse.json({ error: "Nombre obligatorio" }, { status: 400 });
 
   await db.update(clientGroups).set({
@@ -18,6 +18,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     descripcion: descripcion || null,
     web: web || null,
     cif_matriz: cif_matriz || null,
+    collaborator_id: collaborator_id || null,
   }).where(eq(clientGroups.id, id));
 
   return NextResponse.json({ ok: true });

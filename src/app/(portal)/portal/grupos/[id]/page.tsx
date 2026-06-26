@@ -1,11 +1,12 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { clientGroups, clients, operations, clientGroupContacts } from "@/db/schema";
+import { clientGroups, clients, operations, clientGroupContacts, clientGroupNotes } from "@/db/schema";
 import { eq, and, inArray, isNull, sql } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import PortalEmpresasGrupoPanel from "./PortalEmpresasGrupoPanel";
 import ContactosGrupoPanel from "@/components/ContactosGrupoPanel";
+import NotesSection from "@/components/NotesSection";
 import { fmtEur } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +38,10 @@ export default async function PortalGrupoFichaPage({ params }: { params: Promise
 
   const contactosGrupo = await db.select().from(clientGroupContacts).where(eq(clientGroupContacts.group_id, id)).orderBy(clientGroupContacts.created_at);
 
-  if (empresas.length === 0 && disponibles.length === 0) notFound();
+  const linkedDirectly = grupo.collaborator_id === userId;
+  if (empresas.length === 0 && disponibles.length === 0 && !linkedDirectly) notFound();
+
+  const grupoNotes = await db.select().from(clientGroupNotes).where(eq(clientGroupNotes.group_id, id)).orderBy(clientGroupNotes.created_at);
 
   const empresaIds = empresas.map(e => e.id);
   const ops = await db
@@ -144,6 +148,7 @@ export default async function PortalGrupoFichaPage({ params }: { params: Promise
             </div>
           </div>
           <ContactosGrupoPanel contactos={contactosGrupo} groupId={id} />
+          <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} currentUserId={userId} />
         </div>
 
         {/* Col 2-3: Empresas */}

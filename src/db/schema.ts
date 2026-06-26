@@ -103,6 +103,7 @@ export const clientGroups = pgTable("client_groups", {
   web: text("web"),
   cif_matriz: text("cif_matriz"),
   codigo: text("codigo").unique(),
+  collaborator_id: uuid("collaborator_id").references(() => collaborators.id, { onDelete: "set null" }),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -114,6 +115,16 @@ export const clientGroupContacts = pgTable("client_group_contacts", {
   email: text("email"),
   telefono: text("telefono"),
   linkedin: text("linkedin"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Client group notes ─────────────────────────────────────────────────────
+export const clientGroupNotes = pgTable("client_group_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  group_id: uuid("group_id").notNull().references(() => clientGroups.id, { onDelete: "cascade" }),
+  author_id: uuid("author_id").notNull().references(() => collaborators.id),
+  author_name: text("author_name").notNull(),
+  texto: text("texto").notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 

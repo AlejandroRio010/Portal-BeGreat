@@ -22,7 +22,15 @@ export default async function PortalGruposPage() {
     .from(clients)
     .where(and(eq(clients.collaborator_id, userId), isNotNull(clients.group_id)));
 
-  if (clientesConGrupo.length === 0) {
+  // Grupos vinculados directamente al colaborador
+  const gruposDirectos = await db
+    .select()
+    .from(clientGroups)
+    .where(eq(clientGroups.collaborator_id, userId))
+    .orderBy(clientGroups.nombre);
+  const grupoDirectoIds = new Set(gruposDirectos.map(g => g.id));
+
+  if (clientesConGrupo.length === 0 && gruposDirectos.length === 0) {
     return (
       <div>
         <div className="flex items-center justify-between mb-6">
@@ -40,15 +48,17 @@ export default async function PortalGruposPage() {
     );
   }
 
-  // IDs de grupos únicos
-  const groupIds = [...new Set(clientesConGrupo.map(c => c.group_id!))];
+  // IDs de grupos únicos (por clientes + por vínculo directo)
+  const groupIds = [...new Set([...clientesConGrupo.map(c => c.group_id!), ...grupoDirectoIds])];
 
   // Datos de los grupos
-  const grupos = await db
-    .select()
-    .from(clientGroups)
-    .where(inArray(clientGroups.id, groupIds))
-    .orderBy(clientGroups.nombre);
+  const grupos = groupIds.length > 0
+    ? await db
+        .select()
+        .from(clientGroups)
+        .where(inArray(clientGroups.id, groupIds))
+        .orderBy(clientGroups.nombre)
+    : [];
 
   // Contar empresas del colaborador por grupo y calcular financiación
   const clienteIds = clientesConGrupo.map(c => c.id);

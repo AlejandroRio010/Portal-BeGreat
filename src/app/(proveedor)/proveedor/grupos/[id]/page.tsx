@@ -1,10 +1,11 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { clientGroups, clients, operations, clientGroupContacts } from "@/db/schema";
+import { clientGroups, clients, operations, clientGroupContacts, clientGroupNotes } from "@/db/schema";
 import { eq, and, inArray, isNull } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import ContactosGrupoPanel from "@/components/ContactosGrupoPanel";
+import NotesSection from "@/components/NotesSection";
 import { fmtEur } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +38,7 @@ export default async function ProveedorGrupoFichaPage({ params }: { params: Prom
   if (empresas.length === 0) notFound();
 
   const contactosGrupo = await db.select().from(clientGroupContacts).where(eq(clientGroupContacts.group_id, id)).orderBy(clientGroupContacts.created_at);
+  const grupoNotes = await db.select().from(clientGroupNotes).where(eq(clientGroupNotes.group_id, id)).orderBy(clientGroupNotes.created_at);
 
   const empresaIds = empresas.map(e => e.id);
   const ops = await db
@@ -133,6 +135,7 @@ export default async function ProveedorGrupoFichaPage({ params }: { params: Prom
             </div>
           </div>
           <ContactosGrupoPanel contactos={contactosGrupo} groupId={id} />
+          <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} readOnly />
         </div>
 
         <div className="col-span-2">

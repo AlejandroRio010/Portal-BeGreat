@@ -1,10 +1,12 @@
 import { db } from "@/db";
-import { clientGroups, clients, operations, clientGroupContacts } from "@/db/schema";
+import { clientGroups, clients, operations, clientGroupContacts, collaborators, clientGroupNotes } from "@/db/schema";
 import { eq, isNull, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import EmpresasGrupoPanel from "./EmpresasGrupoPanel";
 import ContactosGrupoPanel from "@/components/ContactosGrupoPanel";
+import GrupoColaboradorSelector from "./GrupoColaboradorSelector";
+import NotesSection from "@/components/NotesSection";
 import { fmtEur } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +29,9 @@ export default async function AdminGrupoFichaPage({ params }: { params: Promise<
     .from(clients).where(isNull(clients.group_id)).orderBy(clients.nombre);
 
   const contactosGrupo = await db.select().from(clientGroupContacts).where(eq(clientGroupContacts.group_id, id)).orderBy(clientGroupContacts.created_at);
+
+  const allColabs = await db.select({ id: collaborators.id, nombre: collaborators.nombre }).from(collaborators).where(eq(collaborators.activo, true)).orderBy(collaborators.nombre);
+  const grupoNotes = await db.select().from(clientGroupNotes).where(eq(clientGroupNotes.group_id, id)).orderBy(clientGroupNotes.created_at);
 
   // Métricas + listado completo de ops
   const empresaIds = empresas.map(e => e.id);
@@ -112,9 +117,11 @@ export default async function AdminGrupoFichaPage({ params }: { params: Promise<
                   </div>
                 ) : null
               )}
+              <GrupoColaboradorSelector grupoId={id} grupoNombre={grupo.nombre} currentCollaboratorId={grupo.collaborator_id} colaboradores={allColabs} />
             </div>
           </div>
           <ContactosGrupoPanel contactos={contactosGrupo} groupId={id} />
+          <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} isAdmin />
         </div>
 
         {/* Empresas */}

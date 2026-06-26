@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { clientGroups, clients } from "@/db/schema";
+import { clientGroups, clients, collaborators } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import NuevoGrupoForm from "@/components/NuevoGrupoForm";
@@ -14,9 +14,12 @@ export default async function AdminGruposPage() {
       descripcion: clientGroups.descripcion,
       web: clientGroups.web,
       codigo: clientGroups.codigo,
+      collaborator_id: clientGroups.collaborator_id,
       num_empresas: sql<number>`(SELECT COUNT(*) FROM clients WHERE clients.group_id = ${clientGroups.id})`,
+      collaborator_nombre: collaborators.nombre,
     })
     .from(clientGroups)
+    .leftJoin(collaborators, eq(clientGroups.collaborator_id, collaborators.id))
     .orderBy(clientGroups.nombre);
 
   return (
@@ -48,6 +51,9 @@ export default async function AdminGruposPage() {
               <p className="font-semibold text-gray-900 group-hover:text-[#2E1A47]">{g.nombre}</p>
               {g.descripcion && <p className="text-xs text-gray-400 mt-1 line-clamp-2">{g.descripcion}</p>}
               <p className="text-xs text-[#2E1A47] font-semibold mt-3">{Number(g.num_empresas)} empresa{Number(g.num_empresas) !== 1 ? "s" : ""}</p>
+              {g.collaborator_nombre && (
+                <p className="text-[10px] text-gray-400 mt-1">Colaborador: {g.collaborator_nombre}</p>
+              )}
             </Link>
           ))}
         </div>
