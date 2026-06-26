@@ -121,12 +121,12 @@ export default async function AdminGrupoFichaPage({ params }: { params: Promise<
             </div>
           </div>
           <ContactosGrupoPanel contactos={contactosGrupo} groupId={id} />
-          <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} isAdmin />
         </div>
 
-        {/* Empresas */}
-        <div className="col-span-2">
+        {/* Empresas + Notas */}
+        <div className="col-span-2 flex flex-col gap-4">
           <EmpresasGrupoPanel grupoId={id} empresas={empresas} disponibles={disponibles} />
+          <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} isAdmin canPin />
         </div>
       </div>
 

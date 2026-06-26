@@ -148,16 +148,16 @@ export default async function PortalGrupoFichaPage({ params }: { params: Promise
             </div>
           </div>
           <ContactosGrupoPanel contactos={contactosGrupo} groupId={id} />
-          <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} currentUserId={userId} />
         </div>
 
-        {/* Col 2-3: Empresas */}
-        <div className="col-span-2">
+        {/* Col 2-3: Empresas + Notas */}
+        <div className="col-span-2 flex flex-col gap-4">
           <PortalEmpresasGrupoPanel
             grupoId={id}
             empresas={empresas}
             disponibles={disponibles}
           />
+          <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} currentUserId={userId} />
         </div>
       </div>
 

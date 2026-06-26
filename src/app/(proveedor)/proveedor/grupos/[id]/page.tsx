@@ -135,10 +135,9 @@ export default async function ProveedorGrupoFichaPage({ params }: { params: Prom
             </div>
           </div>
           <ContactosGrupoPanel contactos={contactosGrupo} groupId={id} />
-          <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} readOnly />
         </div>
 
-        <div className="col-span-2">
+        <div className="col-span-2 flex flex-col gap-4">
           <div className="bg-white border border-gray-200">
             <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200 flex items-center justify-between">
               <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Empresas del grupo ({empresas.length})</h3>
@@ -156,6 +155,7 @@ export default async function ProveedorGrupoFichaPage({ params }: { params: Prom
               ))}
             </div>
           </div>
+          <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} readOnly />
         </div>
       </div>
 
