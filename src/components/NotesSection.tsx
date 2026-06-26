@@ -244,7 +244,7 @@ export default function NotesSection({ notes, apiUrl, placeholder = "Añade una 
           ordenadas.map((n, i) => {
             const isOwn = !!currentUserId && n.author_id === currentUserId;
             const canEdit = readOnly ? false : isOwn;
-            const canPinNote = readOnly ? false : (canPin && isOwn);
+            const canPinNote = readOnly ? false : (canPin && (isOwn || !!isAdmin));
             return <NoteItem key={n.id} note={n} apiUrl={apiUrl} canEdit={canEdit} canPin={canPinNote} idx={i} />;
           })
         )}
