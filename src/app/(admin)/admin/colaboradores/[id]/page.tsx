@@ -324,6 +324,7 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
           placeholder="Añade una nota interna sobre este colaborador..."
           isAdmin={true}
           canPin
+          currentUserId={adminUserId}
         />
       </div>
     </div>

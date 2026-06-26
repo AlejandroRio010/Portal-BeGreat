@@ -1,3 +1,4 @@
+import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { financialEntities, entityOffices, entityContacts, entityNotes } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -23,6 +24,8 @@ const TIPO_COLOR: Record<string, string> = {
 
 export default async function EntidadFichaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const session = await auth();
+  const adminUserId = session?.user?.id as string;
 
   const [entidad] = await db.select().from(financialEntities).where(eq(financialEntities.id, id)).limit(1);
   if (!entidad) notFound();
@@ -129,6 +132,7 @@ export default async function EntidadFichaPage({ params }: { params: Promise<{ i
             placeholder="Añade una nota sobre esta entidad financiera..."
             isAdmin={true}
             canPin
+            currentUserId={adminUserId}
           />
 
           {/* Oficinas */}

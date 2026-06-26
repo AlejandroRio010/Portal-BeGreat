@@ -1,3 +1,4 @@
+import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { entityOfficeContacts, entityOffices, financialEntities, officeContactNotes } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -11,6 +12,8 @@ export default async function ContactoFichaPage({
   params: Promise<{ id: string; oficineId: string; contactoId: string }>;
 }) {
   const { id: entityId, oficineId, contactoId } = await params;
+  const session = await auth();
+  const adminUserId = session?.user?.id as string;
 
   const [contacto] = await db
     .select()
@@ -95,7 +98,9 @@ export default async function ContactoFichaPage({
             notes={notes}
             apiUrl={`/api/admin/entidades/oficinas/contactos/${contactoId}/notes`}
             placeholder="Añade una nota sobre esta persona de contacto..."
+            isAdmin={true}
             canPin
+            currentUserId={adminUserId}
           />
         </div>
       </div>

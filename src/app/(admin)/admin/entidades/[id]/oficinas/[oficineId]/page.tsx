@@ -1,3 +1,4 @@
+import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { entityOffices, financialEntities, operations, clients, entityOfficeContacts, officeNotes } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -25,6 +26,8 @@ export default async function OficinaFichaPage({
   params: Promise<{ id: string; oficineId: string }>;
 }) {
   const { id: entityId, oficineId } = await params;
+  const session = await auth();
+  const adminUserId = session?.user?.id as string;
 
   const [oficina] = await db.select().from(entityOffices).where(eq(entityOffices.id, oficineId)).limit(1);
   if (!oficina) notFound();
@@ -191,6 +194,7 @@ export default async function OficinaFichaPage({
             placeholder="Añade una nota sobre esta oficina..."
             isAdmin={true}
             canPin
+            currentUserId={adminUserId}
           />
         </div>
       </div>

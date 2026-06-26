@@ -1,3 +1,4 @@
+import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { clientGroups, clients, operations, clientGroupContacts, collaborators, clientGroupNotes, entityTasks } from "@/db/schema";
 import { eq, isNull, inArray, and } from "drizzle-orm";
@@ -16,6 +17,8 @@ const FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia reali
 
 export default async function AdminGrupoFichaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const session = await auth();
+  const adminUserId = session?.user?.id as string;
 
   const [grupo] = await db.select().from(clientGroups).where(eq(clientGroups.id, id)).limit(1);
   if (!grupo) notFound();
@@ -143,7 +146,7 @@ export default async function AdminGrupoFichaPage({ params }: { params: Promise<
             apiUrl={`/api/entity-tasks/grupo/${id}`}
             assignees={taskAssignees}
           />
-          <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} isAdmin canPin />
+          <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} isAdmin canPin currentUserId={adminUserId} />
         </div>
       </div>
 
