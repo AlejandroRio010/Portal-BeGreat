@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { operations, clients, collaborators, pipelines } from "@/db/schema";
-import { eq, and, notInArray } from "drizzle-orm";
+import { eq, and, or, isNull, ne, notInArray } from "drizzle-orm";
 import KanbanBoard from "./KanbanBoard";
 
 const FASES_RENTING_DEFAULT = [
@@ -30,7 +30,7 @@ export default async function AdminRentingKanbanPage() {
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
     .leftJoin(collaborators, eq(operations.collaborator_id, collaborators.id))
-    .where(and(eq(operations.pipeline_key, "renting"), eq(operations.status, "activa"), notInArray(operations.fase, ["Transferencia realizada"])))
+    .where(and(eq(operations.pipeline_key, "renting"), eq(operations.status, "activa"), notInArray(operations.fase, ["Transferencia realizada"]), or(isNull(operations.notas_admin), ne(operations.notas_admin, "DEMO"))))
     .orderBy(operations.created_at);
 
   return (

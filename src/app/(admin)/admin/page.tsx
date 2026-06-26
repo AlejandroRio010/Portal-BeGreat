@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { operations, clients, collaborators } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, or, isNull, ne } from "drizzle-orm";
 import Link from "next/link";
 import { fmtEur } from "@/lib/format";
 import RankingColaboradores from "./RankingColaboradores";
@@ -35,6 +35,7 @@ export default async function AdminHomePage({
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
     .leftJoin(collaborators, eq(operations.collaborator_id, collaborators.id))
+    .where(or(isNull(operations.notas_admin), ne(operations.notas_admin, "DEMO")))
     .orderBy(desc(operations.created_at));
 
   const pendientes = allOps.filter((o) => o.status === "pendiente_de_validar");

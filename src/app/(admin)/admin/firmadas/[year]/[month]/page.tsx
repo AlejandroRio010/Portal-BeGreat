@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { operations, clients, collaborators } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, or, isNull, ne } from "drizzle-orm";
 import Link from "next/link";
 import { fmtEur } from "@/lib/format";
 
@@ -30,6 +30,7 @@ export default async function AdminFirmadasMesPage({ params }: { params: Promise
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
     .leftJoin(collaborators, eq(operations.collaborator_id, collaborators.id))
+    .where(or(isNull(operations.notas_admin), ne(operations.notas_admin, "DEMO")))
     .orderBy(operations.created_at);
 
   const delMes = ops.filter(o => {
