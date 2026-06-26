@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { clients } from "@/db/schema";
+import { clients, operations } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { formatDocId } from "@/lib/format";
 
@@ -35,6 +35,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     direccion: direccion || null,
     cnae: cnae || null,
   }).where(eq(clients.id, id));
+
+  const displayName = (nombre_comercial?.trim() || nombre.trim());
+  const clientOps = await db.select({ id: operations.id, nombre: operations.nombre, entidad_financiera: operations.entidad_financiera })
+    .from(operations).where(eq(operations.client_id, id));
+  for (const op of clientOps) {
+    const opMatch = (op.nombre ?? "").match(/- OP (\d+)/);
+    const opNum = opMatch ? opMatch[1] : null;
+    if (!opNum) continue;
+    const ent = op.entidad_financiera ? ` (${op.entidad_financiera})` : "";
+    await db.update(operations).set({ nombre: `${displayName} - OP ${opNum}${ent}` }).where(eq(operations.id, op.id));
+  }
 
   return NextResponse.json({ ok: true });
 }
