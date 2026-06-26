@@ -196,7 +196,7 @@ export default function TasksSection({
               {t.fecha_programada && (
                 <span className={`text-[10px] px-1.5 py-0.5 font-semibold ${t.recordatorio_enviado ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}
                   title={t.recordatorio_enviado ? "Recordatorio enviado" : `Programado: ${fmtDateTime(t.fecha_programada)}`}>
-                  🕐 {fmtDateTime(t.fecha_programada)}{t.recordatorio_enviado ? " ✓" : ""}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline -mt-px mr-0.5"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>{fmtDateTime(t.fecha_programada)}{t.recordatorio_enviado ? " ✓" : ""}
                 </span>
               )}
               {canSendReminders && t.asignado_a_id && (
@@ -214,7 +214,7 @@ export default function TasksSection({
                     title="Programar recordatorio"
                     className={`text-lg px-1.5 py-1 rounded transition-colors ${schedulingTaskId === t.id ? "text-[#2E1A47] bg-[#EEEBF3]" : "text-gray-400 hover:text-[#2E1A47] hover:bg-[#EEEBF3]"}`}
                   >
-                    🕐
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                   </button>
                 </>
               )}

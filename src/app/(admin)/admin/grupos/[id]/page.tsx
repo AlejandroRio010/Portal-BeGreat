@@ -1,12 +1,13 @@
 import { db } from "@/db";
-import { clientGroups, clients, operations, clientGroupContacts, collaborators, clientGroupNotes } from "@/db/schema";
-import { eq, isNull, inArray } from "drizzle-orm";
+import { clientGroups, clients, operations, clientGroupContacts, collaborators, clientGroupNotes, entityTasks } from "@/db/schema";
+import { eq, isNull, inArray, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import EmpresasGrupoPanel from "./EmpresasGrupoPanel";
 import ContactosGrupoPanel from "@/components/ContactosGrupoPanel";
 import GrupoColaboradorSelector from "./GrupoColaboradorSelector";
 import NotesSection from "@/components/NotesSection";
+import EntityTasksSection from "@/components/EntityTasksSection";
 import { fmtEur } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,7 @@ export default async function AdminGrupoFichaPage({ params }: { params: Promise<
 
   const allColabs = await db.select({ id: collaborators.id, nombre: collaborators.nombre }).from(collaborators).where(eq(collaborators.activo, true)).orderBy(collaborators.nombre);
   const grupoNotes = await db.select().from(clientGroupNotes).where(eq(clientGroupNotes.group_id, id)).orderBy(clientGroupNotes.created_at);
+  const eTasks = await db.select().from(entityTasks).where(and(eq(entityTasks.entity_type, "grupo"), eq(entityTasks.entity_id, id))).orderBy(entityTasks.created_at);
 
   // Métricas + listado completo de ops
   const empresaIds = empresas.map(e => e.id);
@@ -126,6 +128,11 @@ export default async function AdminGrupoFichaPage({ params }: { params: Promise<
         {/* Empresas + Notas */}
         <div className="col-span-2 flex flex-col gap-4">
           <EmpresasGrupoPanel grupoId={id} empresas={empresas} disponibles={disponibles} />
+          <EntityTasksSection
+            initialTasks={eTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null, fecha_programada: t.fecha_programada?.toISOString() ?? null }))}
+            apiUrl={`/api/entity-tasks/grupo/${id}`}
+            assignees={allColabs.map(c => ({ id: c.id, nombre: c.nombre }))}
+          />
           <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} isAdmin canPin />
         </div>
       </div>

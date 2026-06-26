@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { suppliers, collaborators, operations, clients, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries, supplierNotes, supplierDocuments } from "@/db/schema";
+import { suppliers, collaborators, operations, clients, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries, supplierNotes, supplierDocuments, entityTasks } from "@/db/schema";
 import { eq, asc, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -11,6 +11,7 @@ import AsignarResponsable from "@/components/AsignarResponsable";
 import DocChecklistPanel from "@/components/DocChecklistPanel";
 import DocumentsSection from "@/components/DocumentsSection";
 import NotesSection from "@/components/NotesSection";
+import EntityTasksSection from "@/components/EntityTasksSection";
 import { fmtEur } from "@/lib/format";
 import { sanitizeFolderName } from "@/lib/onedrive";
 
@@ -69,6 +70,7 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
   const docEntries = await db.select().from(docChecklistEntries).where(and(eq(docChecklistEntries.entity_type, "proveedor"), eq(docChecklistEntries.entity_id, id)));
 
   const notes = await db.select().from(supplierNotes).where(eq(supplierNotes.supplier_id, id)).orderBy(supplierNotes.created_at);
+  const eTasks = await db.select().from(entityTasks).where(and(eq(entityTasks.entity_type, "proveedor"), eq(entityTasks.entity_id, id))).orderBy(entityTasks.created_at);
 
   const docs = await db.select().from(supplierDocuments).where(eq(supplierDocuments.supplier_id, id)).orderBy(supplierDocuments.created_at);
 
@@ -251,6 +253,12 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
             </table>
           )}
         </div>
+
+          <EntityTasksSection
+            initialTasks={eTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null, fecha_programada: t.fecha_programada?.toISOString() ?? null }))}
+            apiUrl={`/api/entity-tasks/proveedor/${id}`}
+            assignees={[{ id: adminUserId, nombre: session?.user?.name ?? "Admin" }]}
+          />
 
           <NotesSection
             notes={notes}

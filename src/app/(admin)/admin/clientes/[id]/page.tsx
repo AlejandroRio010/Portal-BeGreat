@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { clients, collaborators, contacts, operations, customFields, customFieldValues, clientNotes, clientGroups, clientDocuments, operationDocuments, avalDocuments, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries } from "@/db/schema";
+import { clients, collaborators, contacts, operations, customFields, customFieldValues, clientNotes, clientGroups, clientDocuments, operationDocuments, avalDocuments, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries, entityTasks } from "@/db/schema";
 import { eq, asc, and, sql, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -13,6 +13,7 @@ import { fmtEur } from "@/lib/format";
 import { clientFolderPath } from "@/lib/onedrive";
 import AsignarResponsable from "@/components/AsignarResponsable";
 import DocChecklistPanel from "@/components/DocChecklistPanel";
+import EntityTasksSection from "@/components/EntityTasksSection";
 
 function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
@@ -93,6 +94,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
   const clienteCustomValues = await db.select().from(customFieldValues).where(eq(customFieldValues.entity_id, id));
   const notes = await db.select().from(clientNotes).where(eq(clientNotes.client_id, id)).orderBy(clientNotes.created_at);
   const docs = await db.select().from(clientDocuments).where(eq(clientDocuments.client_id, id)).orderBy(clientDocuments.created_at);
+  const eTasks = await db.select().from(entityTasks).where(and(eq(entityTasks.entity_type, "cliente"), eq(entityTasks.entity_id, id))).orderBy(entityTasks.created_at);
 
   const opIds = ops.map(o => o.id);
   const opDocsAll = opIds.length > 0
@@ -396,6 +398,12 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
               </div>
             </div>
           )}
+
+          <EntityTasksSection
+            initialTasks={eTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null, fecha_programada: t.fecha_programada?.toISOString() ?? null }))}
+            apiUrl={`/api/entity-tasks/cliente/${id}`}
+            assignees={[{ id: adminUserId, nombre: session?.user?.name ?? "Admin" }, ...linkedColabs]}
+          />
 
           <NotesSection
             notes={notes}

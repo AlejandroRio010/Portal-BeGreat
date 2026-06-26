@@ -1,11 +1,12 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { clientGroups, clients, operations, clientGroupContacts, clientGroupNotes } from "@/db/schema";
+import { clientGroups, clients, operations, clientGroupContacts, clientGroupNotes, entityTasks } from "@/db/schema";
 import { eq, and, inArray, isNull } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import ContactosGrupoPanel from "@/components/ContactosGrupoPanel";
 import NotesSection from "@/components/NotesSection";
+import EntityTasksSection from "@/components/EntityTasksSection";
 import { fmtEur } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +40,7 @@ export default async function ProveedorGrupoFichaPage({ params }: { params: Prom
 
   const contactosGrupo = await db.select().from(clientGroupContacts).where(eq(clientGroupContacts.group_id, id)).orderBy(clientGroupContacts.created_at);
   const grupoNotes = await db.select().from(clientGroupNotes).where(eq(clientGroupNotes.group_id, id)).orderBy(clientGroupNotes.created_at);
+  const eTasks = await db.select().from(entityTasks).where(and(eq(entityTasks.entity_type, "grupo"), eq(entityTasks.entity_id, id))).orderBy(entityTasks.created_at);
 
   const empresaIds = empresas.map(e => e.id);
   const ops = await db
@@ -155,6 +157,12 @@ export default async function ProveedorGrupoFichaPage({ params }: { params: Prom
               ))}
             </div>
           </div>
+          <EntityTasksSection
+            initialTasks={eTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null, fecha_programada: t.fecha_programada?.toISOString() ?? null }))}
+            apiUrl={`/api/entity-tasks/grupo/${id}`}
+            assignees={[]}
+            readOnly
+          />
           <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} readOnly />
         </div>
       </div>

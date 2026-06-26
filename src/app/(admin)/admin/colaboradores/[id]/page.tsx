@@ -1,5 +1,6 @@
+import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { collaborators, operations, clients, collaboratorContacts, collaboratorNotes } from "@/db/schema";
+import { collaborators, operations, clients, collaboratorContacts, collaboratorNotes, entityTasks } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -7,6 +8,7 @@ import ColaboradorEditForm from "./ColaboradorEditForm";
 import PermisosForm from "./PermisosForm";
 import UsuariosPanel from "./UsuariosPanel";
 import NotesSection from "@/components/NotesSection";
+import EntityTasksSection from "@/components/EntityTasksSection";
 import { fmtEur } from "@/lib/format";
 
 const FASES_FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
@@ -24,6 +26,8 @@ function fmtDate(d: Date | null) {
 
 export default async function FichaColaboradorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const session = await auth();
+  const adminUserId = session?.user?.id as string;
 
   const [colab] = await db
     .select()
@@ -66,6 +70,7 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
     .from(collaboratorNotes)
     .where(eq(collaboratorNotes.collaborator_id, id))
     .orderBy(collaboratorNotes.created_at);
+  const eTasks = await db.select().from(entityTasks).where(and(eq(entityTasks.entity_type, "colaborador"), eq(entityTasks.entity_id, id))).orderBy(entityTasks.created_at);
 
   // KPIs
   const totalOps = ops.length;
@@ -303,7 +308,14 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
         />
       </div>
 
-      {/* Notas internas */}
+      <div className="mx-8 mb-6">
+        <EntityTasksSection
+          initialTasks={eTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null, fecha_programada: t.fecha_programada?.toISOString() ?? null }))}
+          apiUrl={`/api/entity-tasks/colaborador/${id}`}
+          assignees={[{ id: adminUserId, nombre: session?.user?.name ?? "Admin" }]}
+        />
+      </div>
+
       <div className="mx-8 mb-10">
         <NotesSection
           notes={notes}

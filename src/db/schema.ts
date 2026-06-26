@@ -555,6 +555,20 @@ export const operationTasks = pgTable("operation_tasks", {
   recordatorio_enviado: boolean("recordatorio_enviado").default(false).notNull(),
 });
 
+// ─── Tareas genéricas de entidad ─────────────────────────────────────────────
+export const entityTasks = pgTable("entity_tasks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entity_type: text("entity_type").notNull(),
+  entity_id: uuid("entity_id").notNull(),
+  titulo: text("titulo").notNull(),
+  asignado_a_nombre: text("asignado_a_nombre"),
+  completada: boolean("completada").default(false).notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  completed_at: timestamp("completed_at"),
+  created_by_id: uuid("created_by_id").notNull(),
+  fecha_programada: timestamp("fecha_programada"),
+});
+
 // ─── Cotizador: deals de referencia para calibrar TAEs ────────────────────────
 export const cotizadorDeals = pgTable("cotizador_deals", {
   id: uuid("id").primaryKey().defaultRandom(),

@@ -1,12 +1,13 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { clientGroups, clients, operations, clientGroupContacts, clientGroupNotes } from "@/db/schema";
+import { clientGroups, clients, operations, clientGroupContacts, clientGroupNotes, entityTasks } from "@/db/schema";
 import { eq, and, inArray, isNull, sql } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import PortalEmpresasGrupoPanel from "./PortalEmpresasGrupoPanel";
 import ContactosGrupoPanel from "@/components/ContactosGrupoPanel";
 import NotesSection from "@/components/NotesSection";
+import EntityTasksSection from "@/components/EntityTasksSection";
 import { fmtEur } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +43,7 @@ export default async function PortalGrupoFichaPage({ params }: { params: Promise
   if (empresas.length === 0 && disponibles.length === 0 && !linkedDirectly) notFound();
 
   const grupoNotes = await db.select().from(clientGroupNotes).where(eq(clientGroupNotes.group_id, id)).orderBy(clientGroupNotes.created_at);
+  const eTasks = await db.select().from(entityTasks).where(and(eq(entityTasks.entity_type, "grupo"), eq(entityTasks.entity_id, id))).orderBy(entityTasks.created_at);
 
   const empresaIds = empresas.map(e => e.id);
   const ops = await db
@@ -156,6 +158,11 @@ export default async function PortalGrupoFichaPage({ params }: { params: Promise
             grupoId={id}
             empresas={empresas}
             disponibles={disponibles}
+          />
+          <EntityTasksSection
+            initialTasks={eTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null, fecha_programada: t.fecha_programada?.toISOString() ?? null }))}
+            apiUrl={`/api/entity-tasks/grupo/${id}`}
+            assignees={[{ id: userId, nombre: (session?.user as any).nombre ?? "Colaborador" }]}
           />
           <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} currentUserId={userId} />
         </div>
