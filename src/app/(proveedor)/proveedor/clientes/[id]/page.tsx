@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { clients, contacts, operations, suppliers, clientNotes, customFields, customFieldValues, clientDocuments, operationDocuments, avalDocuments, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries, entityTasks } from "@/db/schema";
+import { clients, contacts, operations, suppliers, collaborators, clientNotes, customFields, customFieldValues, clientDocuments, operationDocuments, avalDocuments, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries, entityTasks } from "@/db/schema";
 import ClienteEditFormPortal from "./ClienteEditFormPortal";
 import NuevoContactoForm from "./NuevoContactoForm";
 import NotesSection from "@/components/NotesSection";
@@ -99,6 +99,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
   const clienteCustomValues = await db.select().from(customFieldValues).where(eq(customFieldValues.entity_id, id));
   const notes = await db.select().from(clientNotes).where(eq(clientNotes.client_id, id)).orderBy(clientNotes.created_at);
   const eTasks = await db.select().from(entityTasks).where(and(eq(entityTasks.entity_type, "cliente"), eq(entityTasks.entity_id, id))).orderBy(entityTasks.created_at);
+  const adminsForTasks = await db.select({ id: collaborators.id, nombre: collaborators.nombre }).from(collaborators).where(eq(collaborators.role, "admin"));
   const docs = await db.select().from(clientDocuments).where(eq(clientDocuments.client_id, id)).orderBy(clientDocuments.created_at);
 
   const opIds = ops.map(o => o.id);
@@ -398,7 +399,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
           <EntityTasksSection
             initialTasks={eTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null, fecha_programada: t.fecha_programada?.toISOString() ?? null }))}
             apiUrl={`/api/entity-tasks/cliente/${id}`}
-            assignees={[{ id: userId, nombre: supplierInfo?.nombre ?? "Proveedor" }]}
+            assignees={[{ id: userId, nombre: supplierInfo?.nombre ?? "Proveedor" }, ...adminsForTasks]}
           />
 
           <NotesSection

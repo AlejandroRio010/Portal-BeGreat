@@ -71,6 +71,7 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
     .where(eq(collaboratorNotes.collaborator_id, id))
     .orderBy(collaboratorNotes.created_at);
   const eTasks = await db.select().from(entityTasks).where(and(eq(entityTasks.entity_type, "colaborador"), eq(entityTasks.entity_id, id))).orderBy(entityTasks.created_at);
+  const adminsForTasks = await db.select({ id: collaborators.id, nombre: collaborators.nombre }).from(collaborators).where(eq(collaborators.role, "admin"));
 
   // KPIs
   const totalOps = ops.length;
@@ -312,7 +313,7 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
         <EntityTasksSection
           initialTasks={eTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null, fecha_programada: t.fecha_programada?.toISOString() ?? null }))}
           apiUrl={`/api/entity-tasks/colaborador/${id}`}
-          assignees={[{ id: adminUserId, nombre: session?.user?.name ?? "Admin" }]}
+          assignees={[...adminsForTasks, { id: colab.id, nombre: colab.nombre }]}
         />
       </div>
 

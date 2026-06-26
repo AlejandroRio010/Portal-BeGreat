@@ -71,6 +71,7 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
 
   const notes = await db.select().from(supplierNotes).where(eq(supplierNotes.supplier_id, id)).orderBy(supplierNotes.created_at);
   const eTasks = await db.select().from(entityTasks).where(and(eq(entityTasks.entity_type, "proveedor"), eq(entityTasks.entity_id, id))).orderBy(entityTasks.created_at);
+  const adminsForTasks = await db.select({ id: collaborators.id, nombre: collaborators.nombre }).from(collaborators).where(eq(collaborators.role, "admin"));
 
   const docs = await db.select().from(supplierDocuments).where(eq(supplierDocuments.supplier_id, id)).orderBy(supplierDocuments.created_at);
 
@@ -257,7 +258,7 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
           <EntityTasksSection
             initialTasks={eTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null, fecha_programada: t.fecha_programada?.toISOString() ?? null }))}
             apiUrl={`/api/entity-tasks/proveedor/${id}`}
-            assignees={[{ id: adminUserId, nombre: session?.user?.name ?? "Admin" }]}
+            assignees={adminsForTasks}
           />
 
           <NotesSection

@@ -32,8 +32,18 @@ export default async function AdminGrupoFichaPage({ params }: { params: Promise<
   const contactosGrupo = await db.select().from(clientGroupContacts).where(eq(clientGroupContacts.group_id, id)).orderBy(clientGroupContacts.created_at);
 
   const allColabs = await db.select({ id: collaborators.id, nombre: collaborators.nombre }).from(collaborators).where(eq(collaborators.activo, true)).orderBy(collaborators.nombre);
+  const admins = await db.select({ id: collaborators.id, nombre: collaborators.nombre }).from(collaborators).where(eq(collaborators.role, "admin"));
   const grupoNotes = await db.select().from(clientGroupNotes).where(eq(clientGroupNotes.group_id, id)).orderBy(clientGroupNotes.created_at);
   const eTasks = await db.select().from(entityTasks).where(and(eq(entityTasks.entity_type, "grupo"), eq(entityTasks.entity_id, id))).orderBy(entityTasks.created_at);
+
+  const taskAssignees: { id: string; nombre: string }[] = [];
+  if (grupo.collaborator_id) {
+    const linked = allColabs.find(c => c.id === grupo.collaborator_id);
+    if (linked) taskAssignees.push(linked);
+  }
+  for (const a of admins) {
+    if (!taskAssignees.some(t => t.id === a.id)) taskAssignees.push(a);
+  }
 
   // Métricas + listado completo de ops
   const empresaIds = empresas.map(e => e.id);
@@ -131,7 +141,7 @@ export default async function AdminGrupoFichaPage({ params }: { params: Promise<
           <EntityTasksSection
             initialTasks={eTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null, fecha_programada: t.fecha_programada?.toISOString() ?? null }))}
             apiUrl={`/api/entity-tasks/grupo/${id}`}
-            assignees={allColabs.map(c => ({ id: c.id, nombre: c.nombre }))}
+            assignees={taskAssignees}
           />
           <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} isAdmin canPin />
         </div>

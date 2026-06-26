@@ -133,6 +133,11 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
     .from(collaborators)
     .where(sql`${collaborators.id} IN (SELECT DISTINCT ${operations.collaborator_id} FROM ${operations} WHERE ${operations.client_id} = ${id})`)
     .orderBy(collaborators.nombre);
+  const adminsForTasks = await db.select({ id: collaborators.id, nombre: collaborators.nombre }).from(collaborators).where(eq(collaborators.role, "admin"));
+  const clientTaskAssignees: { id: string; nombre: string }[] = [...linkedColabs];
+  for (const a of adminsForTasks) {
+    if (!clientTaskAssignees.some(t => t.id === a.id)) clientTaskAssignees.push(a);
+  }
 
   const inicial = client.nombre.charAt(0).toUpperCase();
 
@@ -402,7 +407,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
           <EntityTasksSection
             initialTasks={eTasks.map(t => ({ ...t, created_at: t.created_at.toISOString(), completed_at: t.completed_at?.toISOString() ?? null, fecha_programada: t.fecha_programada?.toISOString() ?? null }))}
             apiUrl={`/api/entity-tasks/cliente/${id}`}
-            assignees={[{ id: adminUserId, nombre: session?.user?.name ?? "Admin" }, ...linkedColabs]}
+            assignees={clientTaskAssignees}
           />
 
           <NotesSection
