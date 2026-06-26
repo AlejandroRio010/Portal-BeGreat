@@ -93,6 +93,7 @@ export default async function AdminEntityContactoPage({ params }: { params: Prom
             currentUserId={userId}
             isAdmin={true}
             placeholder="Añade una nota sobre este contacto..."
+            canPin
           />
         </div>
       </div>

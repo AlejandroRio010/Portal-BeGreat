@@ -161,6 +161,7 @@ export default async function ContactoDetallePage({ params }: { params: Promise<
             apiUrl={`/api/contacts/${contactoId}/notes`}
             currentUserId={userId}
             placeholder="Añade una nota sobre este contacto..."
+            canPin
           />
         </div>
       </div>

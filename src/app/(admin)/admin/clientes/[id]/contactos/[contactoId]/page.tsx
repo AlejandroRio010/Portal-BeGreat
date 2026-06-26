@@ -144,6 +144,7 @@ export default async function AdminContactoDetallePage({ params }: { params: Pro
             currentUserId={userId}
             isAdmin={true}
             placeholder="Añade una nota sobre este contacto..."
+            canPin
           />
         </div>
       </div>

@@ -95,6 +95,7 @@ export default async function ContactoFichaPage({
             notes={notes}
             apiUrl={`/api/admin/entidades/oficinas/contactos/${contactoId}/notes`}
             placeholder="Añade una nota sobre esta persona de contacto..."
+            canPin
           />
         </div>
       </div>

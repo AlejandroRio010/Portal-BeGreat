@@ -30,16 +30,20 @@ export async function PATCH(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const userId = ((session.user as any).collaboratorId ?? session.user!.id) as string;
-  const { noteId, texto } = await req.json();
+  const { noteId, texto, pinned } = await req.json();
   if (!noteId) return NextResponse.json({ error: "Datos requeridos" }, { status: 400 });
 
   const [note] = await db.select().from(clientGroupNotes).where(eq(clientGroupNotes.id, noteId)).limit(1);
   if (!note) return NextResponse.json({ error: "Nota no encontrada" }, { status: 404 });
-  if (note.author_id !== userId) return NextResponse.json({ error: "Solo puedes editar tus propias notas" }, { status: 403 });
 
+  const updateData: Record<string, unknown> = {};
   if (typeof texto === "string" && texto.trim()) {
-    await db.update(clientGroupNotes).set({ texto: texto.trim() }).where(eq(clientGroupNotes.id, noteId));
+    if (note.author_id !== userId) return NextResponse.json({ error: "Solo puedes editar tus propias notas" }, { status: 403 });
+    updateData.texto = texto.trim();
   }
+  if (typeof pinned === "boolean") updateData.pinned = pinned;
+  if (Object.keys(updateData).length === 0) return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
 
+  await db.update(clientGroupNotes).set(updateData).where(eq(clientGroupNotes.id, noteId));
   return NextResponse.json({ ok: true });
 }

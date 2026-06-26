@@ -39,6 +39,29 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   return NextResponse.json(note, { status: 201 });
 }
 
+export async function PATCH(req: NextRequest) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { noteId, texto, pinned } = await req.json();
+  if (!noteId) return NextResponse.json({ error: "Datos requeridos" }, { status: 400 });
+
+  const [note] = await db.select().from(contactNotes).where(eq(contactNotes.id, noteId)).limit(1);
+  if (!note) return NextResponse.json({ error: "Nota no encontrada" }, { status: 404 });
+
+  const updateData: Record<string, unknown> = {};
+  if (typeof texto === "string" && texto.trim()) {
+    const userId = (session.user as any).role === "admin" ? (session.user!.id as string) : ((session.user as any).collaboratorId as string);
+    if (note.author_id !== userId) return NextResponse.json({ error: "Solo puedes editar tus propias notas" }, { status: 403 });
+    updateData.texto = texto.trim();
+  }
+  if (typeof pinned === "boolean") updateData.pinned = pinned;
+  if (Object.keys(updateData).length === 0) return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
+
+  await db.update(contactNotes).set(updateData).where(eq(contactNotes.id, noteId));
+  return NextResponse.json({ ok: true });
+}
+
 export async function DELETE(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

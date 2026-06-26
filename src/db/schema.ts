@@ -125,6 +125,7 @@ export const clientGroupNotes = pgTable("client_group_notes", {
   author_id: uuid("author_id").notNull().references(() => collaborators.id),
   author_name: text("author_name").notNull(),
   texto: text("texto").notNull(),
+  pinned: boolean("pinned").notNull().default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -156,6 +157,7 @@ export const clientNotes = pgTable("client_notes", {
   author_id: uuid("author_id").notNull().references(() => collaborators.id),
   author_name: text("author_name").notNull(),
   texto: text("texto").notNull(),
+  pinned: boolean("pinned").notNull().default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -177,6 +179,7 @@ export const contactNotes = pgTable("contact_notes", {
   author_id: uuid("author_id").notNull().references(() => collaborators.id),
   author_name: text("author_name").notNull(),
   texto: text("texto").notNull(),
+  pinned: boolean("pinned").notNull().default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -284,6 +287,7 @@ export const entityNotes = pgTable("entity_notes", {
   author_id: uuid("author_id").notNull().references(() => collaborators.id),
   author_name: text("author_name").notNull(),
   texto: text("texto").notNull(),
+  pinned: boolean("pinned").notNull().default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -328,6 +332,7 @@ export const entityContactNotes = pgTable("entity_contact_notes", {
   author_id: uuid("author_id").notNull().references(() => collaborators.id),
   author_name: text("author_name").notNull(),
   texto: text("texto").notNull(),
+  pinned: boolean("pinned").notNull().default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -353,6 +358,7 @@ export const officeContactNotes = pgTable("office_contact_notes", {
   author_id: uuid("author_id").notNull().references(() => collaborators.id),
   author_name: text("author_name").notNull(),
   texto: text("texto").notNull(),
+  pinned: boolean("pinned").notNull().default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -363,6 +369,7 @@ export const supplierNotes = pgTable("supplier_notes", {
   author_id: uuid("author_id").notNull(),
   author_name: text("author_name").notNull(),
   texto: text("texto").notNull(),
+  pinned: boolean("pinned").notNull().default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -373,6 +380,7 @@ export const collaboratorNotes = pgTable("collaborator_notes", {
   author_id: uuid("author_id").notNull().references(() => collaborators.id),
   author_name: text("author_name").notNull(),
   texto: text("texto").notNull(),
+  pinned: boolean("pinned").notNull().default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -460,6 +468,7 @@ export const officeNotes = pgTable("office_notes", {
     .references(() => collaborators.id),
   author_name: text("author_name").notNull(),
   texto: text("texto").notNull(),
+  pinned: boolean("pinned").notNull().default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 

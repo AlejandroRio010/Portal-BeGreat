@@ -322,6 +322,7 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
           apiUrl={`/api/admin/colaboradores/${colab.id}/notes`}
           placeholder="Añade una nota interna sobre este colaborador..."
           isAdmin={true}
+          canPin
         />
       </div>
     </div>

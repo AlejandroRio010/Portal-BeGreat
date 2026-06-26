@@ -101,6 +101,7 @@ export default async function PortalContactoOficinaPage({
             apiUrl={`/api/admin/entidades/oficinas/contactos/${contactoId}/notes`}
             currentUserId={userId}
             placeholder="Añade una nota sobre esta persona de contacto..."
+            canPin
           />
         </div>
       </div>

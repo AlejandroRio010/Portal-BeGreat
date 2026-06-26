@@ -97,6 +97,7 @@ export default async function PortalContactoEntidadPage({ params }: { params: Pr
             apiUrl={`/api/entity-contacts/${contactoId}/notes`}
             currentUserId={userId}
             placeholder="Añade una nota sobre este contacto..."
+            canPin
           />
         </div>
       </div>

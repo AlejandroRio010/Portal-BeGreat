@@ -164,7 +164,7 @@ export default async function PortalGrupoFichaPage({ params }: { params: Promise
             apiUrl={`/api/entity-tasks/grupo/${id}`}
             assignees={[{ id: userId, nombre: (session?.user as any).nombre ?? "Colaborador" }]}
           />
-          <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} currentUserId={userId} />
+          <NotesSection notes={grupoNotes} apiUrl={`/api/admin/grupos/${id}/notes`} currentUserId={userId} canPin />
         </div>
       </div>
 

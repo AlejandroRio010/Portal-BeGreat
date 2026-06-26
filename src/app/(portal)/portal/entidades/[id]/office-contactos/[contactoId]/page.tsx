@@ -116,6 +116,7 @@ export default async function PortalOfficeContactoPage({ params }: { params: Pro
             apiUrl={`/api/office-contacts/${contactoId}/notes`}
             currentUserId={userId}
             placeholder="Añade una nota sobre este contacto..."
+            canPin
           />
         </div>
       </div>

@@ -266,6 +266,7 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
             placeholder="Añade una nota sobre este proveedor..."
             isAdmin={true}
             currentUserId={adminUserId}
+            canPin
           />
         </div>
       </div>

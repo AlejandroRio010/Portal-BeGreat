@@ -135,6 +135,7 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
               apiUrl={`/api/portal/entidades/${id}/notes`}
               currentUserId={userId}
               readOnly={nivel === 2}
+              canPin={nivel !== 2}
             />
           )}
 

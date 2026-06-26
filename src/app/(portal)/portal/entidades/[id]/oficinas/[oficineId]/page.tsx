@@ -121,7 +121,7 @@ export default async function PortalOficinaFichaPage({ params }: { params: Promi
         </div>
 
         <div className="col-span-2">
-          <NotesSection notes={notes} apiUrl={`/api/portal/entidades/oficinas/${oficineId}/notes`} currentUserId={userId} />
+          <NotesSection notes={notes} apiUrl={`/api/portal/entidades/oficinas/${oficineId}/notes`} currentUserId={userId} canPin />
         </div>
       </div>
     </div>

@@ -128,6 +128,7 @@ export default async function EntidadFichaPage({ params }: { params: Promise<{ i
             apiUrl={`/api/admin/entidades/${id}/notes`}
             placeholder="Añade una nota sobre esta entidad financiera..."
             isAdmin={true}
+            canPin
           />
 
           {/* Oficinas */}
