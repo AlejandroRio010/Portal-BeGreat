@@ -28,7 +28,9 @@ interface Props {
   initialAvalContactId?: string | null;
   initialAvalClientId?: string | null;
   initialModalidadRenting?: string | null;
-  initialCuotaMensual?: string | null;
+  initialCuotaAproxMin?: string | null;
+  initialCuotaAproxMax?: string | null;
+  initialCuotaDefinitiva?: string | null;
   initialFechaContrato?: string | null;
   initialFechaFinContrato?: string | null;
   initialCreatedAt?: string | null;
@@ -44,7 +46,7 @@ export default function OpEditForm({
   initialAvalNombre, initialAvalEmail, initialAvalTelefono,
   initialAvalPersonaContacto, initialAvalDni, initialAvalEmpresa,
   initialAvalContactId, initialAvalClientId,
-  initialModalidadRenting, initialCuotaMensual,
+  initialModalidadRenting, initialCuotaAproxMin, initialCuotaAproxMax, initialCuotaDefinitiva,
   initialFechaContrato, initialFechaFinContrato,
   initialCreatedAt, initialFechaCierre,
 }: Props) {
@@ -62,7 +64,9 @@ export default function OpEditForm({
     equipo_tipo: initialEquipoTipo ?? "",
     necesidad: initialNecesidad ?? "",
     modalidad_renting: initialModalidadRenting ?? "",
-    cuota_mensual: initialCuotaMensual ?? "",
+    cuota_aproximada_min: initialCuotaAproxMin ?? "",
+    cuota_aproximada_max: initialCuotaAproxMax ?? "",
+    cuota_definitiva: initialCuotaDefinitiva ?? "",
   });
   const [esRenov, setEsRenov] = useState(!!initialEsRenovacion);
   const [opOriginal, setOpOriginal] = useState(initialOpOriginal ?? null);
@@ -201,7 +205,9 @@ export default function OpEditForm({
           equipo_tipo: form.equipo_tipo || null,
           necesidad: form.necesidad || null,
           modalidad_renting: form.modalidad_renting || null,
-          cuota_mensual: form.cuota_mensual || null,
+          cuota_aproximada_min: form.cuota_aproximada_min || null,
+          cuota_aproximada_max: form.cuota_aproximada_max || null,
+          cuota_definitiva: form.cuota_definitiva || null,
           fecha_contrato: fechaContrato || null,
           fecha_fin_contrato: fechaFinContrato || null,
           created_at: fechaAlta || null,
@@ -278,13 +284,16 @@ export default function OpEditForm({
                   className={inputCls} placeholder="24" />
               </div>
               <div>
-                <label className={labelCls}>Cuota mensual (€)</label>
-                <input type="text" inputMode="decimal"
-                  value={focusedField === "cuota_mensual" ? form.cuota_mensual : fmtEuroInput(form.cuota_mensual)}
-                  onFocus={() => setFocusedField("cuota_mensual")}
-                  onBlur={() => setFocusedField(null)}
-                  onChange={e => { const v = focusedField ? e.target.value : rawFromFmt(e.target.value); set("cuota_mensual", v); }}
-                  className={inputCls} placeholder="0,00 €" />
+                <label className={labelCls}>Cuota aproximada (rango €/mes)</label>
+                <div className="flex gap-2">
+                  <input type="text" inputMode="decimal" value={form.cuota_aproximada_min} onChange={e => set("cuota_aproximada_min", e.target.value)} placeholder="Mín" className={inputCls} />
+                  <span className="self-center text-gray-400">–</span>
+                  <input type="text" inputMode="decimal" value={form.cuota_aproximada_max} onChange={e => set("cuota_aproximada_max", e.target.value)} placeholder="Máx" className={inputCls} />
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Cuota definitiva (€/mes)</label>
+                <input type="text" inputMode="decimal" value={form.cuota_definitiva} onChange={e => set("cuota_definitiva", e.target.value)} placeholder="Cuota definitiva cuando se confirme" className={inputCls} />
               </div>
               <div>
                 <label className={labelCls}>Lugar de entrega</label>

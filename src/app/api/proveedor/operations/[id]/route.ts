@@ -54,6 +54,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (lugar_entrega !== undefined) data.lugar_entrega = lugar_entrega || null;
   if (equipo_tipo !== undefined) data.equipo_tipo = equipo_tipo || null;
   if (body.cuota_mensual !== undefined) data.cuota_mensual = body.cuota_mensual || null;
+  if (body.cuota_aproximada_min !== undefined) data.cuota_aproximada_min = body.cuota_aproximada_min || null;
+  if (body.cuota_aproximada_max !== undefined) data.cuota_aproximada_max = body.cuota_aproximada_max || null;
+  if (body.cuota_definitiva !== undefined) data.cuota_definitiva = body.cuota_definitiva || null;
   if (body.fecha_contrato !== undefined) data.fecha_contrato = body.fecha_contrato ? new Date(body.fecha_contrato) : null;
   if (body.fecha_fin_contrato !== undefined) data.fecha_fin_contrato = body.fecha_fin_contrato ? new Date(body.fecha_fin_contrato) : null;
   if (body.created_at !== undefined) data.created_at = new Date(body.created_at);

@@ -77,6 +77,9 @@ interface Props {
   initialAvalContactId?: string | null;
   initialAvalClientId?: string | null;
   initialModalidadRenting?: string | null;
+  initialCuotaAproxMin?: string | null;
+  initialCuotaAproxMax?: string | null;
+  initialCuotaDefinitiva?: string | null;
   initialImporteFacturadoBegreat?: string | null;
   initialImporteFacturadoVisible?: boolean;
   initialEntidadDestino?: string | null;
@@ -138,6 +141,9 @@ export default function AdminOpForm({
   initialAvalContactId,
   initialAvalClientId,
   initialModalidadRenting,
+  initialCuotaAproxMin,
+  initialCuotaAproxMax,
+  initialCuotaDefinitiva,
   initialImporteFacturadoBegreat,
   initialImporteFacturadoVisible,
   initialEntidadDestino,
@@ -223,6 +229,9 @@ export default function AdminOpForm({
   const [equipoTipo, setEquipoTipo] = useState(initialEquipoTipo ?? "");
   const [necesidad, setNecesidad] = useState(initialNecesidad ?? "");
   const [modalidadRenting, setModalidadRenting] = useState(initialModalidadRenting ?? "");
+  const [cuotaAproxMin, setCuotaAproxMin] = useState(initialCuotaAproxMin ?? "");
+  const [cuotaAproxMax, setCuotaAproxMax] = useState(initialCuotaAproxMax ?? "");
+  const [cuotaDefinitiva, setCuotaDefinitiva] = useState(initialCuotaDefinitiva ?? "");
   const [importeFacturadoBegreat, setImporteFacturadoBegreat] = useState(initialImporteFacturadoBegreat ?? "");
   const [importeFacturadoVisible, setImporteFacturadoVisible] = useState(initialImporteFacturadoVisible ?? false);
   const [entidadDestino, setEntidadDestino] = useState(initialEntidadDestino ?? "");
@@ -395,6 +404,8 @@ export default function AdminOpForm({
         created_at: fechaAlta || null, fecha_cierre: fechaCierre || null,
         lugar_entrega: lugarEntrega || null, equipo_tipo: equipoTipo || null,
         necesidad: necesidad || null, modalidad_renting: modalidadRenting || null,
+        cuota_aproximada_min: cuotaAproxMin || null, cuota_aproximada_max: cuotaAproxMax || null,
+        cuota_definitiva: cuotaDefinitiva || null,
         tiene_aval: tieneAval,
         aval_tipo: tieneAval ? avalTipo : null,
         aval_nombre: tieneAval ? (avalNombre || null) : null,
@@ -597,6 +608,21 @@ export default function AdminOpForm({
               <div>
                 <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Plazo (meses)</label>
                 <input type="number" value={plazoMeses} onChange={(e) => setPlazoMeses(e.target.value)} placeholder="24"
+                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Cuota aproximada (rango €/mes)</label>
+                <div className="flex items-center gap-2">
+                  <input type="text" value={cuotaAproxMin} onChange={(e) => setCuotaAproxMin(e.target.value)} placeholder="Mín"
+                    className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                  <span className="text-gray-400 text-sm">–</span>
+                  <input type="text" value={cuotaAproxMax} onChange={(e) => setCuotaAproxMax(e.target.value)} placeholder="Máx"
+                    className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                </div>
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Cuota definitiva (€/mes)</label>
+                <input type="text" value={cuotaDefinitiva} onChange={(e) => setCuotaDefinitiva(e.target.value)} placeholder="Cuota definitiva cuando se confirme"
                   className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
               </div>
               <div>

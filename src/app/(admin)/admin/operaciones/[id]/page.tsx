@@ -60,6 +60,9 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       equipo_tipo: operations.equipo_tipo,
       plazo_meses: operations.plazo_meses,
       cuota_mensual: operations.cuota_mensual,
+      cuota_aproximada_min: operations.cuota_aproximada_min,
+      cuota_aproximada_max: operations.cuota_aproximada_max,
+      cuota_definitiva: operations.cuota_definitiva,
       fecha_contrato: operations.fecha_contrato,
       fecha_fin_contrato: operations.fecha_fin_contrato,
       notas_admin: operations.notas_admin,
@@ -397,7 +400,12 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
                   campos.push({ label: "Importe facturado por BeGreat", value: fmtEuro(op.importe_facturado_begreat) });
                 }
                 campos.push({ label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null });
-                campos.push({ label: "Cuota mensual", value: cuota });
+                const cuotaAprox = op.cuota_aproximada_min && op.cuota_aproximada_max
+                  ? `${fmtNum(Number(op.cuota_aproximada_min))} – ${fmtNum(Number(op.cuota_aproximada_max))} €/mes`
+                  : op.cuota_aproximada_min ? `${fmtNum(Number(op.cuota_aproximada_min))} €/mes`
+                  : null;
+                campos.push({ label: "Cuota aproximada", value: cuotaAprox });
+                campos.push({ label: "Cuota definitiva", value: op.cuota_definitiva ? `${fmtNum(Number(op.cuota_definitiva))} €/mes` : null });
                 campos.push({ label: "Fecha inicio contrato", value: fmtFecha(op.fecha_contrato) });
                 campos.push({ label: "Fecha fin contrato", value: fmtFecha(op.fecha_fin_contrato) });
                 campos.push({ label: "Lugar de instalación", value: op.lugar_entrega });
@@ -564,6 +572,9 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialAvalContactId={op.aval_contact_id ?? null}
             initialAvalClientId={op.aval_client_id ?? null}
             initialModalidadRenting={op.modalidad_renting ?? null}
+            initialCuotaAproxMin={op.cuota_aproximada_min ?? null}
+            initialCuotaAproxMax={op.cuota_aproximada_max ?? null}
+            initialCuotaDefinitiva={op.cuota_definitiva ?? null}
             initialImporteFacturadoBegreat={op.importe_facturado_begreat ?? null}
             initialImporteFacturadoVisible={op.importe_facturado_visible ?? false}
             initialEntidadDestino={op.entidad_destino ?? null}

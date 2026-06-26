@@ -49,6 +49,9 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
       plazo_meses: operations.plazo_meses,
       equipo_tipo: operations.equipo_tipo,
       cuota_mensual: operations.cuota_mensual,
+      cuota_aproximada_min: operations.cuota_aproximada_min,
+      cuota_aproximada_max: operations.cuota_aproximada_max,
+      cuota_definitiva: operations.cuota_definitiva,
       fecha_contrato: operations.fecha_contrato,
       fecha_fin_contrato: operations.fecha_fin_contrato,
       motivo_denegacion: operations.motivo_denegacion,
@@ -134,7 +137,10 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
 
   const fmtFecha = (d: Date | string | null) => d ? new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }) : null;
   const fmtEuro = (v: string | null) => { const r = fmtEur(v); return r === "-" ? null : r; };
-  const cuota = op.cuota_mensual ? `${fmtNum(Number(op.cuota_mensual))} €/mes` : (op.importe && op.plazo_meses ? `${fmtNum(Number(op.importe) / op.plazo_meses)} €/mes` : null);
+  const cuotaAprox = op.cuota_aproximada_min && op.cuota_aproximada_max
+    ? `${fmtNum(Number(op.cuota_aproximada_min))} – ${fmtNum(Number(op.cuota_aproximada_max))} €/mes`
+    : op.cuota_aproximada_min ? `${fmtNum(Number(op.cuota_aproximada_min))} €/mes`
+    : null;
 
   type Campo = { label: string; value: string | null; href?: string };
   const campos: Campo[] = [];
@@ -145,7 +151,8 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
   campos.push({ label: "Tipo de equipo", value: op.equipo_tipo ? op.equipo_tipo : null });
   campos.push({ label: "Importe venta (sin IVA)", value: fmtEuro(op.importe) });
   campos.push({ label: "Plazo", value: op.plazo_meses ? `${op.plazo_meses} meses` : null });
-  campos.push({ label: "Cuota mensual", value: cuota });
+  campos.push({ label: "Cuota aproximada", value: cuotaAprox });
+  campos.push({ label: "Cuota definitiva", value: op.cuota_definitiva ? `${fmtNum(Number(op.cuota_definitiva))} €/mes` : null });
   campos.push({ label: "Fecha inicio contrato", value: fmtFecha(op.fecha_contrato) });
   campos.push({ label: "Fecha fin contrato", value: fmtFecha(op.fecha_fin_contrato) });
   campos.push({ label: "Lugar de instalación", value: op.lugar_entrega });
@@ -334,7 +341,9 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
             initialAvalEmpresa={op.aval_empresa ?? null}
             initialAvalContactId={op.aval_contact_id ?? null}
             initialAvalClientId={op.aval_client_id ?? null}
-            initialCuotaMensual={op.cuota_mensual ?? null}
+            initialCuotaAproxMin={op.cuota_aproximada_min ?? null}
+            initialCuotaAproxMax={op.cuota_aproximada_max ?? null}
+            initialCuotaDefinitiva={op.cuota_definitiva ?? null}
             initialFechaContrato={op.fecha_contrato ? op.fecha_contrato.toISOString().split("T")[0] : null}
             initialFechaFinContrato={op.fecha_fin_contrato ? op.fecha_fin_contrato.toISOString().split("T")[0] : null}
             initialCreatedAt={new Date(op.created_at).toISOString().split("T")[0]}
