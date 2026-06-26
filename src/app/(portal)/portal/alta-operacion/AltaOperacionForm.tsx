@@ -272,9 +272,12 @@ export default function AltaOperacionForm({ nivelEntidades }: Props) {
     const op = await res.json();
     if (proformaFile && op?.id) {
       try {
+        const displayName = (clienteNombreComercial?.trim() || clienteNombre.trim()).replace(/[<>:"/\\|?*]/g, "_").replace(/\s+/g, " ").trim();
+        const letter = displayName.charAt(0).toUpperCase();
+        const opCode = (op.codigo ?? op.id).replace(/[<>:"/\\|?*]/g, "_").replace(/\s+/g, " ").trim();
         const fd = new FormData();
         fd.append("file", proformaFile);
-        fd.append("folder", `Operaciones/${op.id}/Proformas`);
+        fd.append("folder", `${letter}/${displayName}/${opCode}`);
         const upRes = await fetch("/api/upload", { method: "POST", body: fd });
         if (upRes.ok) {
           const { url, filename, size } = await upRes.json();
