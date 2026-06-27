@@ -13,11 +13,17 @@ import { fmtEur } from "@/lib/format";
 
 const FASES_FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
 
-const STATUS_BADGE: Record<string, { bg: string; text: string; border: string; label: string }> = {
-  pendiente_de_validar: { bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200",   label: "Pendiente" },
-  activa:               { bg: "bg-gray-100",    text: "text-gray-600",    border: "border-gray-200",    label: "En curso" },
-  archivada:            { bg: "bg-red-50",      text: "text-red-700",     border: "border-red-200",     label: "Archivada" },
-};
+const FASES_GANADAS = ["Honorarios pagados", "Transferencia realizada"];
+
+function opBadge(op: { status: string; fase: string | null }) {
+  if (FASES_GANADAS.includes(op.fase ?? ""))
+    return { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", label: "Ganada ✓" };
+  if (op.status === "archivada")
+    return { bg: "bg-red-50", text: "text-red-600", border: "border-red-200", label: "Denegada" };
+  if (op.status === "pendiente_de_validar")
+    return { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", label: "Pendiente" };
+  return { bg: "bg-gray-100", text: "text-gray-600", border: "border-gray-200", label: "En curso" };
+}
 
 function fmtDate(d: Date | null) {
   if (!d) return "—";
@@ -238,7 +244,7 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {ops.map((op) => {
-                  const badge = STATUS_BADGE[op.status] ?? STATUS_BADGE.activa;
+                  const badge = opBadge(op);
                   return (
                     <tr key={op.id} className="hover:bg-[#EEEBF3]/30 transition-colors">
                       <td className="px-5 py-3 text-sm text-gray-800 font-medium max-w-[180px] truncate">{op.nombre ?? "—"}</td>

@@ -11,14 +11,17 @@ function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
   return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(d));
 }
-const STATUS_BADGE: Record<string, string> = {
-  pendiente_de_validar: "bg-amber-50 text-amber-700 border border-amber-200",
-  activa: "bg-blue-50 text-blue-700 border border-blue-200",
-  archivada: "bg-gray-100 text-gray-500 border border-gray-200",
-};
-const STATUS_LABEL: Record<string, string> = {
-  pendiente_de_validar: "Pendiente", activa: "En curso", archivada: "Archivada",
-};
+const FASES_GANADAS = ["Honorarios pagados", "Transferencia realizada"];
+
+function opBadge(op: { status: string; fase: string | null }) {
+  if (FASES_GANADAS.includes(op.fase ?? ""))
+    return { bg: "bg-emerald-50 text-emerald-700 border border-emerald-200", label: "Ganada ✓" };
+  if (op.status === "archivada")
+    return { bg: "bg-red-50 text-red-600 border border-red-200", label: "Denegada" };
+  if (op.status === "pendiente_de_validar")
+    return { bg: "bg-amber-50 text-amber-700 border border-amber-200", label: "Pendiente" };
+  return { bg: "bg-blue-50 text-blue-700 border border-blue-200", label: "En curso" };
+}
 
 export default async function PortalProveedorFichaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -130,15 +133,18 @@ export default async function PortalProveedorFichaPage({ params }: { params: Pro
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {ops.map(op => (
+                {ops.map(op => {
+                  const badge = opBadge(op);
+                  return (
                   <tr key={op.id} className="hover:bg-[#EEEBF3]/30 transition-colors">
                     <td className="px-5 py-3 text-sm font-medium text-gray-800 max-w-[140px] truncate">{op.nombre ?? "—"}</td>
                     <td className="px-5 py-3 text-sm text-gray-500 max-w-[120px] truncate">{op.client_nombre ?? "—"}</td>
-                    <td className="px-5 py-3"><span className={`inline-block px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[op.status] ?? ""}`}>{STATUS_LABEL[op.status] ?? op.status}</span></td>
+                    <td className="px-5 py-3"><span className={`inline-block px-2 py-0.5 text-xs font-semibold ${badge.bg}`}>{badge.label}</span></td>
                     <td className="px-5 py-3 text-sm font-medium text-gray-700 whitespace-nowrap">{fmtEur(op.importe)}</td>
                     <td className="px-5 py-3"><Link href={`/portal/operaciones/${op.id}`} className="text-xs text-[#2E1A47] font-semibold hover:underline">Ver →</Link></td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           )}

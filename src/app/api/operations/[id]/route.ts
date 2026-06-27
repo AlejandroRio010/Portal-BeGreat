@@ -111,7 +111,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   // Resultado: marca ganada/denegada/en curso y fija la fecha de cierre
   if (resultado === "ganada") {
-    data.status = "activa";
+    data.status = "archivada";
     data.fase = pipeline_key === "renting" ? "Transferencia realizada" : "Honorarios pagados";
     data.fecha_cierre = new Date();
   } else if (resultado === "denegada") {

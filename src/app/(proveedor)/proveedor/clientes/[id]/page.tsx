@@ -298,13 +298,14 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {ops.map(op => {
-                    const badge = op.status === "archivada"
-                      ? FASES_APROBADAS.includes(op.fase)
-                        ? { bg: "bg-emerald-50 text-emerald-700 border border-emerald-200", label: "Ganada ✓" }
-                        : { bg: "bg-red-50 text-red-600 border border-red-200", label: "Denegada" }
-                      : op.status === "pendiente_de_validar"
-                        ? { bg: "bg-amber-50 text-amber-700 border border-amber-200", label: "Pendiente" }
-                        : { bg: "bg-blue-50 text-blue-700 border border-blue-200", label: "En curso" };
+                    const FASES_GANADAS = ["Honorarios pagados", "Transferencia realizada"];
+                    const badge = FASES_GANADAS.includes(op.fase)
+                      ? { bg: "bg-emerald-50 text-emerald-700 border border-emerald-200", label: "Ganada ✓" }
+                      : op.status === "archivada"
+                        ? { bg: "bg-red-50 text-red-600 border border-red-200", label: "Denegada" }
+                        : op.status === "pendiente_de_validar"
+                          ? { bg: "bg-amber-50 text-amber-700 border border-amber-200", label: "Pendiente" }
+                          : { bg: "bg-blue-50 text-blue-700 border border-blue-200", label: "En curso" };
                     return (
                       <tr key={op.id} className="hover:bg-[#EEEBF3]/30 transition-colors">
                         <td className="px-5 py-3 text-sm text-gray-800 font-medium max-w-[160px] truncate">{op.nombre ?? "—"}</td>

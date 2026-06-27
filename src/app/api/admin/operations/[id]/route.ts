@@ -207,7 +207,7 @@ export async function PATCH(
   }
 
   if (resultado === "ganada") {
-    updateData.status = "activa";
+    updateData.status = "archivada";
     updateData.fase = pipeline_key === "renting" ? "Transferencia realizada" : "Honorarios pagados";
     updateData.fecha_cierre = new Date();
   } else if (resultado === "denegada") {
