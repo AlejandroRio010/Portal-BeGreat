@@ -9,6 +9,10 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const role = (session.user as any).role;
+  if (role !== "admin" && role !== "colaborador")
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const userId = (session.user as any).collaboratorId as string;
   const body = await req.json();
 

@@ -8,6 +8,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id: contactId } = await params;
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if ((session.user as any).role === "proveedor") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const userId = (session.user as any).collaboratorId as string;
   const [colab] = await db.select({ nombre: collaborators.nombre }).from(collaborators).where(eq(collaborators.id, userId)).limit(1);
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 export async function PATCH(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if ((session.user as any).role === "proveedor") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { noteId, texto, pinned } = await req.json();
   if (!noteId) return NextResponse.json({ error: "Datos requeridos" }, { status: 400 });

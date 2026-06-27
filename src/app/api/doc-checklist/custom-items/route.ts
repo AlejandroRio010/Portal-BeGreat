@@ -54,6 +54,11 @@ export async function DELETE(req: NextRequest) {
   const { id } = await req.json();
   if (!id) return NextResponse.json({ error: "Falta id" }, { status: 400 });
 
+  const [item] = await db.select({ entity_type: docChecklistCustomItems.entity_type, entity_id: docChecklistCustomItems.entity_id }).from(docChecklistCustomItems).where(eq(docChecklistCustomItems.id, id)).limit(1);
+  if (!item) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+  if (!(await canAccessEntity(session, item.entity_type, item.entity_id)))
+    return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+
   await db.delete(docChecklistEntries).where(eq(docChecklistEntries.custom_item_id, id));
   await db.delete(docChecklistCustomItems).where(eq(docChecklistCustomItems.id, id));
 

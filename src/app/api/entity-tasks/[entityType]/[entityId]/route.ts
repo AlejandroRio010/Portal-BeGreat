@@ -48,6 +48,13 @@ export async function PATCH(req: NextRequest) {
   const { taskId, completada, fecha_programada } = await req.json();
   if (!taskId) return NextResponse.json({ error: "taskId requerido" }, { status: 400 });
 
+  const role = (session.user as any).role;
+  const userId = ((session.user as any).collaboratorId ?? (session.user as any).supplierId ?? session.user!.id) as string;
+  const [task] = await db.select({ created_by_id: entityTasks.created_by_id }).from(entityTasks).where(eq(entityTasks.id, taskId)).limit(1);
+  if (!task) return NextResponse.json({ error: "No encontrada" }, { status: 404 });
+  if (role !== "admin" && task.created_by_id !== userId)
+    return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+
   const update: Record<string, unknown> = {};
   if (typeof completada === "boolean") {
     update.completada = completada;
@@ -67,6 +74,13 @@ export async function DELETE(req: NextRequest) {
 
   const { taskId } = await req.json();
   if (!taskId) return NextResponse.json({ error: "taskId requerido" }, { status: 400 });
+
+  const role = (session.user as any).role;
+  const userId = ((session.user as any).collaboratorId ?? (session.user as any).supplierId ?? session.user!.id) as string;
+  const [task] = await db.select({ created_by_id: entityTasks.created_by_id }).from(entityTasks).where(eq(entityTasks.id, taskId)).limit(1);
+  if (!task) return NextResponse.json({ error: "No encontrada" }, { status: 404 });
+  if (role !== "admin" && task.created_by_id !== userId)
+    return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
 
   await db.delete(entityTasks).where(eq(entityTasks.id, taskId));
   return NextResponse.json({ ok: true });
