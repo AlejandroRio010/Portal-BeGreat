@@ -12,11 +12,6 @@ function fmtDate(d: Date | null | undefined) {
   if (!d) return "—";
   return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(d));
 }
-const STATUS_BADGE: Record<string, { bg: string; label: string }> = {
-  pendiente_de_validar: { bg: "bg-amber-50 text-amber-700 border border-amber-200", label: "Pendiente" },
-  activa:               { bg: "bg-blue-50 text-blue-700 border border-blue-200",   label: "En curso" },
-  archivada:            { bg: "bg-gray-100 text-gray-500 border border-gray-200",  label: "Archivada" },
-};
 
 export default async function PortalOficinaFichaPage({ params }: { params: Promise<{ id: string; oficineId: string }> }) {
   const { id: entityId, oficineId } = await params;

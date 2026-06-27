@@ -1,8 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { docChecklistEntries } from "@/db/schema";
+import { docChecklistEntries, clients, suppliers, operations } from "@/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
+
+async function canAccessEntity(session: any, entityType: string, entityId: string): Promise<boolean> {
+  const role = (session.user as any).role;
+  if (role === "admin") return true;
+  if (entityType === "cliente" || entityType === "avalista") {
+    const userId = (session.user as any).collaboratorId ?? (session.user as any).supplierId;
+    if ((session.user as any).collaboratorId) {
+      const [c] = await db.select({ id: clients.id }).from(clients).where(and(eq(clients.id, entityId), eq(clients.collaborator_id, userId))).limit(1);
+      return !!c;
+    }
+    if ((session.user as any).supplierId) {
+      const [op] = await db.select({ id: operations.id }).from(operations).where(and(eq(operations.client_id, entityId), eq(operations.supplier_id, userId))).limit(1);
+      return !!op;
+    }
+  }
+  if (entityType === "proveedor") {
+    if ((session.user as any).collaboratorId) {
+      const [s] = await db.select({ id: suppliers.id }).from(suppliers).where(and(eq(suppliers.id, entityId), eq(suppliers.collaborator_id, (session.user as any).collaboratorId))).limit(1);
+      return !!s;
+    }
+  }
+  return false;
+}
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -12,6 +35,9 @@ export async function POST(req: NextRequest) {
 
   if (!entity_type || !entity_id || (!template_id && !custom_item_id))
     return NextResponse.json({ error: "Faltan campos" }, { status: 400 });
+
+  if (!(await canAccessEntity(session, entity_type, entity_id)))
+    return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
 
   const conditions = [
     eq(docChecklistEntries.entity_type, entity_type),

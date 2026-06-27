@@ -20,11 +20,6 @@ function fmtDate(d: Date | null | undefined) {
   return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(d));
 }
 
-const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> = {
-  pendiente_de_validar: { bg: "bg-amber-50 text-amber-700 border border-amber-200", text: "", label: "Pendiente" },
-  activa:               { bg: "bg-blue-50 text-blue-700 border border-blue-200",   text: "", label: "En curso" },
-  archivada:            { bg: "bg-gray-100 text-gray-500 border border-gray-200",  text: "", label: "Archivada" },
-};
 
 export default async function AdminClienteFichaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
