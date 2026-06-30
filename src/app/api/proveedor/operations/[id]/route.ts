@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { operations, contacts, clients } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { sanitizeNumeric } from "@/lib/format";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -48,15 +49,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   // Limited editable fields for proveedor
-  if (importe !== undefined) data.importe = importe || null;
+  if (importe !== undefined) data.importe = sanitizeNumeric(importe);
   if (descripcion !== undefined) data.descripcion = descripcion || null;
   if (plazo_meses !== undefined) data.plazo_meses = plazo_meses ? Number(plazo_meses) : null;
   if (lugar_entrega !== undefined) data.lugar_entrega = lugar_entrega || null;
   if (equipo_tipo !== undefined) data.equipo_tipo = equipo_tipo || null;
-  if (body.cuota_mensual !== undefined) data.cuota_mensual = body.cuota_mensual || null;
-  if (body.cuota_aproximada_min !== undefined) data.cuota_aproximada_min = body.cuota_aproximada_min || null;
-  if (body.cuota_aproximada_max !== undefined) data.cuota_aproximada_max = body.cuota_aproximada_max || null;
-  if (body.cuota_definitiva !== undefined) data.cuota_definitiva = body.cuota_definitiva || null;
+  if (body.cuota_mensual !== undefined) data.cuota_mensual = sanitizeNumeric(body.cuota_mensual);
+  if (body.cuota_aproximada_min !== undefined) data.cuota_aproximada_min = sanitizeNumeric(body.cuota_aproximada_min);
+  if (body.cuota_aproximada_max !== undefined) data.cuota_aproximada_max = sanitizeNumeric(body.cuota_aproximada_max);
+  if (body.cuota_definitiva !== undefined) data.cuota_definitiva = sanitizeNumeric(body.cuota_definitiva);
   if (body.fecha_contrato !== undefined) data.fecha_contrato = body.fecha_contrato ? new Date(body.fecha_contrato) : null;
   if (body.fecha_fin_contrato !== undefined) data.fecha_fin_contrato = body.fecha_fin_contrato ? new Date(body.fecha_fin_contrato) : null;
   if (body.created_at !== undefined) data.created_at = new Date(body.created_at);

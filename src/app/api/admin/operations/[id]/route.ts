@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { operations, collaborators, contacts, clients, supplierUsers } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { sendOperationValidatedEmail, sendOperationDeniedEmail, sendOperationWonEmail, sendSupplierOperationDeniedEmail } from "@/lib/email";
-import { fmtEur, formatDocId } from "@/lib/format";
+import { fmtEur, formatDocId, sanitizeNumeric } from "@/lib/format";
 
 export async function PATCH(
   req: NextRequest,
@@ -98,19 +98,19 @@ export async function PATCH(
   if (fase !== undefined) updateData.fase = fase;
   if (status !== undefined) updateData.status = status;
   if (comision_colaborador !== undefined)
-    updateData.comision_colaborador = comision_colaborador === "" ? null : comision_colaborador;
+    updateData.comision_colaborador = sanitizeNumeric(comision_colaborador);
   if (comision_begreat !== undefined)
-    updateData.comision_begreat = comision_begreat === "" ? null : comision_begreat;
+    updateData.comision_begreat = sanitizeNumeric(comision_begreat);
   if (comision_colaborador_pct !== undefined)
-    updateData.comision_colaborador_pct = comision_colaborador_pct === "" ? null : comision_colaborador_pct;
+    updateData.comision_colaborador_pct = sanitizeNumeric(comision_colaborador_pct);
   if (comision_begreat_pct !== undefined)
-    updateData.comision_begreat_pct = comision_begreat_pct === "" ? null : comision_begreat_pct;
+    updateData.comision_begreat_pct = sanitizeNumeric(comision_begreat_pct);
   if (comision_origenes !== undefined)
     updateData.comision_origenes = comision_origenes;
   if (body.colaboradores !== undefined)
     updateData.colaboradores_comision = body.colaboradores;
   if (body.margen_pct !== undefined)
-    updateData.margen_pct = body.margen_pct === "" ? null : body.margen_pct;
+    updateData.margen_pct = sanitizeNumeric(body.margen_pct);
   if (factura_destinatario !== undefined)
     updateData.factura_destinatario = factura_destinatario || null;
   if (entidad_financiera !== undefined) {
@@ -137,7 +137,7 @@ export async function PATCH(
   if (es_renovacion !== undefined) updateData.es_renovacion = es_renovacion === true;
   if (nombre !== undefined) updateData.nombre = nombre || null;
   if (descripcion !== undefined) updateData.descripcion = descripcion || null;
-  if (importe !== undefined) updateData.importe = importe === "" ? null : importe;
+  if (importe !== undefined) updateData.importe = sanitizeNumeric(importe);
   if (producto !== undefined) updateData.producto = producto || null;
   if (plazo_meses !== undefined) updateData.plazo_meses = plazo_meses === "" ? null : plazo_meses ? Number(plazo_meses) : null;
   if (lugar_entrega !== undefined) updateData.lugar_entrega = lugar_entrega || null;
@@ -151,7 +151,7 @@ export async function PATCH(
   if (modalidad_renting !== undefined) updateData.modalidad_renting = modalidad_renting || null;
   if (entidad_destino !== undefined) updateData.entidad_destino = entidad_destino || null;
   if (typeof entidad_visible === "boolean") updateData.entidad_visible = entidad_visible;
-  if (importe_facturado_begreat !== undefined) updateData.importe_facturado_begreat = importe_facturado_begreat || null;
+  if (importe_facturado_begreat !== undefined) updateData.importe_facturado_begreat = sanitizeNumeric(importe_facturado_begreat);
   if (typeof importe_facturado_visible === "boolean") updateData.importe_facturado_visible = importe_facturado_visible;
   if (collaborator_id !== undefined) updateData.collaborator_id = collaborator_id || null;
   if (supplier_id !== undefined) updateData.supplier_id = supplier_id || null;

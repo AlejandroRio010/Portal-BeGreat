@@ -61,6 +61,16 @@ export function rawFromFmt(v: string): string {
   return clean;
 }
 
+/** Sanitiza valor numérico para insertar en DB: "41.569,55" → "41569.55" */
+export function sanitizeNumeric(v: string | null | undefined): string | null {
+  if (!v) return null;
+  let clean = v.replace(/[€%\s]/g, "");
+  if (clean.includes(".") && clean.includes(",")) clean = clean.replace(/\./g, "");
+  clean = clean.replace(",", ".");
+  const n = parseFloat(clean);
+  return isNaN(n) ? null : String(n);
+}
+
 /** Auto-hyphen para CIF/NIF/DNI: inserta - entre letra y número */
 export function formatDocId(v: string): string {
   return v.replace(/^([A-Za-z])(?!-)(\d)/, "$1-$2").replace(/(\d)(?!-)([A-Za-z])$/,"$1-$2").toUpperCase();

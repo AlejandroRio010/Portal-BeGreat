@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { operations, clients, suppliers, contacts, collaborators } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { generateCodigoCLI, generateCodigoPRV, generateCodigoOP } from "@/lib/codigos";
+import { sanitizeNumeric } from "@/lib/format";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -196,7 +197,7 @@ export async function POST(req: NextRequest) {
       client_id: clientId,
       supplier_id: supplierId,
       producto: producto || null,
-      importe: importe || null,
+      importe: sanitizeNumeric(importe),
       renting_rol: renting_rol || null,
       equipo_tipo: equipo_tipo || null,
       plazo_meses: plazo_meses ? parseInt(plazo_meses) : null,
