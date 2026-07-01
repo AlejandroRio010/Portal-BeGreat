@@ -498,6 +498,7 @@ export default function AdminOpForm({
       await patch({
         fase,
         status,
+        modalidad_renting: modalidadRenting || null,
         comision_colaborador: comisionColab || null,
         comision_colaborador_pct: comisionColabPct || null,
         comision_begreat: comisionBegreat || null,
