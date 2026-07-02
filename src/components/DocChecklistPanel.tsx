@@ -51,6 +51,7 @@ const ChevronSvg = ({ open }: { open: boolean }) => (
 export default function DocChecklistPanel({ entityType, entityId, templates, customItems: initialCustom, entries: initialEntries }: Props) {
   const [entries, setEntries] = useState<Entry[]>(initialEntries);
   const [customItems, setCustomItems] = useState<CustomItem[]>(initialCustom);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
   const [addingItem, setAddingItem] = useState(false);
   const [newName, setNewName] = useState("");
@@ -342,18 +343,24 @@ export default function DocChecklistPanel({ entityType, entityId, templates, cus
 
   return (
     <div className="bg-white border border-gray-200">
-      <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Documentación</h3>
-        <button onClick={() => setAddingItem(true)}
+      <div className={`bg-[#EEEBF3] px-5 py-3 flex items-center justify-between ${panelOpen ? "border-b border-gray-200" : ""}`}>
+        <button type="button" onClick={() => setPanelOpen(o => !o)}
+          className="flex-1 flex items-center justify-between text-left mr-3">
+          <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Documentación</h3>
+          <ChevronSvg open={panelOpen} />
+        </button>
+        <button onClick={() => { setPanelOpen(true); setAddingItem(true); }}
           className="text-[10px] font-semibold text-[#2E1A47] hover:text-[#3d2460] uppercase tracking-wider">+ Añadir</button>
       </div>
 
+      {panelOpen && (
       <div className="divide-y divide-gray-100">
         {rootTemplates.map(t => renderTemplate(t))}
         {customItems.map(c => renderCustomItem(c))}
       </div>
+      )}
 
-      {addingItem && (
+      {panelOpen && addingItem && (
         <div className="border-t border-gray-200 px-4 py-3 space-y-2 bg-gray-50/50">
           <input value={newName} onChange={e => setNewName(e.target.value)}
             placeholder="Nombre del documento..."

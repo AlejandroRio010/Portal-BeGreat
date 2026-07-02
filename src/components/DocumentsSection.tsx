@@ -27,6 +27,7 @@ function cloudinaryDownloadUrl(url: string, filename: string): string {
 export default function DocumentsSection({ docs, operationId, apiUrl, title = "Documentos", oneDriveFolder }: { docs: Doc[]; operationId?: string; apiUrl?: string; title?: string; oneDriveFolder?: string }) {
   const resolvedApiUrl = apiUrl ?? `/api/operations/${operationId}/documents`;
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState("");
   const [dragOver, setDragOver] = useState(false);
@@ -178,10 +179,22 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
 
   return (
     <div className="bg-white border border-gray-200 p-5">
-      <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest mb-4 pb-3 border-b border-gray-100">
-        {title} ({docs.length})
-      </p>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className={`w-full flex items-center justify-between text-left group/header ${open ? "mb-4 pb-3 border-b border-gray-100" : ""}`}>
+        <span className="text-xs font-bold text-[#2E1A47] uppercase tracking-widest">
+          {title} ({docs.length})
+        </span>
+        <span className="flex items-center gap-2">
+          {!open && docs.length > 0 && (
+            <span className="text-[10px] text-gray-400 group-hover/header:text-gray-500">Ver documentos</span>
+          )}
+          <svg className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </span>
+      </button>
 
+      {open && (<>
       {/* Files list */}
       {docs.length > 0 && (() => {
         const nameCounts = new Map<string, number>();
@@ -289,6 +302,7 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
           <p className="text-xs text-emerald-600 font-semibold">Documento subido correctamente ✓</p>
         </div>
       )}
+      </>)}
     </div>
   );
 }
