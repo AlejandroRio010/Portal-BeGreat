@@ -202,10 +202,12 @@ export default function AdminOpForm({
   const [notasAdmin, setNotasAdmin] = useState(initialNotasAdmin ?? "");
 
   // ── Entity / office selector ──────────────────────────────────────────────
-  // Derive initial selected entity from office or entidad text
+  // Derive initial selected entity from office or, if there is no office,
+  // from the saved entidad_financiera name (otherwise the selector shows
+  // empty on reload even though the entity is stored in the DB)
   const initialEntityId = initialEntityOfficeId
     ? (allOffices.find((o) => o.id === initialEntityOfficeId)?.entity_id ?? "")
-    : "";
+    : (allEntities.find((e) => e.nombre === initialEntidad)?.id ?? "");
   const [selectedEntityId, setSelectedEntityId] = useState(initialEntityId);
   const [selectedOfficeId, setSelectedOfficeId] = useState(initialEntityOfficeId ?? "");
   const filteredOffices = allOffices.filter((o) => o.entity_id === selectedEntityId);
