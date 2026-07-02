@@ -24,7 +24,7 @@ function cloudinaryDownloadUrl(url: string, filename: string): string {
   return url.replace("/upload/", `/upload/fl_attachment:${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}/`);
 }
 
-export default function DocumentsSection({ docs, operationId, apiUrl, title = "Documentos", oneDriveFolder }: { docs: Doc[]; operationId?: string; apiUrl?: string; title?: string; oneDriveFolder?: string }) {
+export default function DocumentsSection({ docs, operationId, apiUrl, title = "Documentos", oneDriveFolder, canDelete = false }: { docs: Doc[]; operationId?: string; apiUrl?: string; title?: string; oneDriveFolder?: string; canDelete?: boolean }) {
   const resolvedApiUrl = apiUrl ?? `/api/operations/${operationId}/documents`;
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -233,10 +233,12 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
                       </div>
                     </div>
                   </div>
-                  <button onClick={() => handleDelete(d.id)}
-                    className="text-[10px] text-red-400 hover:text-red-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-                    Eliminar
-                  </button>
+                  {canDelete && (
+                    <button onClick={() => handleDelete(d.id)}
+                      className="text-[10px] text-red-400 hover:text-red-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                      Eliminar
+                    </button>
+                  )}
                 </div>
               );
             })}

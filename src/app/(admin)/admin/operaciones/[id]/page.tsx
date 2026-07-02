@@ -617,6 +617,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             apiUrl={`/api/clientes/${op.client_id}/documents`}
             title="Documentación del cliente"
             oneDriveFolder={clientFolder}
+            canDelete
           />
         )}
 
@@ -626,10 +627,11 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             apiUrl={`/api/operations/${id}/aval-documents`}
             title="Documentación del avalista"
             oneDriveFolder={avalFolder}
+            canDelete
           />
         )}
 
-        <DocumentsSection docs={opDocs} operationId={id} title="Documentación de la operación" oneDriveFolder={opFolder} />
+        <DocumentsSection docs={opDocs} operationId={id} title="Documentación de la operación" oneDriveFolder={opFolder} canDelete />
         </div>
       </div>
     </div>

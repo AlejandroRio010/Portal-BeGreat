@@ -36,7 +36,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const [existing] = await db.select({ url: supplierDocuments.url }).from(supplierDocuments).where(eq(supplierDocuments.id, docId)).limit(1);
   await db.delete(supplierDocuments).where(and(eq(supplierDocuments.id, docId), eq(supplierDocuments.supplier_id, id)));
   if (existing?.url?.startsWith("onedrive:")) {
-    deleteFile(existing.url.slice(9)).catch(() => {});
+    await deleteFile(existing.url.slice(9)).catch(e => console.error("[OneDrive delete]", e?.message));
   }
   return NextResponse.json({ ok: true });
 }

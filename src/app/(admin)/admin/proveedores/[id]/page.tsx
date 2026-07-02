@@ -205,7 +205,7 @@ export default async function ProveedorFichaPage({ params }: { params: Promise<{
 
           <DocChecklistPanel entityType="proveedor" entityId={id} templates={docTemplates} customItems={docCustomItems} entries={docEntries} />
 
-          <DocumentsSection docs={docs} apiUrl={`/api/admin/proveedores/${id}/documents`} oneDriveFolder={sanitizeFolderName(prov.nombre)} />
+          <DocumentsSection docs={docs} apiUrl={`/api/admin/proveedores/${id}/documents`} oneDriveFolder={sanitizeFolderName(prov.nombre)} canDelete />
         </div>
 
         {/* Operaciones + Notas */}

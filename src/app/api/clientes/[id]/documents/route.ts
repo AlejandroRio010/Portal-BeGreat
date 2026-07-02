@@ -46,25 +46,15 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const role = (session.user as any).role;
-  if (role !== "admin") {
-    if (role === "proveedor") {
-      const supplierId = (session.user as any).supplierId;
-      const [op] = await db.select({ id: operations.id }).from(operations)
-        .where(and(eq(operations.client_id, id), eq(operations.supplier_id, supplierId))).limit(1);
-      if (!op) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    } else {
-      const userId = (session.user as any).collaboratorId as string;
-      const [client] = await db.select({ id: clients.id }).from(clients)
-        .where(and(eq(clients.id, id), eq(clients.collaborator_id, userId))).limit(1);
-      if (!client) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-  }
+  // Solo los admins pueden eliminar documentos
+  if ((session.user as any).role !== "admin")
+    return NextResponse.json({ error: "Solo los administradores pueden eliminar documentos" }, { status: 403 });
+
   const { docId } = await req.json();
   const [existing] = await db.select({ url: clientDocuments.url }).from(clientDocuments).where(eq(clientDocuments.id, docId)).limit(1);
   await db.delete(clientDocuments).where(and(eq(clientDocuments.id, docId), eq(clientDocuments.client_id, id)));
   if (existing?.url?.startsWith("onedrive:")) {
-    deleteFile(existing.url.slice(9)).catch(() => {});
+    await deleteFile(existing.url.slice(9)).catch(e => console.error("[OneDrive delete]", e?.message));
   }
   return NextResponse.json({ ok: true });
 }
