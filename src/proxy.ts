@@ -16,6 +16,29 @@ export default auth((req) => {
   const session = req.auth;
   const role = (session?.user as any)?.role;
 
+  // ── APIs ──────────────────────────────────────────────────────────────────
+  if (pathname.startsWith("/api/")) {
+    // Públicas: auth, recuperación de contraseña y cron
+    if (
+      pathname.startsWith("/api/auth/") ||
+      pathname.startsWith("/api/password/") ||
+      pathname.startsWith("/api/cron/")
+    ) {
+      return NextResponse.next();
+    }
+    if (!session || !role) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (pathname.startsWith("/api/admin/") && role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (pathname.startsWith("/api/proveedor/") && role !== "proveedor") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    return NextResponse.next();
+  }
+
+  // ── Páginas ───────────────────────────────────────────────────────────────
   // Si hay sesión pero el token está corrupto/incompleto → borrar y redirigir al login
   if (session && !role) {
     return clearSessionAndRedirect(new URL("/login", req.url));
@@ -59,9 +82,10 @@ export default auth((req) => {
 });
 
 export const config = {
-  // Excluimos API, assets de Next y archivos estáticos (imágenes, fuentes…) para que
+  // Excluimos assets de Next y archivos estáticos (imágenes, fuentes…) para que
   // se sirvan sin pasar por el control de sesión (si no, en /login los logos se redirigen).
+  // Las APIs SÍ pasan por aquí: se validan sesión y rol arriba.
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf)).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf)).*)",
   ],
 };
