@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { db } from "@/db";
 import { contacts, clients, operations } from "@/db/schema";
 import { eq, and, sql, type SQL } from "drizzle-orm";
@@ -14,6 +15,8 @@ export function avalContactCond(contactId: string): SQL {
 }
 
 export interface AvalistaInput {
+  /** Clave estable del avalista (vincula sus documentos); se genera si no llega */
+  key?: string | null;
   tipo: "persona_fisica" | "empresa";
   nombre?: string | null;
   email?: string | null;
@@ -31,6 +34,7 @@ export interface AvalistaInput {
 }
 
 export interface AvalistaStored {
+  key: string;
   tipo: "persona_fisica" | "empresa";
   nombre: string;
   email: string | null;
@@ -76,6 +80,7 @@ export async function resolveAvalistas(
         }
       }
       out.push({
+        key: a.key || randomUUID(),
         tipo: "persona_fisica", nombre,
         email: a.email || null, telefono: a.telefono || null,
         persona_contacto: a.persona_contacto || null,
@@ -105,6 +110,7 @@ export async function resolveAvalistas(
         }
       }
       out.push({
+        key: a.key || randomUUID(),
         tipo: "empresa", nombre,
         email: a.email || null, telefono: a.telefono || null,
         persona_contacto: a.persona_contacto || null,
@@ -154,10 +160,14 @@ export function avalistasDeOp(op: {
   aval_contact_id?: string | null;
   aval_client_id?: string | null;
 }): AvalistaStored[] {
-  const arr = (op.avalistas as AvalistaStored[] | null) ?? [];
-  if (arr.length > 0) return arr;
+  const arr = (op.avalistas as (AvalistaStored & { key?: string })[] | null) ?? [];
+  if (arr.length > 0) {
+    // Normaliza la key para entradas guardadas antes de que existiera
+    return arr.map((a, i) => ({ ...a, key: a.key ?? a.contact_id ?? a.client_id ?? `aval-${i + 1}` }));
+  }
   if (op.tiene_aval && op.aval_nombre) {
     return [{
+      key: op.aval_contact_id ?? op.aval_client_id ?? "aval-1",
       tipo: (op.aval_tipo as "persona_fisica" | "empresa") ?? "persona_fisica",
       nombre: op.aval_nombre,
       email: op.aval_email ?? null,

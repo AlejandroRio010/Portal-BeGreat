@@ -5,6 +5,8 @@ import EmpresaSearchInput from "@/components/EmpresaSearchInput";
 import { formatDocId } from "@/lib/format";
 
 export interface AvalistaForm {
+  /** Clave estable que vincula al avalista con sus documentos */
+  key?: string | null;
   tipo: "persona_fisica" | "empresa";
   nombre: string;
   email: string;
@@ -53,6 +55,7 @@ export function avalistasPayload(avalistas: AvalistaForm[]) {
   return avalistas
     .filter(a => a.nombre.trim())
     .map(a => ({
+      key: a.key ?? null,
       tipo: a.tipo,
       nombre: a.nombre.trim(),
       email: a.email || null,
@@ -198,14 +201,14 @@ export default function AvalistasEditor({
                     <p className="text-xs font-semibold text-[#2E1A47]">{a.nombre}</p>
                     <p className="text-[10px] text-gray-500">{[a.email, a.telefono].filter(Boolean).join(" · ")}</p>
                   </div>
-                  <button type="button" onClick={() => patch(i, { ...emptyAvalista(), tipo: "empresa" })}
+                  <button type="button" onClick={() => patch(i, { ...emptyAvalista(), tipo: "empresa", key: a.key })}
                     className="text-[10px] text-gray-400 hover:text-red-500">✕ Cambiar</button>
                 </div>
               ) : a.empresaNueva ? (
                 <div className="border border-emerald-200 bg-emerald-50/50 p-3 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Nueva empresa avalista</p>
-                    <button type="button" onClick={() => patch(i, { ...emptyAvalista(), tipo: "empresa" })}
+                    <button type="button" onClick={() => patch(i, { ...emptyAvalista(), tipo: "empresa", key: a.key })}
                       className="text-[10px] text-gray-400 hover:text-red-500">✕ Cancelar</button>
                   </div>
                   <EmpresaSearchInput

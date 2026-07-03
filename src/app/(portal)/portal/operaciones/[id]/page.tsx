@@ -519,7 +519,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
               initialAvalContactId={op.aval_contact_id ?? null}
               initialAvalClientId={op.aval_client_id ?? null}
               initialAvalistas={avalistasList.map(a => ({
-                tipo: a.tipo, nombre: a.nombre, email: a.email ?? "", telefono: a.telefono ?? "",
+                key: a.key, tipo: a.tipo, nombre: a.nombre, email: a.email ?? "", telefono: a.telefono ?? "",
                 persona_contacto: a.persona_contacto ?? "", dni: a.dni ?? "", empresa: a.empresa ?? "",
                 contact_id: a.contact_id, client_id: a.client_id,
                 cif: "", direccion: "", cnae: "", web: "",
@@ -563,19 +563,20 @@ export default async function OperacionDetallePage({ params }: { params: Promise
           <DocumentsSection
             docs={clientDocs}
             apiUrl={`/api/clientes/${op.client_id}/documents`}
-            title="Documentación del cliente"
+            title={`Documentación del cliente — ${op.client_nombre ?? "Cliente"}`}
             oneDriveFolder={clientFolder}
           />
         )}
 
-        {op.tiene_aval && (
+        {avalistasList.map((av, avIdx) => (
           <DocumentsSection
-            docs={avalDocs}
-            apiUrl={`/api/operations/${id}/aval-documents`}
-            title="Documentación del avalista"
-            oneDriveFolder={avalFolder}
+            key={av.key}
+            docs={avalDocs.filter(d => d.avalista_key === av.key || (avIdx === 0 && !d.avalista_key))}
+            apiUrl={`/api/operations/${id}/aval-documents?avalista=${encodeURIComponent(av.key)}`}
+            title={`Documentación del avalista — ${av.nombre}`}
+            oneDriveFolder={avIdx === 0 ? avalFolder : `${opFolder}/Avalista - ${sanitizeFolderName(av.nombre)}`}
           />
-        )}
+        ))}
 
         <DocumentsSection docs={opDocs} operationId={id} title="Documentación de la operación" oneDriveFolder={opFolder} />
         </div>

@@ -24,8 +24,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { url, filename, size } = await req.json();
   if (!url || !filename) return NextResponse.json({ error: "Faltan datos" }, { status: 400 });
 
+  // A qué avalista pertenece el documento (key dentro de operations.avalistas)
+  const avalistaKey = req.nextUrl.searchParams.get("avalista");
+
   const [doc] = await db.insert(avalDocuments).values({
     operation_id: id,
+    avalista_key: avalistaKey || null,
     filename,
     url,
     size: size ?? null,

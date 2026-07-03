@@ -492,6 +492,8 @@ export const operationDocuments = pgTable("operation_documents", {
 export const avalDocuments = pgTable("aval_documents", {
   id: uuid("id").primaryKey().defaultRandom(),
   operation_id: uuid("operation_id").notNull().references(() => operations.id, { onDelete: "cascade" }),
+  // Clave del avalista dentro de operations.avalistas; null = docs antiguos (primer avalista)
+  avalista_key: text("avalista_key"),
   filename: text("filename").notNull(),
   url: text("url").notNull(),
   size: integer("size"),

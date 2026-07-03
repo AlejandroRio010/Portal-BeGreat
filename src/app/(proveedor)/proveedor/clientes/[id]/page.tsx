@@ -412,7 +412,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
             placeholder="Añade una nota general sobre este cliente..."
           />
 
-          <DocumentsSection docs={docs} apiUrl={`/api/clientes/${id}/documents`} oneDriveFolder={clientFolderPath(client.nombre)} />
+          <DocumentsSection docs={docs} apiUrl={`/api/clientes/${id}/documents`} title={`Documentación de ${client.nombre}`} oneDriveFolder={clientFolderPath(client.nombre)} />
 
           {ops.filter(o => (opDocsMap.get(o.id) ?? []).length > 0).length > 0 && (
             <div className="bg-white border border-gray-200 p-5">

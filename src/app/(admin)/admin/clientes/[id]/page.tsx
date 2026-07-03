@@ -416,7 +416,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
             canPin
           />
 
-          <DocumentsSection docs={docs} apiUrl={`/api/clientes/${id}/documents`} oneDriveFolder={clientFolderPath(client.nombre)} canDelete />
+          <DocumentsSection docs={docs} apiUrl={`/api/clientes/${id}/documents`} title={`Documentación de ${client.nombre}`} oneDriveFolder={clientFolderPath(client.nombre)} canDelete />
 
           {ops.filter(o => (opDocsMap.get(o.id) ?? []).length > 0).length > 0 && (
             <div className="bg-white border border-gray-200 p-5">
