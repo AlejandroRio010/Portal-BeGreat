@@ -88,18 +88,6 @@ export default async function PortalOfficeContactoPage({ params }: { params: Pro
                   <span className="text-sm text-gray-800 font-medium">{contacto.rol}</span>
                 </div>
               )}
-              {contacto.email && (
-                <div className="py-3 flex flex-col gap-0.5">
-                  <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">Email</span>
-                  <a href={`mailto:${contacto.email}`} className="text-sm text-[#2E1A47] hover:underline font-medium">{contacto.email}</a>
-                </div>
-              )}
-              {contacto.telefono && (
-                <div className="py-3 flex flex-col gap-0.5">
-                  <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">Teléfono</span>
-                  <span className="text-sm text-gray-800 font-medium">{contacto.telefono}</span>
-                </div>
-              )}
               {contacto.linkedin && (
                 <div className="py-3 flex flex-col gap-0.5">
                   <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">LinkedIn</span>

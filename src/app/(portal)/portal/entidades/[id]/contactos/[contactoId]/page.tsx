@@ -61,8 +61,6 @@ export default async function PortalContactoEntidadPage({ params }: { params: Pr
                 ["Nombre", contacto.nombre],
                 ["Empresa", null],
                 ["Puesto / Rol", contacto.rol],
-                ["Email", contacto.email],
-                ["Teléfono", contacto.telefono],
                 ["LinkedIn", contacto.linkedin],
               ] as [string, string | null][]).map(([label, value]) => {
                 if (label === "Empresa") {

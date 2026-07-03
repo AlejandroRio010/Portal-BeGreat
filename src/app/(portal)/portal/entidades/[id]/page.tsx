@@ -106,13 +106,13 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
             </div>
           </div>
 
-          {nivel === 1 && (entidad.persona_contacto || entidad.contacto_email || entidad.contacto_telefono) && (
+          {nivel === 1 && entidad.persona_contacto && (
             <div className="bg-white border border-gray-200">
               <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
                 <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Contacto principal</h3>
               </div>
               <div className="px-5 py-4 divide-y divide-gray-50">
-                {([["Nombre", entidad.persona_contacto], ["Email", entidad.contacto_email], ["Teléfono", entidad.contacto_telefono]] as [string, string | null][]).map(([label, value]) =>
+                {([["Nombre", entidad.persona_contacto]] as [string, string | null][]).map(([label, value]) =>
                   value ? (
                     <div key={label} className="py-2.5 flex flex-col gap-0.5">
                       <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">{label}</span>
@@ -124,7 +124,7 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
             </div>
           )}
 
-          {nivel === 1 && <ContactosPanel contactos={contactos} entityId={id} />}
+          {nivel === 1 && <ContactosPanel contactos={contactos} entityId={id} hideContactInfo readOnly hrefBase="/portal/entidades" />}
         </div>
 
         {/* Col 2-3: Notas + Oficinas */}

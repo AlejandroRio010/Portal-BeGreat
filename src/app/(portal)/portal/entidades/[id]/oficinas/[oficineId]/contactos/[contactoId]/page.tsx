@@ -58,12 +58,10 @@ export default async function PortalContactoOficinaPage({
               <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Datos de contacto</h3>
             </div>
             <div className="px-5 py-4 divide-y divide-gray-50">
-              {[
+              {([
                 { label: "Puesto", value: contacto.rol },
-                { label: "Email", value: contacto.email, href: contacto.email ? `mailto:${contacto.email}` : undefined },
-                { label: "Teléfono", value: contacto.telefono, href: contacto.telefono ? `tel:${contacto.telefono}` : undefined },
                 { label: "LinkedIn", value: contacto.linkedin, href: contacto.linkedin ?? undefined, linkLabel: "LinkedIn →" },
-              ].map(field => field.value ? (
+              ] as { label: string; value: string | null; href?: string; linkLabel?: string }[]).map(field => field.value ? (
                 <div key={field.label} className="py-2.5 flex flex-col gap-0.5">
                   <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">{field.label}</span>
                   {field.href ? (

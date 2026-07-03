@@ -103,18 +103,18 @@ export default async function PortalOficinaFichaPage({ params }: { params: Promi
             </div>
           </div>
 
-          {(oficina.persona_contacto || oficina.contacto_email || oficina.contacto_telefono) && (
+          {oficina.persona_contacto && (
             <div className="bg-white border border-gray-200">
               <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200"><h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Contacto principal</h3></div>
               <div className="px-5 py-4 divide-y divide-gray-50">
-                {([["Nombre", oficina.persona_contacto], ["Email", oficina.contacto_email], ["Teléfono", oficina.contacto_telefono]] as [string, string | null][]).map(([label, value]) =>
+                {([["Nombre", oficina.persona_contacto]] as [string, string | null][]).map(([label, value]) =>
                   value ? <div key={label} className="py-2.5"><span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold block">{label}</span><span className="text-sm text-gray-800 font-medium">{value}</span></div> : null
                 )}
               </div>
             </div>
           )}
 
-          <ContactosOficinaPanel contactos={contactos.map(c => ({ ...c, entityId, officeId: oficineId }))} officeId={oficineId} entityId={entityId} />
+          <ContactosOficinaPanel contactos={contactos.map(c => ({ ...c, entityId, officeId: oficineId }))} officeId={oficineId} entityId={entityId} hideContactInfo readOnly hrefBase="/portal/entidades" />
         </div>
 
         <div className="col-span-2">
