@@ -27,6 +27,7 @@ export default async function HistorialPage({
       fase: operations.fase,
       status: operations.status,
       comision_colaborador: operations.comision_colaborador,
+      colaboradores_comision: operations.colaboradores_comision,
       importe: operations.importe,
       created_at: operations.created_at,
       fecha_cierre: operations.fecha_cierre,
@@ -36,6 +37,16 @@ export default async function HistorialPage({
     .leftJoin(clients, eq(operations.client_id, clients.id))
     .where(eq(operations.collaborator_id, userId))
     .orderBy(operations.fecha_cierre, operations.created_at);
+
+  // Comisión propia: su línea en el reparto de colaboradores; si la op no
+  // tiene reparto, el campo legacy comision_colaborador
+  type ColabCom = { id?: string; nombre?: string; importe?: string };
+  function miComision(op: { comision_colaborador: string | null; colaboradores_comision: unknown }): number {
+    const reparto = (op.colaboradores_comision as ColabCom[] | null) ?? [];
+    if (reparto.length === 0) return Number(op.comision_colaborador ?? 0);
+    const mia = reparto.find(c => c.id === userId);
+    return mia ? (parseFloat(mia.importe ?? "") || 0) : 0;
+  }
 
   // Filters
   const filtered = allOps.filter((op) => {
@@ -64,8 +75,8 @@ export default async function HistorialPage({
   // Stats (always on all ops, not filtered)
   const firmadas = allOps.filter((o) => o.fase === "Contrato firmado" || o.fase === "Honorarios pagados" || o.fase === "Transferencia realizada");
   const pendientes = allOps.filter((o) => o.status === "pendiente_de_validar" || (o.status === "activa" && o.fase !== "Contrato firmado" && o.fase !== "Honorarios pagados" && o.fase !== "Transferencia realizada"));
-  const totalGanado = firmadas.reduce((sum, o) => sum + (o.comision_colaborador ? Number(o.comision_colaborador) : 0), 0);
-  const feePendiente = pendientes.reduce((sum, o) => sum + (o.comision_colaborador ? Number(o.comision_colaborador) : 0), 0);
+  const totalGanado = firmadas.reduce((sum, o) => sum + miComision(o), 0);
+  const feePendiente = pendientes.reduce((sum, o) => sum + miComision(o), 0);
 
   // stats array kept for reference but replaced with custom render below
 
@@ -147,7 +158,7 @@ export default async function HistorialPage({
       <HistorialTabla esAdmin={false} hrefBase="/portal/operaciones" ops={filtered.map(o => ({
         id: o.id, nombre: o.nombre, client_nombre: o.client_nombre, pipeline_key: o.pipeline_key,
         fase: o.fase, status: o.status, fecha_cierre: o.fecha_cierre, created_at: o.created_at,
-        comision_colaborador: o.comision_colaborador, comision_begreat: null,
+        comision_colaborador: miComision(o) > 0 ? String(miComision(o)) : null, comision_begreat: null,
       }))} />
     </div>
   );

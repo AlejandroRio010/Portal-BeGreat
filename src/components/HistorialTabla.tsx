@@ -18,6 +18,10 @@ export interface HistOp {
   comision_colaborador: string | null;
   comision_begreat: string | null;
   colaborador_nombre?: string | null;
+  /** Total de honorarios cobrados en la op (solo admin) */
+  honorarios?: number | null;
+  /** Reparto: BeGreat + cada colaborador con su importe (solo admin) */
+  desglose?: { nombre: string; importe: number }[] | null;
 }
 
 function formatDate(d: string | Date) {
@@ -54,8 +58,9 @@ export default function HistorialTabla({ ops, esAdmin, hrefBase, ocultarComision
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Tipo</th>
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Estado</th>
                 <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fecha cierre</th>
-                {esAdmin && <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Fee BeGreat</th>}
-                {!ocultarComisiones && <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">{esAdmin ? "Fee Colab." : "Comisión"}</th>}
+                {esAdmin && <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Honorarios</th>}
+                {esAdmin && <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Desglose</th>}
+                {!esAdmin && !ocultarComisiones && <th className="text-left px-6 py-3.5 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Comisión</th>}
                 <th className="px-6 py-3.5" />
               </tr>
             </thead>
@@ -81,8 +86,28 @@ export default function HistorialTabla({ ops, esAdmin, hrefBase, ocultarComision
                     </td>
                     <td className="px-6 py-4"><span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold ${badge.c}`}>{badge.l}</span></td>
                     <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{formatDate(op.fecha_cierre ?? op.created_at)}</td>
-                    {esAdmin && <td className="px-6 py-4 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(op.comision_begreat)}</td>}
-                    {!ocultarComisiones && <td className="px-6 py-4 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(op.comision_colaborador)}</td>}
+                    {esAdmin && (
+                      <td className="px-6 py-4 text-sm font-bold text-[#2E1A47] whitespace-nowrap">
+                        {op.honorarios && op.honorarios > 0 ? fmtEur(op.honorarios) : "—"}
+                      </td>
+                    )}
+                    {esAdmin && (
+                      <td className="px-6 py-4">
+                        {op.desglose && op.desglose.length > 0 ? (
+                          <div className="space-y-0.5">
+                            {op.desglose.map((d, i) => (
+                              <p key={i} className="text-xs whitespace-nowrap">
+                                <span className={i === 0 ? "font-bold text-[#2E1A47]" : "text-gray-500"}>{d.nombre}</span>{" "}
+                                <span className={`font-semibold ${i === 0 ? "text-[#2E1A47]" : "text-gray-700"}`}>{fmtEur(d.importe)}</span>
+                              </p>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-300">—</span>
+                        )}
+                      </td>
+                    )}
+                    {!esAdmin && !ocultarComisiones && <td className="px-6 py-4 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(op.comision_colaborador)}</td>}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link href={`${hrefBase}/${op.id}`} className="text-[#2E1A47] text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity hover:underline">Ver →</Link>
                     </td>

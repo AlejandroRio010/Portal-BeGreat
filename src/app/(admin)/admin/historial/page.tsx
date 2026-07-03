@@ -25,6 +25,10 @@ export default async function AdminHistorialPage({
       status: operations.status,
       comision_colaborador: operations.comision_colaborador,
       comision_begreat: operations.comision_begreat,
+      comision_origenes: operations.comision_origenes,
+      colaboradores_comision: operations.colaboradores_comision,
+      modalidad_renting: operations.modalidad_renting,
+      importe_facturado_begreat: operations.importe_facturado_begreat,
       importe: operations.importe,
       created_at: operations.created_at,
       fecha_cierre: operations.fecha_cierre,
@@ -139,12 +143,42 @@ export default async function AdminHistorialPage({
         </form>
       </div>
 
-      <HistorialTabla esAdmin hrefBase="/admin/operaciones" ops={filtered.map(o => ({
-        id: o.id, nombre: o.nombre, client_nombre: o.client_nombre, pipeline_key: o.pipeline_key,
-        fase: o.fase, status: o.status, fecha_cierre: o.fecha_cierre, created_at: o.created_at,
-        comision_colaborador: o.comision_colaborador, comision_begreat: o.comision_begreat,
-        colaborador_nombre: o.colaborador_nombre,
-      }))} />
+      <HistorialTabla esAdmin hrefBase="/admin/operaciones" ops={filtered.map(o => {
+        // Honorarios cobrados: suma de orígenes de comisión; en modalidad factura,
+        // el margen (facturado − importe proveedor); si no, BeGreat + colaboradores
+        type Origen = { importe?: string };
+        type ColabCom = { id?: string; nombre?: string; importe?: string };
+        const origenes = (o.comision_origenes as Origen[] | null) ?? [];
+        const colabsCom = (o.colaboradores_comision as ColabCom[] | null) ?? [];
+        const sumOrigenes = origenes.reduce((s, x) => s + (parseFloat(x.importe ?? "") || 0), 0);
+        const bg = Number(o.comision_begreat ?? 0);
+        const colabTotal = Number(o.comision_colaborador ?? 0);
+        const esFactura = o.modalidad_renting === "begreat_factura" && o.importe_facturado_begreat && o.importe;
+        const honorarios = sumOrigenes > 0
+          ? sumOrigenes
+          : esFactura ? Number(o.importe_facturado_begreat) - Number(o.importe)
+          : bg + colabTotal;
+        const colabLineas = colabsCom
+          .map(c => ({ nombre: c.nombre?.trim() || "Colaborador", importe: parseFloat(c.importe ?? "") || 0 }))
+          .filter(c => c.importe > 0);
+        const desglose = honorarios > 0 || bg > 0 || colabTotal > 0
+          ? [
+              { nombre: "BeGreat", importe: bg },
+              ...(colabLineas.length > 0
+                ? colabLineas
+                : colabTotal > 0
+                  ? [{ nombre: o.colaborador_nombre ?? "Colaborador", importe: colabTotal }]
+                  : []),
+            ]
+          : null;
+        return {
+          id: o.id, nombre: o.nombre, client_nombre: o.client_nombre, pipeline_key: o.pipeline_key,
+          fase: o.fase, status: o.status, fecha_cierre: o.fecha_cierre, created_at: o.created_at,
+          comision_colaborador: o.comision_colaborador, comision_begreat: o.comision_begreat,
+          colaborador_nombre: o.colaborador_nombre,
+          honorarios, desglose,
+        };
+      })} />
     </div>
   );
 }
