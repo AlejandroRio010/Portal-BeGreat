@@ -118,7 +118,6 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
 
   const clientFolder = clientFolderPath(op.client_nombre ?? "Sin cliente");
   const opFolder = `${clientFolder}/${sanitizeFolderName(op.codigo ?? id)}`;
-  const avalFolder = `${opFolder}/Avalista`;
 
   const faseIdx = op.status === "pendiente_de_validar" ? -1 : FASES_RENTING.indexOf(op.fase ?? "");
   const faseStyle = op.fase ? (FASE_COLOR[op.fase] ?? FASE_COLOR["Pre-análisis"]) : FASE_COLOR["Pre-análisis"];
@@ -402,7 +401,7 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
               docs={avalDocs.filter(d => d.avalista_key === av.key || (avIdx === 0 && !d.avalista_key))}
               apiUrl={`/api/operations/${id}/aval-documents?avalista=${encodeURIComponent(av.key)}`}
               title={`Documentación del avalista ${avIdx + 1} — ${av.nombre}`}
-              oneDriveFolder={avIdx === 0 ? avalFolder : `${opFolder}/Avalista - ${sanitizeFolderName(av.nombre)}`}
+              oneDriveFolder={`${opFolder}/Avalista ${avIdx + 1} - ${sanitizeFolderName(av.nombre)}`}
             />
           ))}
 

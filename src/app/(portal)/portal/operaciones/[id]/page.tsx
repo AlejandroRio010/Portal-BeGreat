@@ -169,7 +169,6 @@ export default async function OperacionDetallePage({ params }: { params: Promise
 
   const clientFolder = clientFolderPath(op.client_nombre ?? "Sin cliente");
   const opFolder = `${clientFolder}/${sanitizeFolderName(op.codigo ?? id)}`;
-  const avalFolder = `${opFolder}/Avalista`;
 
   const opCustomFields = await db.select().from(customFields).where(eq(customFields.entidad, "operacion")).orderBy(asc(customFields.orden));
   const opCustomValues = await db.select().from(customFieldValues).where(eq(customFieldValues.entity_id, id));
@@ -574,7 +573,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             docs={avalDocs.filter(d => d.avalista_key === av.key || (avIdx === 0 && !d.avalista_key))}
             apiUrl={`/api/operations/${id}/aval-documents?avalista=${encodeURIComponent(av.key)}`}
             title={`Documentación del avalista ${avIdx + 1} — ${av.nombre}`}
-            oneDriveFolder={avIdx === 0 ? avalFolder : `${opFolder}/Avalista - ${sanitizeFolderName(av.nombre)}`}
+            oneDriveFolder={`${opFolder}/Avalista ${avIdx + 1} - ${sanitizeFolderName(av.nombre)}`}
           />
         ))}
 
