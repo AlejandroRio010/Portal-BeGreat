@@ -305,7 +305,7 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
               {avalistasList.map((av, avIdx) => (
                 <div key={avIdx} className="pt-3 mt-3 border-t border-gray-100">
                   <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">
-                    {avalistasList.length > 1 ? `Avalista ${avIdx + 1} ` : "Avalista "}
+                    {`Avalista ${avIdx + 1} `}
                     {av.tipo === "persona_fisica" ? "(persona física)" : "(empresa)"}
                   </dt>
                   {av.tipo === "persona_fisica" ? (
@@ -401,7 +401,7 @@ export default async function ProveedorOperacionDetallePage({ params }: { params
               key={av.key}
               docs={avalDocs.filter(d => d.avalista_key === av.key || (avIdx === 0 && !d.avalista_key))}
               apiUrl={`/api/operations/${id}/aval-documents?avalista=${encodeURIComponent(av.key)}`}
-              title={`Documentación del avalista — ${av.nombre}`}
+              title={`Documentación del avalista ${avIdx + 1} — ${av.nombre}`}
               oneDriveFolder={avIdx === 0 ? avalFolder : `${opFolder}/Avalista - ${sanitizeFolderName(av.nombre)}`}
             />
           ))}
