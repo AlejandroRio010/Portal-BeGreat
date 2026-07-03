@@ -150,6 +150,14 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
     uploadFiles(files);
   }
 
+  function uploadOnlyNew() {
+    const dupSet = new Set(duplicates.map(n => n.toLowerCase()));
+    const files = pendingFiles.filter(f => !dupSet.has(f.name.toLowerCase()));
+    setDuplicates([]);
+    setPendingFiles([]);
+    if (files.length > 0) uploadFiles(files);
+  }
+
   function cancelUpload() {
     setDuplicates([]);
     setPendingFiles([]);
@@ -259,14 +267,25 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
               </li>
             ))}
           </ul>
-          <div className="flex gap-2">
+          {pendingFiles.length > duplicates.length && (
+            <p className="text-[11px] text-amber-700 mb-2">
+              Los otros {pendingFiles.length - duplicates.length} archivo{pendingFiles.length - duplicates.length !== 1 ? "s" : ""} del lote no está{pendingFiles.length - duplicates.length !== 1 ? "n" : ""} duplicado{pendingFiles.length - duplicates.length !== 1 ? "s" : ""}.
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2">
             <button onClick={confirmUpload}
               className="text-xs font-bold px-3 py-1.5 bg-amber-600 text-white hover:bg-amber-700 transition-colors">
-              Subir de todos modos
+              Subir todo ({pendingFiles.length})
             </button>
+            {pendingFiles.length > duplicates.length && (
+              <button onClick={uploadOnlyNew}
+                className="text-xs font-bold px-3 py-1.5 bg-white text-amber-700 border border-amber-300 hover:bg-amber-50 transition-colors">
+                Subir solo los nuevos ({pendingFiles.length - duplicates.length})
+              </button>
+            )}
             <button onClick={cancelUpload}
-              className="text-xs font-bold px-3 py-1.5 bg-white text-amber-700 border border-amber-300 hover:bg-amber-50 transition-colors">
-              Cancelar
+              className="text-xs font-semibold px-3 py-1.5 text-gray-500 hover:text-gray-700 transition-colors">
+              No subir nada
             </button>
           </div>
         </div>
