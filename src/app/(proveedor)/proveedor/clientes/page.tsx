@@ -43,11 +43,14 @@ export default async function ClientesPage() {
   }, {});
 
   const avalClientRows = await db
-    .select({ aval_client_id: operations.aval_client_id })
+    .select({ aval_client_id: operations.aval_client_id, avalistas: operations.avalistas })
     .from(operations)
-    .where(and(eq(operations.supplier_id, userId), isNotNull(operations.aval_client_id)))
-    .groupBy(operations.aval_client_id);
-  const avalSet = new Set(avalClientRows.map(r => r.aval_client_id).filter(Boolean) as string[]);
+    .where(eq(operations.supplier_id, userId));
+  const avalSet = new Set<string>();
+  for (const r of avalClientRows) {
+    if (r.aval_client_id) avalSet.add(r.aval_client_id);
+    for (const a of ((r.avalistas as { client_id?: string | null }[] | null) ?? [])) if (a?.client_id) avalSet.add(a.client_id);
+  }
 
   const missingAvalIds = [...avalSet].filter(id => !myClients.some(c => c.id === id));
   const avalClients = missingAvalIds.length > 0

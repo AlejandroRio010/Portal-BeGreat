@@ -51,11 +51,13 @@ export default async function AdminClientesPage({
   }
 
   const avalClientIds = await db
-    .select({ aval_client_id: operations.aval_client_id })
-    .from(operations)
-    .where(sql`${operations.aval_client_id} is not null`)
-    .groupBy(operations.aval_client_id);
-  const avalSet = new Set(avalClientIds.map(r => r.aval_client_id!));
+    .select({ aval_client_id: operations.aval_client_id, avalistas: operations.avalistas })
+    .from(operations);
+  const avalSet = new Set<string>();
+  for (const r of avalClientIds) {
+    if (r.aval_client_id) avalSet.add(r.aval_client_id);
+    for (const a of ((r.avalistas as { client_id?: string | null }[] | null) ?? [])) if (a?.client_id) avalSet.add(a.client_id);
+  }
 
   return (
     <div>

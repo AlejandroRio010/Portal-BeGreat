@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
+import { avalClientCond } from "@/lib/avalistas";
 import { clients, contacts, operations, collaborators, clientNotes, customFields, customFieldValues, clientDocuments, operationDocuments, avalDocuments, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries, entityTasks } from "@/db/schema";
 import ClienteEditFormPortal from "./ClienteEditFormPortal";
 import NuevoContactoForm from "./NuevoContactoForm";
@@ -51,7 +52,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
   // Verify access: own client, or linked via ops, or avalista in own ops
   const isOwn = await db.select({ id: clients.id }).from(clients).where(and(eq(clients.id, id), eq(clients.collaborator_id, userId))).limit(1);
   const isLinkedOp = await db.select({ id: operations.id }).from(operations).where(and(eq(operations.collaborator_id, userId), eq(operations.client_id, id))).limit(1);
-  const isAval = await db.select({ id: operations.id }).from(operations).where(and(eq(operations.collaborator_id, userId), eq(operations.aval_client_id, id))).limit(1);
+  const isAval = await db.select({ id: operations.id }).from(operations).where(and(eq(operations.collaborator_id, userId), avalClientCond(id))).limit(1);
   if (isOwn.length === 0 && isLinkedOp.length === 0 && isAval.length === 0) notFound();
 
   const [colabPerms] = await db
@@ -122,7 +123,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
     client_nombre: clients.nombre,
   }).from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
-    .where(and(eq(operations.aval_client_id, id), eq(operations.collaborator_id, userId)))
+    .where(and(avalClientCond(id), eq(operations.collaborator_id, userId)))
     .orderBy(operations.created_at);
 
   const FASES_APROBADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];

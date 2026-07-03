@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
+import { avalClientCond } from "@/lib/avalistas";
 import { clients, collaborators, contacts, operations, customFields, customFieldValues, clientNotes, clientGroups, clientDocuments, operationDocuments, avalDocuments, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries, entityTasks } from "@/db/schema";
 import { eq, asc, and, sql, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
@@ -119,7 +120,7 @@ export default async function AdminClienteFichaPage({ params }: { params: Promis
     client_nombre: clients.nombre,
   }).from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
-    .where(eq(operations.aval_client_id, id))
+    .where(avalClientCond(id))
     .orderBy(operations.created_at);
 
   // Colaboradores vinculados a este cliente (a través de operaciones)

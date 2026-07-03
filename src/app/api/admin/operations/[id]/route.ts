@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, collaborators, contacts, clients, supplierUsers } from "@/db/schema";
+import { operations, collaborators, clients, supplierUsers } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { sendOperationValidatedEmail, sendOperationDeniedEmail, sendOperationWonEmail, sendSupplierOperationDeniedEmail } from "@/lib/email";
-import { fmtEur, formatDocId, sanitizeNumeric } from "@/lib/format";
+import { fmtEur, sanitizeNumeric } from "@/lib/format";
+import { resolveAvalistas, legacyAvalFields, type AvalistaInput } from "@/lib/avalistas";
 
 export async function PATCH(
   req: NextRequest,
@@ -155,55 +156,21 @@ export async function PATCH(
   if (typeof importe_facturado_visible === "boolean") updateData.importe_facturado_visible = importe_facturado_visible;
   if (collaborator_id !== undefined) updateData.collaborator_id = collaborator_id || null;
   if (supplier_id !== undefined) updateData.supplier_id = supplier_id || null;
-  if (typeof tiene_aval === "boolean") {
-    updateData.tiene_aval = tiene_aval;
-    updateData.aval_tipo = tiene_aval ? (aval_tipo || null) : null;
-    updateData.aval_nombre = tiene_aval ? (aval_nombre || null) : null;
-    updateData.aval_email = tiene_aval ? (aval_email || null) : null;
-    updateData.aval_telefono = tiene_aval ? (aval_telefono || null) : null;
-    updateData.aval_persona_contacto = tiene_aval ? (aval_persona_contacto || null) : null;
-    updateData.aval_dni = tiene_aval && aval_tipo === "persona_fisica" ? (aval_dni ? formatDocId(aval_dni) : null) : null;
-    updateData.aval_empresa = tiene_aval && aval_tipo === "persona_fisica" ? (aval_empresa || null) : null;
-    let resolvedContactId = aval_contact_id || null;
-    if (tiene_aval && aval_tipo === "persona_fisica" && !aval_contact_id && aval_nombre && prevOp?.client_id) {
-      const [existing] = await db.select({ id: contacts.id }).from(contacts)
-        .where(and(eq(contacts.client_id, prevOp.client_id), eq(contacts.nombre, aval_nombre))).limit(1);
-      if (existing) {
-        resolvedContactId = existing.id;
-      } else {
-        const [newContact] = await db.insert(contacts).values({
-          client_id: prevOp.client_id,
-          nombre: aval_nombre,
-          email: aval_email || null,
-          telefono: aval_telefono || null,
-          rol: aval_persona_contacto || null,
-        }).returning();
-        resolvedContactId = newContact.id;
-      }
-    }
-    updateData.aval_contact_id = tiene_aval && aval_tipo === "persona_fisica" ? resolvedContactId : null;
-
-    let resolvedClientId = aval_client_id || null;
-    if (tiene_aval && aval_tipo === "empresa" && !aval_client_id && aval_nombre) {
-      const [existing] = await db.select({ id: clients.id }).from(clients)
-        .where(eq(clients.nombre, aval_nombre)).limit(1);
-      if (existing) {
-        resolvedClientId = existing.id;
-      } else {
-        const [newClient] = await db.insert(clients).values({
-          nombre: aval_nombre,
-          email: aval_email || null,
-          telefono: aval_telefono || null,
-          cif: aval_cif || null,
-          direccion: aval_direccion || null,
-          cnae: aval_cnae || null,
-          web: aval_web || null,
-          collaborator_id: prevOp?.collaborator_id ?? null,
-        }).returning();
-        resolvedClientId = newClient.id;
-      }
-    }
-    updateData.aval_client_id = tiene_aval && aval_tipo === "empresa" ? resolvedClientId : null;
+  if (Array.isArray(body.avalistas)) {
+    // Lista completa de avalistas; los campos aval_* quedan como espejo del primero
+    const resolved = await resolveAvalistas(body.avalistas as AvalistaInput[], prevOp?.client_id ?? null, prevOp?.collaborator_id ?? null);
+    Object.assign(updateData, legacyAvalFields(resolved), { avalistas: resolved });
+  } else if (typeof tiene_aval === "boolean") {
+    // Compat: payload antiguo con un único avalista
+    const single: AvalistaInput[] = tiene_aval && aval_nombre ? [{
+      tipo: aval_tipo === "empresa" ? "empresa" : "persona_fisica",
+      nombre: aval_nombre, email: aval_email, telefono: aval_telefono,
+      persona_contacto: aval_persona_contacto, dni: aval_dni, empresa: aval_empresa,
+      contact_id: aval_contact_id, client_id: aval_client_id,
+      cif: aval_cif, direccion: aval_direccion, cnae: aval_cnae, web: aval_web,
+    }] : [];
+    const resolved = await resolveAvalistas(single, prevOp?.client_id ?? null, prevOp?.collaborator_id ?? null);
+    Object.assign(updateData, legacyAvalFields(resolved), { avalistas: resolved });
   }
 
   if (resultado === "ganada") {

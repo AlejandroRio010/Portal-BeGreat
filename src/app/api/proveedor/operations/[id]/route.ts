@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { operations, contacts, clients } from "@/db/schema";
+import { operations } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { sanitizeNumeric } from "@/lib/format";
+import { resolveAvalistas, legacyAvalFields, type AvalistaInput } from "@/lib/avalistas";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -63,56 +64,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.created_at !== undefined) data.created_at = new Date(body.created_at);
   if (body.fecha_cierre !== undefined) data.fecha_cierre = body.fecha_cierre ? new Date(body.fecha_cierre) : null;
 
-  if (typeof tiene_aval === "boolean") {
-    data.tiene_aval = tiene_aval;
-    data.aval_tipo = tiene_aval ? (aval_tipo || null) : null;
-    data.aval_nombre = tiene_aval ? (aval_nombre || null) : null;
-    data.aval_email = tiene_aval ? (aval_email || null) : null;
-    data.aval_telefono = tiene_aval ? (aval_telefono || null) : null;
-    data.aval_persona_contacto = tiene_aval ? (aval_persona_contacto || null) : null;
-    data.aval_dni = tiene_aval && aval_tipo === "persona_fisica" ? (aval_dni || null) : null;
-    data.aval_empresa = tiene_aval && aval_tipo === "persona_fisica" ? (aval_empresa || null) : null;
-
-    let resolvedContactId = aval_contact_id || null;
-    if (tiene_aval && aval_tipo === "persona_fisica" && !aval_contact_id && aval_nombre && op.client_id) {
-      const [existing] = await db.select({ id: contacts.id }).from(contacts)
-        .where(and(eq(contacts.client_id, op.client_id), eq(contacts.nombre, aval_nombre))).limit(1);
-      if (existing) {
-        resolvedContactId = existing.id;
-      } else {
-        const [newContact] = await db.insert(contacts).values({
-          client_id: op.client_id,
-          nombre: aval_nombre,
-          email: aval_email || null,
-          telefono: aval_telefono || null,
-          rol: aval_persona_contacto || null,
-        }).returning();
-        resolvedContactId = newContact.id;
-      }
-    }
-    data.aval_contact_id = tiene_aval && aval_tipo === "persona_fisica" ? resolvedContactId : null;
-
-    let resolvedAvalClientId = aval_client_id || null;
-    if (tiene_aval && aval_tipo === "empresa" && !aval_client_id && aval_nombre) {
-      const [existing] = await db.select({ id: clients.id }).from(clients)
-        .where(eq(clients.nombre, aval_nombre)).limit(1);
-      if (existing) {
-        resolvedAvalClientId = existing.id;
-      } else {
-        const [newClient] = await db.insert(clients).values({
-          nombre: aval_nombre,
-          email: aval_email || null,
-          telefono: aval_telefono || null,
-          cif: aval_cif || null,
-          direccion: aval_direccion || null,
-          cnae: aval_cnae || null,
-          web: aval_web || null,
-          collaborator_id: op.collaborator_id,
-        }).returning();
-        resolvedAvalClientId = newClient.id;
-      }
-    }
-    data.aval_client_id = tiene_aval && aval_tipo === "empresa" ? resolvedAvalClientId : null;
+  if (Array.isArray(body.avalistas)) {
+    // Lista completa de avalistas; los campos aval_* quedan como espejo del primero
+    const resolved = await resolveAvalistas(body.avalistas as AvalistaInput[], op.client_id ?? null, op.collaborator_id);
+    Object.assign(data, legacyAvalFields(resolved), { avalistas: resolved });
+  } else if (typeof tiene_aval === "boolean") {
+    // Compat: payload antiguo con un único avalista
+    const single: AvalistaInput[] = tiene_aval && aval_nombre ? [{
+      tipo: aval_tipo === "empresa" ? "empresa" : "persona_fisica",
+      nombre: aval_nombre, email: aval_email, telefono: aval_telefono,
+      persona_contacto: aval_persona_contacto, dni: aval_dni, empresa: aval_empresa,
+      contact_id: aval_contact_id, client_id: aval_client_id,
+      cif: aval_cif, direccion: aval_direccion, cnae: aval_cnae, web: aval_web,
+    }] : [];
+    const resolved = await resolveAvalistas(single, op.client_id ?? null, op.collaborator_id);
+    Object.assign(data, legacyAvalFields(resolved), { avalistas: resolved });
   }
 
   await db.update(operations).set(data).where(eq(operations.id, id));

@@ -435,6 +435,8 @@ export const operations = pgTable("operations", {
   aval_empresa: text("aval_empresa"),
   aval_contact_id: uuid("aval_contact_id").references(() => contacts.id, { onDelete: "set null" }),
   aval_client_id: uuid("aval_client_id").references(() => clients.id, { onDelete: "set null" }),
+  // Lista completa de avalistas; los campos aval_* de arriba son espejo del primero (legacy)
+  avalistas: jsonb("avalistas").default([]),
   // Modalidad renting
   modalidad_renting: modalidadRentingEnum("modalidad_renting"),
   importe_facturado_begreat: numeric("importe_facturado_begreat", { precision: 12, scale: 2 }),

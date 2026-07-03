@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
+import { avalContactCond } from "@/lib/avalistas";
 import { clients, contacts, contactNotes, operations, avalDocuments } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import DocumentsSection from "@/components/DocumentsSection";
@@ -38,7 +39,7 @@ export default async function ContactoDetallePage({ params }: { params: Promise<
     status: operations.status,
     importe: operations.importe,
     created_at: operations.created_at,
-  }).from(operations).where(eq(operations.aval_contact_id, contactoId)).orderBy(operations.created_at);
+  }).from(operations).where(avalContactCond(contactoId)).orderBy(operations.created_at);
 
   const opAvaladaIds = opsAvaladas.map(o => o.id);
   const avalDocs = opAvaladaIds.length > 0

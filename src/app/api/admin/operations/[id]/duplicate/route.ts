@@ -64,6 +64,7 @@ export async function POST(
     aval_empresa: original.aval_empresa,
     aval_contact_id: original.aval_contact_id,
     aval_client_id: original.aval_client_id,
+    avalistas: original.avalistas,
     modalidad_renting: original.modalidad_renting,
     necesidad: original.necesidad,
     entidad_preferencia: original.entidad_preferencia,

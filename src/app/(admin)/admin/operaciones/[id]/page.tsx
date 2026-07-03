@@ -1,7 +1,8 @@
 import { db } from "@/db";
 import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues, financialEntities, entityOffices, entityOfficeContacts, operationDocuments, clientDocuments, avalDocuments, contacts, operationTasks } from "@/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
+import { avalistasDeOp } from "@/lib/avalistas";
 import Link from "next/link";
 import AdminOpForm from "./AdminOpForm";
 import AdminOpResultadoPanel from "./AdminOpResultadoPanel";
@@ -82,6 +83,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       aval_empresa: operations.aval_empresa,
       aval_contact_id: operations.aval_contact_id,
       aval_client_id: operations.aval_client_id,
+      avalistas: operations.avalistas,
       necesidad: operations.necesidad,
       modalidad_renting: operations.modalidad_renting,
       importe_facturado_begreat: operations.importe_facturado_begreat,
@@ -127,9 +129,14 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
     ? await db.select().from(avalDocuments).where(eq(avalDocuments.operation_id, id)).orderBy(avalDocuments.created_at)
     : [];
 
-  const avalContactData = op.aval_contact_id
-    ? await db.select({ id: contacts.id, client_id: contacts.client_id }).from(contacts).where(eq(contacts.id, op.aval_contact_id)).limit(1).then(r => r[0] ?? null)
-    : null;
+  // Lista de avalistas (columna nueva con fallback a los campos legacy)
+  const avalistasList = avalistasDeOp(op);
+  const avalContactIds = avalistasList.map(a => a.contact_id).filter((x): x is string => !!x);
+  const avalContactsData = avalContactIds.length > 0
+    ? await db.select({ id: contacts.id, client_id: contacts.client_id }).from(contacts).where(inArray(contacts.id, avalContactIds))
+    : [];
+  const avalContactClientId = (contactId: string | null) =>
+    avalContactsData.find(c => c.id === contactId)?.client_id ?? op.client_id;
 
   const opNotes = await db
     .select()
@@ -151,8 +158,8 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
   if (op.client_nombre) {
     taskAssignees.push({ id: "__cliente__", nombre: op.client_nombre });
   }
-  if (op.tiene_aval) {
-    const avalName = op.aval_empresa || op.aval_nombre || "Avalista";
+  if (avalistasList.length > 0) {
+    const avalName = avalistasList.map(a => a.nombre).join(", ") || "Avalista";
     taskAssignees.push({ id: "__avalista__", nombre: avalName });
   }
 
@@ -442,37 +449,38 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
                     </div>
                   ) : null)}
 
-                  {/* Aval */}
-                  {op.tiene_aval && op.aval_tipo && (
-                    <div className="pt-3 mt-3 border-t border-gray-100">
+                  {/* Avalistas */}
+                  {avalistasList.map((av, avIdx) => (
+                    <div key={avIdx} className="pt-3 mt-3 border-t border-gray-100">
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">
-                        {op.aval_tipo === "persona_fisica" ? "Avalista (persona física)" : "Avalista (empresa)"}
+                        {avalistasList.length > 1 ? `Avalista ${avIdx + 1} ` : "Avalista "}
+                        {av.tipo === "persona_fisica" ? "(persona física)" : "(empresa)"}
                       </dt>
-                      {op.aval_tipo === "persona_fisica" ? (
+                      {av.tipo === "persona_fisica" ? (
                         <dd className="text-sm text-gray-800">
-                          {op.aval_contact_id ? (
-                            <Link href={`/admin/clientes/${avalContactData?.client_id ?? op.client_id}/contactos/${op.aval_contact_id}`} className="font-medium text-[#2E1A47] hover:underline">{op.aval_nombre}</Link>
+                          {av.contact_id ? (
+                            <Link href={`/admin/clientes/${avalContactClientId(av.contact_id)}/contactos/${av.contact_id}`} className="font-medium text-[#2E1A47] hover:underline">{av.nombre}</Link>
                           ) : (
-                            <p className="font-medium">{op.aval_nombre}</p>
+                            <p className="font-medium">{av.nombre}</p>
                           )}
-                          {op.aval_dni && <p className="text-xs text-gray-500">DNI: {op.aval_dni}</p>}
-                          {op.aval_empresa && <p className="text-xs text-gray-500">Empresa: {op.aval_empresa}</p>}
-                          {op.aval_email && <p className="text-xs text-gray-500">{op.aval_email}</p>}
-                          {op.aval_telefono && <p className="text-xs text-gray-500">{op.aval_telefono}</p>}
+                          {av.dni && <p className="text-xs text-gray-500">DNI: {av.dni}</p>}
+                          {av.empresa && <p className="text-xs text-gray-500">Empresa: {av.empresa}</p>}
+                          {av.email && <p className="text-xs text-gray-500">{av.email}</p>}
+                          {av.telefono && <p className="text-xs text-gray-500">{av.telefono}</p>}
                         </dd>
                       ) : (
                         <dd className="text-sm text-gray-800">
-                          {op.aval_client_id ? (
-                            <Link href={`/admin/clientes/${op.aval_client_id}`} className="font-medium text-[#2E1A47] hover:underline">{op.aval_nombre}</Link>
+                          {av.client_id ? (
+                            <Link href={`/admin/clientes/${av.client_id}`} className="font-medium text-[#2E1A47] hover:underline">{av.nombre}</Link>
                           ) : (
-                            <p className="font-medium">{op.aval_nombre}</p>
+                            <p className="font-medium">{av.nombre}</p>
                           )}
-                          {op.aval_persona_contacto && <p className="text-xs text-gray-500">Contacto: {op.aval_persona_contacto}</p>}
-                          {op.aval_email && <p className="text-xs text-gray-500">{op.aval_email}</p>}
+                          {av.persona_contacto && <p className="text-xs text-gray-500">Contacto: {av.persona_contacto}</p>}
+                          {av.email && <p className="text-xs text-gray-500">{av.email}</p>}
                         </dd>
                       )}
                     </div>
-                  )}
+                  ))}
 
                   {/* Entidad financiera */}
                   {op.entidad_financiera && (
@@ -571,6 +579,12 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialAvalEmpresa={op.aval_empresa ?? null}
             initialAvalContactId={op.aval_contact_id ?? null}
             initialAvalClientId={op.aval_client_id ?? null}
+            initialAvalistas={avalistasList.map(a => ({
+              tipo: a.tipo, nombre: a.nombre, email: a.email ?? "", telefono: a.telefono ?? "",
+              persona_contacto: a.persona_contacto ?? "", dni: a.dni ?? "", empresa: a.empresa ?? "",
+              contact_id: a.contact_id, client_id: a.client_id,
+              cif: "", direccion: "", cnae: "", web: "",
+            }))}
             initialModalidadRenting={op.modalidad_renting ?? null}
             initialCuotaAproxMin={op.cuota_aproximada_min ?? null}
             initialCuotaAproxMax={op.cuota_aproximada_max ?? null}

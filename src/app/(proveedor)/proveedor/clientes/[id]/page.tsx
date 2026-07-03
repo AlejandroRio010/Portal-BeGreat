@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
+import { avalClientCond } from "@/lib/avalistas";
 import { clients, contacts, operations, suppliers, collaborators, clientNotes, customFields, customFieldValues, clientDocuments, operationDocuments, avalDocuments, docChecklistTemplates, docChecklistCustomItems, docChecklistEntries, entityTasks } from "@/db/schema";
 import ClienteEditFormPortal from "./ClienteEditFormPortal";
 import NuevoContactoForm from "./NuevoContactoForm";
@@ -128,7 +129,7 @@ export default async function ClienteDetallePage({ params }: { params: Promise<{
     client_nombre: clients.nombre,
   }).from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
-    .where(and(eq(operations.aval_client_id, id), eq(operations.supplier_id, userId)))
+    .where(and(avalClientCond(id), eq(operations.supplier_id, userId)))
     .orderBy(operations.created_at);
 
   const FASES_APROBADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];

@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import EmpresaSearchInput from "@/components/EmpresaSearchInput";
-import { fmtPctInput, fmtEuroInput, rawFromFmt, formatDocId } from "@/lib/format";
+import { fmtPctInput, fmtEuroInput, rawFromFmt } from "@/lib/format";
+import AvalistasEditor, { type AvalistaForm, emptyAvalista, avalistasPayload } from "@/components/AvalistasEditor";
 
 const FASES_CONSULTORIA = [
   "Pre-análisis",
@@ -76,6 +76,7 @@ interface Props {
   initialAvalEmpresa?: string | null;
   initialAvalContactId?: string | null;
   initialAvalClientId?: string | null;
+  initialAvalistas?: AvalistaForm[];
   initialModalidadRenting?: string | null;
   initialCuotaAproxMin?: string | null;
   initialCuotaAproxMax?: string | null;
@@ -140,6 +141,7 @@ export default function AdminOpForm({
   initialAvalEmpresa,
   initialAvalContactId,
   initialAvalClientId,
+  initialAvalistas = [],
   initialModalidadRenting,
   initialCuotaAproxMin,
   initialCuotaAproxMax,
@@ -239,31 +241,7 @@ export default function AdminOpForm({
   const [entidadDestino, setEntidadDestino] = useState(initialEntidadDestino ?? "");
   const [entidadVisible, setEntidadVisible] = useState(initialEntidadVisible);
   const [tieneAval, setTieneAval] = useState(!!initialTieneAval);
-  const [avalTipo, setAvalTipo] = useState(initialAvalTipo ?? "persona_fisica");
-  const [avalNombre, setAvalNombre] = useState(initialAvalNombre ?? "");
-  const [avalEmail, setAvalEmail] = useState(initialAvalEmail ?? "");
-  const [avalTelefono, setAvalTelefono] = useState(initialAvalTelefono ?? "");
-  const [avalPersonaContacto, setAvalPersonaContacto] = useState(initialAvalPersonaContacto ?? "");
-  const [avalDni, setAvalDni] = useState(initialAvalDni ?? "");
-  const [avalEmpresa, setAvalEmpresa] = useState(initialAvalEmpresa ?? "");
-  const [avalContactId, setAvalContactId] = useState<string | null>(initialAvalContactId ?? null);
-  const [avalClientId, setAvalClientId] = useState<string | null>(initialAvalClientId ?? null);
-
-  // Aval search state
-  const [avalSearchResults, setAvalSearchResults] = useState<any[]>([]);
-  const [avalSearchOpen, setAvalSearchOpen] = useState(false);
-  const avalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [avalEmpresaResults, setAvalEmpresaResults] = useState<any[]>([]);
-  const [avalEmpresaOpen, setAvalEmpresaOpen] = useState(false);
-  const avalEmpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [avalEmpresaNueva, setAvalEmpresaNueva] = useState(false);
-  const [avalCif, setAvalCif] = useState("");
-  const [avalDireccion, setAvalDireccion] = useState("");
-  const [avalCnae, setAvalCnae] = useState("");
-  const [avalWeb, setAvalWeb] = useState("");
-  const [pfEmpresaResults, setPfEmpresaResults] = useState<any[]>([]);
-  const [pfEmpresaOpen, setPfEmpresaOpen] = useState(false);
-  const pfEmpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [avalistas, setAvalistas] = useState<AvalistaForm[]>(initialAvalistas);
 
   // Focus: show raw number; Blur: show formatted
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -408,87 +386,10 @@ export default function AdminOpForm({
         necesidad: necesidad || null, modalidad_renting: modalidadRenting || null,
         cuota_aproximada_min: cuotaAproxMin || null, cuota_aproximada_max: cuotaAproxMax || null,
         cuota_definitiva: cuotaDefinitiva || null,
-        tiene_aval: tieneAval,
-        aval_tipo: tieneAval ? avalTipo : null,
-        aval_nombre: tieneAval ? (avalNombre || null) : null,
-        aval_email: tieneAval ? (avalEmail || null) : null,
-        aval_telefono: tieneAval ? (avalTelefono || null) : null,
-        aval_persona_contacto: tieneAval ? (avalPersonaContacto || null) : null,
-        aval_dni: tieneAval && avalTipo === "persona_fisica" ? (avalDni || null) : null,
-        aval_empresa: tieneAval && avalTipo === "persona_fisica" ? (avalEmpresa || null) : null,
-        aval_contact_id: tieneAval && avalTipo === "persona_fisica" ? (avalContactId || null) : null,
-        aval_client_id: tieneAval && avalTipo === "empresa" ? (avalClientId || null) : null,
-        aval_cif: tieneAval && avalTipo === "empresa" ? (avalCif || null) : null,
-        aval_direccion: tieneAval && avalTipo === "empresa" ? (avalDireccion || null) : null,
-        aval_cnae: tieneAval && avalTipo === "empresa" ? (avalCnae || null) : null,
-        aval_web: tieneAval && avalTipo === "empresa" ? (avalWeb || null) : null });
+        avalistas: tieneAval ? avalistasPayload(avalistas) : [] });
       setSavedBasic(true);
     } catch { setError("Error al guardar datos básicos."); }
     finally { setSavingBasic(false); }
-  }
-
-  function buscarPersonaAval(q: string) {
-    setAvalNombre(q);
-    setAvalContactId(null);
-    if (avalTimer.current) clearTimeout(avalTimer.current);
-    if (q.length < 2) { setAvalSearchResults([]); setAvalSearchOpen(false); return; }
-    avalTimer.current = setTimeout(async () => {
-      const res = await fetch(`/api/search/personas?q=${encodeURIComponent(q)}`);
-      const data = await res.json();
-      setAvalSearchResults(data);
-      setAvalSearchOpen(data.length > 0);
-    }, 250);
-  }
-
-  function selectPersonaAval(p: any) {
-    setAvalNombre(p.nombre);
-    setAvalEmail(p.email ?? "");
-    setAvalTelefono(p.telefono ?? "");
-    setAvalEmpresa(p.empresa ?? p.client_nombre ?? "");
-    setAvalPersonaContacto(p.rol ?? "");
-    setAvalContactId(p.id ?? null);
-    setAvalSearchResults([]);
-    setAvalSearchOpen(false);
-  }
-
-  function buscarEmpresaAval(q: string) {
-    setAvalNombre(q);
-    setAvalClientId(null);
-    if (avalEmpTimer.current) clearTimeout(avalEmpTimer.current);
-    if (q.length < 2) { setAvalEmpresaResults([]); setAvalEmpresaOpen(false); return; }
-    avalEmpTimer.current = setTimeout(async () => {
-      const dbRes = await fetch(`/api/search/clientes?q=${encodeURIComponent(q)}`).then(r => r.json()).catch(() => []);
-      setAvalEmpresaResults(dbRes);
-      setAvalEmpresaOpen(true);
-    }, 300);
-  }
-
-  function selectClienteAval(c: any) {
-    setAvalNombre(c.nombre);
-    setAvalEmail(c.email ?? "");
-    setAvalTelefono(c.telefono ?? "");
-    setAvalPersonaContacto(c.contacto_nombre ?? "");
-    setAvalClientId(c.id ?? null);
-    setAvalEmpresaResults([]);
-    setAvalEmpresaOpen(false);
-    setAvalEmpresaNueva(false);
-  }
-
-  function buscarPfEmpresa(q: string) {
-    setAvalEmpresa(q);
-    if (pfEmpTimer.current) clearTimeout(pfEmpTimer.current);
-    if (q.length < 2) { setPfEmpresaResults([]); setPfEmpresaOpen(false); return; }
-    pfEmpTimer.current = setTimeout(async () => {
-      const res = await fetch(`/api/search/clientes?q=${encodeURIComponent(q)}`).then(r => r.json()).catch(() => []);
-      setPfEmpresaResults(res);
-      setPfEmpresaOpen(res.length > 0);
-    }, 300);
-  }
-
-  function clearAvalEmpresa() {
-    setAvalNombre(""); setAvalEmail(""); setAvalTelefono(""); setAvalPersonaContacto("");
-    setAvalClientId(null); setAvalEmpresaNueva(false);
-    setAvalCif(""); setAvalDireccion(""); setAvalCnae(""); setAvalWeb("");
   }
 
   async function handleSave() {
@@ -706,162 +607,16 @@ export default function AdminOpForm({
           <div className="grid grid-cols-2 gap-0 border border-gray-200">
             <button type="button" onClick={() => setTieneAval(false)}
               className={`py-2 text-xs font-semibold transition-all ${!tieneAval ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>No</button>
-            <button type="button" onClick={() => setTieneAval(true)}
+            <button type="button" onClick={() => { setTieneAval(true); if (avalistas.length === 0) setAvalistas([emptyAvalista()]); }}
               className={`py-2 text-xs font-semibold transition-all border-l border-gray-200 ${tieneAval ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>Sí</button>
           </div>
           {tieneAval && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-0 border border-gray-200">
-                <button type="button" onClick={() => { setAvalTipo("persona_fisica"); setAvalNombre(""); setAvalEmail(""); setAvalTelefono(""); setAvalPersonaContacto(""); setAvalDni(""); setAvalEmpresa(""); setAvalContactId(null); setAvalClientId(null); }}
-                  className={`py-2 text-xs font-semibold transition-all ${avalTipo === "persona_fisica" ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>Persona física</button>
-                <button type="button" onClick={() => { setAvalTipo("empresa"); setAvalNombre(""); setAvalEmail(""); setAvalTelefono(""); setAvalPersonaContacto(""); setAvalDni(""); setAvalEmpresa(""); setAvalContactId(null); setAvalClientId(null); }}
-                  className={`py-2 text-xs font-semibold transition-all border-l border-gray-200 ${avalTipo === "empresa" ? "bg-[#2E1A47] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>Empresa</button>
-              </div>
-
-              {avalTipo === "persona_fisica" ? (
-                <>
-                  <div className="relative">
-                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Nombre del avalista</label>
-                    <input value={avalNombre} onChange={(e) => buscarPersonaAval(e.target.value)}
-                      onBlur={() => setTimeout(() => setAvalSearchOpen(false), 200)}
-                      className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
-                      placeholder="Buscar persona de contacto..." autoComplete="off" />
-                    {avalSearchOpen && avalSearchResults.length > 0 && (
-                      <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-gray-200 shadow-lg max-h-48 overflow-y-auto">
-                        {avalSearchResults.map((p: any, i: number) => (
-                          <button key={i} type="button" onMouseDown={() => selectPersonaAval(p)}
-                            className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
-                            <p className="text-xs font-semibold text-gray-800">{p.nombre}</p>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {avalContactId && <p className="text-[10px] text-emerald-600 mt-1">Vinculado a contacto existente</p>}
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">DNI / NIF</label>
-                      <input value={avalDni} onChange={(e) => setAvalDni(e.target.value)}
-                        onBlur={e => setAvalDni(formatDocId(e.target.value))}
-                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" placeholder="12345678A" />
-                    </div>
-                    <div className="relative">
-                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Empresa</label>
-                      <input value={avalEmpresa} onChange={(e) => buscarPfEmpresa(e.target.value)}
-                        onBlur={() => setTimeout(() => setPfEmpresaOpen(false), 200)}
-                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" placeholder="Buscar empresa..." />
-                      {pfEmpresaOpen && pfEmpresaResults.length > 0 && (
-                        <div className="absolute z-30 left-0 right-0 top-full bg-white border border-gray-200 shadow-lg max-h-40 overflow-y-auto">
-                          {pfEmpresaResults.map((c: any) => (
-                            <button key={c.id} type="button"
-                              onClick={() => { setAvalEmpresa(c.nombre); setPfEmpresaOpen(false); }}
-                              className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
-                              <p className="text-xs font-semibold text-gray-800">{c.nombre}</p>
-                              {c.cif && <p className="text-[10px] text-gray-400">{c.cif}</p>}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
-                      <input type="email" value={avalEmail} onChange={(e) => setAvalEmail(e.target.value)}
-                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Teléfono</label>
-                      <input value={avalTelefono} onChange={(e) => setAvalTelefono(e.target.value)}
-                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                    </div>
-                  </div>
-                </>
-              ) : avalClientId ? (
-                <div className="flex items-center justify-between border border-[#2E1A47] bg-[#EEEBF3] px-3 py-2">
-                  <div>
-                    <p className="text-xs font-semibold text-[#2E1A47]">{avalNombre}</p>
-                    <p className="text-[10px] text-gray-500">{[avalEmail, avalTelefono].filter(Boolean).join(" · ")}</p>
-                  </div>
-                  <button type="button" onClick={clearAvalEmpresa} className="text-[10px] text-gray-400 hover:text-red-500">✕ Cambiar</button>
-                </div>
-              ) : avalEmpresaNueva ? (
-                <div className="border border-emerald-200 bg-emerald-50/50 p-3 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Nueva empresa avalista</p>
-                    <button type="button" onClick={clearAvalEmpresa} className="text-[10px] text-gray-400 hover:text-red-500">✕ Cancelar</button>
-                  </div>
-                  <EmpresaSearchInput
-                    value={avalNombre}
-                    onChange={setAvalNombre}
-                    inp="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
-                    labelCls="block text-xs text-gray-400 uppercase tracking-wider mb-1.5"
-                    onSelect={(data) => {
-                      setAvalNombre(data.nombre);
-                      if (data.email) setAvalEmail(data.email);
-                      if (data.telefono) setAvalTelefono(data.telefono);
-                      if (data.cif) setAvalCif(data.cif);
-                      if (data.direccion) setAvalDireccion(data.direccion);
-                      if (data.cnae) setAvalCnae(data.cnae);
-                      if (data.web) setAvalWeb(data.web);
-                    }}
-                    onCifDuplicate={() => {}}
-                  />
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Persona de contacto</label>
-                      <input value={avalPersonaContacto} onChange={(e) => setAvalPersonaContacto(e.target.value)}
-                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
-                      <input type="email" value={avalEmail} onChange={(e) => setAvalEmail(e.target.value)}
-                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Teléfono</label>
-                      <input value={avalTelefono} onChange={(e) => setAvalTelefono(e.target.value)}
-                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="relative">
-                    <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Empresa avalista</label>
-                    <input value={avalNombre} onChange={(e) => buscarEmpresaAval(e.target.value)}
-                      onBlur={() => setTimeout(() => setAvalEmpresaOpen(false), 200)}
-                      className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
-                      placeholder="Buscar empresa..." autoComplete="off" />
-                    {avalEmpresaOpen && (
-                      <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-gray-200 shadow-lg max-h-60 overflow-y-auto">
-                        {avalEmpresaResults.map((c: any) => (
-                          <button key={c.id} type="button" onMouseDown={() => selectClienteAval(c)}
-                            className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
-                            <p className="text-xs font-semibold text-gray-800">{c.nombre}</p>
-                            <p className="text-[10px] text-gray-400">{[c.codigo, c.cif].filter(Boolean).join(" · ")}</p>
-                          </button>
-                        ))}
-                        <button type="button" onMouseDown={() => { setAvalEmpresaOpen(false); setAvalEmpresaNueva(true); }}
-                          className="w-full text-left px-3 py-2.5 bg-emerald-50 hover:bg-emerald-100 border-t border-gray-200">
-                          <p className="text-xs font-bold text-emerald-700">+ Nueva empresa (buscar en API)</p>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Persona de contacto</label>
-                      <input value={avalPersonaContacto} onChange={(e) => setAvalPersonaContacto(e.target.value)}
-                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
-                      <input type="email" value={avalEmail} onChange={(e) => setAvalEmail(e.target.value)}
-                        className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            <AvalistasEditor
+              avalistas={avalistas}
+              onChange={setAvalistas}
+              inputCls="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
+              labelCls="block text-xs text-gray-400 uppercase tracking-wider mb-1.5"
+            />
           )}
         </div>
 
