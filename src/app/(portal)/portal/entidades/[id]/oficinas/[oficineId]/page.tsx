@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { collaborators, entityOffices, financialEntities, operations, clients, entityOfficeContacts, officeNotes } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import NotesSection from "@/components/NotesSection";
@@ -30,10 +30,12 @@ export default async function PortalOficinaFichaPage({ params }: { params: Promi
   const contactos = await db.select().from(entityOfficeContacts).where(eq(entityOfficeContacts.office_id, oficineId)).orderBy(entityOfficeContacts.created_at);
   const notes = await db.select().from(officeNotes).where(eq(officeNotes.office_id, oficineId)).orderBy(officeNotes.created_at);
 
+  // Solo las operaciones del propio colaborador: los KPIs de la oficina no
+  // deben revelar actividad de otros colaboradores
   const ops = await db
     .select({ id: operations.id, nombre: operations.nombre, pipeline_key: operations.pipeline_key, fase: operations.fase, status: operations.status, importe: operations.importe, created_at: operations.created_at, client_nombre: clients.nombre })
     .from(operations).leftJoin(clients, eq(operations.client_id, clients.id))
-    .where(eq(operations.entity_office_id, oficineId)).orderBy(operations.created_at);
+    .where(and(eq(operations.entity_office_id, oficineId), eq(operations.collaborator_id, userId))).orderBy(operations.created_at);
 
   const FASES_APROBADAS = ["Operación aprobada", "Contrato firmado", "Honorarios pagados", "Condiciones aceptadas", "Transferencia realizada"];
   const FASES_ESTUDIO = ["Pre-análisis", "Firma de honorarios", "En estudio por entidad"];

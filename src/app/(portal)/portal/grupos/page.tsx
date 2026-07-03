@@ -64,7 +64,7 @@ export default async function PortalGruposPage() {
   const clienteIds = clientesConGrupo.map(c => c.id);
   const ops = clienteIds.length > 0
     ? await db.select({ client_id: operations.client_id, fase: operations.fase, importe: operations.importe })
-        .from(operations).where(inArray(operations.client_id, clienteIds))
+        .from(operations).where(and(inArray(operations.client_id, clienteIds), eq(operations.collaborator_id, userId)))
     : [];
 
   return (

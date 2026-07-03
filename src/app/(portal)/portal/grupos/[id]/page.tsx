@@ -63,7 +63,7 @@ export default async function PortalGrupoFichaPage({ params }: { params: Promise
     })
     .from(operations)
     .leftJoin(clients, eq(operations.client_id, clients.id))
-    .where(inArray(operations.client_id, empresaIds))
+    .where(and(inArray(operations.client_id, empresaIds), eq(operations.collaborator_id, userId)))
     .orderBy(operations.fecha_cierre, operations.created_at);
 
   const firmadas = ops.filter(o => FIRMADAS.includes(o.fase ?? ""));

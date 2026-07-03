@@ -33,7 +33,7 @@ export default async function ContactoDetallePage({ params }: { params: Promise<
     status: operations.status,
     importe: operations.importe,
     created_at: operations.created_at,
-  }).from(operations).where(eq(operations.aval_contact_id, contactoId)).orderBy(operations.created_at);
+  }).from(operations).where(and(eq(operations.aval_contact_id, contactoId), eq(operations.collaborator_id, userId))).orderBy(operations.created_at);
 
   const opAvaladaIds = opsAvaladas.map(o => o.id);
   const avalDocs = opAvaladaIds.length > 0
