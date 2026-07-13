@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
+import { comisionDeColaborador } from "@/lib/comisiones";
 import { operations, clients, pipelines, collaborators } from "@/db/schema";
 import { eq, and, notInArray, inArray } from "drizzle-orm";
 import Link from "next/link";
@@ -30,6 +31,7 @@ export default async function RentingPage() {
       status: operations.status,
       importe: operations.importe,
       comision_colaborador: operations.comision_colaborador,
+      colaboradores_comision: operations.colaboradores_comision,
       facturacion_renting: operations.facturacion_renting,
       modalidad_renting: operations.modalidad_renting,
       importe_facturado_begreat: operations.importe_facturado_begreat,
@@ -66,7 +68,7 @@ export default async function RentingPage() {
         </div>
       ) : (
         <PortalKanbanRenting
-          ops={ops.map(o => ({ ...o, importe: o.importe ?? null, comision_colaborador: o.comision_colaborador ?? null, facturacion_renting: o.facturacion_renting ?? null, modalidad_renting: o.modalidad_renting ?? null, importe_facturado_begreat: o.importe_facturado_begreat ?? null, importe_facturado_visible: o.importe_facturado_visible ?? false, plazo_meses: o.plazo_meses ?? null }))}
+          ops={ops.map(({ colaboradores_comision, ...o }) => { const mi = comisionDeColaborador({ comision_colaborador: o.comision_colaborador, colaboradores_comision }, userId); return { ...o, importe: o.importe ?? null, comision_colaborador: mi > 0 ? String(mi) : null, facturacion_renting: o.facturacion_renting ?? null, modalidad_renting: o.modalidad_renting ?? null, importe_facturado_begreat: o.importe_facturado_begreat ?? null, importe_facturado_visible: o.importe_facturado_visible ?? false, plazo_meses: o.plazo_meses ?? null }; })}
           fases={fases.filter(f => f !== "Transferencia realizada")}
           canEdit={puedeEditar}
         />

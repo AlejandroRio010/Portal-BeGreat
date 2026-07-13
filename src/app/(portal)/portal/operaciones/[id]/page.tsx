@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
+import { comisionDeColaborador } from "@/lib/comisiones";
 import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments, clientDocuments, avalDocuments, financialEntities, entityOffices, entityOfficeContacts, contacts, operationTasks } from "@/db/schema";
 import { avalistasDeOp } from "@/lib/avalistas";
 import { eq, and, asc, inArray } from "drizzle-orm";
@@ -44,6 +45,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
       fase: operations.fase,
       status: operations.status,
       comision_colaborador: operations.comision_colaborador,
+      colaboradores_comision: operations.colaboradores_comision,
       es_renovacion: operations.es_renovacion,
       operacion_original_id: operations.operacion_original_id,
       entidad_financiera: operations.entidad_financiera,
@@ -93,6 +95,9 @@ export default async function OperacionDetallePage({ params }: { params: Promise
     .limit(1);
 
   if (!op) notFound();
+
+  // Comisión propia del colaborador (su línea del reparto, no el total)
+  const miComisionOp = comisionDeColaborador(op, userId);
 
   const [colab] = await db
     .select({ nombre: collaborators.nombre, puede_editar_ops: collaborators.puede_editar_ops, puede_enviar_recordatorios: collaborators.puede_enviar_recordatorios, nivel_entidades: collaborators.nivel_entidades, logo_url: collaborators.logo_url })
@@ -262,12 +267,12 @@ export default async function OperacionDetallePage({ params }: { params: Promise
             {fmtEur(op.importe)}
           </p>
         </div>
-        <div className={`p-5 border ${op.comision_colaborador ? "bg-emerald-50 border-emerald-200" : "bg-white border-gray-200"}`}>
-          <p className={`text-xs uppercase tracking-widest mb-2 font-semibold ${op.comision_colaborador ? "text-emerald-600" : "text-gray-400"}`}>
+        <div className={`p-5 border ${miComisionOp > 0 ? "bg-emerald-50 border-emerald-200" : "bg-white border-gray-200"}`}>
+          <p className={`text-xs uppercase tracking-widest mb-2 font-semibold ${miComisionOp > 0 ? "text-emerald-600" : "text-gray-400"}`}>
             Fee / Comisión
           </p>
-          <p className={`text-2xl font-black ${op.comision_colaborador ? "text-emerald-700" : "text-gray-300"}`}>
-            {op.comision_colaborador ? fmtEur(op.comision_colaborador) : "Por confirmar"}
+          <p className={`text-2xl font-black ${miComisionOp > 0 ? "text-emerald-700" : "text-gray-300"}`}>
+            {miComisionOp > 0 ? fmtEur(miComisionOp) : "Por confirmar"}
           </p>
         </div>
         <div className="bg-white border border-gray-200 p-5">
@@ -374,7 +379,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                 campos.push({ label: "Fecha fin contrato", value: fmtFecha(op.fecha_fin_contrato) });
                 campos.push({ label: "Lugar de instalación", value: op.lugar_entrega });
                 campos.push({ label: "Modalidad", value: op.modalidad_renting ? (modalidadLabel[op.modalidad_renting] ?? op.modalidad_renting) : null });
-                campos.push({ label: "Fee colaborador", value: fmtEuro(op.comision_colaborador) });
+                campos.push({ label: "Fee colaborador", value: miComisionOp > 0 ? fmtEuro(String(miComisionOp)) : null });
               } else {
                 campos.push({ label: "Empresa cliente", value: op.client_nombre, href: op.client_id ? `/portal/clientes/${op.client_id}` : undefined });
                 campos.push({ label: "Persona de contacto", value: clienteContacto?.nombre ?? null, href: clienteContacto && op.client_id ? `/portal/clientes/${op.client_id}/contactos/${clienteContacto.id}` : undefined });
@@ -384,7 +389,7 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                 if (op.necesidad) campos.push({ label: "Necesidad del cliente", value: op.necesidad });
                 campos.push({ label: "Importe", value: fmtEuro(op.importe) });
                 campos.push({ label: "Honorarios firmados", value: op.honorarios_firmado != null ? (op.honorarios_firmado ? "Sí" : "No") : null });
-                campos.push({ label: "Fee colaborador", value: fmtEuro(op.comision_colaborador) });
+                campos.push({ label: "Fee colaborador", value: miComisionOp > 0 ? fmtEuro(String(miComisionOp)) : null });
               }
 
               return (

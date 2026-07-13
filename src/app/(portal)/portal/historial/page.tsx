@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
+import { comisionDeColaborador } from "@/lib/comisiones";
 import { operations, clients } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
@@ -38,15 +39,9 @@ export default async function HistorialPage({
     .where(eq(operations.collaborator_id, userId))
     .orderBy(operations.fecha_cierre, operations.created_at);
 
-  // Comisión propia: su línea en el reparto de colaboradores; si la op no
-  // tiene reparto, el campo legacy comision_colaborador
-  type ColabCom = { id?: string; nombre?: string; importe?: string };
-  function miComision(op: { comision_colaborador: string | null; colaboradores_comision: unknown }): number {
-    const reparto = (op.colaboradores_comision as ColabCom[] | null) ?? [];
-    if (reparto.length === 0) return Number(op.comision_colaborador ?? 0);
-    const mia = reparto.find(c => c.id === userId);
-    return mia ? (parseFloat(mia.importe ?? "") || 0) : 0;
-  }
+  // Comisión propia: su línea en el reparto (helper compartido)
+  const miComision = (op: { comision_colaborador: string | null; colaboradores_comision: unknown }) =>
+    comisionDeColaborador(op, userId);
 
   // Filters
   const filtered = allOps.filter((op) => {

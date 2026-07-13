@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
+import { comisionDeColaborador } from "@/lib/comisiones";
 import { clientGroups, clients, operations, clientGroupContacts, clientGroupNotes, entityTasks, collaborators } from "@/db/schema";
 import { eq, and, inArray, isNull, sql } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
@@ -56,6 +57,7 @@ export default async function PortalGrupoFichaPage({ params }: { params: Promise
       status: operations.status,
       importe: operations.importe,
       comision_colaborador: operations.comision_colaborador,
+      colaboradores_comision: operations.colaboradores_comision,
       fecha_cierre: operations.fecha_cierre,
       created_at: operations.created_at,
       client_id: operations.client_id,
@@ -68,7 +70,7 @@ export default async function PortalGrupoFichaPage({ params }: { params: Promise
 
   const firmadas = ops.filter(o => FIRMADAS.includes(o.fase ?? ""));
   const totalFinanciado = firmadas.reduce((s, o) => s + Number(o.importe ?? 0), 0);
-  const feeColab = firmadas.reduce((s, o) => s + Number(o.comision_colaborador ?? 0), 0);
+  const feeColab = firmadas.reduce((s, o) => s + comisionDeColaborador(o, userId), 0);
 
   function fmtFecha(d: Date | null | undefined) {
     if (!d) return "—";

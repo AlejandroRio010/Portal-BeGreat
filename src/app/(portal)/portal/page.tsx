@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
+import { comisionDeColaborador } from "@/lib/comisiones";
 import { operations, collaborators, clients } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { fmtEur, fmtNum } from "@/lib/format";
@@ -46,6 +47,7 @@ export default async function PortalHomePage({
       fase: operations.fase,
       pipeline_key: operations.pipeline_key,
       comision_colaborador: operations.comision_colaborador,
+      colaboradores_comision: operations.colaboradores_comision,
       importe: operations.importe,
       created_at: operations.created_at,
       client_nombre: clients.nombre,
@@ -57,13 +59,17 @@ export default async function PortalHomePage({
 
   const recentOps = allOps.slice(0, 5);
 
+  // Comisión propia del colaborador (su línea del reparto, no el total)
+  const mi = (o: { comision_colaborador: string | null; colaboradores_comision: unknown }) =>
+    comisionDeColaborador(o, userId);
+
   const firmadas = allOps.filter(o => FIRMADAS.includes(o.fase ?? ""));
   const pendientes = allOps.filter(o => o.status === "pendiente_de_validar");
   const enCurso = allOps.filter(o => o.status === "activa" && !FIRMADAS.includes(o.fase ?? ""));
 
-  const totalComision = firmadas.reduce((s, o) => s + Number(o.comision_colaborador ?? 0), 0);
+  const totalComision = firmadas.reduce((s, o) => s + mi(o), 0);
   const totalFinanciacion = firmadas.reduce((s, o) => s + Number(o.importe ?? 0), 0);
-  const feePendiente = [...pendientes, ...enCurso].reduce((s, o) => s + Number(o.comision_colaborador ?? 0), 0);
+  const feePendiente = [...pendientes, ...enCurso].reduce((s, o) => s + mi(o), 0);
 
   // Gráfico anual
   const availableYears = Array.from(new Set(allOps.map(o => new Date(o.created_at).getFullYear()))).sort((a,b) => b-a);
@@ -78,7 +84,7 @@ export default async function PortalHomePage({
     if (!FIRMADAS.includes(op.fase ?? "")) continue;
     const m = d.getMonth();
     monthlyOps[m] += 1;
-    monthlyFee[m] += Number(op.comision_colaborador ?? 0);
+    monthlyFee[m] += mi(op);
   }
   const maxOps = Math.max(...monthlyOps, 1);
   const yearTotalOps = monthlyOps.reduce((s,v) => s+v, 0);
@@ -288,8 +294,8 @@ export default async function PortalHomePage({
                     )}
                   </td>
                   <td className="px-6 py-3.5">
-                    {op.comision_colaborador
-                      ? <span className="text-sm font-bold text-[#2E1A47]">{fmtEur(op.comision_colaborador)}</span>
+                    {mi(op) > 0
+                      ? <span className="text-sm font-bold text-[#2E1A47]">{fmtEur(mi(op))}</span>
                       : <span className="text-xs text-gray-300">—</span>}
                   </td>
                   <td className="px-6 py-3.5 text-sm text-gray-400">

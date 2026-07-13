@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
+import { comisionDeColaborador } from "@/lib/comisiones";
 import { operations, clients, pipelines, collaborators } from "@/db/schema";
 import { eq, and, notInArray, inArray } from "drizzle-orm";
 import Link from "next/link";
@@ -30,6 +31,7 @@ export default async function ConsultoriaPage() {
       status: operations.status,
       importe: operations.importe,
       comision_colaborador: operations.comision_colaborador,
+      colaboradores_comision: operations.colaboradores_comision,
       client_nombre: clients.nombre,
     })
     .from(operations)
@@ -60,7 +62,7 @@ export default async function ConsultoriaPage() {
           </Link>
         </div>
       ) : (
-        <PortalKanban ops={ops.map(o => ({ ...o, importe: o.importe ?? null, comision_colaborador: o.comision_colaborador ?? null }))} fases={fases.filter(f => f !== "Honorarios pagados")} canEdit={puedeEditar} />
+        <PortalKanban ops={ops.map(({ colaboradores_comision, ...o }) => { const mi = comisionDeColaborador({ comision_colaborador: o.comision_colaborador, colaboradores_comision }, userId); return { ...o, importe: o.importe ?? null, comision_colaborador: mi > 0 ? String(mi) : null }; })} fases={fases.filter(f => f !== "Honorarios pagados")} canEdit={puedeEditar} />
       )}
     </div>
   );

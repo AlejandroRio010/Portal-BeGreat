@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
+import { comisionDeColaborador } from "@/lib/comisiones";
 import { operations, clients } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { redirect } from "next/navigation";
@@ -26,6 +27,7 @@ export default async function FirmadasMesPage({ params }: { params: Promise<{ ye
       fase: operations.fase,
       importe: operations.importe,
       comision_colaborador: operations.comision_colaborador,
+      colaboradores_comision: operations.colaboradores_comision,
       entidad_financiera: operations.entidad_financiera,
       created_at: operations.created_at,
       client_nombre: clients.nombre,
@@ -41,7 +43,8 @@ export default async function FirmadasMesPage({ params }: { params: Promise<{ ye
     return d.getFullYear() === y && d.getMonth() === m - 1;
   });
 
-  const totalComision = delMes.reduce((s, o) => s + Number(o.comision_colaborador ?? 0), 0);
+  const mi = (o: { comision_colaborador: string | null; colaboradores_comision: unknown }) => comisionDeColaborador(o, userId);
+  const totalComision = delMes.reduce((s, o) => s + mi(o), 0);
   const totalFinanciado = delMes.reduce((s, o) => s + Number(o.importe ?? 0), 0);
 
   return (
@@ -92,7 +95,7 @@ export default async function FirmadasMesPage({ params }: { params: Promise<{ ye
                     </span>
                   </td>
                   <td className="px-6 py-3.5 text-sm text-gray-700 font-medium">{op.importe ? fmtEur(Number(op.importe)) : "—"}</td>
-                  <td className="px-6 py-3.5 text-sm font-bold text-[#2E1A47]">{op.comision_colaborador ? fmtEur(Number(op.comision_colaborador)) : "—"}</td>
+                  <td className="px-6 py-3.5 text-sm font-bold text-[#2E1A47]">{mi(op) > 0 ? fmtEur(mi(op)) : "—"}</td>
                   <td className="px-6 py-3.5 text-right">
                     <Link href={`/portal/operaciones/${op.id}`} className="text-xs text-[#2E1A47] font-semibold hover:underline">Ver →</Link>
                   </td>
