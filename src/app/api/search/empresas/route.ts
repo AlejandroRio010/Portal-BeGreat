@@ -37,6 +37,9 @@ export async function GET(req: NextRequest) {
           "Accept": "application/json",
           "X-Requested-With": "XMLHttpRequest",
           "X-Search-Origin": "web-search",
+          // apiempresas.es devuelve 403 si la petición no parece venir de un navegador
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+          "Referer": "https://apiempresas.es/",
         },
       }
     );
