@@ -19,8 +19,77 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   Capa de diseño "Apple": redondeos, sombras suaves y transiciones
+   aplicados globalmente sobre los patrones de clases existentes.
+   ══════════════════════════════════════════════════════════════════ */
+
+h1, h2, h3 { letter-spacing: -0.02em; }
+
+/* Controles: esquinas redondeadas y foco suave */
+input, select, textarea {
+  border-radius: 10px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 3.5px rgb(46 26 71 / 0.09);
+}
+button {
+  border-radius: 10px;
+  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+button:active { transform: scale(0.98); }
+a { transition: color 0.15s ease, background-color 0.15s ease, opacity 0.15s ease; }
+
+/* Controles segmentados (toggles Sí/No, modalidad, tipo…): el contenedor
+   se redondea y los botones internos vuelven a ser rectos */
+div[class*="grid-cols"][class*="border"] {
+  border-radius: 11px;
+  overflow: hidden;
+}
+div[class*="grid-cols"][class*="border"] > button { border-radius: 0; }
+
+/* Tarjetas blancas */
+.bg-white.border {
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgb(46 26 71 / 0.03), 0 8px 24px -14px rgb(46 26 71 / 0.10);
+}
+/* Cabeceras moradas dentro de tarjeta: redondear solo arriba */
+.bg-white.border > .bg-\[\#EEEBF3\]:first-child { border-radius: 16px 16px 0 0; }
+
+/* Bloques morados (banners de ficha, KPIs sueltos) — no los flex-1 de parejas */
+div.bg-\[\#2E1A47\]:not(.flex-1) { border-radius: 16px; }
+div.bg-\[\#EEEBF3\].px-6:not(.flex-1) { border-radius: 16px; }
+
+/* Parejas de KPIs y contenedores recortados */
+div.flex.overflow-hidden { border-radius: 16px; }
+
+/* Badges y chips → pills */
+span.inline-flex.items-center, span.inline-block { border-radius: 9999px; }
+
+/* Dropdowns de búsqueda */
+div.absolute.shadow-lg {
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgb(46 26 71 / 0.06), 0 16px 40px -12px rgb(46 26 71 / 0.18);
+}
+
+/* Zonas de subida (borde discontinuo) */
+div[class*="border-dashed"] { border-radius: 14px; }
+
+/* Avatares e iniciales de banners */
+div.h-14.w-14, div.w-8.h-8, div.w-10.h-10 { border-radius: 12px; }
+
+/* Scrollbars finos estilo macOS */
+* { scrollbar-width: thin; scrollbar-color: rgb(46 26 71 / 0.18) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: rgb(46 26 71 / 0.18); border-radius: 999px; }
+*::-webkit-scrollbar-track { background: transparent; }
 
 /* ── Editor de notas (texto enriquecido) ── */
 .notes-editor:empty::before {

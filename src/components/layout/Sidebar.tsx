@@ -69,10 +69,10 @@ export default function Sidebar({ nombre, identificador, role, puedeVerEntidades
   }
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-[#2E1A47] text-white z-50">
+    <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-gradient-to-b from-[#2E1A47] via-[#2A1740] to-[#1F0F33] text-white z-50">
 
       {/* Logo — centrado, link al inicio */}
-      <Link href={role === "admin" ? "/admin" : role === "proveedor" ? "/proveedor" : "/portal"} className="flex items-center justify-center px-6 py-6 border-b border-white/10 hover:bg-white/5 transition-colors">
+      <Link href={role === "admin" ? "/admin" : role === "proveedor" ? "/proveedor" : "/portal"} className="flex items-center justify-center px-6 py-6 hover:opacity-80 transition-opacity">
         <Image
           src="/begreat-logo-blanco.png"
           alt="BeGreat Consulting"
@@ -84,25 +84,25 @@ export default function Sidebar({ nombre, identificador, role, puedeVerEntidades
       </Link>
 
       {/* User info */}
-      <div className="px-5 py-4 border-b border-white/10">
+      <div className="mx-3 mb-2 px-3 py-3 rounded-2xl bg-white/[0.06] border border-white/[0.06]">
         <div className="flex items-center gap-3">
           {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt={nombre} className="w-8 h-8 object-contain flex-shrink-0 bg-white/10 p-0.5" />
+            <img src={logoUrl} alt={nombre} className="w-8 h-8 object-contain flex-shrink-0 bg-white/10 p-0.5 rounded-full" />
           ) : (
-            <div className="w-8 h-8 bg-white/15 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 uppercase">
+            <div className="w-8 h-8 bg-gradient-to-br from-white/25 to-white/10 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 uppercase !rounded-full">
               {nombre.charAt(0)}
             </div>
           )}
           <div className="min-w-0">
             <p className="text-sm font-semibold text-white truncate leading-tight">{nombre}</p>
-            <p className="text-xs text-white/35 mt-0.5">{identificador}</p>
+            <p className="text-[11px] text-white/40 mt-0.5">{identificador}</p>
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-3 overflow-y-auto">
+      <nav className="flex-1 py-2 px-3 overflow-y-auto space-y-0.5">
         {nav.map((item) => {
           const sub = (item as any).sub;
           const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
@@ -110,13 +110,13 @@ export default function Sidebar({ nombre, identificador, role, puedeVerEntidades
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-0 text-sm transition-all ${
+              className={`flex items-center rounded-xl text-sm transition-all ${
                 active
-                  ? "bg-white/12 text-white font-semibold border-l-2 border-white/70"
-                  : "text-white/55 hover:bg-white/7 hover:text-white/90 border-l-2 border-transparent"
+                  ? "bg-white/[0.14] text-white font-semibold shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]"
+                  : "text-white/55 hover:bg-white/[0.07] hover:text-white/90"
               }`}
             >
-              <span className={`py-2.5 flex-1 truncate ${sub ? "pl-9 pr-5 text-[13px]" : "px-5"}`}>
+              <span className={`py-2 flex-1 truncate ${sub ? "pl-7 pr-3 text-[13px]" : "px-3"}`}>
                 {sub && <span className="text-white/35 mr-1.5">→</span>}{item.label}
               </span>
             </Link>
@@ -125,10 +125,10 @@ export default function Sidebar({ nombre, identificador, role, puedeVerEntidades
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-white/10">
+      <div className="px-5 py-4 border-t border-white/[0.08]">
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="text-xs text-white/35 hover:text-white/65 transition-colors uppercase tracking-wider"
+          className="text-xs text-white/40 hover:text-white/70 transition-colors"
         >
           Cerrar sesión →
         </button>
