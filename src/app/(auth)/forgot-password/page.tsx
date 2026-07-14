@@ -49,7 +49,8 @@ export default function ForgotPasswordPage() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit}
+              className="space-y-5 rounded-3xl bg-white/[0.07] backdrop-blur-xl border border-white/[0.14] p-7 shadow-[0_24px_60px_-24px_rgb(0_0_0/0.5)]">
               <div>
                 <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-1.5">Email</label>
                 <input
@@ -58,7 +59,7 @@ export default function ForgotPasswordPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="email"
-                  className="w-full px-3.5 py-3 bg-transparent border border-white/30 text-sm text-white placeholder-white/35 focus:outline-none focus:border-white transition-colors"
+                  className="w-full px-4 py-3 rounded-xl bg-white/[0.07] border border-white/25 text-sm text-white placeholder-white/35 focus:outline-none focus:border-white/70 focus:bg-white/[0.10] transition-colors"
                   placeholder="tu@email.com"
                 />
               </div>
@@ -66,7 +67,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-white/15 backdrop-blur-sm border border-white/25 text-white py-3 text-sm font-bold tracking-wide hover:bg-white/25 transition-colors disabled:opacity-60"
+                className="w-full bg-[#FFC845] text-[#2E1A47] py-3 rounded-xl text-sm font-bold tracking-wide hover:bg-[#ffd469] shadow-[0_8px_24px_-8px_rgb(255_200_69/0.45)] transition-colors disabled:opacity-60"
               >
                 {loading ? "Enviando…" : "Enviar enlace de recuperación"}
               </button>

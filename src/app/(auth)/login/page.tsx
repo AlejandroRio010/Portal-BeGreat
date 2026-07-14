@@ -59,8 +59,9 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Credenciales — sin tarjeta, sobre la imagen */}
-        <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Credenciales — tarjeta de cristal redondeada */}
+        <form onSubmit={handleSubmit}
+          className="space-y-5 rounded-3xl bg-white/[0.07] backdrop-blur-xl border border-white/[0.14] p-7 shadow-[0_24px_60px_-24px_rgb(0_0_0/0.5)]">
           <div>
             <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-1.5">Email</label>
             <input
@@ -72,7 +73,7 @@ export default function LoginPage() {
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
-              className="w-full px-3.5 py-3 bg-transparent border border-white/30 text-sm text-white placeholder-white/35 focus:outline-none focus:border-white transition-colors"
+              className="w-full px-4 py-3 rounded-xl bg-white/[0.07] border border-white/25 text-sm text-white placeholder-white/35 focus:outline-none focus:border-white/70 focus:bg-white/[0.10] transition-colors"
               placeholder="tu@email.com"
             />
           </div>
@@ -85,19 +86,19 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="w-full px-3.5 py-3 bg-transparent border border-white/30 text-sm text-white placeholder-white/35 focus:outline-none focus:border-white transition-colors"
+              className="w-full px-4 py-3 rounded-xl bg-white/[0.07] border border-white/25 text-sm text-white placeholder-white/35 focus:outline-none focus:border-white/70 focus:bg-white/[0.10] transition-colors"
               placeholder="••••••••"
             />
           </div>
 
           {error && (
-            <p className="text-sm text-red-100 bg-red-500/20 border border-red-400/40 px-3.5 py-2.5">{error}</p>
+            <p className="text-sm text-red-100 bg-red-500/20 border border-red-400/40 rounded-xl px-3.5 py-2.5">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading || clearing}
-            className="w-full bg-[#FFC845] text-[#2E1A47] py-3 text-sm font-bold tracking-wide hover:bg-[#ffd469] shadow-[0_8px_24px_-8px_rgb(255_200_69/0.45)] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            className="w-full bg-[#FFC845] text-[#2E1A47] py-3 rounded-xl text-sm font-bold tracking-wide hover:bg-[#ffd469] shadow-[0_8px_24px_-8px_rgb(255_200_69/0.45)] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {clearing ? "Preparando…" : loading ? "Accediendo…" : "Entrar al portal"}
             {!loading && <span className="text-[#2E1A47]/60">→</span>}
