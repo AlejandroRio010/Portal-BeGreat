@@ -119,6 +119,7 @@ export default function Sidebar({ nombre, identificador, role, puedeVerEntidades
               <span className={`py-2 flex-1 truncate ${sub ? "pl-7 pr-3 text-[13px]" : "px-3"}`}>
                 {sub && <span className="text-white/35 mr-1.5">→</span>}{item.label}
               </span>
+              {active && <span className="w-1.5 h-1.5 rounded-full bg-[#FFC845] mr-3 flex-shrink-0" />}
             </Link>
           );
         })}

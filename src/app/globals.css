@@ -6,6 +6,7 @@
   --begreat-purple: #2E1A47;
   --begreat-purple-light: #EEEBF3;
   --begreat-purple-mid: #5a3d80;
+  --begreat-gold: #FFC845; /* dorado corporativo (logo/presentaciones) */
 }
 
 @theme inline {
@@ -31,6 +32,18 @@ body {
    ══════════════════════════════════════════════════════════════════ */
 
 h1, h2, h3 { letter-spacing: -0.02em; }
+
+/* Tipografía corporativa (Comfortaa) en titulares */
+h1, h2 {
+  font-family: var(--font-comfortaa), -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Selección de texto en dorado de marca */
+::selection { background: var(--begreat-gold); color: var(--begreat-purple); }
+
+/* Cifras destacadas sobre morado corporativo → dorado (jerarquía de marca) */
+div.bg-\[\#2E1A47\] .font-black { color: var(--begreat-gold); }
 
 /* Controles: esquinas redondeadas y foco suave */
 input, select, textarea {

@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
+import { Comfortaa } from "next/font/google";
 import "./globals.css";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
+
+// Tipografía corporativa BeGreat (titulares)
+const comfortaa = Comfortaa({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-comfortaa",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "BeGreat Consulting — Portal de Colaboradores",
@@ -16,7 +25,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className="h-full">
+    <html lang="es" className={`h-full ${comfortaa.variable}`}>
       <body className="min-h-full">
         <SessionProviderWrapper>{children}</SessionProviderWrapper>
       </body>

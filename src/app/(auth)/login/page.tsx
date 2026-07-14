@@ -97,10 +97,10 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || clearing}
-            className="w-full bg-white/15 backdrop-blur-sm border border-white/25 text-white py-3 text-sm font-bold tracking-wide hover:bg-white/25 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            className="w-full bg-[#FFC845] text-[#2E1A47] py-3 text-sm font-bold tracking-wide hover:bg-[#ffd469] shadow-[0_8px_24px_-8px_rgb(255_200_69/0.45)] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {clearing ? "Preparando…" : loading ? "Accediendo…" : "Entrar al portal"}
-            {!loading && <span className="text-white/70">→</span>}
+            {!loading && <span className="text-[#2E1A47]/60">→</span>}
           </button>
 
           <div className="text-center">
