@@ -140,9 +140,14 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
             <p className="text-lg font-black text-amber-700 whitespace-nowrap ml-4">{fmtEur(ivaTrimestre)}</p>
           </div>
 
-          {/* Categorías del mes (clic para filtrar la tabla) */}
+          {/* Categorías del mes (clic para filtrar; "Todo" vuelve al resumen) */}
           {porCategoria.length > 0 && (
             <div className="flex flex-wrap gap-3 mb-6">
+              <Link href={`/admin/finanzas?mes=${mes}`}
+                className={`px-4 py-3 border transition-all ${!cat ? "bg-[#2E1A47] border-[#2E1A47] text-white" : "bg-white border-gray-200 hover:border-[#2E1A47]/40"}`}>
+                <p className={`text-[10px] font-bold uppercase tracking-wider ${!cat ? "text-white/60" : "text-gray-400"}`}>Todo · {delMes.length}</p>
+                <p className={`text-lg font-black ${!cat ? "text-white" : "text-[#2E1A47]"}`}>{fmtEur(facturado)}</p>
+              </Link>
               {porCategoria.map(({ c, n, total }) => (
                 <Link key={c} href={`/admin/finanzas?mes=${mes}${cat === c ? "" : `&cat=${encodeURIComponent(c)}`}`}
                   className={`px-4 py-3 border transition-all ${cat === c ? "bg-[#2E1A47] border-[#2E1A47] text-white" : "bg-white border-gray-200 hover:border-[#2E1A47]/40"}`}>
@@ -172,33 +177,34 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
             {tabla.length === 0 ? (
               <div className="py-14 text-center"><p className="text-sm text-gray-400">Sin facturas este mes.</p></div>
             ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-[#EEEBF3] border-b border-gray-100">
-                    {["Fecha", "Nº", "Cliente", "Concepto", "Categoría", "Base", "IVA", "Total", "Estado"].map(h => (
-                      <th key={h} className="text-left px-4 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {tabla.map(f => {
-                    const b = ESTADO_BADGE[f.estado];
-                    return (
-                      <tr key={f.id} className="hover:bg-[#EEEBF3]/30 transition-colors">
-                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{new Date(f.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</td>
-                        <td className="px-4 py-3 text-xs font-mono font-bold text-[#2E1A47] whitespace-nowrap">{f.document_number}</td>
-                        <td className="px-4 py-3 text-sm font-semibold text-gray-800 max-w-[180px] truncate">{f.contact_name}</td>
-                        <td className="px-4 py-3 text-xs text-gray-500 max-w-[260px] truncate">{f.description ?? "—"}</td>
-                        <td className="px-4 py-3"><span className="inline-block px-2 py-0.5 text-[10px] font-semibold bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap">{f.categoria}</span></td>
-                        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{fmtEur(f.subtotal)}</td>
-                        <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{fmtEur(f.tax)}</td>
-                        <td className="px-4 py-3 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(f.total)}</td>
-                        <td className="px-4 py-3"><span className={`inline-flex px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${b.c}`}>{b.l}</span></td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <div className="overflow-x-auto" style={{ zoom: 0.85 }}>
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-[#EEEBF3] border-b border-gray-100">
+                      {["Fecha", "Nº", "Cliente", "Concepto", "Categoría", "IVA", "Total", "Estado"].map(h => (
+                        <th key={h} className="text-left px-3 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {tabla.map(f => {
+                      const b = ESTADO_BADGE[f.estado];
+                      return (
+                        <tr key={f.id} className="hover:bg-[#EEEBF3]/30 transition-colors">
+                          <td className="px-3 py-3 text-sm text-gray-500 whitespace-nowrap">{new Date(f.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</td>
+                          <td className="px-3 py-3 text-xs font-mono font-bold text-[#2E1A47] whitespace-nowrap">{f.document_number}</td>
+                          <td className="px-3 py-3 text-sm font-semibold text-gray-800 max-w-[150px] truncate" title={f.contact_name}>{f.contact_name}</td>
+                          <td className="px-3 py-3 text-xs text-gray-500 max-w-[200px] truncate" title={f.description ?? undefined}>{f.description ?? "—"}</td>
+                          <td className="px-3 py-3"><span className="inline-block px-2 py-0.5 text-[10px] font-semibold bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap">{f.categoria}</span></td>
+                          <td className="px-3 py-3 text-xs text-gray-400 whitespace-nowrap">{fmtEur(f.tax)}</td>
+                          <td className="px-3 py-3 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(f.total)}</td>
+                          <td className="px-3 py-3"><span className={`inline-flex px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${b.c}`}>{b.l}</span></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
