@@ -1,21 +1,12 @@
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getFacturasVenta, type CategoriaIngreso, type HoldedInvoice } from "@/lib/holded";
+import { getFacturasVenta, CATEGORIAS_INGRESO, type CategoriaIngreso, type HoldedInvoice } from "@/lib/holded";
 import { fmtEur } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-const CATEGORIAS: CategoriaIngreso[] = [
-  "Consultoría financiera",
-  "Renting — comisiones",
-  "Renting — equipos (margen)",
-  "CFO Externo",
-  "Recurrentes USA",
-  "Productos de inversión",
-  "Grupo",
-  "Otros",
-];
+const CATEGORIAS = CATEGORIAS_INGRESO;
 
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
@@ -88,7 +79,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Finanzas — Ingresos</h1>
-          <p className="text-sm text-gray-400 mt-1">Facturas de venta desde Holded · se marcan cobradas solas al conciliar el banco</p>
+          <p className="text-sm text-gray-400 mt-1">Bearing Point S.L. · facturas de venta desde Holded · clasificadas por cuenta contable</p>
         </div>
         <div className="flex items-center gap-2">
           <Link href={`/admin/finanzas?mes=${mesShift(mes, -1)}${cat ? `&cat=${encodeURIComponent(cat)}` : ""}`}
@@ -171,10 +162,10 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
             </div>
           )}
 
-          {cat === "Renting — equipos (margen)" && (
+          {cat === "Renting de equipos" && (
             <div className="bg-blue-50 border border-blue-200 px-5 py-3 mb-4">
               <p className="text-xs text-blue-700">
-                <span className="font-bold">Ojo:</span> de estas facturas solo el <span className="font-bold">margen</span> es ingreso real de BeGreat — el resto se paga al proveedor de los equipos (o al cliente si los adelantó). Lo cruzaremos con los pagos en la fase de gastos.
+                <span className="font-bold">Ojo:</span> de estas facturas solo el <span className="font-bold">margen</span> es ingreso real — el resto se paga al proveedor de los equipos (o al cliente si los adelantó). Lo cruzaremos con los pagos en la fase de gastos.
               </p>
             </div>
           )}
@@ -208,7 +199,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
                           <td className="px-3 py-3 text-xs font-mono font-bold text-[#2E1A47] whitespace-nowrap">{f.document_number}</td>
                           <td className="px-3 py-3 text-sm font-semibold text-gray-800 max-w-[150px] truncate" title={f.contact_name}>{f.contact_name}</td>
                           <td className="px-3 py-3 text-xs text-gray-500 max-w-[200px] truncate" title={f.description ?? undefined}>{f.description ?? "—"}</td>
-                          <td className="px-3 py-3"><span className="inline-block px-2 py-0.5 text-[10px] font-semibold bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap">{f.categoria}</span></td>
+                          <td className="px-3 py-3"><span className="inline-block px-2 py-0.5 text-[10px] font-semibold bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap" title={f.cuenta_pgc ? `Cuenta ${f.cuenta_pgc}` : undefined}>{f.categoria}</span></td>
                           <td className="px-3 py-3 text-xs text-gray-400 whitespace-nowrap">{fmtEur(f.tax)}</td>
                           <td className="px-3 py-3 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(f.total)}</td>
                           <td className="px-3 py-3 text-xs text-emerald-700 font-semibold whitespace-nowrap">

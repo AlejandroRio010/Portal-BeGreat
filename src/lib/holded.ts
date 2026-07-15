@@ -21,19 +21,43 @@ export interface HoldedInvoice {
   estado: "cobrada" | "parcial" | "pendiente";
   cancelada: boolean;
   categoria: CategoriaIngreso;
+  /** Cuenta contable (PGC) de la factura, p. ej. "70000000" */
+  cuenta_pgc: string | null;
   /** Fecha del último cobro conciliado en Holded (YYYY-MM-DD) */
   fecha_cobro: string | null;
 }
 
+// ── Cuentas contables de Bearing Point S.L. (cuadro de cuentas) ──────────────
+// Cada factura de venta va imputada a una cuenta = una línea de negocio.
+// Mapa: ID interno de Holded → { PGC, etiqueta de negocio }. Es la fuente de
+// verdad de la categorización (mucho más fiable que adivinar por concepto).
+export const CUENTAS_INGRESO: Record<string, { pgc: string; label: CategoriaIngreso }> = {
+  "66fc0ce89abd2620ac0ad5f8": { pgc: "70000000", label: "Renting de equipos" },
+  "69aa848d68d1da188603346e": { pgc: "70000001", label: "Consultoría financiera" },
+  "69aa87d1a4890577f80879bf": { pgc: "70000003", label: "NGN Group (recurrente)" },
+  "69aa8739acc91e9d5e05ebac": { pgc: "70000002", label: "CFO Externo" },
+  "69c4e7b5aa53212820046c59": { pgc: "70000004", label: "JP Financial (inversión)" },
+};
+
 export type CategoriaIngreso =
+  | "Renting de equipos"
   | "Consultoría financiera"
-  | "Renting — comisiones"
-  | "Renting — equipos (margen)"
   | "CFO Externo"
-  | "Recurrentes USA"
-  | "Productos de inversión"
-  | "Grupo"
+  | "NGN Group (recurrente)"
+  | "JP Financial (inversión)"
+  | "Comisiones"
   | "Otros";
+
+/** Orden de las líneas de negocio en la interfaz. */
+export const CATEGORIAS_INGRESO: CategoriaIngreso[] = [
+  "Renting de equipos",
+  "Consultoría financiera",
+  "CFO Externo",
+  "NGN Group (recurrente)",
+  "JP Financial (inversión)",
+  "Comisiones",
+  "Otros",
+];
 
 /** Número Holded: "7.043,00" | "7043,00" → 7043.00 */
 function num(s: unknown): number {
@@ -42,32 +66,23 @@ function num(s: unknown): number {
   return parseFloat(String(s).replace(/\./g, "").replace(",", ".")) || 0;
 }
 
-// ── Categorización por contacto + concepto (ajustable) ──────────────────────
-const ENTIDADES_RENTING = ["grenke", "tendit", "ibercaja renting", "caja laboral", "laboral kutxa", "lk denda"];
-const GRUPO = ["obliviate"];
-const CFO = ["cfo"];
-const RECURRENTES_USA = ["grupo ngn"];
-const INVERSION = ["jp", "j.p", "triple a financial"];
-
-function categorizar(contact: string, desc: string): CategoriaIngreso {
-  const c = contact.toLowerCase();
-  const d = desc.toLowerCase();
-
-  if (GRUPO.some(k => c.includes(k))) return "Grupo";
-  if (CFO.some(k => d.includes(k))) return "CFO Externo";
-  if (RECURRENTES_USA.some(k => c.includes(k))) return "Recurrentes USA";
-  if (INVERSION.some(k => c === k || c.startsWith(k + " ") || c.includes("triple a financial"))) return "Productos de inversión";
-
-  const esEntidadRenting = ENTIDADES_RENTING.some(k => c.includes(k));
-  const esComision = /honorari|comisi|contrato [a-z]?\d|consultor/i.test(d);
-  if (esEntidadRenting) {
-    // A la entidad se le factura o bien la comisión de la op o bien los equipos (modalidad margen)
-    return esComision ? "Renting — comisiones" : "Renting — equipos (margen)";
+// Cuenta contable de una factura: la de la primera línea con importe.
+function cuentaDeFactura(lines: any[]): string | null {
+  for (const l of lines ?? []) {
+    if (num(l?.price) !== 0 && l?.account) return String(l.account);
   }
-  if (/consultor|comisi|honorari/.test(d)) return "Consultoría financiera";
-  // Facturas de equipos a empresas (modalidad en la que el cliente paga los equipos)
-  if (/renting|equipo|maquina|sony|lector|hardware|portátil|servidor/i.test(d)) return "Renting — equipos (margen)";
-  return "Otros";
+  // Si no hay línea con importe, coge la primera con cuenta
+  for (const l of lines ?? []) if (l?.account) return String(l.account);
+  return null;
+}
+
+function categorizar(cuentaId: string | null): { categoria: CategoriaIngreso; pgc: string | null } {
+  if (cuentaId && CUENTAS_INGRESO[cuentaId]) {
+    const c = CUENTAS_INGRESO[cuentaId];
+    return { categoria: c.label, pgc: c.pgc };
+  }
+  // Cuenta 754 (Ingresos por comisiones) u otras no mapeadas
+  return { categoria: "Otros", pgc: null };
 }
 
 // ── Fechas de cobro: /payments type=collection, join por document_id ─────────
@@ -128,6 +143,8 @@ export async function getFacturasVenta(): Promise<HoldedInvoice[]> {
       const pendiente = num(i.payments_pending);
       const pagado = num(i.payments_total);
       const desc = i.description ?? i.lines?.[0]?.name ?? "";
+      const cuentaId = cuentaDeFactura(i.lines);
+      const { categoria, pgc } = categorizar(cuentaId);
       out.push({
         id: i.id,
         document_number: i.document_number,
@@ -142,7 +159,8 @@ export async function getFacturasVenta(): Promise<HoldedInvoice[]> {
         pendiente,
         estado: pendiente <= 0.005 ? "cobrada" : pagado > 0.005 ? "parcial" : "pendiente",
         cancelada: i.status === "cancelled",
-        categoria: categorizar(i.contact_name ?? "", desc ?? ""),
+        categoria,
+        cuenta_pgc: pgc,
         fecha_cobro: fechasCobro.get(i.id) ?? null,
       });
     }
