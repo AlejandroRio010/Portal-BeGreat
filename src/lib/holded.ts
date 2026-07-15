@@ -59,6 +59,14 @@ export const CATEGORIAS_INGRESO: CategoriaIngreso[] = [
   "Otros",
 ];
 
+/** Categoría por defecto al buscar facturas para vincular a una operación,
+ *  según su pipeline. Renting → cuenta de renting; consultoría → consultoría. */
+export function categoriaPorPipeline(pipelineKey: string | null): CategoriaIngreso | null {
+  if (pipelineKey === "renting") return "Renting de equipos";
+  if (pipelineKey === "consultoria") return "Consultoría financiera";
+  return null;
+}
+
 /** Número Holded: "7.043,00" | "7043,00" → 7043.00 */
 function num(s: unknown): number {
   if (typeof s === "number") return s;
@@ -173,4 +181,67 @@ export async function getFacturasVenta(): Promise<HoldedInvoice[]> {
   return out
     .filter(f => f.date >= FINANZAS_DESDE && !f.cancelada)
     .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+/** Una factura concreta por su id (para mostrar el estado en la ficha de la op). */
+export async function getFacturaVentaById(id: string): Promise<HoldedInvoice | null> {
+  const key = process.env.HOLDED_API_KEY;
+  if (!key || !id) return null;
+  try {
+    const res = await fetch(`${BASE}/invoices/${id}`, {
+      headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const i = await res.json();
+    if (!i?.id) return null;
+    const total = num(i.total);
+    const pendiente = num(i.payments_pending);
+    const pagado = num(i.payments_total);
+    const desc = i.description ?? i.lines?.[0]?.name ?? "";
+    const { categoria, pgc } = categorizar(cuentaDeFactura(i.lines));
+    const fechaCobro = await getFechaCobroDeFactura(key, id);
+    return {
+      id: i.id,
+      document_number: i.document_number,
+      contact_name: i.contact_name ?? "—",
+      description: desc || null,
+      date: i.date,
+      due_date: i.due_date ?? null,
+      subtotal: num(i.subtotal),
+      tax: num(i.tax),
+      total,
+      pagado,
+      pendiente,
+      estado: pendiente <= 0.005 ? "cobrada" : pagado > 0.005 ? "parcial" : "pendiente",
+      cancelada: i.status === "cancelled",
+      categoria,
+      cuenta_pgc: pgc,
+      fecha_cobro: fechaCobro,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Última fecha de cobro de una factura concreta (para la ficha de la op). */
+async function getFechaCobroDeFactura(key: string, invoiceId: string): Promise<string | null> {
+  let cursor: string | null = null;
+  let best: string | null = null;
+  for (let page = 0; page < 30; page++) {
+    const url = new URL(`${BASE}/payments`);
+    url.searchParams.set("limit", "100");
+    if (cursor) url.searchParams.set("cursor", cursor);
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${key}`, Accept: "application/json" }, cache: "no-store" });
+    if (!res.ok) break;
+    const data = await res.json();
+    for (const p of data.items ?? []) {
+      if (p.type !== "collection" || p.document_id !== invoiceId) continue;
+      const fecha = String(p.date ?? "").slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(fecha) && (!best || fecha > best)) best = fecha;
+    }
+    if (!data.has_more) break;
+    cursor = data.cursor;
+  }
+  return best;
 }

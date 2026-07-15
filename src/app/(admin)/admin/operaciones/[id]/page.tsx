@@ -3,6 +3,7 @@ import { operations, clients, suppliers, notes, collaborators, customFields, cus
 import { eq, asc, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { avalistasDeOp } from "@/lib/avalistas";
+import { getFacturaVentaById } from "@/lib/holded";
 import Link from "next/link";
 import AdminOpForm from "./AdminOpForm";
 import AdminOpResultadoPanel from "./AdminOpResultadoPanel";
@@ -84,6 +85,8 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       aval_contact_id: operations.aval_contact_id,
       aval_client_id: operations.aval_client_id,
       avalistas: operations.avalistas,
+      holded_invoice_id: operations.holded_invoice_id,
+      holded_invoice_number: operations.holded_invoice_number,
       necesidad: operations.necesidad,
       modalidad_renting: operations.modalidad_renting,
       importe_facturado_begreat: operations.importe_facturado_begreat,
@@ -137,6 +140,9 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
     : [];
   const avalContactClientId = (contactId: string | null) =>
     avalContactsData.find(c => c.id === contactId)?.client_id ?? op.client_id;
+
+  // Estado de la factura vinculada de Holded (si la hay)
+  const holdedFactura = op.holded_invoice_id ? await getFacturaVentaById(op.holded_invoice_id) : null;
 
   const opNotes = await db
     .select()
@@ -286,6 +292,25 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             currentResultado={isGanada ? "ganada" : op.status === "archivada" ? "denegada" : "en_curso"}
             motivoDenegacion={op.motivo_denegacion ?? null}
           />
+        </div>
+      )}
+
+      {/* Estado de facturación (Holded) */}
+      {holdedFactura && (
+        <div className={`mb-6 flex items-center justify-between px-5 py-3.5 border ${
+          holdedFactura.estado === "cobrada" ? "bg-emerald-50 border-emerald-200" :
+          holdedFactura.estado === "parcial" ? "bg-amber-50 border-amber-200" :
+          "bg-red-50 border-red-200"}`}>
+          <div>
+            <p className={`text-sm font-bold ${holdedFactura.estado === "cobrada" ? "text-emerald-700" : holdedFactura.estado === "parcial" ? "text-amber-700" : "text-red-600"}`}>
+              {holdedFactura.estado === "cobrada" ? "✓ Facturada y cobrada" : holdedFactura.estado === "parcial" ? "Facturada · cobro parcial" : "Facturada · pendiente de cobro"}
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Factura {holdedFactura.document_number} · {fmtEur(holdedFactura.total)}
+              {holdedFactura.fecha_cobro ? ` · cobrada el ${new Date(holdedFactura.fecha_cobro).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}` : ""}
+            </p>
+          </div>
+          <span className="text-[10px] text-gray-400 uppercase tracking-wide">Holded</span>
         </div>
       )}
 
@@ -548,6 +573,8 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             colaboradorId={op.colaborador_id ?? null}
             initialColaboradores={(op.colaboradores_comision as any) ?? []}
             initialMargenPct={op.margen_pct ?? null}
+            initialHoldedInvoiceId={op.holded_invoice_id ?? null}
+            initialHoldedInvoiceNumber={op.holded_invoice_number ?? null}
             initialEntidad={op.entidad_financiera}
             initialEntityOfficeId={op.entity_office_id ?? null}
             initialHonorarios={op.honorarios_firmado}

@@ -66,6 +66,8 @@ export async function PATCH(
     pipeline_key,
     collaborator_id,
     supplier_id,
+    holded_invoice_id,
+    holded_invoice_number,
   } = body;
 
   // Fetch current state before update (for email triggers)
@@ -156,6 +158,10 @@ export async function PATCH(
   if (typeof importe_facturado_visible === "boolean") updateData.importe_facturado_visible = importe_facturado_visible;
   if (collaborator_id !== undefined) updateData.collaborator_id = collaborator_id || null;
   if (supplier_id !== undefined) updateData.supplier_id = supplier_id || null;
+  if (holded_invoice_id !== undefined) {
+    updateData.holded_invoice_id = holded_invoice_id || null;
+    updateData.holded_invoice_number = holded_invoice_id ? (holded_invoice_number || null) : null;
+  }
   if (Array.isArray(body.avalistas)) {
     // Lista completa de avalistas; los campos aval_* quedan como espejo del primero
     const resolved = await resolveAvalistas(body.avalistas as AvalistaInput[], prevOp?.client_id ?? null, prevOp?.collaborator_id ?? null);

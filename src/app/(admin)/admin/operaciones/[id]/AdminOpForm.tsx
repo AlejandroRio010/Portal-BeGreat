@@ -91,6 +91,8 @@ interface Props {
   initialFacturaDestinatario?: string | null;
   initialColaboradores?: { id?: string; nombre: string; porcentaje: string; importe: string }[];
   initialMargenPct?: string | null;
+  initialHoldedInvoiceId?: string | null;
+  initialHoldedInvoiceNumber?: string | null;
   // context names
   clientNombre?: string | null;
   supplierNombre?: string | null;
@@ -156,6 +158,8 @@ export default function AdminOpForm({
   initialFacturaDestinatario,
   initialColaboradores = [],
   initialMargenPct,
+  initialHoldedInvoiceId,
+  initialHoldedInvoiceNumber,
   clientNombre,
   supplierNombre,
   colaboradorNombre,
@@ -184,6 +188,35 @@ export default function AdminOpForm({
     initialColaboradores.length > 0 ? initialColaboradores : [{ id: colaboradorId ?? "", nombre: colaboradorNombre ?? "", porcentaje: "", importe: "" }]
   );
   const [margenPct, setMargenPct] = useState(initialMargenPct ?? "");
+  // ── Factura Holded vinculada ───────────────────────────────────────────────
+  const [holdedInvoiceId, setHoldedInvoiceId] = useState<string | null>(initialHoldedInvoiceId ?? null);
+  const [holdedInvoiceNumber, setHoldedInvoiceNumber] = useState<string | null>(initialHoldedInvoiceNumber ?? null);
+  const [facturaQuery, setFacturaQuery] = useState("");
+  const [facturaResults, setFacturaResults] = useState<any[]>([]);
+  const [facturaOpen, setFacturaOpen] = useState(false);
+  const [facturaLoading, setFacturaLoading] = useState(false);
+  const [facturaTodas, setFacturaTodas] = useState(false);
+  const facturaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  async function buscarFacturas(q: string, todas: boolean) {
+    setFacturaLoading(true);
+    try {
+      const params = new URLSearchParams({ pipeline: pipelineKey, q });
+      if (todas) params.set("todas", "1");
+      const res = await fetch(`/api/admin/holded/invoices?${params}`);
+      setFacturaResults(res.ok ? await res.json() : []);
+    } catch { setFacturaResults([]); }
+    finally { setFacturaLoading(false); }
+  }
+  function onFacturaFocus() {
+    setFacturaOpen(true);
+    if (facturaResults.length === 0) buscarFacturas("", facturaTodas);
+  }
+  function onFacturaQuery(q: string) {
+    setFacturaQuery(q);
+    if (facturaTimer.current) clearTimeout(facturaTimer.current);
+    facturaTimer.current = setTimeout(() => buscarFacturas(q, facturaTodas), 300);
+  }
   const [honorarios, setHonorarios] = useState(initialHonorarios ?? false);
   const [facturacionRenting, setFacturacionRenting] = useState(initialFacturacionRenting ?? "");
   const [esRenovacion, setEsRenovacion] = useState(initialEsRenovacion ?? false);
@@ -421,6 +454,8 @@ export default function AdminOpForm({
         entidad_visible: entidadVisible,
         importe_facturado_begreat: importeFacturadoBegreat || null,
         importe_facturado_visible: importeFacturadoVisible,
+        holded_invoice_id: holdedInvoiceId,
+        holded_invoice_number: holdedInvoiceNumber,
       });
       setSaved(true);
     } catch { setError("Error al guardar los cambios."); }
@@ -954,6 +989,55 @@ export default function AdminOpForm({
                         )}
                       </>
                     )}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Factura de Holded vinculada ── */}
+              <div className="border-t border-gray-100 pt-4">
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Factura en Holded</label>
+                {holdedInvoiceId ? (
+                  <div className="flex items-center justify-between border border-[#2E1A47] bg-[#EEEBF3] px-3 py-2">
+                    <div>
+                      <p className="text-xs font-semibold text-[#2E1A47]">Factura {holdedInvoiceNumber ?? holdedInvoiceId}</p>
+                      <p className="text-[10px] text-gray-500">Vinculada · el estado de cobro se lee de Holded</p>
+                    </div>
+                    <button type="button" onClick={() => { setHoldedInvoiceId(null); setHoldedInvoiceNumber(null); }}
+                      className="text-[10px] text-gray-400 hover:text-red-500">✕ Quitar</button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <input value={facturaQuery}
+                      onChange={e => onFacturaQuery(e.target.value)}
+                      onFocus={onFacturaFocus}
+                      onBlur={() => setTimeout(() => setFacturaOpen(false), 200)}
+                      className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]"
+                      placeholder="Buscar factura por cliente, nº o concepto..." autoComplete="off" />
+                    {facturaLoading && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-gray-300 border-t-[#2E1A47] animate-spin rounded-full" />}
+                    {facturaOpen && (
+                      <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-gray-200 shadow-lg max-h-72 overflow-y-auto">
+                        <label className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50 cursor-pointer sticky top-0">
+                          <input type="checkbox" checked={facturaTodas}
+                            onChange={e => { setFacturaTodas(e.target.checked); buscarFacturas(facturaQuery, e.target.checked); }}
+                            className="w-3.5 h-3.5 accent-[#2E1A47]" />
+                          <span className="text-[10px] text-gray-500">Ver facturas de todas las líneas (no solo {pipelineKey === "renting" ? "renting" : "consultoría"})</span>
+                        </label>
+                        {facturaResults.length === 0 ? (
+                          <p className="px-3 py-3 text-xs text-gray-400">{facturaLoading ? "Buscando..." : "Sin facturas."}</p>
+                        ) : facturaResults.map((f: any) => (
+                          <button key={f.id} type="button"
+                            onMouseDown={() => { setHoldedInvoiceId(f.id); setHoldedInvoiceNumber(f.numero); setFacturaOpen(false); }}
+                            className="w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-xs font-semibold text-gray-800 truncate">{f.cliente}</p>
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 whitespace-nowrap ${f.estado === "cobrada" ? "bg-emerald-50 text-emerald-700" : f.estado === "parcial" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-600"}`}>{f.estado === "cobrada" ? "Cobrada" : f.estado === "parcial" ? "Parcial" : "Pendiente"}</span>
+                            </div>
+                            <p className="text-[10px] text-gray-400">{f.numero} · {fmtEuroInput(String(f.total))}€ · {new Date(f.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}{f.categoria ? ` · ${f.categoria}` : ""}</p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-[10px] text-gray-400 mt-1">Se muestran facturas de la cuenta de {pipelineKey === "renting" ? "renting" : "consultoría"}. Al vincularla, la ficha mostrará si está cobrada.</p>
                   </div>
                 )}
               </div>
