@@ -14,11 +14,6 @@ function mesLabel(ym: string) {
   const [y, m] = ym.split("-").map(Number);
   return `${MESES[m - 1]} ${y}`;
 }
-function mesShift(ym: string, delta: number) {
-  const [y, m] = ym.split("-").map(Number);
-  const d = new Date(y, m - 1 + delta, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 function trimestreDe(ym: string) {
   const [y, m] = ym.split("-").map(Number);
   const q = Math.ceil(m / 3);
@@ -76,20 +71,46 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-start justify-between mb-8 gap-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Finanzas — Ingresos</h1>
           <p className="text-sm text-gray-400 mt-1">Bearing Point S.L. · facturas de venta desde Holded · clasificadas por cuenta contable</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href={`/admin/finanzas?mes=${mesShift(mes, -1)}${cat ? `&cat=${encodeURIComponent(cat)}` : ""}`}
-            className="px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-semibold text-gray-600 hover:text-[#2E1A47]">←</Link>
-          <span className="px-4 py-2 rounded-xl bg-[#2E1A47] text-white text-sm font-bold capitalize">{mesLabel(mes)}</span>
-          {mes < mesActual && (
-            <Link href={`/admin/finanzas?mes=${mesShift(mes, 1)}${cat ? `&cat=${encodeURIComponent(cat)}` : ""}`}
-              className="px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-semibold text-gray-600 hover:text-[#2E1A47]">→</Link>
-          )}
-        </div>
+        {/* Selector de mes: un clic a cualquier mes del año */}
+        {(() => {
+          const [anyoStr] = mes.split("-");
+          const anyo = Number(anyoStr);
+          const anyoActual = Number(mesActual.split("-")[0]);
+          const cortos = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+          const catQ = cat ? `&cat=${encodeURIComponent(cat)}` : "";
+          return (
+            <div className="flex flex-col items-end gap-1.5">
+              <div className="flex items-center gap-2">
+                {anyo > 2026 && (
+                  <Link href={`/admin/finanzas?mes=${anyo - 1}-12${catQ}`} className="text-gray-400 hover:text-[#2E1A47] text-xs font-bold">‹</Link>
+                )}
+                <span className="text-sm font-bold text-[#2E1A47]">{anyo}</span>
+                {anyo < anyoActual && (
+                  <Link href={`/admin/finanzas?mes=${anyo + 1}-01${catQ}`} className="text-gray-400 hover:text-[#2E1A47] text-xs font-bold">›</Link>
+                )}
+              </div>
+              <div className="flex gap-0.5 bg-white border border-gray-200 rounded-2xl p-1">
+                {cortos.map((m, i) => {
+                  const ym = `${anyo}-${String(i + 1).padStart(2, "0")}`;
+                  const activo = ym === mes;
+                  const futuro = ym > mesActual;
+                  if (futuro) return <span key={m} className="px-2 py-1.5 text-[11px] font-semibold text-gray-300 select-none">{m}</span>;
+                  return (
+                    <Link key={m} href={`/admin/finanzas?mes=${ym}${catQ}`}
+                      className={`px-2 py-1.5 text-[11px] font-semibold rounded-xl transition-colors ${activo ? "bg-[#2E1A47] text-white" : "text-gray-500 hover:bg-[#EEEBF3] hover:text-[#2E1A47]"}`}>
+                      {m}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {holdedError ? (

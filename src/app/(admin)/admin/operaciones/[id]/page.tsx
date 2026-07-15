@@ -307,7 +307,10 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
               Factura {holdedFactura.document_number} · {fmtEur(holdedFactura.total)}
-              {holdedFactura.fecha_cobro ? ` · cobrada el ${new Date(holdedFactura.fecha_cobro).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}` : ""}
+              {" · emitida el "}{new Date(holdedFactura.date).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}
+              {holdedFactura.fecha_cobro
+                ? ` · cobrada el ${new Date(holdedFactura.fecha_cobro).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}`
+                : " · aún sin cobrar"}
             </p>
           </div>
           <span className="text-[10px] text-gray-400 uppercase tracking-wide">Holded</span>
