@@ -45,6 +45,7 @@ const adminNav = [
   { href: "/admin",                         label: "Inicio",                exact: true },
   { href: "/admin/alta-operacion",          label: "Alta nueva operación",  exact: false },
   { href: "/admin/historial",               label: "Historial & Resumen",   exact: false },
+  { href: "/admin/finanzas",                label: "Finanzas",              exact: false },
   { href: "/admin/operaciones/consultoria", label: "Consultoría financiera", exact: false, sub: true },
   { href: "/admin/operaciones/renting",     label: "Renting de equipos",     exact: false, sub: true },
   { href: "/admin/cotizador",     label: "Cotizador renting",    exact: false },
