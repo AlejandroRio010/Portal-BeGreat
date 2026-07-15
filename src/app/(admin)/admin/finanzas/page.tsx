@@ -66,8 +66,8 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
   const cobrado = cobradas.reduce((s, f) => s + f.total, 0) + delMes.filter(f => f.estado === "parcial").reduce((s, f) => s + f.pagado, 0);
   const ivaCobrado = cobradas.reduce((s, f) => s + f.tax, 0);
 
-  // Pendiente de cobro: TODO lo emitido sin cobrar (no solo del mes)
-  const pendientes = facturas.filter(f => f.estado !== "cobrada");
+  // Pendiente de cobro del mes visible
+  const pendientes = delMes.filter(f => f.estado !== "cobrada");
   const pendienteTotal = pendientes.reduce((s, f) => s + f.pendiente, 0);
 
   // IVA del trimestre (facturas cobradas) → hay que reservarlo para Hacienda
@@ -92,11 +92,11 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
         </div>
         <div className="flex items-center gap-2">
           <Link href={`/admin/finanzas?mes=${mesShift(mes, -1)}${cat ? `&cat=${encodeURIComponent(cat)}` : ""}`}
-            className="px-3 py-2 bg-white border border-gray-200 text-sm font-semibold text-gray-600 hover:text-[#2E1A47]">←</Link>
-          <span className="px-4 py-2 bg-[#2E1A47] text-white text-sm font-bold capitalize">{mesLabel(mes)}</span>
+            className="px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-semibold text-gray-600 hover:text-[#2E1A47]">←</Link>
+          <span className="px-4 py-2 rounded-xl bg-[#2E1A47] text-white text-sm font-bold capitalize">{mesLabel(mes)}</span>
           {mes < mesActual && (
             <Link href={`/admin/finanzas?mes=${mesShift(mes, 1)}${cat ? `&cat=${encodeURIComponent(cat)}` : ""}`}
-              className="px-3 py-2 bg-white border border-gray-200 text-sm font-semibold text-gray-600 hover:text-[#2E1A47]">→</Link>
+              className="px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-semibold text-gray-600 hover:text-[#2E1A47]">→</Link>
           )}
         </div>
       </div>
@@ -121,9 +121,9 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
               <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">de lo facturado este mes</p>
             </div>
             <div className="bg-white border border-gray-200 px-6 py-5">
-              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1.5">Pendiente de cobro (total)</p>
+              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1.5">Pendiente de cobro</p>
               <p className="text-2xl font-black text-[#2E1A47]">{fmtEur(pendienteTotal)}</p>
-              <p className="text-gray-400 text-[9px] mt-1 uppercase tracking-wide">{pendientes.length} factura{pendientes.length !== 1 ? "s" : ""} sin cobrar desde enero</p>
+              <p className="text-gray-400 text-[9px] mt-1 uppercase tracking-wide">{pendientes.length} factura{pendientes.length !== 1 ? "s" : ""} del mes sin cobrar</p>
             </div>
             <div className="bg-white border border-amber-200 px-6 py-5">
               <p className="text-amber-600 text-[10px] font-bold uppercase tracking-wider mb-1.5">⚠ De lo cobrado, es IVA</p>
@@ -157,13 +157,13 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
           {porCategoria.length > 0 && (
             <div className="flex flex-wrap gap-3 mb-6">
               <Link href={`/admin/finanzas?mes=${mes}`}
-                className={`px-4 py-3 border transition-all ${!cat ? "bg-[#2E1A47] border-[#2E1A47] text-white" : "bg-white border-gray-200 hover:border-[#2E1A47]/40"}`}>
+                className={`px-4 py-3 border rounded-2xl transition-all ${!cat ? "bg-[#2E1A47] border-[#2E1A47] text-white" : "bg-white border-gray-200 hover:border-[#2E1A47]/40"}`}>
                 <p className={`text-[10px] font-bold uppercase tracking-wider ${!cat ? "text-white/60" : "text-gray-400"}`}>Todo · {delMes.length}</p>
                 <p className={`text-lg font-black ${!cat ? "text-white" : "text-[#2E1A47]"}`}>{fmtEur(facturado)}</p>
               </Link>
               {porCategoria.map(({ c, n, total }) => (
                 <Link key={c} href={`/admin/finanzas?mes=${mes}${cat === c ? "" : `&cat=${encodeURIComponent(c)}`}`}
-                  className={`px-4 py-3 border transition-all ${cat === c ? "bg-[#2E1A47] border-[#2E1A47] text-white" : "bg-white border-gray-200 hover:border-[#2E1A47]/40"}`}>
+                  className={`px-4 py-3 border rounded-2xl transition-all ${cat === c ? "bg-[#2E1A47] border-[#2E1A47] text-white" : "bg-white border-gray-200 hover:border-[#2E1A47]/40"}`}>
                   <p className={`text-[10px] font-bold uppercase tracking-wider ${cat === c ? "text-white/60" : "text-gray-400"}`}>{c} · {n}</p>
                   <p className={`text-lg font-black ${cat === c ? "text-white" : "text-[#2E1A47]"}`}>{fmtEur(total)}</p>
                 </Link>
@@ -225,7 +225,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
           {!cat && pendientes.length > 0 && (
             <div className="mt-6 bg-white border border-red-100 overflow-hidden shadow-sm">
               <div className="px-6 py-4 border-b border-red-100 bg-red-50/50">
-                <p className="text-sm font-bold text-red-700">Pendientes de cobro ({pendientes.length}) — {fmtEur(pendienteTotal)}</p>
+                <p className="text-sm font-bold text-red-700">Pendientes de cobro de {mesLabel(mes)} ({pendientes.length}) — {fmtEur(pendienteTotal)}</p>
               </div>
               <div className="divide-y divide-gray-50">
                 {pendientes.slice(0, 15).map(f => (
