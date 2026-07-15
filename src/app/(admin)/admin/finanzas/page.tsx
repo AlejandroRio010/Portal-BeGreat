@@ -132,13 +132,26 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
             </div>
           </div>
 
-          {/* Aviso IVA trimestral */}
-          <div className="bg-amber-50 border border-amber-200 px-5 py-3.5 mb-6 flex items-center justify-between">
-            <p className="text-sm text-amber-800">
-              <span className="font-bold">IVA cobrado en el {q}º trimestre:</span> ve apartando este importe para la liquidación de Hacienda.
-            </p>
-            <p className="text-lg font-black text-amber-700 whitespace-nowrap ml-4">{fmtEur(ivaTrimestre)}</p>
-          </div>
+          {/* Aviso IVA: mensual, y en el mes de cierre de trimestre, el total a liquidar */}
+          {(() => {
+            const mesNum = Number(mes.split("-")[1]);
+            const esCierreTrimestre = mesNum % 3 === 0;
+            return esCierreTrimestre ? (
+              <div className="bg-amber-50 border-2 border-amber-300 px-5 py-3.5 mb-6 flex items-center justify-between">
+                <p className="text-sm text-amber-800">
+                  <span className="font-bold">Cierre del {q}º trimestre</span> — IVA cobrado en todo el trimestre, a reservar para la liquidación de Hacienda (modelo 303).
+                </p>
+                <p className="text-xl font-black text-amber-700 whitespace-nowrap ml-4">{fmtEur(ivaTrimestre)}</p>
+              </div>
+            ) : (
+              <div className="bg-amber-50 border border-amber-200 px-5 py-3.5 mb-6 flex items-center justify-between">
+                <p className="text-sm text-amber-800">
+                  <span className="font-bold">IVA cobrado en {mesLabel(mes).split(" ")[0]}:</span> ve apartándolo — el total del {q}º trimestre se liquida al cierre.
+                </p>
+                <p className="text-lg font-black text-amber-700 whitespace-nowrap ml-4">{fmtEur(ivaCobrado)}</p>
+              </div>
+            );
+          })()}
 
           {/* Categorías del mes (clic para filtrar; "Todo" vuelve al resumen) */}
           {porCategoria.length > 0 && (
