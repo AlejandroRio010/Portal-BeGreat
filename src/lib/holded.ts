@@ -21,6 +21,8 @@ export interface HoldedInvoice {
   estado: "cobrada" | "parcial" | "pendiente";
   cancelada: boolean;
   categoria: CategoriaIngreso;
+  /** Fecha del último cobro conciliado en Holded (YYYY-MM-DD) */
+  fecha_cobro: string | null;
 }
 
 export type CategoriaIngreso =
@@ -68,11 +70,44 @@ function categorizar(contact: string, desc: string): CategoriaIngreso {
   return "Otros";
 }
 
+// ── Fechas de cobro: /payments type=collection, join por document_id ─────────
+// Ojo: en /payments los importes vienen con punto decimal (a diferencia de /invoices)
+async function getFechasCobro(key: string): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  let cursor: string | null = null;
+
+  for (let page = 0; page < 30; page++) {
+    const url = new URL(`${BASE}/payments`);
+    url.searchParams.set("limit", "100");
+    if (cursor) url.searchParams.set("cursor", cursor);
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!res.ok) break; // sin fechas de cobro seguimos mostrando el resto
+    const data = await res.json();
+
+    for (const p of data.items ?? []) {
+      if (p.type !== "collection" || !p.document_id) continue;
+      const fecha = String(p.date ?? "").slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) continue;
+      const prev = map.get(p.document_id);
+      if (!prev || fecha > prev) map.set(p.document_id, fecha);
+    }
+
+    if (!data.has_more) break;
+    cursor = data.cursor;
+  }
+  return map;
+}
+
 // ── Fetch con paginación por cursor ──────────────────────────────────────────
 export async function getFacturasVenta(): Promise<HoldedInvoice[]> {
   const key = process.env.HOLDED_API_KEY;
   if (!key) throw new Error("Falta HOLDED_API_KEY");
 
+  const fechasCobro = await getFechasCobro(key);
   const out: HoldedInvoice[] = [];
   let cursor: string | null = null;
 
@@ -108,6 +143,7 @@ export async function getFacturasVenta(): Promise<HoldedInvoice[]> {
         estado: pendiente <= 0.005 ? "cobrada" : pagado > 0.005 ? "parcial" : "pendiente",
         cancelada: i.status === "cancelled",
         categoria: categorizar(i.contact_name ?? "", desc ?? ""),
+        fecha_cobro: fechasCobro.get(i.id) ?? null,
       });
     }
 

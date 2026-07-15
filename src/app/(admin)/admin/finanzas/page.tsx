@@ -194,7 +194,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
                 <table className="w-full">
                   <thead>
                     <tr className="bg-[#EEEBF3] border-b border-gray-100">
-                      {["Fecha", "Nº", "Cliente", "Concepto", "Categoría", "IVA", "Total", "Estado"].map(h => (
+                      {["Fecha", "Nº", "Cliente", "Concepto", "Categoría", "IVA", "Total", "F. cobro", "Estado"].map(h => (
                         <th key={h} className="text-left px-3 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">{h}</th>
                       ))}
                     </tr>
@@ -211,6 +211,9 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
                           <td className="px-3 py-3"><span className="inline-block px-2 py-0.5 text-[10px] font-semibold bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap">{f.categoria}</span></td>
                           <td className="px-3 py-3 text-xs text-gray-400 whitespace-nowrap">{fmtEur(f.tax)}</td>
                           <td className="px-3 py-3 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(f.total)}</td>
+                          <td className="px-3 py-3 text-xs text-emerald-700 font-semibold whitespace-nowrap">
+                            {f.fecha_cobro ? new Date(f.fecha_cobro).toLocaleDateString("es-ES", { day: "numeric", month: "short" }) : "—"}
+                          </td>
                           <td className="px-3 py-3"><span className={`inline-flex px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${b.c}`}>{b.l}</span></td>
                         </tr>
                       );
