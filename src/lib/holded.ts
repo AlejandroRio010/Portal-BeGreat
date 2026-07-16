@@ -294,8 +294,6 @@ export const CUENTAS_GASTO: Record<string, CategoriaGasto> = {
   "66fc0ce89abd2620ac0ad5ec": "Colaboradores",               // Pablo Andrés Arroyo, Krattos, Fosterman
   "66fc0ce89abd2620ac0ad5ea": "Vehículos (renting)",         // Alphabet Fleet
   "6960b6167192c4940b0d3d02": "Vehículos (renting)",         // Alphabet
-  "690db72775589e7bab06312e": "Vehículo (combustible/parking)",   // Bisonte, Ballenoil, Moeve, parkings
-  "697c6cb79bb26f088a058289": "Vehículo (combustible/parking)",   // Bisonte (carburante, cuenta alterna)
   "695e2383a2700509d90a8148": "Telecomunicaciones",          // Telefónica
   "695e2958c35a9dc1770ddc19": "Telecomunicaciones",          // Telefónica Móviles
   "697327ef6cad828bba0e9ec4": "Software y suscripciones",    // Holded
