@@ -24,15 +24,24 @@ function n(v: unknown): number {
   return parseFloat(String(v).replace(/\./g, "").replace(",", ".")) || 0;
 }
 
-/** Importe base (sin IVA) que se debería haber cobrado en la operación. */
+/** Importe base (sin IVA) que se debería haber cobrado en la operación.
+ *  - BeGreat factura: el importe facturado por BeGreat.
+ *  - Comisiona / consultoría: el FEE TOTAL (suma de orígenes de comisión), que
+ *    es lo que realmente se cobra a la entidad/cliente. El IVA se añade después
+ *    al comparar con la factura. Fallback a comisión BeGreat + colaboradores. */
 export function cobroEsperadoBase(op: {
   modalidad_renting?: string | null;
   importe_facturado_begreat?: string | null;
+  comision_origenes?: unknown;
   comision_begreat?: string | null;
   colaboradores_comision?: unknown;
 }): number {
   if (op.modalidad_renting === "begreat_factura") return n(op.importe_facturado_begreat);
-  // Comisión total cobrada = fee BeGreat + lo que se reparte a colaboradores
+  // Fee total = suma de los orígenes de comisión (lo que se cobra)
+  const origenes = (op.comision_origenes as { importe?: string }[] | null) ?? [];
+  const feeTotal = origenes.reduce((s, o) => s + n(o.importe), 0);
+  if (feeTotal > 0) return feeTotal;
+  // Fallback: comisión BeGreat + lo repartido a colaboradores
   const colabs = (op.colaboradores_comision as { importe?: string }[] | null) ?? [];
   const colabTotal = colabs.reduce((s, c) => s + n(c.importe), 0);
   return n(op.comision_begreat) + colabTotal;
