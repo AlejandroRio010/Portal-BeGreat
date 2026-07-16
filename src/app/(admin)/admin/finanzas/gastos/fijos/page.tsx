@@ -8,6 +8,7 @@ import { fmtEur } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 const CORTOS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+const holdedUrl = (id: string) => `https://app.holded.com/purchases/${id}`;
 
 export default async function GastosFijosPage() {
   const session = await auth();
@@ -15,39 +16,35 @@ export default async function GastosFijosPage() {
 
   const hoy = new Date();
   const anyo = hoy.getFullYear();
-  const mesActualIdx = hoy.getMonth(); // 0-11
+  const mesActualIdx = hoy.getMonth();
 
   let gastos: HoldedGasto[] = [];
   let holdedError: string | null = null;
-  try { gastos = await getGastos(); } catch (e: any) { holdedError = e?.message ?? "Error Holded"; }
+  try { gastos = await getGastos({ incluirBorradores: true }); } catch (e: any) { holdedError = e?.message ?? "Error Holded"; }
 
   const delAnyo = gastos.filter(g => g.date.startsWith(String(anyo)));
 
-  // Para cada gasto fijo, el estado de cada mes
   const filas = GASTOS_FIJOS.map(gf => {
     const meses = CORTOS.map((_, m) => {
       const ym = `${anyo}-${String(m + 1).padStart(2, "0")}`;
-      const facts = delAnyo.filter(g => g.date.startsWith(ym) && esDelFijo(gf, g.proveedor, g.total));
+      const facts = delAnyo.filter(g => g.date.startsWith(ym) && esDelFijo(gf, g.proveedor));
       const total = facts.reduce((s, g) => s + g.total, 0);
-      const hayFactura = facts.length > 0;
-      const pagadas = hayFactura && facts.every(g => g.estado === "pagada");
+      const hay = facts.length > 0;
+      const pagadas = hay && facts.every(g => g.estado === "pagada");
       let estado: "pagado" | "sin_pagar" | "falta" | "futuro";
       if (pagadas) estado = "pagado";
-      else if (hayFactura) estado = "sin_pagar";
-      else if (m < mesActualIdx) estado = "falta";       // mes pasado sin factura → rojo
-      else estado = "futuro";                             // mes actual o futuro → neutro
-      return { m, estado, total, hayFactura };
+      else if (hay) estado = "sin_pagar";
+      else if (m < mesActualIdx) estado = "falta";
+      else estado = "futuro";
+      return { m, estado, total, n: facts.length, id: facts[0]?.id ?? null };
     });
-    const anualPrevisto = gf.mensual != null ? gf.mensual * 12 : meses.reduce((s, x) => s + x.total, 0);
-    const pagadoAnyo = meses.filter(x => x.estado === "pagado").reduce((s, x) => s + x.total, 0);
-    return { gf, meses, anualPrevisto, pagadoAnyo };
+    return { gf, meses };
   });
 
   const totalMensual = GASTOS_FIJOS.reduce((s, g) => s + (g.mensual ?? 0), 0);
-
   const COLOR: Record<string, string> = {
-    pagado: "bg-emerald-500 text-white",
-    sin_pagar: "bg-amber-400 text-white",
+    pagado: "bg-emerald-500 text-white hover:bg-emerald-600",
+    sin_pagar: "bg-amber-400 text-white hover:bg-amber-500",
     falta: "bg-red-500 text-white",
     futuro: "bg-gray-100 text-gray-300",
   };
@@ -62,7 +59,7 @@ export default async function GastosFijosPage() {
         </div>
         <h1 className="text-2xl font-bold text-gray-900">Gastos fijos {anyo}</h1>
         <p className="text-sm text-gray-400 mt-1">
-          Recurrentes de Bearing Point · verde = factura recibida y pagada · rojo = mes pasado sin pagar · gris = aún no toca
+          El motor busca cada proveedor en Holded y mira sus facturas · verde = recibida y pagada · rojo = mes pasado sin pagar · gris = aún no toca · clic en un mes para abrir la factura en Holded
         </p>
       </div>
 
@@ -70,16 +67,15 @@ export default async function GastosFijosPage() {
         <div className="bg-red-50 border border-red-200 p-6"><p className="text-sm font-bold text-red-700">No se pudo conectar con Holded</p><p className="text-xs text-red-500 mt-1">{holdedError}</p></div>
       ) : (
         <>
-          {/* Resumen */}
           <div className="grid grid-cols-3 gap-4 mb-8">
             <div className="bg-[#2E1A47] px-6 py-5">
-              <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Fijos activos</p>
+              <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Proveedores fijos</p>
               <p className="text-3xl font-black text-white">{GASTOS_FIJOS.length}</p>
             </div>
             <div className="bg-[#2E1A47] px-6 py-5">
-              <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Coste fijo mensual</p>
+              <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Coste fijo mensual (los de importe fijo)</p>
               <p className="text-2xl font-black text-white">{fmtEur(totalMensual)}</p>
-              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">sin contar los variables</p>
+              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">Telefónica y Alejandro varían</p>
             </div>
             <div className="bg-[#EEEBF3] px-6 py-5">
               <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Anualizado (fijos)</p>
@@ -87,7 +83,6 @@ export default async function GastosFijosPage() {
             </div>
           </div>
 
-          {/* Tabla de fijos con rejilla de meses */}
           <div className="bg-white border border-gray-100 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -108,14 +103,20 @@ export default async function GastosFijosPage() {
                         <p className="text-[10px] text-gray-400">{gf.categoria}{gf.nota ? ` · ${gf.nota}` : ""}</p>
                       </td>
                       <td className="px-3 py-3 text-right text-sm font-bold text-[#2E1A47] whitespace-nowrap">{gf.mensual != null ? fmtEur(gf.mensual) : "variable"}</td>
-                      {meses.map(({ m, estado, total, hayFactura }) => (
-                        <td key={m} className="px-1 py-2 text-center">
-                          <div className={`mx-auto w-8 h-8 rounded-lg flex items-center justify-center text-[9px] font-bold ${COLOR[estado]}`}
-                            title={hayFactura ? `${fmtEur(total)} · ${estado === "pagado" ? "pagada" : "sin pagar"}` : estado === "falta" ? "sin factura (mes pasado)" : "aún no"}>
+                      {meses.map(({ m, estado, total, n, id }) => {
+                        const cell = (
+                          <div className={`relative mx-auto w-8 h-8 rounded-lg flex items-center justify-center text-[9px] font-bold ${COLOR[estado]}`}
+                            title={n > 0 ? `${fmtEur(total)} · ${n} factura${n !== 1 ? "s" : ""} · ${estado === "pagado" ? "pagada" : "sin pagar"} · abrir en Holded` : estado === "falta" ? "sin factura (mes pasado)" : "aún no"}>
                             {estado === "pagado" ? "✓" : estado === "sin_pagar" ? "€" : estado === "falta" ? "✕" : ""}
+                            {n > 1 && <span className="absolute -top-1 -right-1 bg-[#2E1A47] text-white text-[7px] w-3 h-3 rounded-full flex items-center justify-center">{n}</span>}
                           </div>
-                        </td>
-                      ))}
+                        );
+                        return (
+                          <td key={m} className="px-1 py-2 text-center">
+                            {id ? <a href={holdedUrl(id)} target="_blank" rel="noopener noreferrer" className="block">{cell}</a> : cell}
+                          </td>
+                        );
+                      })}
                     </tr>
                   ))}
                 </tbody>
@@ -123,11 +124,12 @@ export default async function GastosFijosPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-5 mt-4 text-[11px] text-gray-500">
+          <div className="flex items-center gap-5 mt-4 text-[11px] text-gray-500 flex-wrap">
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500" /> Recibida y pagada</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-400" /> Recibida sin pagar</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-500" /> Mes pasado sin factura/pago</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-gray-100 border border-gray-200" /> Aún no toca</span>
+            <span className="text-gray-400">· el número en la esquina = varias facturas ese mes</span>
           </div>
         </>
       )}

@@ -326,6 +326,7 @@ export interface HoldedGasto {
   estado: "pagada" | "parcial" | "pendiente";
   categoria: CategoriaGasto;
   fecha_pago: string | null;
+  borrador: boolean;
 }
 
 function categoriaGasto(cuentaId: string | null): CategoriaGasto {
@@ -356,7 +357,7 @@ async function getFechasPago(key: string): Promise<Map<string, string>> {
   return map;
 }
 
-export async function getGastos(): Promise<HoldedGasto[]> {
+export async function getGastos(opts?: { incluirBorradores?: boolean }): Promise<HoldedGasto[]> {
   const key = process.env.HOLDED_API_KEY;
   if (!key) throw new Error("Falta HOLDED_API_KEY");
 
@@ -373,7 +374,7 @@ export async function getGastos(): Promise<HoldedGasto[]> {
     const data = await res.json();
 
     for (const i of data.items ?? []) {
-      if (i.draft) continue; // borradores fuera
+      if (i.draft && !opts?.incluirBorradores) continue; // borradores fuera (salvo que se pidan)
       const total = num(i.total);
       const pendiente = num(i.payments_pending);
       const pagado = num(i.payments_total);
@@ -395,6 +396,7 @@ export async function getGastos(): Promise<HoldedGasto[]> {
         estado: pendiente <= 0.005 ? "pagada" : pagado > 0.005 ? "parcial" : "pendiente",
         categoria: categoriaGasto(cuentaId),
         fecha_pago: fechasPago.get(i.id) ?? null,
+        borrador: !!i.draft,
       });
     }
     if (!data.has_more) break;
