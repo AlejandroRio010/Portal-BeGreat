@@ -8,7 +8,7 @@ import { fmtEur } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 const CORTOS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-const holdedUrl = (id: string) => `https://app.holded.com/purchases/${id}`;
+const holdedUrl = (id: string) => `https://app.holded.com/expenses/list#open:purchase-${id}`;
 
 export default async function GastosFijosPage() {
   const session = await auth();
