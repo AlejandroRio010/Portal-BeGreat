@@ -41,7 +41,11 @@ export async function GET(req: NextRequest) {
   const todas = p.get("todas") === "1";
   const opId = p.get("opId") ?? "";
   const contraparte = (p.get("contraparte") ?? "").trim(); // entidad o cliente según pipeline
-  const esperado = parseFloat(p.get("esperado") ?? "") || 0;
+  // Importe esperado SIN IVA (el fee o el importe facturado por BeGreat).
+  // Las facturas de Holded llevan el IVA incluido, así que comparamos contra
+  // el importe base y también contra base+21% (y cubrimos exentos de IVA).
+  const esperadoBase = parseFloat(p.get("esperado") ?? "") || 0;
+  const esperadoConIva = esperadoBase * 1.21;
 
   let facturas;
   try {
@@ -71,8 +75,9 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Las que cuadran con el importe esperado primero
-  const coincide = (t: number) => esperado > 0 && Math.abs(t - esperado) <= Math.max(1, esperado * 0.01);
+  // Las que cuadran con el importe esperado (base o base+IVA) primero
+  const cerca = (t: number, v: number) => v > 0 && Math.abs(t - v) <= Math.max(1, v * 0.015);
+  const coincide = (t: number) => cerca(t, esperadoBase) || cerca(t, esperadoConIva);
   out.sort((a, b) => Number(coincide(b.total)) - Number(coincide(a.total)));
 
   return NextResponse.json(
