@@ -18,7 +18,8 @@ export const GASTOS_FIJOS: GastoFijo[] = [
   { label: "Expelliarmus Services", match: "expelliarmus", mensual: 133.10, categoria: "Otros gastos" },
   { label: "Telefónica", match: "telefonica", mensual: null, categoria: "Telecomunicaciones", nota: "Telecom + iPhone" },
   { label: "Microsoft", match: "microsoft", mensual: 28.31, categoria: "Software y suscripciones" },
-  { label: "Alejandro del Río — autónomo (IRPF 7%)", match: "alejandro del rio", mensual: null, categoria: "Colaboradores", nota: "Importe variable cada mes" },
+  { label: "Holded — software", match: "holded", mensual: null, categoria: "Software y suscripciones", nota: "Importe variable" },
+  // Alejandro del Río (autónomo) pasa a gastos variables.
 ];
 
 export function norm(s: string): string {
