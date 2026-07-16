@@ -257,3 +257,151 @@ async function getFechaCobroDeFactura(key: string, invoiceId: string): Promise<s
   }
   return best;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  GASTOS (facturas de compra) — /api/v2/purchases
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type CategoriaGasto =
+  | "Compras equipos (renting)"
+  | "Colaboradores"
+  | "Personal (SS / nóminas)"
+  | "Vehículos (renting)"
+  | "Vehículo (combustible/parking)"
+  | "Telecomunicaciones"
+  | "Software y suscripciones"
+  | "Servicios profesionales"
+  | "Dietas y restauración"
+  | "Otros gastos";
+
+export const CATEGORIAS_GASTO: CategoriaGasto[] = [
+  "Compras equipos (renting)",
+  "Colaboradores",
+  "Personal (SS / nóminas)",
+  "Vehículos (renting)",
+  "Vehículo (combustible/parking)",
+  "Telecomunicaciones",
+  "Software y suscripciones",
+  "Servicios profesionales",
+  "Dietas y restauración",
+  "Otros gastos",
+];
+
+// Mapa PROVISIONAL cuenta contable interna de Holded → categoría de gasto.
+// (Deducido por proveedor/importe; a confirmar con el cuadro de cuentas.)
+export const CUENTAS_GASTO: Record<string, CategoriaGasto> = {
+  "66fc0ce79abd2620ac0ad5e5": "Compras equipos (renting)",   // Dolce, Inael, Sam's, Total Recovery
+  "66fc0ce89abd2620ac0ad5ec": "Colaboradores",               // Pablo Andrés Arroyo, Krattos, Fosterman
+  "66fc0ce89abd2620ac0ad5ea": "Vehículos (renting)",         // Alphabet Fleet
+  "6960b6167192c4940b0d3d02": "Vehículos (renting)",         // Alphabet
+  "690db72775589e7bab06312e": "Vehículo (combustible/parking)",
+  "695e2383a2700509d90a8148": "Telecomunicaciones",          // Telefónica
+  "695e2958c35a9dc1770ddc19": "Telecomunicaciones",          // Telefónica Móviles
+  "697327ef6cad828bba0e9ec4": "Software y suscripciones",    // Holded
+  "672b2af54ea23708e40a5e4b": "Software y suscripciones",    // Holded
+  "6960b5a43218e82c97088732": "Software y suscripciones",    // Microsoft, Omnilink
+  "69c648d83ad07c7af40f8cc6": "Software y suscripciones",    // Google Cloud
+  "68ea12f2774b450934091b45": "Software y suscripciones",    // Google Cloud
+  "693bda793f64ca1a2a00d8ee": "Software y suscripciones",    // Microsoft
+  "69732c85bbbeeb3c8603cdbd": "Software y suscripciones",    // Finergia
+  "66fc0ce89abd2620ac0ad5f5": "Personal (SS / nóminas)",     // Tesorería Seguridad Social
+  "6968a609a942b0b5d005b7c7": "Dietas y restauración",       // restaurantes/cafeterías
+  "695e2a0bdc15bdae4c05d6b1": "Servicios profesionales",     // Level Up
+  "697c685132bf42b34e0ad039": "Otros gastos",                // Expelliarmus
+  "66fc0ce89abd2620ac0ad5f2": "Otros gastos",                // gastos generales
+};
+
+export interface HoldedGasto {
+  id: string;
+  document_number: string;
+  proveedor: string;
+  description: string | null;
+  date: string;
+  subtotal: number;
+  tax: number;
+  retencion: number;   // IRPF retenido (colaboradores autónomos)
+  total: number;
+  pagado: number;
+  pendiente: number;
+  estado: "pagada" | "parcial" | "pendiente";
+  categoria: CategoriaGasto;
+  fecha_pago: string | null;
+}
+
+function categoriaGasto(cuentaId: string | null): CategoriaGasto {
+  return (cuentaId && CUENTAS_GASTO[cuentaId]) || "Otros gastos";
+}
+
+// Fechas de pago (payments type=payment) por documento de compra
+async function getFechasPago(key: string): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  let cursor: string | null = null;
+  for (let page = 0; page < 30; page++) {
+    const url = new URL(`${BASE}/payments`);
+    url.searchParams.set("limit", "100");
+    if (cursor) url.searchParams.set("cursor", cursor);
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${key}`, Accept: "application/json" }, cache: "no-store" });
+    if (!res.ok) break;
+    const data = await res.json();
+    for (const p of data.items ?? []) {
+      if (p.type !== "payment" || !p.document_id) continue;
+      const fecha = String(p.date ?? "").slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) continue;
+      const prev = map.get(p.document_id);
+      if (!prev || fecha > prev) map.set(p.document_id, fecha);
+    }
+    if (!data.has_more) break;
+    cursor = data.cursor;
+  }
+  return map;
+}
+
+export async function getGastos(): Promise<HoldedGasto[]> {
+  const key = process.env.HOLDED_API_KEY;
+  if (!key) throw new Error("Falta HOLDED_API_KEY");
+
+  const fechasPago = await getFechasPago(key);
+  const out: HoldedGasto[] = [];
+  let cursor: string | null = null;
+
+  for (let page = 0; page < 30; page++) {
+    const url = new URL(`${BASE}/purchases`);
+    url.searchParams.set("limit", "100");
+    if (cursor) url.searchParams.set("cursor", cursor);
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${key}`, Accept: "application/json" }, cache: "no-store" });
+    if (!res.ok) throw new Error(`Holded ${res.status}`);
+    const data = await res.json();
+
+    for (const i of data.items ?? []) {
+      if (i.draft) continue; // borradores fuera
+      const total = num(i.total);
+      const pendiente = num(i.payments_pending);
+      const pagado = num(i.payments_total);
+      const desc = i.description ?? i.lines?.[0]?.name ?? "";
+      const cuentaId = cuentaDeFactura(i.lines);
+      const retencion = (i.lines ?? []).reduce((s: number, l: any) => s + num(l?.retention), 0);
+      out.push({
+        id: i.id,
+        document_number: i.document_number ?? "—",
+        proveedor: i.contact_name ?? "—",
+        description: desc || null,
+        date: i.date,
+        subtotal: num(i.subtotal),
+        tax: num(i.tax),
+        retencion,
+        total,
+        pagado,
+        pendiente,
+        estado: pendiente <= 0.005 ? "pagada" : pagado > 0.005 ? "parcial" : "pendiente",
+        categoria: categoriaGasto(cuentaId),
+        fecha_pago: fechasPago.get(i.id) ?? null,
+      });
+    }
+    if (!data.has_more) break;
+    cursor = data.cursor;
+  }
+
+  return out
+    .filter(g => g.date >= FINANZAS_DESDE && g.date < "2027-01-01")
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
