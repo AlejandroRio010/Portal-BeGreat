@@ -21,7 +21,10 @@ export function facturasDeOp(op: {
 function n(v: unknown): number {
   if (typeof v === "number") return v;
   if (!v) return 0;
-  return parseFloat(String(v).replace(/\./g, "").replace(",", ".")) || 0;
+  // Los importes de la operación ya vienen en formato canónico con PUNTO decimal:
+  // numeric de la DB ("129795.00") y rawFromFmt del formulario ("5197.80").
+  // NO son formato español, así que NO hay que quitar el punto (eso multiplicaba ×100).
+  return parseFloat(String(v)) || 0;
 }
 
 /** Importe base (sin IVA) que se debería haber cobrado en la operación.

@@ -323,7 +323,10 @@ export default function AdminOpForm({
   const isFactura = modalidadRenting === "begreat_factura";
 
   // Cuota aproximada automática (mismo motor que el cotizador): importe + plazo.
-  const cuotaAuto = pipelineKey === "renting" ? rangoCuota(importeNum, parseInt(plazoMeses) || 0) : null;
+  // Base financiada de la cuota: en «BeGreat factura» es lo que factura BeGreat
+  // (lo que financia la entidad); en comisiona, el importe del equipo.
+  const cuotaBase = isFactura && importeFactNum > 0 ? importeFactNum : importeNum;
+  const cuotaAuto = pipelineKey === "renting" ? rangoCuota(cuotaBase, parseInt(plazoMeses) || 0) : null;
   // Autorrelleno de la cuota con el cotizador, sin pisar una edición manual.
   const cuotaTouched = useRef<boolean>(!!(initialCuotaAproxMin || initialCuotaAproxMax));
   useEffect(() => {
