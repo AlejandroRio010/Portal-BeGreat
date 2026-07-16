@@ -442,6 +442,10 @@ export const operations = pgTable("operations", {
   holded_invoice_id: text("holded_invoice_id"),
   holded_invoice_number: text("holded_invoice_number"),
   holded_invoices: jsonb("holded_invoices").default([]),
+  // Facturas de COMPRA de Holded vinculadas a la op (lado del pago):
+  // pago a proveedor/cliente (mercadería) y pago de comisión a colaboradores.
+  // Cada entrada: {id, number, tipo: "pago" | "comision", colaborador_id?}
+  holded_purchases: jsonb("holded_purchases").default([]),
   // Modalidad renting
   modalidad_renting: modalidadRentingEnum("modalidad_renting"),
   importe_facturado_begreat: numeric("importe_facturado_begreat", { precision: 12, scale: 2 }),

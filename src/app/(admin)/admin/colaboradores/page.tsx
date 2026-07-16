@@ -3,6 +3,7 @@ import { collaborators } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import ColaboradorEditModal from "./ColaboradorEditModal";
+import AddColaboradorButton from "./AddColaboradorButton";
 
 export default async function AdminColaboradoresPage() {
   const colabs = await db
@@ -25,9 +26,12 @@ export default async function AdminColaboradoresPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Colaboradores</h1>
-        <p className="text-sm text-gray-500 mt-1">{colabs.length} colaboradores registrados</p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Colaboradores</h1>
+          <p className="text-sm text-gray-500 mt-1">{colabs.length} colaboradores registrados</p>
+        </div>
+        <AddColaboradorButton />
       </div>
 
       <div className="bg-white border border-gray-200 overflow-hidden">
