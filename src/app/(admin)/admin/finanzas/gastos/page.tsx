@@ -195,7 +195,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                         <>
                           {b.key === "nomina" && (
                             <div className="bg-[#EEEBF3]/60 border border-[#2E1A47]/10 rounded-t-2xl px-4 py-2 text-[11px] text-[#2E1A47]/70">
-                              ⓘ Aquí solo entra lo que Holded registra como compra (Seguridad Social, gestoría). Los <b>sueldos netos de Rita y Macarena no están en Holded</b> como factura — hay que decidir cómo meterlos.
+                              ⓘ Aquí solo entra lo que Holded registra como compra (Seguridad Social, gestoría). Los <b>sueldos netos de Rita y Macarena no están en Holded</b> — <b>pendiente (mañana)</b>: los metemos como importe mensual para que se vean aquí.
                             </div>
                           )}
                           <div className="bg-white border border-gray-100 overflow-hidden shadow-sm">{filaGastos(items)}</div>
