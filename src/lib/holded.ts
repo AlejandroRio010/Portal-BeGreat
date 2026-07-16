@@ -334,8 +334,10 @@ function categoriaGasto(cuentaId: string | null): CategoriaGasto {
 }
 
 // Fechas de pago (payments type=payment) por documento de compra
-async function getFechasPago(key: string): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
+// Pagos de compras conciliados: por documento, fecha del último y total pagado.
+// Los importes de /payments vienen con PUNTO decimal.
+async function getPagosCompra(key: string): Promise<Map<string, { fecha: string; importe: number }>> {
+  const map = new Map<string, { fecha: string; importe: number }>();
   let cursor: string | null = null;
   for (let page = 0; page < 30; page++) {
     const url = new URL(`${BASE}/payments`);
@@ -348,8 +350,12 @@ async function getFechasPago(key: string): Promise<Map<string, string>> {
       if (p.type !== "payment" || !p.document_id) continue;
       const fecha = String(p.date ?? "").slice(0, 10);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) continue;
+      const importe = Math.abs(parseFloat(String(p.amount ?? "0")) || 0);
       const prev = map.get(p.document_id);
-      if (!prev || fecha > prev) map.set(p.document_id, fecha);
+      map.set(p.document_id, {
+        fecha: prev && prev.fecha > fecha ? prev.fecha : fecha,
+        importe: (prev?.importe ?? 0) + importe,
+      });
     }
     if (!data.has_more) break;
     cursor = data.cursor;
@@ -361,7 +367,7 @@ export async function getGastos(opts?: { incluirBorradores?: boolean }): Promise
   const key = process.env.HOLDED_API_KEY;
   if (!key) throw new Error("Falta HOLDED_API_KEY");
 
-  const fechasPago = await getFechasPago(key);
+  const pagos = await getPagosCompra(key);
   const out: HoldedGasto[] = [];
   let cursor: string | null = null;
 
@@ -376,11 +382,15 @@ export async function getGastos(opts?: { incluirBorradores?: boolean }): Promise
     for (const i of data.items ?? []) {
       if (i.draft && !opts?.incluirBorradores) continue; // borradores fuera (salvo que se pidan)
       const total = num(i.total);
-      const pendiente = num(i.payments_pending);
-      const pagado = num(i.payments_total);
       const desc = i.description ?? i.lines?.[0]?.name ?? "";
       const cuentaId = cuentaDeFactura(i.lines);
       const retencion = (i.lines ?? []).reduce((s: number, l: any) => s + num(l?.retention), 0);
+      // Pagado real = máximo entre lo que dice la factura y los pagos conciliados
+      const pagoRec = pagos.get(i.id);
+      const pagado = Math.max(num(i.payments_total), pagoRec?.importe ?? 0);
+      const pendiente = Math.max(0, total - pagado);
+      // Tolerancia de 0,05 € para céntimos de redondeo
+      const estado = pendiente <= 0.05 ? "pagada" : pagado > 0.05 ? "parcial" : "pendiente";
       out.push({
         id: i.id,
         document_number: i.document_number ?? "—",
@@ -393,9 +403,9 @@ export async function getGastos(opts?: { incluirBorradores?: boolean }): Promise
         total,
         pagado,
         pendiente,
-        estado: pendiente <= 0.005 ? "pagada" : pagado > 0.005 ? "parcial" : "pendiente",
+        estado,
         categoria: categoriaGasto(cuentaId),
-        fecha_pago: fechasPago.get(i.id) ?? null,
+        fecha_pago: pagoRec?.fecha ?? null,
         borrador: !!i.draft,
       });
     }
