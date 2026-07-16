@@ -68,6 +68,7 @@ export async function PATCH(
     supplier_id,
     holded_invoice_id,
     holded_invoice_number,
+    holded_invoices,
   } = body;
 
   // Fetch current state before update (for email triggers)
@@ -158,9 +159,16 @@ export async function PATCH(
   if (typeof importe_facturado_visible === "boolean") updateData.importe_facturado_visible = importe_facturado_visible;
   if (collaborator_id !== undefined) updateData.collaborator_id = collaborator_id || null;
   if (supplier_id !== undefined) updateData.supplier_id = supplier_id || null;
-  if (holded_invoice_id !== undefined) {
+  if (Array.isArray(holded_invoices)) {
+    // Nueva vía: lista de facturas [{id, number}]; el single es espejo del primero
+    const lista = holded_invoices.filter((f: any) => f && f.id).map((f: any) => ({ id: f.id, number: f.number ?? null }));
+    updateData.holded_invoices = lista;
+    updateData.holded_invoice_id = lista[0]?.id ?? null;
+    updateData.holded_invoice_number = lista[0]?.number ?? null;
+  } else if (holded_invoice_id !== undefined) {
     updateData.holded_invoice_id = holded_invoice_id || null;
     updateData.holded_invoice_number = holded_invoice_id ? (holded_invoice_number || null) : null;
+    updateData.holded_invoices = holded_invoice_id ? [{ id: holded_invoice_id, number: holded_invoice_number ?? null }] : [];
   }
   if (Array.isArray(body.avalistas)) {
     // Lista completa de avalistas; los campos aval_* quedan como espejo del primero

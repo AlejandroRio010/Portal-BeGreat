@@ -183,6 +183,18 @@ export async function getFacturasVenta(): Promise<HoldedInvoice[]> {
     .sort((a, b) => b.date.localeCompare(a.date));
 }
 
+/** Varias facturas por sus ids (para las que hay vinculadas a una operación). */
+export async function getFacturasByIds(ids: string[]): Promise<HoldedInvoice[]> {
+  const limpios = ids.filter(Boolean);
+  if (limpios.length === 0) return [];
+  const out: HoldedInvoice[] = [];
+  for (const id of limpios) {
+    const f = await getFacturaVentaById(id);
+    if (f) out.push(f);
+  }
+  return out;
+}
+
 /** Una factura concreta por su id (para mostrar el estado en la ficha de la op). */
 export async function getFacturaVentaById(id: string): Promise<HoldedInvoice | null> {
   const key = process.env.HOLDED_API_KEY;
