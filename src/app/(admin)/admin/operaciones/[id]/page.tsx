@@ -89,6 +89,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       holded_invoice_id: operations.holded_invoice_id,
       holded_invoice_number: operations.holded_invoice_number,
       holded_invoices: operations.holded_invoices,
+      holded_purchases: operations.holded_purchases,
       necesidad: operations.necesidad,
       modalidad_renting: operations.modalidad_renting,
       importe_facturado_begreat: operations.importe_facturado_begreat,
@@ -602,6 +603,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialHoldedInvoiceId={op.holded_invoice_id ?? null}
             initialHoldedInvoiceNumber={op.holded_invoice_number ?? null}
             initialHoldedInvoices={facturasLink}
+            initialHoldedPurchases={(op.holded_purchases as any) ?? []}
             initialEntidad={op.entidad_financiera}
             initialEntityOfficeId={op.entity_office_id ?? null}
             initialHonorarios={op.honorarios_firmado}

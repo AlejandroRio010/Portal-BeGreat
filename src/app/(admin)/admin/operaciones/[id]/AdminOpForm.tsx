@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fmtPctInput, fmtEuroInput, rawFromFmt } from "@/lib/format";
 import AvalistasEditor, { type AvalistaForm, emptyAvalista, avalistasPayload } from "@/components/AvalistasEditor";
+import PurchasePicker from "./PurchasePicker";
+import { rangoCuota } from "@/lib/cuotaRenting";
 
 const FASES_CONSULTORIA = [
   "Pre-análisis",
@@ -94,6 +96,7 @@ interface Props {
   initialHoldedInvoiceId?: string | null;
   initialHoldedInvoiceNumber?: string | null;
   initialHoldedInvoices?: { id: string; number: string | null }[];
+  initialHoldedPurchases?: { id: string; number: string | null; tipo: "pago" | "comision"; colaborador_id?: string | null }[];
   // context names
   clientNombre?: string | null;
   supplierNombre?: string | null;
@@ -162,6 +165,7 @@ export default function AdminOpForm({
   initialHoldedInvoiceId,
   initialHoldedInvoiceNumber,
   initialHoldedInvoices = [],
+  initialHoldedPurchases = [],
   clientNombre,
   supplierNombre,
   colaboradorNombre,
@@ -202,6 +206,28 @@ export default function AdminOpForm({
   const [facturaLoading, setFacturaLoading] = useState(false);
   const [facturaTodas, setFacturaTodas] = useState(false);
   const facturaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Facturas de COMPRA vinculadas: pago a proveedor/cliente + comisiones ────
+  type PurchaseEntry = { id: string; number: string | null; tipo: "pago" | "comision"; colaborador_id?: string | null };
+  const [holdedPurchases, setHoldedPurchases] = useState<PurchaseEntry[]>(
+    (initialHoldedPurchases as PurchaseEntry[]) ?? []
+  );
+  const pagoLinks = holdedPurchases.filter(p => p.tipo === "pago").map(p => ({ id: p.id, number: p.number }));
+  function setPagoLinks(next: { id: string; number: string | null }[]) {
+    setHoldedPurchases(prev => [
+      ...prev.filter(p => p.tipo !== "pago"),
+      ...next.map(n => ({ id: n.id, number: n.number, tipo: "pago" as const })),
+    ]);
+  }
+  function comisionLinks(colabId: string) {
+    return holdedPurchases.filter(p => p.tipo === "comision" && p.colaborador_id === colabId).map(p => ({ id: p.id, number: p.number }));
+  }
+  function setComisionLinks(colabId: string, next: { id: string; number: string | null }[]) {
+    setHoldedPurchases(prev => [
+      ...prev.filter(p => !(p.tipo === "comision" && p.colaborador_id === colabId)),
+      ...next.map(n => ({ id: n.id, number: n.number, tipo: "comision" as const, colaborador_id: colabId })),
+    ]);
+  }
 
   async function buscarFacturas(q: string, todas: boolean) {
     setFacturaLoading(true);
@@ -296,6 +322,18 @@ export default function AdminOpForm({
   const importeFactNum = parseFloat(importeFacturadoBegreat) || 0;
   const isFactura = modalidadRenting === "begreat_factura";
 
+  // Cuota aproximada automática (mismo motor que el cotizador): importe + plazo.
+  const cuotaAuto = pipelineKey === "renting" ? rangoCuota(importeNum, parseInt(plazoMeses) || 0) : null;
+  // Autorrelleno de la cuota con el cotizador, sin pisar una edición manual.
+  const cuotaTouched = useRef<boolean>(!!(initialCuotaAproxMin || initialCuotaAproxMax));
+  useEffect(() => {
+    if (!cuotaTouched.current && cuotaAuto) {
+      setCuotaAproxMin(cuotaAuto.min.toFixed(2));
+      setCuotaAproxMax(cuotaAuto.max.toFixed(2));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importe, plazoMeses]);
+
   function origenLabel(tipo: string): string {
     if (tipo === "cliente") return clientNombre || "Cliente";
     if (tipo === "proveedor") return supplierNombre || "Proveedor";
@@ -336,10 +374,15 @@ export default function AdminOpForm({
   }
 
   function selectColab(i: number, colabId: string) {
+    const oldId = colaboradores[i]?.id;
     const next = [...colaboradores];
     const found = allColaboradores.find(c => c.id === colabId);
     next[i] = { ...next[i], id: colabId, nombre: found?.nombre ?? "" };
     setColaboradores(next);
+    // Al cambiar de persona, la factura de comisión vinculada al anterior deja de aplicar
+    if (oldId && oldId !== colabId) {
+      setHoldedPurchases(prev => prev.filter(p => !(p.tipo === "comision" && p.colaborador_id === oldId)));
+    }
   }
 
   function updateColab(i: number, field: "porcentaje" | "importe", val: string) {
@@ -359,7 +402,12 @@ export default function AdminOpForm({
   }
 
   function removeColab(i: number) {
+    const removedId = colaboradores[i]?.id;
     setColaboradores(colaboradores.filter((_, idx) => idx !== i));
+    // Al quitar el colaborador, su factura de comisión vinculada ya no aplica
+    if (removedId) {
+      setHoldedPurchases(prev => prev.filter(p => !(p.tipo === "comision" && p.colaborador_id === removedId)));
+    }
   }
 
   function recalcBegreat() {
@@ -467,6 +515,7 @@ export default function AdminOpForm({
         importe_facturado_begreat: importeFacturadoBegreat || null,
         importe_facturado_visible: importeFacturadoVisible,
         holded_invoices: holdedInvoices,
+        holded_purchases: holdedPurchases,
       });
       setSaved(true);
     } catch { setError("Error al guardar los cambios."); }
@@ -563,12 +612,18 @@ export default function AdminOpForm({
               <div className="col-span-2">
                 <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Cuota aproximada (rango €/mes)</label>
                 <div className="flex items-center gap-2">
-                  <input type="text" value={cuotaAproxMin} onChange={(e) => setCuotaAproxMin(e.target.value)} placeholder="Mín"
+                  <input type="text" value={cuotaAproxMin} onChange={(e) => { cuotaTouched.current = true; setCuotaAproxMin(e.target.value); }} placeholder="Mín"
                     className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
                   <span className="text-gray-400 text-sm">–</span>
-                  <input type="text" value={cuotaAproxMax} onChange={(e) => setCuotaAproxMax(e.target.value)} placeholder="Máx"
+                  <input type="text" value={cuotaAproxMax} onChange={(e) => { cuotaTouched.current = true; setCuotaAproxMax(e.target.value); }} placeholder="Máx"
                     className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
                 </div>
+                {cuotaAuto && (
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Cotizador (importe + plazo): <b className="text-[#2E1A47]">{cuotaAuto.min.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} – {cuotaAuto.max.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</b>{" "}
+                    <button type="button" onClick={() => { setCuotaAproxMin(cuotaAuto.min.toFixed(2)); setCuotaAproxMax(cuotaAuto.max.toFixed(2)); }} className="text-[#2E1A47] font-semibold hover:underline">Aplicar</button>
+                  </p>
+                )}
               </div>
               <div className="col-span-2">
                 <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Cuota definitiva (€/mes)</label>
@@ -839,10 +894,38 @@ export default function AdminOpForm({
                       </div>
 
                       {importeFactNum > 0 && importeNum > 0 && (
-                        <div className="bg-[#EEEBF3] px-3 py-2">
-                          <p className="text-[10px] text-gray-500 uppercase">Fee total (margen): <span className="font-bold text-[#2E1A47]">{(importeFactNum - importeNum).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</span></p>
+                        <div className="bg-[#EEEBF3] px-3 py-2.5 rounded-lg">
+                          <div className="grid grid-cols-2 gap-2 mb-1.5">
+                            <div>
+                              <p className="text-[9px] text-gray-400 uppercase tracking-wider">Factura BeGreat</p>
+                              <p className="text-sm font-bold text-[#2E1A47]">{importeFactNum.toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] text-gray-400 uppercase tracking-wider">Se paga a {facturaDestinatario === "cliente" ? "cliente" : "proveedor"}</p>
+                              <p className="text-sm font-bold text-gray-700">{importeNum.toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</p>
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-gray-500 uppercase border-t border-[#2E1A47]/10 pt-1.5">Fee total (margen): <span className="font-bold text-[#2E1A47]">{(importeFactNum - importeNum).toLocaleString("es-ES", { minimumFractionDigits: 2 })} €</span></p>
                         </div>
                       )}
+
+                      {/* Pago de mercadería: factura de compra al proveedor/cliente */}
+                      <div className="border-t border-gray-200 pt-3">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#2E1A47]" />
+                          <label className="text-[10px] text-gray-400 uppercase tracking-wider">Pago mercadería · factura de compra</label>
+                        </div>
+                        <PurchasePicker
+                          opId={opId}
+                          contraparte={facturaDestinatario === "cliente" ? (clientNombre ?? "") : (supplierNombre ?? "")}
+                          esperado={importeNum}
+                          selected={pagoLinks}
+                          onChange={setPagoLinks}
+                          accent="purple"
+                          placeholder="Buscar factura de compra…"
+                          hint="Lo que pagamos al proveedor/cliente por el equipo · sin las ya vinculadas a otra op"
+                        />
+                      </div>
                     </div>
                   )}
 
@@ -890,10 +973,26 @@ export default function AdminOpForm({
                               placeholder="0,00 €" className="w-full border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
                           </div>
                         </div>
-                        {/* Pago al colaborador — se activará con la sección de gastos */}
-                        <div className="mt-2 flex items-center gap-1.5 border-t border-dashed border-gray-100 pt-2 opacity-60">
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-300" />
-                          <span className="text-[9px] text-gray-400 uppercase tracking-wider">Pago · disponible al activar gastos</span>
+                        {/* Pago de la comisión: factura de compra del colaborador en Holded */}
+                        <div className="mt-2 border-t border-dashed border-gray-100 pt-2">
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            <span className="text-[9px] text-gray-400 uppercase tracking-wider">Pago · factura de compra en Holded</span>
+                          </div>
+                          {c.id ? (
+                            <PurchasePicker
+                              opId={opId}
+                              contraparte={c.nombre}
+                              esperado={c.importe}
+                              selected={comisionLinks(c.id)}
+                              onChange={next => setComisionLinks(c.id!, next)}
+                              accent="amber"
+                              placeholder="Buscar factura de comisión…"
+                              hint={`Compras de ${c.nombre || "este colaborador"} · IVA 21% / IRPF 7% por detrás`}
+                            />
+                          ) : (
+                            <p className="text-[9px] text-gray-400">Selecciona la persona para vincular su factura de pago.</p>
+                          )}
                         </div>
                       </div>
                     ))}

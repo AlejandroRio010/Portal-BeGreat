@@ -69,6 +69,7 @@ export async function PATCH(
     holded_invoice_id,
     holded_invoice_number,
     holded_invoices,
+    holded_purchases,
   } = body;
 
   // Fetch current state before update (for email triggers)
@@ -169,6 +170,20 @@ export async function PATCH(
     updateData.holded_invoice_id = holded_invoice_id || null;
     updateData.holded_invoice_number = holded_invoice_id ? (holded_invoice_number || null) : null;
     updateData.holded_invoices = holded_invoice_id ? [{ id: holded_invoice_id, number: holded_invoice_number ?? null }] : [];
+  }
+  if (Array.isArray(holded_purchases)) {
+    // Facturas de compra vinculadas (pago a proveedor/cliente y comisiones).
+    // Dedup por id: una misma factura no puede contarse dos veces en la op.
+    const seen = new Set<string>();
+    updateData.holded_purchases = holded_purchases
+      .filter((p: any) => p && p.id && (p.tipo === "pago" || p.tipo === "comision"))
+      .filter((p: any) => { const id = String(p.id); if (seen.has(id)) return false; seen.add(id); return true; })
+      .map((p: any) => ({
+        id: String(p.id),
+        number: p.number ?? null,
+        tipo: p.tipo === "comision" ? "comision" : "pago",
+        colaborador_id: p.tipo === "comision" ? (p.colaborador_id ?? null) : undefined,
+      }));
   }
   if (Array.isArray(body.avalistas)) {
     // Lista completa de avalistas; los campos aval_* quedan como espejo del primero
