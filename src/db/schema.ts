@@ -40,6 +40,9 @@ export const collaborators = pgTable("collaborators", {
   web: text("web"),
   num_trabajadores: integer("num_trabajadores"),
   razon_social: text("razon_social"),
+  // Autónomo → sus facturas llevan IVA 21% y retención de IRPF 7% (para el motor
+  // de comisiones/pagos y el futuro cálculo de impuestos).
+  es_autonomo: boolean("es_autonomo").notNull().default(false),
   notas_internas: text("notas_internas"),
   puede_editar_ops: boolean("puede_editar_ops").notNull().default(false),
   puede_ver_entidades: boolean("puede_ver_entidades").notNull().default(false),

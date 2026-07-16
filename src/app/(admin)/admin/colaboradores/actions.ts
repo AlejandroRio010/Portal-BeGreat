@@ -11,7 +11,7 @@ import { generateCodigoCOL } from "@/lib/codigos";
  * No crea cuenta de acceso: es un colaborador sin login (activo=false) hasta
  * que se le den credenciales desde su ficha. Basta con el nombre.
  */
-export async function crearColaboradorRapido(input: { nombre: string; cif?: string | null }) {
+export async function crearColaboradorRapido(input: { nombre: string; cif?: string | null; es_autonomo?: boolean }) {
   const session = await auth();
   if (!session || (session.user as any).role !== "admin") throw new Error("No autorizado");
 
@@ -31,6 +31,7 @@ export async function crearColaboradorRapido(input: { nombre: string; cif?: stri
     activo: false, // sin acceso hasta configurar credenciales en su ficha
     razon_social: nombre,
     cif: input.cif?.trim() || null,
+    es_autonomo: !!input.es_autonomo,
   });
 
   revalidatePath("/admin/colaboradores");

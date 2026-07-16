@@ -18,6 +18,7 @@ interface Colab {
   web?: string | null;
   razon_social?: string | null;
   num_trabajadores?: number | null;
+  es_autonomo?: boolean;
 }
 
 export default function ColaboradorEditModal({ colab }: { colab: Colab }) {
@@ -43,6 +44,7 @@ export default function ColaboradorEditModal({ colab }: { colab: Colab }) {
       razon_social: razonSocial,
       num_trabajadores: form.get("num_trabajadores") ? Number(form.get("num_trabajadores")) : null,
       activo: form.get("activo") === "true",
+      es_autonomo: form.get("es_autonomo") === "on",
     };
 
     const res = await fetch(`/api/admin/colaboradores/${colab.id}`, {
@@ -123,6 +125,13 @@ export default function ColaboradorEditModal({ colab }: { colab: Colab }) {
                     <option value="false">Inactivo</option>
                   </select>
                 </div>
+
+                <label className="flex items-start gap-2.5 cursor-pointer bg-[#EEEBF3]/50 px-4 py-3">
+                  <input type="checkbox" name="es_autonomo" defaultChecked={!!colab.es_autonomo} className="mt-0.5 accent-[#2E1A47]" />
+                  <span className="text-xs text-gray-600">
+                    <b className="text-[#2E1A47]">Es autónomo</b> — sus facturas llevan IVA 21% y retención de IRPF 7% (se usa al buscar su pago y para impuestos).
+                  </span>
+                </label>
 
                 {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
               </div>

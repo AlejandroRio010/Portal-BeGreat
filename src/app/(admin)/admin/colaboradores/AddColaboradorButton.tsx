@@ -8,6 +8,7 @@ export default function AddColaboradorButton() {
   const [open, setOpen] = useState(false);
   const [nombre, setNombre] = useState("");
   const [cif, setCif] = useState("");
+  const [esAutonomo, setEsAutonomo] = useState(false);
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
   const router = useRouter();
@@ -17,8 +18,8 @@ export default function AddColaboradorButton() {
     setError("");
     start(async () => {
       try {
-        await crearColaboradorRapido({ nombre, cif });
-        setNombre(""); setCif(""); setOpen(false);
+        await crearColaboradorRapido({ nombre, cif, es_autonomo: esAutonomo });
+        setNombre(""); setCif(""); setEsAutonomo(false); setOpen(false);
         router.refresh();
       } catch (e: any) {
         setError(e?.message ?? "Error al crear");
@@ -49,10 +50,16 @@ export default function AddColaboradorButton() {
                   className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:border-[#2E1A47]/40" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">CIF <span className="text-gray-300 font-normal">(opcional)</span></label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">CIF / NIF <span className="text-gray-300 font-normal">(opcional)</span></label>
                 <input value={cif} onChange={e => setCif(e.target.value)} placeholder="B12345678"
                   className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:border-[#2E1A47]/40" />
               </div>
+              <label className="flex items-start gap-2.5 cursor-pointer bg-[#EEEBF3]/50 rounded-xl px-4 py-3">
+                <input type="checkbox" checked={esAutonomo} onChange={e => setEsAutonomo(e.target.checked)} className="mt-0.5 accent-[#2E1A47]" />
+                <span className="text-xs text-gray-600">
+                  <b className="text-[#2E1A47]">Es autónomo</b> — sus facturas llevan <b>IVA 21% y retención de IRPF 7%</b>. Se tiene en cuenta al buscar su pago y para el cálculo de impuestos.
+                </span>
+              </label>
               {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
             </div>
             <div className="px-6 py-4 border-t border-gray-100 flex items-center gap-3">
