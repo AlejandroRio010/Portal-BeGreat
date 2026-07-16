@@ -326,6 +326,8 @@ export interface HoldedGasto {
   pendiente: number;
   estado: "pagada" | "parcial" | "pendiente";
   categoria: CategoriaGasto;
+  /** Id interno de la cuenta contable de la factura (para agrupar por tipo). */
+  cuenta_id: string | null;
   fecha_pago: string | null;
   borrador: boolean;
 }
@@ -407,6 +409,7 @@ export async function getGastos(opts?: { incluirBorradores?: boolean }): Promise
         pendiente,
         estado,
         categoria: categoriaGasto(cuentaId),
+        cuenta_id: cuentaId,
         fecha_pago: pagoRec?.fecha ?? null,
         borrador: !!i.draft,
       });

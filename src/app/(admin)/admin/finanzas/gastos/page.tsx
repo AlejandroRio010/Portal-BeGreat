@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getGastos, type HoldedGasto, CATEGORIAS_GASTO } from "@/lib/holded";
 import { getGastosFijos, esDelFijo, norm } from "@/lib/gastosFijos";
+import { BUCKETS, bucketDe } from "@/lib/gastosBuckets";
 import { fmtEur } from "@/lib/format";
 import { AddGastoFijoButton, type CandidatoProveedor } from "./GastosFijosManage";
 
@@ -161,14 +162,50 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
             )}
           </div>
 
-          {/* Gastos variables del mes */}
+          {/* Gastos variables del mes, por tipo */}
           <div>
             <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider mb-3">Gastos variables de {mesLabel(mes)} · {fmtEur(totalVariables)}</h2>
-            <div className="bg-white border border-gray-100 overflow-hidden shadow-sm">
-              {variables.length === 0 ? (
-                <div className="py-14 text-center"><p className="text-sm text-gray-400">Sin gastos variables este mes.</p></div>
-              ) : filaGastos(variables)}
-            </div>
+            {variables.length === 0 ? (
+              <div className="bg-white border border-gray-100 shadow-sm py-14 text-center"><p className="text-sm text-gray-400">Sin gastos variables este mes.</p></div>
+            ) : (
+              <div className="space-y-6">
+                {BUCKETS.map(b => {
+                  const items = variables.filter(g => bucketDe(g) === b.key);
+                  if (items.length === 0) return null;
+                  const sub = items.reduce((s, g) => s + g.total, 0);
+                  return (
+                    <div key={b.key}>
+                      <div className="flex items-end justify-between mb-2 gap-4">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-lg leading-none">{b.emoji}</span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-[#2E1A47]">{b.label}</p>
+                            <p className="text-[11px] text-gray-400 truncate">{b.desc}{b.nota ? ` · ${b.nota}` : ""}</p>
+                          </div>
+                        </div>
+                        <p className="text-sm font-black text-[#2E1A47] whitespace-nowrap">{fmtEur(sub)} <span className="text-[10px] text-gray-400 font-normal">· {items.length}</span></p>
+                      </div>
+
+                      {b.key === "tarjeta" ? (
+                        <div className="bg-amber-50/60 border border-amber-200 rounded-2xl px-4 py-3 flex items-center gap-2">
+                          <span className="text-base">💳</span>
+                          <p className="text-xs text-amber-700"><b>{items.length} cargos</b> por {fmtEur(sub)} — lo detallamos mañana (dietas, combustible, parking).</p>
+                        </div>
+                      ) : (
+                        <>
+                          {b.key === "nomina" && (
+                            <div className="bg-[#EEEBF3]/60 border border-[#2E1A47]/10 rounded-t-2xl px-4 py-2 text-[11px] text-[#2E1A47]/70">
+                              ⓘ Aquí solo entra lo que Holded registra como compra (Seguridad Social, gestoría). Los <b>sueldos netos de Rita y Macarena no están en Holded</b> como factura — hay que decidir cómo meterlos.
+                            </div>
+                          )}
+                          <div className="bg-white border border-gray-100 overflow-hidden shadow-sm">{filaGastos(items)}</div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </>
       )}
