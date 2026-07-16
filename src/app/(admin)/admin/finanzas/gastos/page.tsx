@@ -57,6 +57,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Finanzas — Gastos</h1>
           <p className="text-sm text-gray-400 mt-1">Bearing Point S.L. · facturas de compra desde Holded · por cuenta contable</p>
+          <Link href="/admin/finanzas/gastos/fijos" className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-[#2E1A47] hover:underline">📌 Ver gastos fijos →</Link>
         </div>
         <div className="flex gap-0.5 bg-white border border-gray-200 rounded-2xl p-1 self-start">
           {cortos.map((m, i) => {
