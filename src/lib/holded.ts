@@ -315,6 +315,8 @@ export interface HoldedGasto {
   id: string;
   document_number: string;
   proveedor: string;
+  /** Id de contacto (proveedor) en Holded; permite casar gastos fijos con exactitud. */
+  contact_id: string | null;
   description: string | null;
   date: string;
   subtotal: number;
@@ -395,6 +397,7 @@ export async function getGastos(opts?: { incluirBorradores?: boolean }): Promise
         id: i.id,
         document_number: i.document_number ?? "—",
         proveedor: i.contact_name ?? "—",
+        contact_id: i.contact ?? i.contactId ?? null,
         description: desc || null,
         date: i.date,
         subtotal: num(i.subtotal),

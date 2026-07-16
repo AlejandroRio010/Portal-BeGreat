@@ -590,6 +590,26 @@ export const entityTasks = pgTable("entity_tasks", {
   fecha_programada: timestamp("fecha_programada"),
 });
 
+// ─── Gastos fijos (finanzas) ─────────────────────────────────────────────────
+// Lista editable de proveedores que la empresa considera "gasto fijo". El motor
+// cruza cada proveedor con las compras reales de Holded y su conciliación de pago.
+// Se gestiona desde el portal (no se toca código); si el proveedor no está aquí,
+// su factura cuenta como gasto variable.
+export const gastosFijos = pgTable("gastos_fijos", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  label: text("label").notNull(),
+  // Subcadena del nombre del proveedor (normalizada) para casar sus facturas.
+  proveedor_match: text("proveedor_match").notNull(),
+  // Id de contacto de Holded: si está, el match es exacto (más fiable que el nombre).
+  holded_contact_id: text("holded_contact_id"),
+  // Importe mensual esperado con IVA; null = importe variable.
+  mensual: numeric("mensual", { precision: 10, scale: 2 }),
+  categoria: text("categoria"),
+  nota: text("nota"),
+  activo: boolean("activo").notNull().default(true),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Cotizador: deals de referencia para calibrar TAEs ────────────────────────
 export const cotizadorDeals = pgTable("cotizador_deals", {
   id: uuid("id").primaryKey().defaultRandom(),

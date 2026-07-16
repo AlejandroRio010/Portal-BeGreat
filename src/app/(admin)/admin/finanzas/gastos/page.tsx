@@ -1,9 +1,10 @@
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getGastos, type HoldedGasto } from "@/lib/holded";
-import { GASTOS_FIJOS, esDelFijo } from "@/lib/gastosFijos";
+import { getGastos, type HoldedGasto, CATEGORIAS_GASTO } from "@/lib/holded";
+import { getGastosFijos, esDelFijo, norm } from "@/lib/gastosFijos";
 import { fmtEur } from "@/lib/format";
+import { AddGastoFijoButton, type CandidatoProveedor } from "./GastosFijosManage";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +19,6 @@ const BADGE: Record<HoldedGasto["estado"], { c: string; l: string }> = {
   pendiente: { c: "bg-red-50 border border-red-200 text-red-600", l: "Pendiente" },
 };
 
-function esFijo(g: HoldedGasto) { return GASTOS_FIJOS.some(f => esDelFijo(f, g.proveedor)); }
-
 export default async function GastosPage({ searchParams }: { searchParams: Promise<{ mes?: string; tipo?: string }> }) {
   const session = await auth();
   if (!session || (session.user as any).role !== "admin") notFound();
@@ -33,6 +32,9 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   let holdedError: string | null = null;
   try { gastos = await getGastos({ incluirBorradores: true }); } catch (e: any) { holdedError = e?.message ?? "Error Holded"; }
 
+  const fijosDef = await getGastosFijos();
+  const esFijo = (g: HoldedGasto) => fijosDef.some(f => esDelFijo(f, g.proveedor, g.contact_id));
+
   const delMes = gastos.filter(g => g.date.startsWith(mes));
   const fijos = delMes.filter(esFijo);
   const variables = delMes.filter(g => !esFijo(g));
@@ -43,10 +45,20 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   const retencion = delMes.reduce((s, g) => s + g.retencion, 0);
 
   // Fijos del mes agrupados por proveedor fijo
-  const fijosMes = GASTOS_FIJOS.map(f => {
-    const facts = delMes.filter(g => esDelFijo(f, g.proveedor));
+  const fijosMes = fijosDef.map(f => {
+    const facts = delMes.filter(g => esDelFijo(f, g.proveedor, g.contact_id));
     return { f, facts, total: facts.reduce((s, g) => s + g.total, 0), pagado: facts.length > 0 && facts.every(g => g.estado === "pagada"), presente: facts.length > 0 };
   }).filter(x => x.presente);
+
+  // Candidatos para "añadir gasto fijo": proveedores vistos (dedup), con su última factura
+  const candMap = new Map<string, CandidatoProveedor>();
+  for (const g of gastos) {
+    const key = g.contact_id ?? norm(g.proveedor);
+    const prev = candMap.get(key);
+    if (!prev) candMap.set(key, { proveedor: g.proveedor, contactId: g.contact_id, categoria: g.categoria, importe: g.total, fecha: g.date, n: 1, yaFijo: esFijo(g) });
+    else { prev.n++; if (g.date > prev.fecha) { prev.fecha = g.date; prev.importe = g.total; prev.categoria = g.categoria; } }
+  }
+  const candidatos = [...candMap.values()];
 
   const anyo = Number(mes.split("-")[0]);
   const filaGastos = (lista: HoldedGasto[]) => (
@@ -127,13 +139,16 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
 
           {/* Gastos fijos del mes */}
           <div className="mb-6">
-            <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider mb-3">Gastos fijos de {mesLabel(mes)}</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider">Gastos fijos de {mesLabel(mes)}</h2>
+              <AddGastoFijoButton candidatos={candidatos} categorias={CATEGORIAS_GASTO} />
+            </div>
             {fijosMes.length === 0 ? (
               <p className="text-sm text-gray-400 bg-white border border-gray-100 px-5 py-4">Ningún gasto fijo registrado este mes todavía.</p>
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                 {fijosMes.map(({ f, facts, total, pagado }) => (
-                  <a key={f.label} href={holdedUrl(facts[0].id)} target="_blank" rel="noopener noreferrer"
+                  <a key={f.id} href={holdedUrl(facts[0].id)} target="_blank" rel="noopener noreferrer"
                     className={`rounded-2xl border px-4 py-3 transition-all hover:shadow-sm ${pagado ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200"}`}>
                     <div className="flex items-center justify-between">
                       <p className="text-xs font-semibold text-gray-800 truncate">{f.label}</p>
