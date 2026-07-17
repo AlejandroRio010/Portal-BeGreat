@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { fmtPctInput, fmtEuroInput, rawFromFmt } from "@/lib/format";
 import AvalistasEditor, { type AvalistaForm, emptyAvalista, avalistasPayload } from "@/components/AvalistasEditor";
 import PurchasePicker from "./PurchasePicker";
+import ObliviateResolver, { type ObliviateVal } from "./ObliviateResolver";
 import { rangoCuota } from "@/lib/cuotaRenting";
 
 const FASES_CONSULTORIA = [
@@ -97,6 +98,7 @@ interface Props {
   initialHoldedInvoiceNumber?: string | null;
   initialHoldedInvoices?: { id: string; number: string | null }[];
   initialHoldedPurchases?: { id: string; number: string | null; tipo: "pago" | "comision"; colaborador_id?: string | null }[];
+  initialObliviateMov?: { tipo: string; colaborador_id?: string | null; importe: string; fecha: string; pagado?: boolean }[];
   // context names
   clientNombre?: string | null;
   supplierNombre?: string | null;
@@ -166,6 +168,7 @@ export default function AdminOpForm({
   initialHoldedInvoiceNumber,
   initialHoldedInvoices = [],
   initialHoldedPurchases = [],
+  initialObliviateMov = [],
   clientNombre,
   supplierNombre,
   colaboradorNombre,
@@ -227,6 +230,20 @@ export default function AdminOpForm({
       ...prev.filter(p => !(p.tipo === "comision" && p.colaborador_id === colabId)),
       ...next.map(n => ({ id: n.id, number: n.number, tipo: "comision" as const, colaborador_id: colabId })),
     ]);
+  }
+
+  // ── Movimientos liquidados por Obliviate (fuera de Holded) ────────────────
+  type OblEntry = { tipo: "cobro" | "mercaderia" | "comision"; colaborador_id?: string | null; importe: string; fecha: string; pagado: boolean };
+  const [obliviateMov, setObliviateMov] = useState<OblEntry[]>((initialObliviateMov as OblEntry[]) ?? []);
+  function getObl(tipo: OblEntry["tipo"], colabId?: string | null): ObliviateVal | null {
+    const m = obliviateMov.find(x => x.tipo === tipo && (x.colaborador_id ?? null) === (colabId ?? null));
+    return m ? { importe: m.importe, fecha: m.fecha } : null;
+  }
+  function setObl(tipo: OblEntry["tipo"], colabId: string | null, v: ObliviateVal | null) {
+    setObliviateMov(prev => {
+      const rest = prev.filter(x => !(x.tipo === tipo && (x.colaborador_id ?? null) === (colabId ?? null)));
+      return v ? [...rest, { tipo, colaborador_id: colabId, importe: v.importe, fecha: v.fecha, pagado: true }] : rest;
+    });
   }
 
   async function buscarFacturas(q: string, todas: boolean) {
@@ -530,6 +547,7 @@ export default function AdminOpForm({
         importe_facturado_visible: importeFacturadoVisible,
         holded_invoices: holdedInvoices,
         holded_purchases: holdedPurchases,
+        obliviate_mov: obliviateMov,
       });
       setSaved(true);
     } catch { setError("Error al guardar los cambios."); }
@@ -933,6 +951,7 @@ export default function AdminOpForm({
                           placeholder="Buscar factura de compra…"
                           hint="Lo que pagamos al proveedor/cliente por el equipo · sin las ya vinculadas a otra op"
                         />
+                        <ObliviateResolver value={getObl("mercaderia", null)} onChange={v => setObl("mercaderia", null, v)} esperado={importeNum} verbo="pagado" />
                       </div>
                     </div>
                   )}
@@ -984,16 +1003,19 @@ export default function AdminOpForm({
                             <span className="text-[9px] text-gray-400 uppercase tracking-wider">Pago · factura de compra en Holded</span>
                           </div>
                           {c.id ? (
-                            <PurchasePicker
-                              opId={opId}
-                              contraparte={c.nombre}
-                              esperado={c.importe}
-                              selected={comisionLinks(c.id)}
-                              onChange={next => setComisionLinks(c.id!, next)}
-                              accent="amber"
-                              placeholder="Buscar factura de comisión…"
-                              hint={`Compras de ${c.nombre || "este colaborador"} · IVA 21% / IRPF 7% por detrás`}
-                            />
+                            <>
+                              <PurchasePicker
+                                opId={opId}
+                                contraparte={c.nombre}
+                                esperado={c.importe}
+                                selected={comisionLinks(c.id)}
+                                onChange={next => setComisionLinks(c.id!, next)}
+                                accent="amber"
+                                placeholder="Buscar factura de comisión…"
+                                hint={`Compras de ${c.nombre || "este colaborador"} · IVA 21% / IRPF 7% por detrás`}
+                              />
+                              <ObliviateResolver value={getObl("comision", c.id)} onChange={v => setObl("comision", c.id!, v)} esperado={c.importe} verbo="pagado" />
+                            </>
                           ) : (
                             <p className="text-[9px] text-gray-400">Selecciona la persona para vincular su factura de pago.</p>
                           )}
@@ -1081,6 +1103,7 @@ export default function AdminOpForm({
                       <p className="text-[10px] text-gray-400 mt-1">
                         {pipelineKey === "renting" ? "Facturas de renting a la entidad de la op" : "Facturas de consultoría al cliente de la op"} · sin las ya vinculadas a otra op. El estado y el cuadre se ven en la ficha.
                       </p>
+                      <ObliviateResolver value={getObl("cobro", null)} onChange={v => setObl("cobro", null, v)} esperado={isFactura ? importeFacturadoBegreat : calcFeeTotal()} verbo="cobrado" />
                     </div>
                   </div>
                 </div>

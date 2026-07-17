@@ -449,6 +449,10 @@ export const operations = pgTable("operations", {
   // pago a proveedor/cliente (mercadería) y pago de comisión a colaboradores.
   // Cada entrada: {id, number, tipo: "pago" | "comision", colaborador_id?}
   holded_purchases: jsonb("holded_purchases").default([]),
+  // Movimientos liquidados por OBLIVIATE (no están en Holded/Bearing). Se marcan
+  // a mano. Cada entrada: {tipo: "cobro"|"mercaderia"|"comision", colaborador_id?,
+  // importe, fecha, pagado}. Cada lado se resuelve por Holded O por Obliviate.
+  obliviate_mov: jsonb("obliviate_mov").default([]),
   // Modalidad renting
   modalidad_renting: modalidadRentingEnum("modalidad_renting"),
   importe_facturado_begreat: numeric("importe_facturado_begreat", { precision: 12, scale: 2 }),
@@ -613,6 +617,9 @@ export const gastosFijos = pgTable("gastos_fijos", {
   mensual: numeric("mensual", { precision: 10, scale: 2 }),
   categoria: text("categoria"),
   nota: text("nota"),
+  // Empresa a la que pertenece el gasto fijo: bearing (cruza con Holded) u
+  // obliviate (manual, no está en Holded).
+  empresa: text("empresa").notNull().default("bearing"),
   activo: boolean("activo").notNull().default(true),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });

@@ -70,6 +70,7 @@ export async function PATCH(
     holded_invoice_number,
     holded_invoices,
     holded_purchases,
+    obliviate_mov,
   } = body;
 
   // Fetch current state before update (for email triggers)
@@ -183,6 +184,18 @@ export async function PATCH(
         number: p.number ?? null,
         tipo: p.tipo === "comision" ? "comision" : "pago",
         colaborador_id: p.tipo === "comision" ? (p.colaborador_id ?? null) : undefined,
+      }));
+  }
+  if (Array.isArray(obliviate_mov)) {
+    // Movimientos liquidados por Obliviate (fuera de Holded), marcados a mano
+    updateData.obliviate_mov = obliviate_mov
+      .filter((m: any) => m && (m.tipo === "cobro" || m.tipo === "mercaderia" || m.tipo === "comision"))
+      .map((m: any) => ({
+        tipo: m.tipo,
+        colaborador_id: m.tipo === "comision" ? (m.colaborador_id ?? null) : undefined,
+        importe: String(m.importe ?? ""),
+        fecha: m.fecha || null,
+        pagado: m.pagado !== false,
       }));
   }
   if (Array.isArray(body.avalistas)) {

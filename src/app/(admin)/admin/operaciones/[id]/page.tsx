@@ -90,6 +90,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
       holded_invoice_number: operations.holded_invoice_number,
       holded_invoices: operations.holded_invoices,
       holded_purchases: operations.holded_purchases,
+      obliviate_mov: operations.obliviate_mov,
       necesidad: operations.necesidad,
       modalidad_renting: operations.modalidad_renting,
       importe_facturado_begreat: operations.importe_facturado_begreat,
@@ -153,6 +154,9 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
   const algunaSinCobrar = holdedFacturas.some(f => f.estado !== "cobrada");
   const esperadoBase = cobroEsperadoBase(op);
   const cuadraCobro = cuadra(sumaFacturas, esperadoBase);
+  // Movimientos liquidados por Obliviate (fuera de Holded), marcados a mano
+  const oblMov = ((op.obliviate_mov as any[]) ?? []).filter(m => m && m.tipo);
+  const oblCobro = oblMov.find(m => m.tipo === "cobro") ?? null;
 
   const opNotes = await db
     .select()
@@ -333,11 +337,34 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
           {holdedFacturas.length > 1 && (
             <p className="text-xs font-semibold text-[#2E1A47] mt-1.5">Total facturado: {fmtEur(sumaFacturas)} · cobrado: {fmtEur(sumaCobrado)}</p>
           )}
-          {!cuadraCobro && esperadoBase > 0 && (
+          {!cuadraCobro && esperadoBase > 0 && !oblCobro && (
             <p className="text-xs text-red-700 mt-2 bg-red-100/60 border border-red-200 rounded-lg px-3 py-2">
               ⚠ El total facturado ({fmtEur(sumaFacturas)}) no cuadra con lo que debería cobrarse según el portal ({fmtEur(esperadoBase)} + IVA). Revisa las comisiones de la operación o añade la factura que falte.
             </p>
           )}
+        </div>
+      )}
+
+      {/* Movimientos liquidados por Obliviate (fuera de Holded) */}
+      {oblMov.length > 0 && (
+        <div className="mb-6 px-5 py-3.5 border border-amber-200 bg-amber-50/70 rounded-lg">
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-sm font-bold text-amber-800">🏢 Liquidado por Obliviate</p>
+            <span className="text-[10px] text-amber-600 uppercase tracking-wide">fuera de Holded</span>
+          </div>
+          <div className="space-y-1">
+            {oblMov.map((m, i) => {
+              const lbl = m.tipo === "cobro" ? "Cobrado" : m.tipo === "mercaderia" ? "Pagado (mercadería)" : "Comisión pagada";
+              return (
+                <p key={i} className="text-xs text-amber-800 flex items-center gap-2">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span className="font-semibold">{lbl} desde Obliviate</span>
+                  {m.importe ? ` · ${fmtEur(String(m.importe))}` : ""}
+                  {m.fecha ? ` · ${new Date(m.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}` : ""}
+                </p>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -604,6 +631,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialHoldedInvoiceNumber={op.holded_invoice_number ?? null}
             initialHoldedInvoices={facturasLink}
             initialHoldedPurchases={(op.holded_purchases as any) ?? []}
+            initialObliviateMov={(op.obliviate_mov as any) ?? []}
             initialEntidad={op.entidad_financiera}
             initialEntityOfficeId={op.entity_office_id ?? null}
             initialHonorarios={op.honorarios_firmado}
