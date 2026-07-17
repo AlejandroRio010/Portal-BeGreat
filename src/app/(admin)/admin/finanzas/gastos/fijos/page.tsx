@@ -215,7 +215,7 @@ export default async function GastosFijosPage() {
                   </table>
                 </div>
               </div>
-              <p className="text-[11px] text-gray-500 mt-3">Clic en cada mes: <b>vacío</b> → <span className="text-amber-600 font-semibold">factura recibida</span> → <span className="text-emerald-600 font-semibold">pagada</span> → vacío. Los dominios (anuales) solo se marcan en su mes de renovación.</p>
+              <p className="text-[11px] text-gray-500 mt-3">Clic en un mes → se abre el desplegable para elegir: <b>sin marcar</b> · <span className="text-amber-600 font-semibold">factura recibida</span> · <span className="text-emerald-600 font-semibold">pagada</span>. Los dominios (anuales) solo se marcan en su mes de renovación.</p>
             </div>
           )}
         </>

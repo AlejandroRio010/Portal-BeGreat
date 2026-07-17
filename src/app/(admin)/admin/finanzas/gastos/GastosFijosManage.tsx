@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { crearGastoFijo, borrarGastoFijo, ciclarEstadoFijo } from "./actions";
+import { crearGastoFijo, borrarGastoFijo, setEstadoFijo } from "./actions";
 
 export interface CandidatoProveedor {
   proveedor: string;
@@ -148,11 +148,19 @@ export function AddGastoFijoButton({ candidatos, categorias }: { candidatos: Can
   );
 }
 
-// ─── Celda clicable del grid de Obliviate (estado manual por mes) ─────────────
-// Clic cicla: pendiente → recibida (factura) → pagada → pendiente.
+// ─── Celda del grid de Obliviate: clic → desplegable para elegir el estado ─────
+const ESTADO_OPCIONES = [
+  { val: "pendiente", label: "Sin marcar", dot: "bg-gray-200" },
+  { val: "recibida", label: "Factura recibida", dot: "bg-amber-400" },
+  { val: "pagada", label: "Pagada", dot: "bg-emerald-500" },
+];
+
 export function ObliviateFijoCell({ id, ym, estado, aplica, esPasado }: {
   id: string; ym: string; estado: "pendiente" | "recibida" | "pagada"; aplica: boolean; esPasado: boolean;
 }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
   const [pending, start] = useTransition();
   const router = useRouter();
 
@@ -163,20 +171,43 @@ export function ObliviateFijoCell({ id, ym, estado, aplica, esPasado }: {
   const cls = estado === "pagada" ? "bg-emerald-500 hover:bg-emerald-600 text-white"
     : estado === "recibida" ? "bg-amber-400 hover:bg-amber-500 text-white"
     : esPasado ? "bg-red-500 hover:bg-red-600 text-white"
-    : "bg-gray-100 hover:bg-gray-200 text-gray-300";
-  const icon = estado === "pagada" ? "✓" : estado === "recibida" ? "€" : esPasado ? "✕" : "";
-  const title = estado === "pagada" ? "Recibida y pagada · clic para reiniciar"
-    : estado === "recibida" ? "Factura recibida, sin pagar · clic = marcar pagada"
-    : esPasado ? "Sin marcar (mes pasado) · clic = factura recibida"
-    : "Aún no · clic = factura recibida";
+    : "bg-gray-100 hover:bg-gray-200 text-gray-400";
+  const icon = estado === "pagada" ? "✓" : estado === "recibida" ? "€" : esPasado ? "✕" : "▾";
+
+  function toggle() {
+    if (open) { setOpen(false); return; }
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) setPos({ top: r.bottom + 4, left: Math.min(r.left, window.innerWidth - 180) });
+    setOpen(true);
+  }
+  function elegir(nuevo: string) {
+    setOpen(false);
+    start(async () => { await setEstadoFijo(id, ym, nuevo); router.refresh(); });
+  }
 
   return (
-    <button type="button" disabled={pending}
-      onClick={() => start(async () => { await ciclarEstadoFijo(id, ym); router.refresh(); })}
-      title={title}
-      className={`mx-auto w-8 h-8 rounded-lg flex items-center justify-center text-[9px] font-bold transition-colors disabled:opacity-60 ${cls}`}>
-      {pending ? "…" : icon}
-    </button>
+    <>
+      <button ref={btnRef} type="button" disabled={pending} onClick={toggle}
+        title="Elegir estado"
+        className={`mx-auto w-8 h-8 rounded-lg flex items-center justify-center text-[9px] font-bold transition-colors disabled:opacity-60 ${cls}`}>
+        {pending ? "…" : icon}
+      </button>
+      {open && pos && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="fixed z-50 bg-white border border-gray-200 rounded-xl shadow-xl w-44 py-1" style={{ top: pos.top, left: pos.left }}>
+            {ESTADO_OPCIONES.map(o => (
+              <button key={o.val} type="button" onClick={() => elegir(o.val)}
+                className="w-full px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-[#EEEBF3] text-left">
+                <span className={`w-2.5 h-2.5 rounded-full ${o.dot}`} />
+                <span className="flex-1 text-gray-700">{o.label}</span>
+                {estado === o.val && <span className="text-[#2E1A47] font-bold">✓</span>}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </>
   );
 }
 
