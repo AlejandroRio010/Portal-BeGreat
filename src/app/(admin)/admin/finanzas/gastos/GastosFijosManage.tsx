@@ -213,7 +213,7 @@ export function ObliviateFijoCell({ id, ym, estado, importe, aplica, esPasado }:
               </button>
             ))}
             <div className="border-t border-gray-100 mt-1 px-3 py-2">
-              <label className="text-[9px] font-bold uppercase tracking-wider text-gray-400 block mb-1">Importe de este mes (€)</label>
+              <label className="text-[9px] font-bold uppercase tracking-wider text-gray-400 block mb-1">Importe de este mes (€ sin IVA)</label>
               <div className="flex gap-1.5">
                 <input autoFocus type="number" step="0.01" value={imp} onChange={e => setImp(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") guardarImporte(); }}

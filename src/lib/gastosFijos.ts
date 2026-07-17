@@ -24,7 +24,12 @@ export interface GastoFijo {
   estado_manual: Record<string, any>;
 }
 
-/** Importe del fijo que aplica a un mes concreto (mesIdx 0-11).
+// IVA de los gastos fijos de Obliviate (servicios → 21%). Los importes se guardan
+// SIN IVA (base); el total con IVA se calcula por detrás para caja/impuestos.
+export const IVA_OBLIVIATE = 0.21;
+export const conIva = (base: number) => base * (1 + IVA_OBLIVIATE);
+
+/** Importe (base, SIN IVA) del fijo que aplica a un mes concreto (mesIdx 0-11).
  *  Los anuales solo cuentan en su mes de cobro; los mensuales, todos los meses. */
 export function importeFijoMes(f: GastoFijo, mesIdx: number): number {
   const imp = f.mensual ?? 0;

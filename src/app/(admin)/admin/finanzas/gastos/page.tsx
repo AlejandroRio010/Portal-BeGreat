@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getGastos, type HoldedGasto, CATEGORIAS_GASTO } from "@/lib/holded";
-import { getGastosFijos, esDelFijo, norm, importeFijoMes } from "@/lib/gastosFijos";
+import { getGastosFijos, esDelFijo, norm, importeFijoMes, conIva } from "@/lib/gastosFijos";
 import { BUCKETS, bucketDe } from "@/lib/gastosBuckets";
 import { fmtEur } from "@/lib/format";
 import { AddGastoFijoButton, type CandidatoProveedor } from "./GastosFijosManage";
@@ -41,12 +41,14 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   const ymKey = `${Number(mes.split("-")[0])}-${mesIdx + 1}`;
   // Fijos de Obliviate que aplican a este mes (mensuales siempre; anuales solo en su
   // mes), respetando el override de importe manual si lo hay.
+  // Importes de Obliviate en base (sin IVA); la caja suma con IVA (como Bearing)
   const obliviateMes = fijosObliviate.map(f => {
     const cell = f.estado_manual?.[ymKey];
     const override = typeof cell === "object" && cell ? cell.i : undefined;
-    return { f, importe: override ?? importeFijoMes(f, mesIdx) };
-  }).filter(x => x.importe > 0);
-  const totalObliviate = obliviateMes.reduce((s, x) => s + x.importe, 0);
+    const base = override ?? importeFijoMes(f, mesIdx);
+    return { f, base, total: conIva(base) };
+  }).filter(x => x.base > 0);
+  const totalObliviate = obliviateMes.reduce((s, x) => s + x.total, 0);
 
   const delMes = gastos.filter(g => g.date.startsWith(mes));
   const fijos = delMes.filter(esFijo);
@@ -178,18 +180,18 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
           {obliviateMes.length > 0 && (
             <div className="mb-6">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-bold text-amber-800 uppercase tracking-wider">🏢 Obliviate · fijos de {mesLabel(mes)} · {fmtEur(totalObliviate)}</h2>
+                <h2 className="text-sm font-bold text-amber-800 uppercase tracking-wider">🏢 Obliviate · fijos de {mesLabel(mes)} · {fmtEur(totalObliviate)} <span className="text-[10px] font-normal normal-case">con IVA</span></h2>
                 <span className="text-[10px] text-amber-600 uppercase tracking-wide">manual · asumido pagado</span>
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                {obliviateMes.map(({ f, importe }) => (
+                {obliviateMes.map(({ f, base, total }) => (
                   <div key={f.id} className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3">
                     <div className="flex items-center justify-between">
                       <p className="text-xs font-semibold text-gray-800 truncate">{f.label}</p>
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{f.periodicidad === "anual" ? "Anual" : "Mensual"}</span>
                     </div>
-                    <p className="text-lg font-black text-amber-800 mt-1">{fmtEur(importe)}</p>
-                    {f.nota && <p className="text-[10px] text-gray-400 mt-0.5">{f.nota}</p>}
+                    <p className="text-lg font-black text-amber-800 mt-1">{fmtEur(total)}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{fmtEur(base)} + IVA{f.nota ? ` · ${f.nota}` : ""}</p>
                   </div>
                 ))}
               </div>

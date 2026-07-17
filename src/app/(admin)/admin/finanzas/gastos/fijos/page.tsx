@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getGastos, type HoldedGasto, CATEGORIAS_GASTO } from "@/lib/holded";
-import { getGastosFijos, esDelFijo, norm, importeFijoMes } from "@/lib/gastosFijos";
+import { getGastosFijos, esDelFijo, norm, importeFijoMes, conIva } from "@/lib/gastosFijos";
 import { fmtEur } from "@/lib/format";
 import { AddGastoFijoButton, RemoveGastoFijoButton, ObliviateFijoCell, ImporteBaseFijoEdit, type CandidatoProveedor } from "../GastosFijosManage";
 
@@ -45,8 +45,9 @@ export default async function GastosFijosPage() {
     return { gf, meses };
   });
 
-  const obliviateMensual = fijosObliviate.filter(f => f.periodicidad === "mensual").reduce((s, g) => s + (g.mensual ?? 0), 0);
-  const obliviateAnual = fijosObliviate.filter(f => f.periodicidad === "anual").reduce((s, g) => s + (g.mensual ?? 0), 0);
+  // Obliviate se guarda sin IVA; para el coste "de caja" lo sumamos con IVA (como Bearing)
+  const obliviateMensual = fijosObliviate.filter(f => f.periodicidad === "mensual").reduce((s, g) => s + conIva(g.mensual ?? 0), 0);
+  const obliviateAnual = fijosObliviate.filter(f => f.periodicidad === "anual").reduce((s, g) => s + conIva(g.mensual ?? 0), 0);
   const totalMensual = fijosDef.reduce((s, g) => s + (g.mensual ?? 0), 0) + obliviateMensual;
 
   // Filas de Obliviate (manuales): cada mes con su estado + importe y si aplica
@@ -186,7 +187,7 @@ export default async function GastosFijosPage() {
                     <thead>
                       <tr className="bg-amber-50 border-b border-amber-100">
                         <th className="text-left px-4 py-3 text-xs font-bold text-amber-800 uppercase tracking-wider">Gasto fijo</th>
-                        <th className="text-right px-3 py-3 text-xs font-bold text-amber-800 uppercase tracking-wider">€/mes</th>
+                        <th className="text-right px-3 py-3 text-xs font-bold text-amber-800 uppercase tracking-wider">€/mes · sin IVA</th>
                         {CORTOS.map((m, i) => (
                           <th key={m} className={`text-center px-1.5 py-3 text-[10px] font-bold uppercase ${i === mesActualIdx ? "text-amber-800" : "text-gray-400"}`}>{m}</th>
                         ))}
@@ -220,7 +221,7 @@ export default async function GastosFijosPage() {
                   </table>
                 </div>
               </div>
-              <p className="text-[11px] text-gray-500 mt-3">Clic en un mes → se abre el desplegable para elegir: <b>sin marcar</b> · <span className="text-amber-600 font-semibold">factura recibida</span> · <span className="text-emerald-600 font-semibold">pagada</span>. Los dominios (anuales) solo se marcan en su mes de renovación.</p>
+              <p className="text-[11px] text-gray-500 mt-3">Importes <b>sin IVA</b> (el 21% se calcula por detrás para caja e impuestos). Clic en un mes → desplegable para elegir <b>sin marcar</b> · <span className="text-amber-600 font-semibold">factura recibida</span> · <span className="text-emerald-600 font-semibold">pagada</span>, y ajustar el importe de ese mes. Los dominios (anuales) solo en su mes de renovación.</p>
             </div>
           )}
         </>
