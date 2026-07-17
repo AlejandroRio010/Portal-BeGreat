@@ -18,26 +18,71 @@ export interface NuevoGastoFijo {
   mensual: number | null;
   categoria: string | null;
   nota: string | null;
+  empresa?: string;              // "bearing" (cruza Holded) | "obliviate" (manual)
+  periodicidad?: string;         // "mensual" | "anual"
+  mes_cobro?: number | null;     // 1-12, solo anuales
 }
 
-/** Alta de un gasto fijo (desde el buscador de facturas de Holded). */
+/** Alta de un gasto fijo. Bearing → desde el buscador de facturas de Holded;
+ *  Obliviate → alta manual (no está en Holded). */
 export async function crearGastoFijo(input: NuevoGastoFijo) {
   await requireAdmin();
   const label = input.label?.trim();
-  const match = input.proveedor_match?.trim();
+  const empresa = input.empresa === "obliviate" ? "obliviate" : "bearing";
+  // Obliviate no cruza con Holded: el "match" es solo el propio nombre.
+  const match = (input.proveedor_match?.trim() || label);
   if (!label || !match) throw new Error("Faltan datos del gasto fijo");
 
   await db.insert(gastosFijos).values({
     label,
     proveedor_match: match,
-    holded_contact_id: input.holded_contact_id || null,
+    holded_contact_id: empresa === "obliviate" ? null : (input.holded_contact_id || null),
     mensual: input.mensual != null && !Number.isNaN(input.mensual) ? String(input.mensual) : null,
     categoria: input.categoria?.trim() || null,
     nota: input.nota?.trim() || null,
+    empresa,
+    periodicidad: input.periodicidad === "anual" ? "anual" : "mensual",
+    mes_cobro: input.periodicidad === "anual" && input.mes_cobro ? input.mes_cobro : null,
   });
 
   revalidatePath("/admin/finanzas/gastos");
   revalidatePath("/admin/finanzas/gastos/fijos");
+}
+
+/** Edita el nombre y/o el concepto (nota) de un gasto fijo. */
+export async function editarGastoFijo(id: string, campos: { label?: string; nota?: string | null }) {
+  await requireAdmin();
+  const set: Record<string, any> = {};
+  if (campos.label !== undefined) {
+    const l = campos.label.trim();
+    if (l) set.label = l;
+  }
+  if (campos.nota !== undefined) set.nota = campos.nota?.trim() || null;
+  if (Object.keys(set).length === 0) return;
+  await db.update(gastosFijos).set(set).where(eq(gastosFijos.id, id));
+  revalidatePath("/admin/finanzas/gastos/fijos");
+  revalidatePath("/admin/finanzas/gastos");
+}
+
+/** Guarda (o borra) una nota de un mes concreto de un gasto fijo — p. ej. explicar
+ *  por qué un mes se ha cobrado más de lo estipulado. Vale para Bearing y Obliviate:
+ *  se guarda en el mismo jsonb `estado_manual` bajo la clave `nota`. */
+export async function setNotaMesFijo(id: string, ym: string, nota: string | null) {
+  await requireAdmin();
+  const [row] = await db.select({ estado: gastosFijos.estado_manual })
+    .from(gastosFijos).where(eq(gastosFijos.id, id)).limit(1);
+  if (!row) throw new Error("Gasto fijo no encontrado");
+  const map = { ...((row.estado as Record<string, any>) ?? {}) };
+  const cur = map[ym];
+  const prev = typeof cur === "object" && cur ? cur : (typeof cur === "string" ? { e: cur } : {});
+  const nn = nota?.trim();
+  const next: Record<string, any> = { ...prev };
+  if (nn) next.nota = nn; else delete next.nota;
+  if (Object.keys(next).length === 0) delete map[ym];
+  else map[ym] = next;
+  await db.update(gastosFijos).set({ estado_manual: map }).where(eq(gastosFijos.id, id));
+  revalidatePath("/admin/finanzas/gastos/fijos");
+  revalidatePath("/admin/finanzas/gastos");
 }
 
 /** Solo los admins pueden quitar un gasto fijo. */

@@ -2,13 +2,14 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { crearGastoFijo, borrarGastoFijo, setEstadoFijo, setImporteBaseFijo, setCargoTarjeta } from "./actions";
+import { crearGastoFijo, borrarGastoFijo, setEstadoFijo, setImporteBaseFijo, setCargoTarjeta, editarGastoFijo, setNotaMesFijo } from "./actions";
 
 export interface CandidatoProveedor {
   proveedor: string;
   contactId: string | null;
   categoria: string;
-  importe: number;      // importe de la última factura (sugerencia de mensual)
+  importe: number;      // total con IVA de la última factura
+  base: number;         // base sin IVA de la última factura (sugerencia de mensual)
   fecha: string;        // YYYY-MM-DD de la última factura
   n: number;            // nº de facturas vistas de este proveedor
   yaFijo: boolean;
@@ -17,8 +18,122 @@ export interface CandidatoProveedor {
 const eur = (n: number) => new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
 const fechaCorta = (d: string) => new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 
-// ─── Botón + buscador de facturas para dar de alta un gasto fijo ──────────────
-export function AddGastoFijoButton({ candidatos, categorias }: { candidatos: CandidatoProveedor[]; categorias: string[] }) {
+// ─── Botón para dar de alta un gasto fijo ─────────────────────────────────────
+// Bearing → buscador de facturas de Holded (detecta por proveedor).
+// Obliviate → alta manual (no está en Holded).
+export function AddGastoFijoButton({ candidatos = [], categorias, empresa = "bearing" }: {
+  candidatos?: CandidatoProveedor[]; categorias: string[]; empresa?: "bearing" | "obliviate";
+}) {
+  if (empresa === "obliviate") return <AddGastoFijoObliviate categorias={categorias} />;
+  return <AddGastoFijoBearing candidatos={candidatos} categorias={categorias} />;
+}
+
+// ─── Alta Obliviate: formulario manual (nombre, concepto, importe base) ────────
+function AddGastoFijoObliviate({ categorias }: { categorias: string[] }) {
+  const [open, setOpen] = useState(false);
+  const [label, setLabel] = useState("");
+  const [categoria, setCategoria] = useState(categorias[0] || "");
+  const [nota, setNota] = useState("");
+  const [mensual, setMensual] = useState("");
+  const [periodicidad, setPeriodicidad] = useState<"mensual" | "anual">("mensual");
+  const [mesCobro, setMesCobro] = useState("1");
+  const [pending, start] = useTransition();
+  const router = useRouter();
+
+  function cerrar() { setOpen(false); setLabel(""); setNota(""); setMensual(""); setPeriodicidad("mensual"); }
+  function guardar() {
+    const l = label.trim();
+    if (!l) return;
+    const mensualNum = mensual.trim() === "" ? null : Number(mensual.replace(",", "."));
+    start(async () => {
+      await crearGastoFijo({
+        label: l, proveedor_match: l, holded_contact_id: null,
+        mensual: mensualNum, categoria: categoria || null, nota: nota.trim() || null,
+        empresa: "obliviate", periodicidad,
+        mes_cobro: periodicidad === "anual" ? Number(mesCobro) : null,
+      });
+      cerrar(); router.refresh();
+    });
+  }
+
+  return (
+    <>
+      <button onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-xl px-3 py-1.5 transition-colors">
+        <span className="text-sm leading-none">＋</span> Añadir
+      </button>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 overflow-y-auto" onClick={cerrar}>
+          <div className="bg-white rounded-3xl shadow-xl w-full max-w-md mt-[8vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-5 border-b border-amber-100 flex items-start justify-between gap-4 bg-amber-50/50">
+              <div>
+                <h3 className="text-lg font-bold text-amber-800">🏢 Añadir gasto fijo · Obliviate</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Manual (no está en Holded). El importe va <b>sin IVA</b>.</p>
+              </div>
+              <button onClick={cerrar} className="text-gray-300 hover:text-gray-500 text-xl leading-none">✕</button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Nombre</label>
+                <input autoFocus value={label} onChange={e => setLabel(e.target.value)} placeholder="Ej. Alquiler oficina"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Concepto / descripción <span className="text-gray-300 font-normal">(opcional)</span></label>
+                <input value={nota} onChange={e => setNota(e.target.value)} placeholder="Ej. despacho de la calle…"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Categoría</label>
+                  <select value={categoria} onChange={e => setCategoria(e.target.value)}
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:border-amber-400">
+                    {categorias.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Importe (€ sin IVA)</label>
+                  <input value={mensual} onChange={e => setMensual(e.target.value)} inputMode="decimal" placeholder="0,00"
+                    className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Periodicidad</label>
+                  <select value={periodicidad} onChange={e => setPeriodicidad(e.target.value as any)}
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:border-amber-400">
+                    <option value="mensual">Mensual</option>
+                    <option value="anual">Anual</option>
+                  </select>
+                </div>
+                {periodicidad === "anual" && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Mes de cobro</label>
+                    <select value={mesCobro} onChange={e => setMesCobro(e.target.value)}
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:border-amber-400">
+                      {MESES_LARGOS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                    </select>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-end pt-2">
+                <button onClick={guardar} disabled={pending || !label.trim()}
+                  className="bg-amber-600 text-white text-sm font-semibold rounded-xl px-5 py-2.5 hover:bg-amber-700 disabled:opacity-50 transition-colors">
+                  {pending ? "Guardando…" : "Añadir gasto fijo"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+const MESES_LARGOS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+// ─── Alta Bearing: buscador de facturas de Holded ─────────────────────────────
+function AddGastoFijoBearing({ candidatos, categorias }: { candidatos: CandidatoProveedor[]; categorias: string[] }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<CandidatoProveedor | null>(null);
@@ -38,7 +153,8 @@ export function AddGastoFijoButton({ candidatos, categorias }: { candidatos: Can
     setSel(c);
     setLabel(c.proveedor);
     setCategoria(c.categoria || categorias[0] || "");
-    setMensual(c.importe ? String(c.importe.toFixed(2)) : "");
+    // Sugerimos la BASE (sin IVA) — el portal calcula el IVA por detrás.
+    setMensual(c.base ? String(c.base.toFixed(2)) : "");
   }
 
   function cerrar() { setOpen(false); setSel(null); setQ(""); }
@@ -54,6 +170,7 @@ export function AddGastoFijoButton({ candidatos, categorias }: { candidatos: Can
         mensual: mensualNum,
         categoria: categoria || null,
         nota: null,
+        empresa: "bearing",
       });
       cerrar();
       router.refresh();
@@ -64,7 +181,7 @@ export function AddGastoFijoButton({ candidatos, categorias }: { candidatos: Can
     <>
       <button onClick={() => setOpen(true)}
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2E1A47] bg-[#EEEBF3] hover:bg-[#e2ddec] rounded-xl px-3 py-1.5 transition-colors">
-        <span className="text-sm leading-none">＋</span> Añadir gasto fijo
+        <span className="text-sm leading-none">＋</span> Añadir
       </button>
 
       {open && (
@@ -72,7 +189,7 @@ export function AddGastoFijoButton({ candidatos, categorias }: { candidatos: Can
           <div className="bg-white rounded-3xl shadow-xl w-full max-w-2xl mt-[6vh] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-5 border-b border-gray-100 flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-bold text-[#2E1A47]">Añadir gasto fijo</h3>
+                <h3 className="text-lg font-bold text-[#2E1A47]">Añadir gasto fijo · Bearing</h3>
                 <p className="text-xs text-gray-400 mt-0.5">Elige el proveedor de una factura de Holded. El portal lo tratará como fijo y vigilará mes a mes si llega y se paga.</p>
               </div>
               <button onClick={cerrar} className="text-gray-300 hover:text-gray-500 text-xl leading-none">✕</button>
@@ -96,7 +213,7 @@ export function AddGastoFijoButton({ candidatos, categorias }: { candidatos: Can
                             <p className="text-sm font-semibold text-gray-800 truncate">{c.proveedor}</p>
                             <p className="text-[11px] text-gray-400">{c.categoria} · {c.n} factura{c.n !== 1 ? "s" : ""} · última {fechaCorta(c.fecha)}</p>
                           </div>
-                          <span className="text-sm font-bold text-[#2E1A47] whitespace-nowrap">{eur(c.importe)}</span>
+                          <span className="text-sm font-bold text-[#2E1A47] whitespace-nowrap" title="Base sin IVA de la última factura">{eur(c.base)} <span className="text-[9px] font-normal text-gray-400">s/IVA</span></span>
                           {c.yaFijo
                             ? <span className="text-[9px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full px-2 py-0.5">Ya es fijo</span>
                             : <span className="text-[#2E1A47] text-xs font-semibold">＋</span>}
@@ -155,8 +272,8 @@ const ESTADO_OPCIONES = [
   { val: "pagada", label: "Pagada", dot: "bg-emerald-500" },
 ];
 
-export function ObliviateFijoCell({ id, ym, estado, importe, aplica, esPasado }: {
-  id: string; ym: string; estado: "pendiente" | "recibida" | "pagada"; importe: number | null; aplica: boolean; esPasado: boolean;
+export function ObliviateFijoCell({ id, ym, estado, importe, aplica, esPasado, compact = false }: {
+  id: string; ym: string; estado: "pendiente" | "recibida" | "pagada"; importe: number | null; aplica: boolean; esPasado: boolean; compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -164,16 +281,19 @@ export function ObliviateFijoCell({ id, ym, estado, importe, aplica, esPasado }:
   const btnRef = useRef<HTMLButtonElement>(null);
   const [pending, start] = useTransition();
   const router = useRouter();
+  const w = compact ? "w-8" : "w-14";
 
   if (!aplica) {
-    return <div className="mx-auto w-14 h-8 rounded-lg bg-gray-50 border border-gray-100" title="No aplica este mes" />;
+    return <div className={`mx-auto ${w} h-8 rounded-lg bg-gray-50 border border-gray-100`} title="No aplica este mes" />;
   }
 
   const cls = estado === "pagada" ? "bg-emerald-500 hover:bg-emerald-600 text-white"
     : estado === "recibida" ? "bg-amber-400 hover:bg-amber-500 text-white"
     : esPasado ? "bg-red-500 hover:bg-red-600 text-white"
     : "bg-gray-100 hover:bg-gray-200 text-gray-500";
-  const disp = importe != null ? Math.round(importe).toLocaleString("es-ES") : "▾";
+  const disp = compact
+    ? (estado === "pagada" ? "✓" : estado === "recibida" ? "€" : esPasado ? "✕" : "▾")
+    : (importe != null ? Math.round(importe).toLocaleString("es-ES") : "▾");
 
   function toggle() {
     if (open) { setOpen(false); return; }
@@ -196,7 +316,7 @@ export function ObliviateFijoCell({ id, ym, estado, importe, aplica, esPasado }:
     <>
       <button ref={btnRef} type="button" disabled={pending} onClick={toggle}
         title={`${importe != null ? eur(importe) : ""} · elegir estado / importe`}
-        className={`mx-auto w-14 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors disabled:opacity-60 ${cls}`}>
+        className={`mx-auto ${w} h-8 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors disabled:opacity-60 ${cls}`}>
         {pending ? "…" : disp}
       </button>
       {open && pos && (
@@ -229,11 +349,15 @@ export function ObliviateFijoCell({ id, ym, estado, importe, aplica, esPasado }:
 }
 
 // ─── Importe base editable (columna €/mes) ────────────────────────────────────
-export function ImporteBaseFijoEdit({ id, mensual, periodicidad }: { id: string; mensual: number | null; periodicidad: string }) {
+export function ImporteBaseFijoEdit({ id, mensual, periodicidad, tono = "obliviate" }: {
+  id: string; mensual: number | null; periodicidad: string; tono?: "bearing" | "obliviate";
+}) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState("");
   const [pending, start] = useTransition();
   const router = useRouter();
+  const txt = tono === "bearing" ? "text-[#2E1A47]" : "text-amber-800";
+  const brd = tono === "bearing" ? "border-[#2E1A47]/40" : "border-amber-300";
 
   function guardar() {
     setEditing(false);
@@ -246,15 +370,154 @@ export function ImporteBaseFijoEdit({ id, mensual, periodicidad }: { id: string;
       <input autoFocus type="number" step="0.01" value={val}
         onChange={e => setVal(e.target.value)} onBlur={guardar}
         onKeyDown={e => { if (e.key === "Enter") guardar(); if (e.key === "Escape") setEditing(false); }}
-        className="w-20 border border-amber-300 rounded px-1.5 py-1 text-sm text-right focus:outline-none" />
+        className={`w-20 border ${brd} rounded px-1.5 py-1 text-sm text-right focus:outline-none`} />
     );
   }
   return (
     <button type="button" disabled={pending}
       onClick={() => { setVal(mensual != null ? String(mensual) : ""); setEditing(true); }}
-      title="Editar importe" className="text-sm font-bold text-amber-800 hover:underline whitespace-nowrap">
-      {pending ? "…" : (mensual != null ? `${eur(mensual)}${periodicidad === "anual" ? "/año" : ""}` : "—")}
+      title="Editar importe (sin IVA)" className={`text-sm font-bold ${txt} hover:underline whitespace-nowrap`}>
+      {pending ? "…" : (mensual != null ? `${eur(mensual)}${periodicidad === "anual" ? "/año" : ""}` : "＋ importe")}
     </button>
+  );
+}
+
+// ─── Nombre + concepto editables de un gasto fijo ─────────────────────────────
+export function FijoInfoEdit({ id, label, nota, categoria, tono = "bearing" }: {
+  id: string; label: string; nota?: string | null; categoria: string; tono?: "bearing" | "obliviate";
+}) {
+  const [editing, setEditing] = useState(false);
+  const [l, setL] = useState(label);
+  const [n, setN] = useState(nota ?? "");
+  const [pending, start] = useTransition();
+  const router = useRouter();
+  const accent = tono === "bearing" ? "focus:border-[#2E1A47]/40" : "focus:border-amber-400";
+
+  function guardar() {
+    setEditing(false);
+    start(async () => { await editarGastoFijo(id, { label: l, nota: n }); router.refresh(); });
+  }
+
+  if (editing) {
+    return (
+      <div className="space-y-1">
+        <input autoFocus value={l} onChange={e => setL(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") guardar(); if (e.key === "Escape") setEditing(false); }}
+          className={`w-full border border-gray-200 rounded-lg px-2 py-1 text-sm font-semibold focus:outline-none ${accent}`} />
+        <input value={n} onChange={e => setN(e.target.value)} placeholder="Concepto / descripción…"
+          onKeyDown={e => { if (e.key === "Enter") guardar(); if (e.key === "Escape") setEditing(false); }}
+          className={`w-full border border-gray-200 rounded-lg px-2 py-1 text-[11px] focus:outline-none ${accent}`} />
+        <div className="flex gap-2 pt-0.5">
+          <button type="button" onClick={guardar} disabled={pending} className="text-[10px] font-bold text-white bg-[#2E1A47] rounded px-2 py-0.5 disabled:opacity-50">{pending ? "…" : "Guardar"}</button>
+          <button type="button" onClick={() => { setEditing(false); setL(label); setN(nota ?? ""); }} className="text-[10px] text-gray-400 hover:text-gray-600">Cancelar</button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <button type="button" onClick={() => setEditing(true)} title="Editar nombre y concepto" className="text-left group/edit block min-w-0">
+      <p className="text-sm font-semibold text-gray-800 truncate flex items-center gap-1">
+        {label}
+        <span className="opacity-0 group-hover/edit:opacity-100 text-gray-300 text-[10px] transition-opacity">✎</span>
+      </p>
+      <p className="text-[10px] text-gray-400 truncate">{categoria}{nota ? ` · ${nota}` : ""}</p>
+    </button>
+  );
+}
+
+// ─── Celda de mes de Bearing: estado (de Holded) + aviso de sobrecoste + nota ──
+export interface BearingMes {
+  ym: string;                 // clave no-padded "2026-3" (para la nota)
+  estado: "pagado" | "sin_pagar" | "falta" | "futuro";
+  base: number;               // suma base (sin IVA) del mes
+  n: number;                  // nº de facturas
+  holdedId: string | null;
+  overcharge: boolean;        // base del mes > estipulado
+  exceso: number;             // cuánto por encima del estipulado
+  nota: string | null;        // explicación guardada de ese mes
+}
+
+const COLOR_MES: Record<string, string> = {
+  pagado: "bg-emerald-500 text-white",
+  sin_pagar: "bg-amber-400 text-white",
+  falta: "bg-red-500 text-white",
+  futuro: "bg-gray-100 text-gray-300",
+};
+
+const holdedPurchaseUrl = (hid: string) => `https://app.holded.com/expenses/list#open:purchase-${hid}`;
+
+export function BearingMesCell({ id, mes, estipulado }: {
+  id: string; mes: BearingMes; estipulado: number | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [texto, setTexto] = useState("");
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [pending, start] = useTransition();
+  const router = useRouter();
+
+  const tieneAlgo = mes.n > 0 || mes.nota;
+  const symbol = mes.estado === "pagado" ? "✓" : mes.estado === "sin_pagar" ? "€" : mes.estado === "falta" ? "✕" : "";
+
+  function toggle() {
+    if (open) { setOpen(false); return; }
+    setTexto(mes.nota ?? "");
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) setPos({ top: r.bottom + 4, left: Math.min(r.left, window.innerWidth - 260) });
+    setOpen(true);
+  }
+  function guardarNota() {
+    setOpen(false);
+    start(async () => { await setNotaMesFijo(id, mes.ym, texto.trim() || null); router.refresh(); });
+  }
+
+  return (
+    <>
+      <button ref={btnRef} type="button" onClick={toggle} disabled={pending}
+        title={mes.n > 0 ? `${eur(mes.base)} s/IVA · ${mes.n} factura${mes.n !== 1 ? "s" : ""}` : mes.estado === "falta" ? "sin factura (mes pasado)" : "aún no toca"}
+        className={`relative mx-auto w-8 h-8 rounded-lg flex items-center justify-center text-[9px] font-bold transition-colors disabled:opacity-50 ${COLOR_MES[mes.estado]} ${mes.overcharge ? "ring-2 ring-red-500 ring-offset-1" : ""}`}>
+        {pending ? "…" : symbol}
+        {mes.overcharge && <span className="absolute -top-2 -right-1.5 text-[11px] leading-none">⚠️</span>}
+        {!mes.overcharge && mes.nota && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#2E1A47] border border-white" />}
+        {mes.n > 1 && <span className="absolute -bottom-1 -right-1 bg-[#2E1A47] text-white text-[7px] w-3 h-3 rounded-full flex items-center justify-center">{mes.n}</span>}
+      </button>
+      {open && pos && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="fixed z-50 bg-white border border-gray-200 rounded-xl shadow-xl w-64 p-3" style={{ top: pos.top, left: pos.left }}>
+            {mes.n > 0 ? (
+              <div className="mb-2">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Cobrado (base)</span>
+                  <span className={`text-sm font-black ${mes.overcharge ? "text-red-600" : "text-[#2E1A47]"}`}>{eur(mes.base)}</span>
+                </div>
+                {estipulado != null && (
+                  <div className="flex items-baseline justify-between mt-0.5">
+                    <span className="text-[10px] text-gray-400">Estipulado</span>
+                    <span className="text-xs text-gray-500">{eur(estipulado)}</span>
+                  </div>
+                )}
+                {mes.overcharge && (
+                  <p className="mt-1.5 text-[11px] font-bold text-red-600 bg-red-50 rounded-lg px-2 py-1">⚠️ {eur(mes.exceso)} más de lo estipulado</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-[11px] text-gray-400 mb-2">Sin facturas este mes.</p>
+            )}
+            <label className="text-[9px] font-bold uppercase tracking-wider text-gray-400 block mb-1">Nota / explicación</label>
+            <textarea autoFocus value={texto} onChange={e => setTexto(e.target.value)} rows={2}
+              placeholder={mes.overcharge ? "Ej. se añadieron 2 licencias…" : "Anotar algo de este mes…"}
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#2E1A47] resize-none" />
+            <div className="flex items-center justify-between mt-2">
+              {mes.holdedId ? (
+                <a href={holdedPurchaseUrl(mes.holdedId)} target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-400 hover:text-[#2E1A47] hover:underline">Abrir en Holded ↗</a>
+              ) : <span />}
+              <button type="button" onClick={guardarNota} className="bg-[#2E1A47] text-white text-xs font-semibold rounded-lg px-3 py-1">Guardar</button>
+            </div>
+          </div>
+        </>
+      )}
+    </>
   );
 }
 

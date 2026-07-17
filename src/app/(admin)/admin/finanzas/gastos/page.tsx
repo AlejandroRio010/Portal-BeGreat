@@ -100,8 +100,8 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   for (const g of gastos) {
     const key = g.contact_id ?? norm(g.proveedor);
     const prev = candMap.get(key);
-    if (!prev) candMap.set(key, { proveedor: g.proveedor, contactId: g.contact_id, categoria: g.categoria, importe: g.total, fecha: g.date, n: 1, yaFijo: esFijo(g) });
-    else { prev.n++; if (g.date > prev.fecha) { prev.fecha = g.date; prev.importe = g.total; prev.categoria = g.categoria; } }
+    if (!prev) candMap.set(key, { proveedor: g.proveedor, contactId: g.contact_id, categoria: g.categoria, importe: g.total, base: g.subtotal, fecha: g.date, n: 1, yaFijo: esFijo(g) });
+    else { prev.n++; if (g.date > prev.fecha) { prev.fecha = g.date; prev.importe = g.total; prev.base = g.subtotal; prev.categoria = g.categoria; } }
   }
   const candidatos = [...candMap.values()];
 
