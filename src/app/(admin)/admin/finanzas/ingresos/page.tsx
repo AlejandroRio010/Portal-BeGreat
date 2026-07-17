@@ -1,6 +1,8 @@
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { db } from "@/db";
+import { operations } from "@/db/schema";
 import { getFacturasVenta, CATEGORIAS_INGRESO, type CategoriaIngreso, type HoldedInvoice } from "@/lib/holded";
 import { fmtEur } from "@/lib/format";
 
@@ -44,6 +46,15 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
     facturas = await getFacturasVenta();
   } catch (e: any) {
     holdedError = e?.message ?? "Error conectando con Holded";
+  }
+
+  // Mapa factura de venta → operación que la tiene ligada (cobro)
+  const ops = await db.select({ id: operations.id, nombre: operations.nombre, holded_invoices: operations.holded_invoices }).from(operations);
+  const opDeFactura = new Map<string, { id: string; nombre: string }>();
+  for (const o of ops) {
+    for (const p of (o.holded_invoices as { id?: string }[] | null) ?? []) {
+      if (p?.id) opDeFactura.set(p.id, { id: o.id, nombre: o.nombre ?? "Operación" });
+    }
   }
 
   const delMes = facturas.filter(f => f.date.startsWith(mes));
@@ -223,7 +234,12 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
                         <tr key={f.id} className="hover:bg-[#EEEBF3]/30 transition-colors">
                           <td className="px-3 py-3 text-sm text-gray-500 whitespace-nowrap">{new Date(f.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</td>
                           <td className="px-3 py-3 text-xs font-mono font-bold text-[#2E1A47] whitespace-nowrap">{f.document_number}</td>
-                          <td className="px-3 py-3 text-sm font-semibold text-gray-800 max-w-[150px] truncate" title={f.contact_name}>{f.contact_name}</td>
+                          <td className="px-3 py-3 max-w-[170px]">
+                            <span className="block text-sm font-semibold text-gray-800 truncate" title={f.contact_name}>{f.contact_name}</span>
+                            {opDeFactura.get(f.id) && (
+                              <a href={`/admin/operaciones/${opDeFactura.get(f.id)!.id}`} className="block text-[10px] font-semibold text-[#2E1A47] hover:underline truncate" title={opDeFactura.get(f.id)!.nombre}>🔗 {opDeFactura.get(f.id)!.nombre}</a>
+                            )}
+                          </td>
                           <td className="px-3 py-3 text-xs text-gray-500 max-w-[200px] truncate" title={f.description ?? undefined}>{f.description ?? "—"}</td>
                           <td className="px-3 py-3"><span className="inline-block px-2 py-0.5 text-[10px] font-semibold bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap" title={f.cuenta_pgc ? `Cuenta ${f.cuenta_pgc}` : undefined}>{f.categoria}</span></td>
                           <td className="px-3 py-3 text-sm text-gray-700 text-right whitespace-nowrap">{fmtEur(f.subtotal)}</td>

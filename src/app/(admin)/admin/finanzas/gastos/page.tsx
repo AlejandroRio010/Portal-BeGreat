@@ -1,6 +1,8 @@
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { db } from "@/db";
+import { operations } from "@/db/schema";
 import { getGastos, type HoldedGasto, CATEGORIAS_GASTO } from "@/lib/holded";
 import { getGastosFijos, esDelFijo, norm, importeFijoMes, conIva } from "@/lib/gastosFijos";
 import { BUCKETS, bucketDe } from "@/lib/gastosBuckets";
@@ -33,6 +35,15 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   let holdedError: string | null = null;
   try { gastos = await getGastos({ incluirBorradores: true }); } catch (e: any) { holdedError = e?.message ?? "Error Holded"; }
 
+  // Mapa factura de compra → operación que la tiene ligada (comisiones / mercadería)
+  const ops = await db.select({ id: operations.id, nombre: operations.nombre, holded_purchases: operations.holded_purchases }).from(operations);
+  const opDePurchase = new Map<string, { id: string; nombre: string }>();
+  for (const o of ops) {
+    for (const p of (o.holded_purchases as { id?: string }[] | null) ?? []) {
+      if (p?.id) opDePurchase.set(p.id, { id: o.id, nombre: o.nombre ?? "Operación" });
+    }
+  }
+
   const fijosDef = await getGastosFijos();
   const fijosBearing = fijosDef.filter(f => f.empresa === "bearing");   // cruzan con Holded
   const fijosObliviate = fijosDef.filter(f => f.empresa === "obliviate"); // manuales
@@ -46,7 +57,9 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
     const cell = f.estado_manual?.[ymKey];
     const override = typeof cell === "object" && cell ? cell.i : undefined;
     const base = override ?? importeFijoMes(f, mesIdx);
-    const estado = (typeof cell === "string" ? cell : cell?.e) ?? "pendiente";
+    // Sin marca explícita: se asume pagado si el mes ya pasó o es el actual
+    const estadoDefault = mes <= mesActual ? "pagada" : "pendiente";
+    const estado = (typeof cell === "string" ? cell : cell?.e) ?? estadoDefault;
     return { f, base, total: conIva(base), estado };
   }).filter(x => x.base > 0);
   const totalObliviate = obliviateMes.reduce((s, x) => s + x.total, 0);
@@ -92,8 +105,11 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
           {lista.map(g => { const b = BADGE[g.estado]; return (
             <tr key={g.id} className="hover:bg-[#EEEBF3]/30">
               <td className="px-3 py-3 text-sm text-gray-500 whitespace-nowrap">{new Date(g.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</td>
-              <td className="px-3 py-3 text-sm font-semibold text-gray-800 max-w-[160px] truncate" title={g.proveedor}>
-                <a href={holdedUrl(g.id)} target="_blank" rel="noopener noreferrer" className="hover:text-[#2E1A47] hover:underline">{g.proveedor}</a>
+              <td className="px-3 py-3 max-w-[180px]">
+                <a href={holdedUrl(g.id)} target="_blank" rel="noopener noreferrer" className="block text-sm font-semibold text-gray-800 hover:text-[#2E1A47] hover:underline truncate" title={g.proveedor}>{g.proveedor}</a>
+                {opDePurchase.get(g.id) && (
+                  <a href={`/admin/operaciones/${opDePurchase.get(g.id)!.id}`} className="block text-[10px] font-semibold text-[#2E1A47] hover:underline truncate" title={opDePurchase.get(g.id)!.nombre}>🔗 {opDePurchase.get(g.id)!.nombre}</a>
+                )}
               </td>
               <td className="px-3 py-3 text-xs text-gray-500 max-w-[150px] truncate" title={g.description ?? undefined}>{g.description ?? "—"}</td>
               <td className="px-3 py-3"><span className="inline-block px-2 py-0.5 text-[10px] font-semibold bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap">{g.categoria}</span></td>

@@ -56,9 +56,11 @@ export default async function GastosFijosPage() {
       const aplica = gf.periodicidad === "mensual" || gf.mes_cobro === m + 1;
       const ym = `${anyo}-${m + 1}`;
       const cell = gf.estado_manual?.[ym];
-      const estado = (typeof cell === "string" ? cell : cell?.e) ?? "pendiente";
       const override = typeof cell === "object" && cell ? cell.i : undefined;
       const importe = override ?? importeFijoMes(gf, m);
+      // Sin marca explícita: se asume pagado si el mes ya pasó o es el actual
+      const estadoDefault = m <= mesActualIdx ? "pagada" : "pendiente";
+      const estado = (typeof cell === "string" ? cell : cell?.e) ?? estadoDefault;
       return { m, aplica, ym, estado, importe, esPasado: m < mesActualIdx };
     });
     return { gf, meses };

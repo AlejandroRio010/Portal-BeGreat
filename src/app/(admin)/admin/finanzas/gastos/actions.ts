@@ -59,8 +59,8 @@ export async function setEstadoFijo(id: string, ym: string, estado?: string, imp
   const prev = map[ym];
   const prevI = typeof prev === "object" ? prev?.i : undefined;
   // e: si llega estado válido lo usamos; si es "pendiente"/undefined, se quita
-  const e = estado === "recibida" || estado === "pagada" ? estado
-    : estado === "pendiente" ? undefined
+  // "pendiente" se guarda explícito (porque el default sin marca = asumido pagado)
+  const e = (estado === "recibida" || estado === "pagada" || estado === "pendiente") ? estado
     : (typeof prev === "string" ? prev : prev?.e);
   // i: si llega importe (incluido null para borrar) lo aplicamos; si no, se conserva
   const i = importe === undefined ? prevI : (importe != null && !Number.isNaN(importe) ? importe : undefined);
