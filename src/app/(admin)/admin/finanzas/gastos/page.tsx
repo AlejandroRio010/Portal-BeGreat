@@ -46,13 +46,17 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
     const cell = f.estado_manual?.[ymKey];
     const override = typeof cell === "object" && cell ? cell.i : undefined;
     const base = override ?? importeFijoMes(f, mesIdx);
-    return { f, base, total: conIva(base) };
+    const estado = (typeof cell === "string" ? cell : cell?.e) ?? "pendiente";
+    return { f, base, total: conIva(base), estado };
   }).filter(x => x.base > 0);
   const totalObliviate = obliviateMes.reduce((s, x) => s + x.total, 0);
+  const baseObliviate = obliviateMes.reduce((s, x) => s + x.base, 0);
 
   const delMes = gastos.filter(g => g.date.startsWith(mes));
   const fijos = delMes.filter(esFijo);
   const variables = delMes.filter(g => !esFijo(g));
+  const baseMes = delMes.reduce((s, g) => s + g.subtotal, 0);
+  const ivaMes = delMes.reduce((s, g) => s + g.tax, 0);
   const totalMes = delMes.reduce((s, g) => s + g.total, 0);
   const totalFijos = fijos.reduce((s, g) => s + g.total, 0);
   const totalVariables = variables.reduce((s, g) => s + g.total, 0);
@@ -80,8 +84,8 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
     <div className="overflow-x-auto" style={{ zoom: 0.85 }}>
       <table className="w-full">
         <thead><tr className="bg-[#EEEBF3] border-b border-gray-100">
-          {["Fecha", "Proveedor", "Concepto", "Categoría", "Retención", "Total", "F. pago", "Estado"].map(h => (
-            <th key={h} className="text-left px-3 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">{h}</th>
+          {["Fecha", "Proveedor", "Concepto", "Categoría", "Base", "IVA", "IRPF", "Total", "F. pago", "Estado"].map(h => (
+            <th key={h} className={`px-3 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider ${["Base", "IVA", "IRPF", "Total"].includes(h) ? "text-right" : "text-left"}`}>{h}</th>
           ))}
         </tr></thead>
         <tbody className="divide-y divide-gray-50">
@@ -91,10 +95,12 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
               <td className="px-3 py-3 text-sm font-semibold text-gray-800 max-w-[160px] truncate" title={g.proveedor}>
                 <a href={holdedUrl(g.id)} target="_blank" rel="noopener noreferrer" className="hover:text-[#2E1A47] hover:underline">{g.proveedor}</a>
               </td>
-              <td className="px-3 py-3 text-xs text-gray-500 max-w-[170px] truncate" title={g.description ?? undefined}>{g.description ?? "—"}</td>
+              <td className="px-3 py-3 text-xs text-gray-500 max-w-[150px] truncate" title={g.description ?? undefined}>{g.description ?? "—"}</td>
               <td className="px-3 py-3"><span className="inline-block px-2 py-0.5 text-[10px] font-semibold bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap">{g.categoria}</span></td>
-              <td className="px-3 py-3 text-xs text-amber-600 whitespace-nowrap">{g.retencion > 0 ? `−${fmtEur(g.retencion)}` : "—"}</td>
-              <td className="px-3 py-3 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(g.total)}</td>
+              <td className="px-3 py-3 text-sm text-gray-700 text-right whitespace-nowrap">{fmtEur(g.subtotal)}</td>
+              <td className="px-3 py-3 text-xs text-gray-400 text-right whitespace-nowrap">{g.tax > 0 ? fmtEur(g.tax) : "—"}</td>
+              <td className="px-3 py-3 text-xs text-amber-600 text-right whitespace-nowrap">{g.retencion > 0 ? `−${fmtEur(g.retencion)}` : "—"}</td>
+              <td className="px-3 py-3 text-sm font-bold text-[#2E1A47] text-right whitespace-nowrap">{fmtEur(g.total)}</td>
               <td className="px-3 py-3 text-xs text-emerald-700 font-semibold whitespace-nowrap">{g.fecha_pago ? new Date(g.fecha_pago).toLocaleDateString("es-ES", { day: "numeric", month: "short" }) : "—"}</td>
               <td className="px-3 py-3"><span className={`inline-flex px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${b.c}`}>{b.l}</span></td>
             </tr>
@@ -133,9 +139,9 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
           {/* KPIs del mes */}
           <div className="grid grid-cols-4 gap-4 mb-6">
             <div className="bg-[#2E1A47] px-6 py-5">
-              <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Gastado en {mesLabel(mes).split(" ")[0]}{totalObliviate > 0 ? " · caja total" : ""}</p>
-              <p className="text-2xl font-black text-white">{fmtEur(totalMes + totalObliviate)}</p>
-              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">{totalObliviate > 0 ? `Bearing ${fmtEur(totalMes)} + Obliviate ${fmtEur(totalObliviate)}` : `${delMes.length} factura${delMes.length !== 1 ? "s" : ""}`}</p>
+              <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Gastado en {mesLabel(mes).split(" ")[0]} · sin IVA</p>
+              <p className="text-2xl font-black text-white">{fmtEur(baseMes + baseObliviate)}</p>
+              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">+ IVA {fmtEur(ivaMes + (totalObliviate - baseObliviate))} · total {fmtEur(totalMes + totalObliviate)}</p>
             </div>
             <div className="bg-white border border-gray-200 px-6 py-5">
               <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1.5">Gastos fijos</p>
@@ -152,51 +158,63 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
             </div>
           </div>
 
-          {/* Gastos fijos del mes */}
+          {/* Gastos fijos del mes — Bearing (izq) · Obliviate (der), compacto */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider">Gastos fijos de {mesLabel(mes)}</h2>
               <AddGastoFijoButton candidatos={candidatos} categorias={CATEGORIAS_GASTO} />
             </div>
-            {fijosMes.length === 0 ? (
-              <p className="text-sm text-gray-400 bg-white border border-gray-100 px-5 py-4">Ningún gasto fijo registrado este mes todavía.</p>
-            ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                {fijosMes.map(({ f, facts, total, pagado }) => (
-                  <a key={f.id} href={holdedUrl(facts[0].id)} target="_blank" rel="noopener noreferrer"
-                    className={`rounded-2xl border px-4 py-3 transition-all hover:shadow-sm ${pagado ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200"}`}>
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold text-gray-800 truncate">{f.label}</p>
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${pagado ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{pagado ? "Pagado" : "Sin pagar"}</span>
-                    </div>
-                    <p className="text-lg font-black text-[#2E1A47] mt-1">{fmtEur(total)}{facts.length > 1 ? <span className="text-[10px] text-gray-400 font-normal"> · {facts.length} fact.</span> : null}</p>
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Gastos fijos de Obliviate (manuales, fuera de Holded) */}
-          {obliviateMes.length > 0 && (
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-bold text-amber-800 uppercase tracking-wider">🏢 Obliviate · fijos de {mesLabel(mes)} · {fmtEur(totalObliviate)} <span className="text-[10px] font-normal normal-case">con IVA</span></h2>
-                <span className="text-[10px] text-amber-600 uppercase tracking-wide">manual · asumido pagado</span>
-              </div>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                {obliviateMes.map(({ f, base, total }) => (
-                  <div key={f.id} className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold text-gray-800 truncate">{f.label}</p>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{f.periodicidad === "anual" ? "Anual" : "Mensual"}</span>
-                    </div>
-                    <p className="text-lg font-black text-amber-800 mt-1">{fmtEur(total)}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{fmtEur(base)} + IVA{f.nota ? ` · ${f.nota}` : ""}</p>
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Bearing */}
+              <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+                <div className="px-4 py-2 bg-[#EEEBF3]/60 flex items-center justify-between">
+                  <p className="text-[11px] font-bold text-[#2E1A47] uppercase tracking-wider">Bearing</p>
+                  <span className="text-[10px] text-gray-400">Holded · {fmtEur(totalFijos)}</span>
+                </div>
+                {fijosMes.length === 0 ? (
+                  <p className="px-4 py-3 text-xs text-gray-400">Sin fijos este mes.</p>
+                ) : (
+                  <div className="divide-y divide-gray-50">
+                    {fijosMes.map(({ f, facts, total, pagado }) => (
+                      <a key={f.id} href={holdedUrl(facts[0].id)} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center justify-between gap-2 px-4 py-2 hover:bg-[#EEEBF3]/30">
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${pagado ? "bg-emerald-500" : "bg-amber-400"}`} title={pagado ? "pagado" : "sin pagar"} />
+                          <span className="text-xs font-medium text-gray-700 truncate">{f.label}</span>
+                        </span>
+                        <span className="text-xs font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(total)}</span>
+                      </a>
+                    ))}
                   </div>
-                ))}
+                )}
+              </div>
+              {/* Obliviate */}
+              <div className="bg-white border border-amber-100 rounded-xl overflow-hidden shadow-sm">
+                <div className="px-4 py-2 bg-amber-50 flex items-center justify-between">
+                  <p className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">🏢 Obliviate</p>
+                  <span className="text-[10px] text-amber-600">manual · {fmtEur(totalObliviate)} c/IVA</span>
+                </div>
+                {obliviateMes.length === 0 ? (
+                  <p className="px-4 py-3 text-xs text-gray-400">Sin fijos este mes.</p>
+                ) : (
+                  <div className="divide-y divide-gray-50">
+                    {obliviateMes.map(({ f, base, total, estado }) => {
+                      const dot = estado === "pagada" ? "bg-emerald-500" : estado === "recibida" ? "bg-amber-400" : "bg-gray-300";
+                      return (
+                        <div key={f.id} className="flex items-center justify-between gap-2 px-4 py-2">
+                          <span className="flex items-center gap-2 min-w-0">
+                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} title={estado === "pagada" ? "pagado" : estado === "recibida" ? "factura recibida" : "sin marcar"} />
+                            <span className="text-xs font-medium text-gray-700 truncate">{f.label}</span>
+                          </span>
+                          <span className="text-xs font-bold text-amber-800 whitespace-nowrap" title={`${fmtEur(base)} + IVA`}>{fmtEur(total)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          </div>
 
           {/* Gastos variables del mes, por tipo */}
           <div>

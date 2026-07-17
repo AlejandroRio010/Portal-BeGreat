@@ -48,6 +48,8 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
 
   const delMes = facturas.filter(f => f.date.startsWith(mes));
   const facturado = delMes.reduce((s, f) => s + f.total, 0);
+  const baseFacturado = delMes.reduce((s, f) => s + f.subtotal, 0);
+  const ivaFacturado = delMes.reduce((s, f) => s + f.tax, 0);
   const cobradas = delMes.filter(f => f.estado === "cobrada");
   const cobrado = cobradas.reduce((s, f) => s + f.total, 0) + delMes.filter(f => f.estado === "parcial").reduce((s, f) => s + f.pagado, 0);
   const ivaCobrado = cobradas.reduce((s, f) => s + f.tax, 0);
@@ -126,9 +128,9 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
           {/* KPIs del mes */}
           <div className="grid grid-cols-4 gap-4 mb-4">
             <div className="bg-[#2E1A47] px-6 py-5">
-              <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Facturado en {mesLabel(mes).split(" ")[0]}</p>
-              <p className="text-2xl font-black text-white">{fmtEur(facturado)}</p>
-              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">{delMes.length} factura{delMes.length !== 1 ? "s" : ""} (IVA incl.)</p>
+              <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Facturado en {mesLabel(mes).split(" ")[0]} · sin IVA</p>
+              <p className="text-2xl font-black text-white">{fmtEur(baseFacturado)}</p>
+              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">+ IVA {fmtEur(ivaFacturado)} · total {fmtEur(facturado)}</p>
             </div>
             <div className="bg-[#2E1A47] px-6 py-5">
               <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Cobrado</p>
@@ -209,8 +211,8 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
                 <table className="w-full">
                   <thead>
                     <tr className="bg-[#EEEBF3] border-b border-gray-100">
-                      {["Fecha", "Nº", "Cliente", "Concepto", "Categoría", "IVA", "Total", "F. cobro", "Estado"].map(h => (
-                        <th key={h} className="text-left px-3 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider">{h}</th>
+                      {["Fecha", "Nº", "Cliente", "Concepto", "Categoría", "Base", "IVA", "Total", "F. cobro", "Estado"].map(h => (
+                        <th key={h} className={`px-3 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider ${["Base", "IVA", "Total"].includes(h) ? "text-right" : "text-left"}`}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -224,8 +226,9 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
                           <td className="px-3 py-3 text-sm font-semibold text-gray-800 max-w-[150px] truncate" title={f.contact_name}>{f.contact_name}</td>
                           <td className="px-3 py-3 text-xs text-gray-500 max-w-[200px] truncate" title={f.description ?? undefined}>{f.description ?? "—"}</td>
                           <td className="px-3 py-3"><span className="inline-block px-2 py-0.5 text-[10px] font-semibold bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap" title={f.cuenta_pgc ? `Cuenta ${f.cuenta_pgc}` : undefined}>{f.categoria}</span></td>
-                          <td className="px-3 py-3 text-xs text-gray-400 whitespace-nowrap">{fmtEur(f.tax)}</td>
-                          <td className="px-3 py-3 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(f.total)}</td>
+                          <td className="px-3 py-3 text-sm text-gray-700 text-right whitespace-nowrap">{fmtEur(f.subtotal)}</td>
+                          <td className="px-3 py-3 text-xs text-gray-400 text-right whitespace-nowrap">{f.tax > 0 ? fmtEur(f.tax) : "—"}</td>
+                          <td className="px-3 py-3 text-sm font-bold text-[#2E1A47] text-right whitespace-nowrap">{fmtEur(f.total)}</td>
                           <td className="px-3 py-3 text-xs text-emerald-700 font-semibold whitespace-nowrap">
                             {f.fecha_cobro ? new Date(f.fecha_cobro).toLocaleDateString("es-ES", { day: "numeric", month: "short" }) : "—"}
                           </td>
