@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { collaborators, operations, clients, collaboratorContacts, collaboratorNotes, entityTasks } from "@/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, or, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import ColaboradorEditForm from "./ColaboradorEditForm";
@@ -11,6 +11,7 @@ import ContactosColaboradorPanel from "./ContactosColaboradorPanel";
 import NotesSection from "@/components/NotesSection";
 import EntityTasksSection from "@/components/EntityTasksSection";
 import { fmtEur } from "@/lib/format";
+import { comisionDeColaborador } from "@/lib/comisiones";
 
 const FASES_FIRMADAS = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
 
@@ -52,12 +53,17 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
       fase: operations.fase,
       status: operations.status,
       comision_colaborador: operations.comision_colaborador,
+      colaboradores_comision: operations.colaboradores_comision,
       entidad_financiera: operations.entidad_financiera,
       created_at: operations.created_at,
       client_id: operations.client_id,
     })
     .from(operations)
-    .where(eq(operations.collaborator_id, id))
+    // La op aparece si el colaborador es el principal O está en el reparto de comisiones
+    .where(or(
+      eq(operations.collaborator_id, id),
+      sql`${operations.colaboradores_comision} @> ${JSON.stringify([{ id }])}::jsonb`,
+    ))
     .orderBy(operations.created_at);
 
   const colabClients = await db
@@ -84,10 +90,11 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
   const totalOps = ops.length;
   const firmadas = ops.filter((o) => FASES_FIRMADAS.includes(o.fase));
   const opsFirmadas = firmadas.length;
-  const feeGenerada = firmadas.reduce((acc, o) => acc + Number(o.comision_colaborador ?? 0), 0);
+  // Solo la comisión de ESTE colaborador (su línea del reparto), nunca la suma
+  const feeGenerada = firmadas.reduce((acc, o) => acc + comisionDeColaborador(o, id), 0);
   const feePendiente = ops
     .filter((o) => !FASES_FIRMADAS.includes(o.fase))
-    .reduce((acc, o) => acc + Number(o.comision_colaborador ?? 0), 0);
+    .reduce((acc, o) => acc + comisionDeColaborador(o, id), 0);
 
   // Client ops count map
   const clientOpsCount: Record<string, number> = {};
@@ -230,7 +237,12 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
                   const badge = opBadge(op);
                   return (
                     <tr key={op.id} className="hover:bg-[#EEEBF3]/30 transition-colors">
-                      <td className="px-5 py-3 text-sm text-gray-800 font-medium max-w-[180px] truncate">{op.nombre ?? "—"}</td>
+                      <td className="px-5 py-3 text-sm text-gray-800 font-medium max-w-[180px] truncate">
+                        {op.nombre ?? "—"}
+                        {((op.colaboradores_comision as any[] | null)?.length ?? 0) > 1 && (
+                          <span className="ml-1.5 align-middle text-[9px] font-bold uppercase tracking-wide bg-[#EEEBF3] text-[#2E1A47] px-1.5 py-0.5 rounded-full" title="Operación con varios colaboradores">compartida</span>
+                        )}
+                      </td>
                       <td className="px-5 py-3 text-xs text-gray-500 capitalize">{op.pipeline_key}</td>
                       <td className="px-5 py-3">
                         <span className={`inline-block px-2 py-0.5 text-xs font-semibold border ${badge.bg} ${badge.text} ${badge.border}`}>
@@ -238,7 +250,7 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
                         </span>
                       </td>
                       <td className="px-5 py-3 text-xs text-gray-500">{op.entidad_financiera ?? "—"}</td>
-                      <td className="px-5 py-3 text-sm text-gray-700 font-medium">{fmtEur(op.comision_colaborador)}</td>
+                      <td className="px-5 py-3 text-sm text-gray-700 font-medium">{fmtEur(String(comisionDeColaborador(op, id)))}</td>
                       <td className="px-5 py-3 text-xs text-gray-400">{fmtDate(op.created_at)}</td>
                       <td className="px-5 py-3 text-right">
                         <Link href={`/admin/operaciones/${op.id}`} className="text-xs text-[#2E1A47] font-semibold hover:underline">
