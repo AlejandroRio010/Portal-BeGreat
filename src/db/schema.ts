@@ -624,6 +624,9 @@ export const gastosFijos = pgTable("gastos_fijos", {
   // mes_cobro, p. ej. renovación de dominio). Para los fijos manuales de Obliviate.
   periodicidad: text("periodicidad").notNull().default("mensual"),
   mes_cobro: integer("mes_cobro"), // 1-12, solo para los anuales
+  // Estado manual por mes (para los de Obliviate, que no cruzan con Holded):
+  // { "2026-3": "recibida" | "pagada" }. Ausente = pendiente.
+  estado_manual: jsonb("estado_manual").default({}),
   activo: boolean("activo").notNull().default(true),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });

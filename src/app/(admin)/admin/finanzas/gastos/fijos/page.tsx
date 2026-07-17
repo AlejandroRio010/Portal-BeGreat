@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getGastos, type HoldedGasto, CATEGORIAS_GASTO } from "@/lib/holded";
 import { getGastosFijos, esDelFijo, norm } from "@/lib/gastosFijos";
 import { fmtEur } from "@/lib/format";
-import { AddGastoFijoButton, RemoveGastoFijoButton, type CandidatoProveedor } from "../GastosFijosManage";
+import { AddGastoFijoButton, RemoveGastoFijoButton, ObliviateFijoCell, type CandidatoProveedor } from "../GastosFijosManage";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +24,9 @@ export default async function GastosFijosPage() {
   try { gastos = await getGastos({ incluirBorradores: true }); } catch (e: any) { holdedError = e?.message ?? "Error Holded"; }
 
   const delAnyo = gastos.filter(g => g.date.startsWith(String(anyo)));
-  // Solo los de Bearing cruzan con Holded; los de Obliviate son manuales (se ven en la vista mensual)
-  const fijosDef = (await getGastosFijos()).filter(f => f.empresa === "bearing");
+  const allFijos = await getGastosFijos();
+  const fijosDef = allFijos.filter(f => f.empresa === "bearing");        // cruzan con Holded
+  const fijosObliviate = allFijos.filter(f => f.empresa === "obliviate"); // manuales
 
   const filas = fijosDef.map(gf => {
     const meses = CORTOS.map((_, m) => {
@@ -44,7 +45,20 @@ export default async function GastosFijosPage() {
     return { gf, meses };
   });
 
-  const totalMensual = fijosDef.reduce((s, g) => s + (g.mensual ?? 0), 0);
+  const obliviateMensual = fijosObliviate.filter(f => f.periodicidad === "mensual").reduce((s, g) => s + (g.mensual ?? 0), 0);
+  const obliviateAnual = fijosObliviate.filter(f => f.periodicidad === "anual").reduce((s, g) => s + (g.mensual ?? 0), 0);
+  const totalMensual = fijosDef.reduce((s, g) => s + (g.mensual ?? 0), 0) + obliviateMensual;
+
+  // Filas de Obliviate (manuales): cada mes con su estado y si aplica
+  const filasObliviate = fijosObliviate.map(gf => {
+    const meses = CORTOS.map((_, m) => {
+      const aplica = gf.periodicidad === "mensual" || gf.mes_cobro === m + 1;
+      const ym = `${anyo}-${m + 1}`;
+      const estado = (gf.estado_manual[ym] as "recibida" | "pagada") ?? "pendiente";
+      return { m, aplica, ym, estado, esPasado: m < mesActualIdx };
+    });
+    return { gf, meses };
+  });
 
   // Candidatos para "añadir gasto fijo": proveedores vistos (dedup), última factura
   const esFijo = (g: HoldedGasto) => fijosDef.some(f => esDelFijo(f, g.proveedor, g.contact_id));
@@ -74,7 +88,7 @@ export default async function GastosFijosPage() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Gastos fijos {anyo}</h1>
           <p className="text-sm text-gray-400 mt-1">
-            El motor busca cada proveedor en Holded y mira sus facturas · verde = recibida y pagada · rojo = mes pasado sin pagar · gris = aún no toca · clic en un mes para abrir la factura en Holded
+            <b className="text-[#2E1A47]">Bearing</b> cruza automáticamente con Holded (clic en un mes = abrir la factura). <b className="text-amber-700">Obliviate</b> (abajo) se marca a mano: clic para factura recibida / pagada. Verde = recibida y pagada · ámbar = recibida sin pagar · rojo = mes pasado sin pagar.
           </p>
         </div>
         <div className="self-center shrink-0">
@@ -89,7 +103,8 @@ export default async function GastosFijosPage() {
           <div className="grid grid-cols-3 gap-4 mb-8">
             <div className="bg-[#2E1A47] px-6 py-5">
               <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Proveedores fijos</p>
-              <p className="text-3xl font-black text-white">{fijosDef.length}</p>
+              <p className="text-3xl font-black text-white">{allFijos.length}</p>
+              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">{fijosDef.length} Bearing · {fijosObliviate.length} Obliviate</p>
             </div>
             <div className="bg-[#2E1A47] px-6 py-5">
               <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Coste fijo mensual (los de importe fijo)</p>
@@ -98,10 +113,11 @@ export default async function GastosFijosPage() {
             </div>
             <div className="bg-[#EEEBF3] px-6 py-5">
               <p className="text-[#2E1A47]/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Anualizado (fijos)</p>
-              <p className="text-2xl font-black text-[#2E1A47]">{fmtEur(totalMensual * 12)}</p>
+              <p className="text-2xl font-black text-[#2E1A47]">{fmtEur(totalMensual * 12 + obliviateAnual)}</p>
             </div>
           </div>
 
+          <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider mb-3">Bearing · cruzado con Holded</h2>
           <div className="bg-white border border-gray-100 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -157,6 +173,51 @@ export default async function GastosFijosPage() {
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-gray-100 border border-gray-200" /> Aún no toca</span>
             <span className="text-gray-400">· el número en la esquina = varias facturas ese mes</span>
           </div>
+
+          {fijosObliviate.length > 0 && (
+            <div className="mt-10">
+              <h2 className="text-sm font-bold text-amber-800 uppercase tracking-wider mb-3">🏢 Obliviate · manual (fuera de Holded)</h2>
+              <div className="bg-white border border-amber-100 overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-amber-50 border-b border-amber-100">
+                        <th className="text-left px-4 py-3 text-xs font-bold text-amber-800 uppercase tracking-wider">Gasto fijo</th>
+                        <th className="text-right px-3 py-3 text-xs font-bold text-amber-800 uppercase tracking-wider">€/mes</th>
+                        {CORTOS.map((m, i) => (
+                          <th key={m} className={`text-center px-1.5 py-3 text-[10px] font-bold uppercase ${i === mesActualIdx ? "text-amber-800" : "text-gray-400"}`}>{m}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {filasObliviate.map(({ gf, meses }) => (
+                        <tr key={gf.id} className="group hover:bg-amber-50/40">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-gray-800">{gf.label}</p>
+                                <p className="text-[10px] text-gray-400">{gf.categoria}{gf.nota ? ` · ${gf.nota}` : ""}</p>
+                              </div>
+                              <span className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <RemoveGastoFijoButton id={gf.id} label={gf.label} />
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-3 py-3 text-right text-sm font-bold text-amber-800 whitespace-nowrap">{gf.periodicidad === "anual" ? "anual" : (gf.mensual != null ? fmtEur(gf.mensual) : "—")}</td>
+                          {meses.map(({ m, ym, estado, aplica, esPasado }) => (
+                            <td key={m} className="px-1 py-2 text-center">
+                              <ObliviateFijoCell id={gf.id} ym={ym} estado={estado} aplica={aplica} esPasado={esPasado} />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <p className="text-[11px] text-gray-500 mt-3">Clic en cada mes: <b>vacío</b> → <span className="text-amber-600 font-semibold">factura recibida</span> → <span className="text-emerald-600 font-semibold">pagada</span> → vacío. Los dominios (anuales) solo se marcan en su mes de renovación.</p>
+            </div>
+          )}
         </>
       )}
     </div>

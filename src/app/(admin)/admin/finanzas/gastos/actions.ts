@@ -47,3 +47,20 @@ export async function borrarGastoFijo(id: string) {
   revalidatePath("/admin/finanzas/gastos");
   revalidatePath("/admin/finanzas/gastos/fijos");
 }
+
+/** Cicla el estado manual de un fijo de Obliviate en un mes:
+ *  pendiente → recibida (factura) → pagada → pendiente. */
+export async function ciclarEstadoFijo(id: string, ym: string) {
+  await requireAdmin();
+  const [row] = await db.select({ estado: gastosFijos.estado_manual, empresa: gastosFijos.empresa })
+    .from(gastosFijos).where(eq(gastosFijos.id, id)).limit(1);
+  if (!row || row.empresa !== "obliviate") throw new Error("Solo aplica a gastos fijos de Obliviate");
+  const estado = { ...((row.estado as Record<string, string>) ?? {}) };
+  const cur = estado[ym] ?? "pendiente";
+  const next = cur === "pendiente" ? "recibida" : cur === "recibida" ? "pagada" : "pendiente";
+  if (next === "pendiente") delete estado[ym];
+  else estado[ym] = next;
+  await db.update(gastosFijos).set({ estado_manual: estado }).where(eq(gastosFijos.id, id));
+  revalidatePath("/admin/finanzas/gastos/fijos");
+  revalidatePath("/admin/finanzas/gastos");
+}

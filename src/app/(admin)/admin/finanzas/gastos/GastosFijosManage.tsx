@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { crearGastoFijo, borrarGastoFijo } from "./actions";
+import { crearGastoFijo, borrarGastoFijo, ciclarEstadoFijo } from "./actions";
 
 export interface CandidatoProveedor {
   proveedor: string;
@@ -145,6 +145,38 @@ export function AddGastoFijoButton({ candidatos, categorias }: { candidatos: Can
         </div>
       )}
     </>
+  );
+}
+
+// ─── Celda clicable del grid de Obliviate (estado manual por mes) ─────────────
+// Clic cicla: pendiente → recibida (factura) → pagada → pendiente.
+export function ObliviateFijoCell({ id, ym, estado, aplica, esPasado }: {
+  id: string; ym: string; estado: "pendiente" | "recibida" | "pagada"; aplica: boolean; esPasado: boolean;
+}) {
+  const [pending, start] = useTransition();
+  const router = useRouter();
+
+  if (!aplica) {
+    return <div className="mx-auto w-8 h-8 rounded-lg bg-gray-50 border border-gray-100" title="No aplica este mes" />;
+  }
+
+  const cls = estado === "pagada" ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+    : estado === "recibida" ? "bg-amber-400 hover:bg-amber-500 text-white"
+    : esPasado ? "bg-red-500 hover:bg-red-600 text-white"
+    : "bg-gray-100 hover:bg-gray-200 text-gray-300";
+  const icon = estado === "pagada" ? "✓" : estado === "recibida" ? "€" : esPasado ? "✕" : "";
+  const title = estado === "pagada" ? "Recibida y pagada · clic para reiniciar"
+    : estado === "recibida" ? "Factura recibida, sin pagar · clic = marcar pagada"
+    : esPasado ? "Sin marcar (mes pasado) · clic = factura recibida"
+    : "Aún no · clic = factura recibida";
+
+  return (
+    <button type="button" disabled={pending}
+      onClick={() => start(async () => { await ciclarEstadoFijo(id, ym); router.refresh(); })}
+      title={title}
+      className={`mx-auto w-8 h-8 rounded-lg flex items-center justify-center text-[9px] font-bold transition-colors disabled:opacity-60 ${cls}`}>
+      {pending ? "…" : icon}
+    </button>
   );
 }
 
