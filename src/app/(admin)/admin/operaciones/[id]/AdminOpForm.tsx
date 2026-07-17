@@ -439,6 +439,17 @@ export default function AdminOpForm({
     }
   }
 
+  // Cambiar el importe proveedor/cliente recalcula el facturado por BeGreat si
+  // hay margen (modo factura), para que los dos importes se mantengan sincronizados.
+  function updateImporteProveedor(val: string) {
+    setImporte(val);
+    const imp = parseFloat(val) || 0;
+    if (isFactura && imp > 0 && margenPct) {
+      const p = parseFloat(margenPct) || 0;
+      setImporteFacturadoBegreat((imp * (1 + p / 100)).toFixed(2));
+    }
+  }
+
   // ── UI state ──────────────────────────────────────────────────────────────
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -594,10 +605,33 @@ export default function AdminOpForm({
               className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
           </div>
           <div>
-            <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Importe (€)</label>
-            <input type="number" step="0.01" value={importe} onChange={(e) => setImporte(e.target.value)} placeholder="0.00"
+            <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">
+              {pipelineKey === "renting" ? "Importe proveedor/cliente (€)" : "Importe (€)"}
+            </label>
+            <input type="number" step="0.01" value={importe} onChange={(e) => updateImporteProveedor(e.target.value)} placeholder="0.00"
               className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+            {pipelineKey === "renting" && <p className="text-[10px] text-gray-400 mt-1">Lo que se paga al proveedor/cliente por el equipo</p>}
           </div>
+          {isFactura && (
+            <>
+              <div>
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Importe facturado por BeGreat (€)</label>
+                <input type="number" step="0.01" value={importeFacturadoBegreat} onChange={(e) => updateImporteFactura(e.target.value)} placeholder="0.00"
+                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                <p className="text-[10px] text-gray-400 mt-1">Lo que factura BeGreat — base de la financiación y la cuota</p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Margen (%)</label>
+                <input type="number" step="0.01" value={margenPct} onChange={(e) => updateMargenPct(e.target.value)} placeholder="0.00"
+                  className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
+                <p className="text-[10px] text-gray-400 mt-1">Rellena el importe BeGreat, o pon el margen y sale solo (y al revés)</p>
+              </div>
+              <label className="col-span-2 flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={importeFacturadoVisible} onChange={e => setImporteFacturadoVisible(e.target.checked)} className="w-4 h-4 accent-[#2E1A47]" />
+                <span className="text-xs text-gray-600">Importe facturado visible para el colaborador</span>
+              </label>
+            </>
+          )}
           {pipelineKey === "consultoria" && (
             <div>
               <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Producto</label>
@@ -623,7 +657,7 @@ export default function AdminOpForm({
                 </div>
                 {cuotaAuto && (
                   <p className="text-[10px] text-gray-400 mt-1">
-                    Cotizador (importe + plazo): <b className="text-[#2E1A47]">{cuotaAuto.min.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} – {cuotaAuto.max.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</b>{" "}
+                    Cotizador (sobre {isFactura ? "importe BeGreat" : "importe"} {cuotaBase.toLocaleString("es-ES", { minimumFractionDigits: 2 })} € + {plazoMeses || "—"} meses): <b className="text-[#2E1A47]">{cuotaAuto.min.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} – {cuotaAuto.max.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</b>{" "}
                     <button type="button" onClick={() => { setCuotaAproxMin(cuotaAuto.min.toFixed(2)); setCuotaAproxMax(cuotaAuto.max.toFixed(2)); }} className="text-[#2E1A47] font-semibold hover:underline">Aplicar</button>
                   </p>
                 )}
@@ -866,36 +900,7 @@ export default function AdminOpForm({
                   {/* ── MODO FACTURA ── */}
                   {isFactura && (
                     <div className="space-y-3">
-                      <div>
-                        <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Importe proveedor (sin IVA)</label>
-                        <div className="w-full border border-gray-100 bg-gray-100 px-3 py-2 text-sm text-gray-500">
-                          {importeNum.toLocaleString("es-ES", { minimumFractionDigits: 2 })} €
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Margen</label>
-                        <input type="text" inputMode="decimal"
-                          value={focusedField === "margen-pct" ? margenPct : (margenPct ? fmtPctInput(margenPct) : "")}
-                          onFocus={() => setFocusedField("margen-pct")}
-                          onBlur={() => setFocusedField(null)}
-                          onChange={e => { const v = rawFromFmt(e.target.value); updateMargenPct(v); }}
-                          placeholder="0,00%" className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Importe facturado por BeGreat (sin IVA)</label>
-                        <input type="text" inputMode="decimal"
-                          value={focusedField === "imp-factura" ? importeFacturadoBegreat : (importeFacturadoBegreat ? fmtEuroInput(importeFacturadoBegreat) : "")}
-                          onFocus={() => setFocusedField("imp-factura")}
-                          onBlur={() => setFocusedField(null)}
-                          onChange={e => { const v = rawFromFmt(e.target.value); updateImporteFactura(v); }}
-                          placeholder="0,00 €" className="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#2E1A47]" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input type="checkbox" id="importeFacturadoVisible" checked={importeFacturadoVisible} onChange={e => setImporteFacturadoVisible(e.target.checked)}
-                          className="w-4 h-4 accent-[#2E1A47]" />
-                        <label htmlFor="importeFacturadoVisible" className="text-xs text-gray-600 cursor-pointer">Importe facturado visible para el colaborador</label>
-                      </div>
-
+                      <p className="text-[10px] text-gray-400">Los importes y el margen se editan arriba, en «Editar datos de la operación».</p>
                       {importeFactNum > 0 && importeNum > 0 && (
                         <div className="bg-[#EEEBF3] px-3 py-2.5 rounded-lg">
                           <div className="grid grid-cols-2 gap-2 mb-1.5">
