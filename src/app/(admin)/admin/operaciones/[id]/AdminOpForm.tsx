@@ -934,11 +934,7 @@ export default function AdminOpForm({
 
                   {/* ── Colaboradores (ambos modos) ── */}
                   <div className="border-t border-gray-200 pt-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-[10px] text-gray-400 uppercase tracking-wider">Colaboradores</label>
-                      <button type="button" onClick={addColab}
-                        className="text-[10px] font-semibold text-[#2E1A47] hover:underline">+ Añadir</button>
-                    </div>
+                    <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-2">Colaboradores de la operación</label>
                     {colaboradores.map((c, i) => (
                       <div key={i} className="mb-3 p-2 bg-white border border-gray-100 relative">
                         {colaboradores.length > 1 && (
@@ -999,6 +995,10 @@ export default function AdminOpForm({
                         </div>
                       </div>
                     ))}
+                    <button type="button" onClick={addColab}
+                      className="w-full mt-1 text-xs font-semibold text-[#2E1A47] border border-dashed border-[#2E1A47]/40 rounded-lg px-3 py-2 hover:bg-[#EEEBF3] transition-colors">
+                      + Añadir colaborador
+                    </button>
                     <p className="text-[9px] text-gray-400 mt-1">% calculado sobre importe proveedor ({importeNum.toLocaleString("es-ES", { minimumFractionDigits: 2 })} €)</p>
                   </div>
 
