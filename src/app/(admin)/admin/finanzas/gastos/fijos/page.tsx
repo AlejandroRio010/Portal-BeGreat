@@ -1,8 +1,9 @@
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getGastos, type HoldedGasto, CATEGORIAS_GASTO } from "@/lib/holded";
+import { getGastos, type HoldedGasto } from "@/lib/holded";
 import { getGastosFijos, esDelFijo, importeFijoMes, construirCandidatos } from "@/lib/gastosFijos";
+import { getCategoriasGasto } from "@/lib/categorias";
 import { fmtEur } from "@/lib/format";
 import {
   AddGastoFijoButton, RemoveGastoFijoButton, ObliviateFijoCell, ImporteBaseFijoEdit,
@@ -37,6 +38,7 @@ export default async function GastosFijosPage() {
 
   const delAnyo = gastos.filter(g => g.date.startsWith(String(anyo)));
   const allFijos = await getGastosFijos();
+  const categoriasGasto = await getCategoriasGasto();
   const fijosDef = allFijos.filter(f => f.empresa === "bearing");        // cruzan con Holded
   const fijosObliviate = allFijos.filter(f => f.empresa === "obliviate"); // manuales
 
@@ -99,7 +101,10 @@ export default async function GastosFijosPage() {
           <Link href="/admin/finanzas/gastos" className="hover:text-[#2E1A47]">Gastos</Link><span>/</span>
           <span className="text-gray-600 font-medium">Fijos</span>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">Gastos fijos {anyo}</h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-bold text-gray-900">Gastos fijos {anyo}</h1>
+          <Link href="/admin/finanzas/categorias" className="text-xs font-semibold text-[#2E1A47] bg-[#EEEBF3] hover:bg-[#e2ddec] rounded-xl px-3 py-1.5 transition-colors whitespace-nowrap">🏷️ Categorías</Link>
+        </div>
         <p className="text-sm text-gray-400 mt-1">
           <b className="text-[#2E1A47]">Bearing</b> se detecta solo por el proveedor de las facturas que subes a Holded (no hace falta factura recurrente): al llegar → <span className="text-amber-600 font-semibold">recibida</span>, al conciliarse → <span className="text-emerald-600 font-semibold">pagada</span>. <b className="text-amber-700">Obliviate</b> se marca a mano. Importes <b>sin IVA</b>. Clic en un mes para ver detalle / anotar; el <span className="text-red-600 font-semibold">⚠️</span> avisa si se ha cobrado de más.
         </p>
@@ -142,7 +147,7 @@ export default async function GastosFijosPage() {
                   <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider">Bearing</h2>
                   <p className="text-[10px] text-[#2E1A47]/50">cruzado con Holded · {fijosDef.length} fijos</p>
                 </div>
-                <AddGastoFijoButton empresa="bearing" candidatos={candidatos} categorias={CATEGORIAS_GASTO} />
+                <AddGastoFijoButton empresa="bearing" candidatos={candidatos} categorias={categoriasGasto} />
               </div>
               <div className="divide-y divide-gray-50">
                 {filasBearing.length === 0 && <p className="px-4 py-8 text-center text-xs text-gray-300">Sin gastos fijos. Añade uno con ＋</p>}
@@ -187,7 +192,7 @@ export default async function GastosFijosPage() {
                   <h2 className="text-sm font-bold text-amber-800 uppercase tracking-wider">🏢 Obliviate</h2>
                   <p className="text-[10px] text-amber-800/50">manual · fuera de Holded · {fijosObliviate.length} fijos</p>
                 </div>
-                <AddGastoFijoButton empresa="obliviate" categorias={CATEGORIAS_GASTO} />
+                <AddGastoFijoButton empresa="obliviate" categorias={categoriasGasto} />
               </div>
               <div className="divide-y divide-gray-50">
                 {filasObliviate.length === 0 && <p className="px-4 py-8 text-center text-xs text-gray-300">Sin gastos fijos. Añade uno con ＋</p>}

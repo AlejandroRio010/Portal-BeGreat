@@ -4,8 +4,9 @@ import Link from "next/link";
 import { db } from "@/db";
 import { operations, tarjetaCargos } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
-import { getGastos, type HoldedGasto, CATEGORIAS_GASTO } from "@/lib/holded";
+import { getGastos, type HoldedGasto } from "@/lib/holded";
 import { getGastosFijos, esDelFijo, importeFijoMes, conIva, construirCandidatos } from "@/lib/gastosFijos";
+import { getCategoriasGasto } from "@/lib/categorias";
 import { BUCKETS, bucketDe } from "@/lib/gastosBuckets";
 import { fmtEur } from "@/lib/format";
 import { AddGastoFijoButton, CargoTarjetaEdit } from "./GastosFijosManage";
@@ -52,6 +53,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   const cargoTarjeta = cargoRow ? Number(cargoRow.importe) : 0;
 
   const fijosDef = await getGastosFijos();
+  const categoriasGasto = await getCategoriasGasto();
   const fijosBearing = fijosDef.filter(f => f.empresa === "bearing");   // cruzan con Holded
   const fijosObliviate = fijosDef.filter(f => f.empresa === "obliviate"); // manuales
   const esFijo = (g: HoldedGasto) => fijosBearing.some(f => esDelFijo(f, g.proveedor, g.contact_id, g.cuenta_id));
@@ -184,7 +186,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider">Gastos fijos de {mesLabel(mes)}</h2>
-              <AddGastoFijoButton candidatos={candidatos} categorias={CATEGORIAS_GASTO} />
+              <AddGastoFijoButton candidatos={candidatos} categorias={categoriasGasto} />
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               {/* Bearing */}

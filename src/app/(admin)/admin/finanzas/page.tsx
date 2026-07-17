@@ -27,6 +27,7 @@ export default async function FinanzasHubPage() {
     { href: "/admin/finanzas/ingresos", titulo: "Ingresos", desc: "Facturas de venta, cobros y IVA repercutido", emoji: "📈", activo: true },
     { href: "/admin/finanzas/gastos", titulo: "Gastos", desc: "Facturas de compra, pagos y retenciones", emoji: "📉", activo: true },
     { href: "/admin/finanzas/gastos/fijos", titulo: "Gastos fijos", desc: "Recurrentes por proveedor y control mensual de pago", emoji: "📌", activo: true },
+    { href: "/admin/finanzas/categorias", titulo: "Categorías", desc: "Añadir o quitar categorías de gasto", emoji: "🏷️", activo: true },
     { href: "#", titulo: "Impuestos", desc: "IVA e IRPF por trimestre", emoji: "🧾", activo: false },
     { href: "#", titulo: "Resumen anual", desc: "Evolución y resultado del ejercicio", emoji: "📊", activo: false },
   ];

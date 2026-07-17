@@ -636,6 +636,19 @@ export const gastosFijos = pgTable("gastos_fijos", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── Categorías de gasto (taxonomía editable desde el portal) ─────────────────
+// Lista de categorías que se ofrecen al etiquetar gastos fijos. Se puede
+// añadir/quitar desde /admin/finanzas/categorias sin tocar código. Los gastos de
+// Holded siguen categorizándose por su cuenta contable (mapa CUENTAS_GASTO).
+export const categorias = pgTable("categorias", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tipo: text("tipo").notNull().default("gasto"), // "gasto" | "ingreso"
+  nombre: text("nombre").notNull(),
+  orden: integer("orden").notNull().default(0),
+  activo: boolean("activo").notNull().default(true),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Cargos mensuales de tarjeta de crédito ──────────────────────────────────
 // Para el CF cuenta el cargo GLOBAL que la tarjeta (Sabadell "business mc") pasa
 // a la cuenta cada mes; el detalle (gasolina/parking) es solo informativo, no
