@@ -7,6 +7,7 @@ import Link from "next/link";
 import ColaboradorEditForm from "./ColaboradorEditForm";
 import PermisosForm from "./PermisosForm";
 import UsuariosPanel from "./UsuariosPanel";
+import ContactosColaboradorPanel from "./ContactosColaboradorPanel";
 import NotesSection from "@/components/NotesSection";
 import EntityTasksSection from "@/components/EntityTasksSection";
 import { fmtEur } from "@/lib/format";
@@ -201,25 +202,7 @@ export default async function FichaColaboradorPage({ params }: { params: Promise
           <UsuariosPanel colaboradorId={colab.id} colaboradorActivo={colab.activo} />
 
           {/* Personas de contacto */}
-          <div className="bg-white border border-gray-200">
-            <div className="bg-[#EEEBF3] px-5 py-3 border-b border-gray-200">
-              <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Personas de contacto</h3>
-            </div>
-            {contacts.length === 0 ? (
-              <p className="px-5 py-4 text-sm text-gray-400">Sin contactos registrados</p>
-            ) : (
-              <div className="divide-y divide-gray-50">
-                {contacts.map((c) => (
-                  <div key={c.id} className="px-5 py-3">
-                    <p className="text-sm font-semibold text-gray-800">{c.nombre}</p>
-                    {c.rol && <p className="text-xs text-gray-400">{c.rol}</p>}
-                    {c.email && <p className="text-xs text-gray-500">{c.email}</p>}
-                    {c.telefono && <p className="text-xs text-gray-500">{c.telefono}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <ContactosColaboradorPanel contactos={contacts} colaboradorId={colab.id} />
         </div>
 
         {/* Col 2-3: Operaciones */}
