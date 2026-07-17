@@ -2,17 +2,16 @@ import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getGastos, type HoldedGasto, CATEGORIAS_GASTO } from "@/lib/holded";
-import { getGastosFijos, esDelFijo, norm, importeFijoMes } from "@/lib/gastosFijos";
+import { getGastosFijos, esDelFijo, importeFijoMes, construirCandidatos } from "@/lib/gastosFijos";
 import { fmtEur } from "@/lib/format";
 import {
   AddGastoFijoButton, RemoveGastoFijoButton, ObliviateFijoCell, ImporteBaseFijoEdit,
-  FijoInfoEdit, BearingMesCell, type CandidatoProveedor, type BearingMes,
+  FijoInfoEdit, BearingMesCell, type BearingMes,
 } from "../GastosFijosManage";
 
 export const dynamic = "force-dynamic";
 
 const CORTOS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-const INICIALES = ["E", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
 
 // Un mes se considera "de más" si supera lo estipulado en > max(1€, 3%).
 function esSobrecoste(base: number, estipulado: number | null): boolean {
@@ -46,7 +45,7 @@ export default async function GastosFijosPage() {
     const meses: BearingMes[] = CORTOS.map((_, m) => {
       const pref = `${anyo}-${String(m + 1).padStart(2, "0")}`;   // para casar la fecha
       const ymKey = `${anyo}-${m + 1}`;                            // clave de la nota (sin padding)
-      const facts = delAnyo.filter(g => g.date.startsWith(pref) && esDelFijo(gf, g.proveedor, g.contact_id));
+      const facts = delAnyo.filter(g => g.date.startsWith(pref) && esDelFijo(gf, g.proveedor, g.contact_id, g.cuenta_id));
       const base = facts.reduce((s, g) => s + g.subtotal, 0);
       const hay = facts.length > 0;
       const pagadas = hay && facts.every(g => g.estado === "pagada");
@@ -89,16 +88,8 @@ export default async function GastosFijosPage() {
   const anualizadoBase = totalMensualBase * 12 + anualExtra;
   const totalAvisos = filasBearing.reduce((s, f) => s + f.avisos.length, 0);
 
-  // ── Candidatos para "añadir gasto fijo" de Bearing ──
-  const esFijo = (g: HoldedGasto) => fijosDef.some(f => esDelFijo(f, g.proveedor, g.contact_id));
-  const candMap = new Map<string, CandidatoProveedor>();
-  for (const g of gastos) {
-    const key = g.contact_id ?? norm(g.proveedor);
-    const prev = candMap.get(key);
-    if (!prev) candMap.set(key, { proveedor: g.proveedor, contactId: g.contact_id, categoria: g.categoria, importe: g.total, base: g.subtotal, fecha: g.date, n: 1, yaFijo: esFijo(g) });
-    else { prev.n++; if (g.date > prev.fecha) { prev.fecha = g.date; prev.importe = g.total; prev.base = g.subtotal; prev.categoria = g.categoria; } }
-  }
-  const candidatos = [...candMap.values()];
+  // ── Candidatos para "añadir gasto fijo" de Bearing (con desglose por cuenta) ──
+  const candidatos = construirCandidatos(gastos, fijosDef);
 
   return (
     <div>
@@ -153,11 +144,6 @@ export default async function GastosFijosPage() {
                 </div>
                 <AddGastoFijoButton empresa="bearing" candidatos={candidatos} categorias={CATEGORIAS_GASTO} />
               </div>
-              <div className="grid grid-cols-12 gap-1 px-4 pt-2 pb-1">
-                {INICIALES.map((ini, i) => (
-                  <span key={i} className={`text-center text-[9px] font-bold uppercase ${i === mesActualIdx ? "text-[#2E1A47]" : "text-gray-300"}`}>{ini}</span>
-                ))}
-              </div>
               <div className="divide-y divide-gray-50">
                 {filasBearing.length === 0 && <p className="px-4 py-8 text-center text-xs text-gray-300">Sin gastos fijos. Añade uno con ＋</p>}
                 {filasBearing.map(({ gf, meses, avisos }) => (
@@ -202,11 +188,6 @@ export default async function GastosFijosPage() {
                   <p className="text-[10px] text-amber-800/50">manual · fuera de Holded · {fijosObliviate.length} fijos</p>
                 </div>
                 <AddGastoFijoButton empresa="obliviate" categorias={CATEGORIAS_GASTO} />
-              </div>
-              <div className="grid grid-cols-12 gap-1 px-4 pt-2 pb-1">
-                {INICIALES.map((ini, i) => (
-                  <span key={i} className={`text-center text-[9px] font-bold uppercase ${i === mesActualIdx ? "text-amber-800" : "text-gray-300"}`}>{ini}</span>
-                ))}
               </div>
               <div className="divide-y divide-gray-50">
                 {filasObliviate.length === 0 && <p className="px-4 py-8 text-center text-xs text-gray-300">Sin gastos fijos. Añade uno con ＋</p>}

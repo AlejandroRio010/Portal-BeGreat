@@ -4,6 +4,13 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { crearGastoFijo, borrarGastoFijo, setEstadoFijo, setImporteBaseFijo, setCargoTarjeta, editarGastoFijo, setNotaMesFijo } from "./actions";
 
+export interface CuentaProveedor {
+  id: string;           // id de la cuenta contable en Holded
+  label: string;        // etiqueta legible (categoría)
+  base: number;         // base sin IVA de la última factura de esa cuenta
+  n: number;            // nº de facturas de esa cuenta
+  yaFijo: boolean;      // ya hay un fijo que cubre esta cuenta
+}
 export interface CandidatoProveedor {
   proveedor: string;
   contactId: string | null;
@@ -12,7 +19,8 @@ export interface CandidatoProveedor {
   base: number;         // base sin IVA de la última factura (sugerencia de mensual)
   fecha: string;        // YYYY-MM-DD de la última factura
   n: number;            // nº de facturas vistas de este proveedor
-  yaFijo: boolean;
+  yaFijo: boolean;      // todas sus cuentas ya están cubiertas por fijos
+  cuentas: CuentaProveedor[]; // desglose por cuenta contable (para separar facturas)
 }
 
 const eur = (n: number) => new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
@@ -137,6 +145,7 @@ function AddGastoFijoBearing({ candidatos, categorias }: { candidatos: Candidato
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<CandidatoProveedor | null>(null);
+  const [cuentaSel, setCuentaSel] = useState<CuentaProveedor | null>(null); // null = todas las cuentas
   const [label, setLabel] = useState("");
   const [categoria, setCategoria] = useState("");
   const [mensual, setMensual] = useState("");
@@ -151,13 +160,27 @@ function AddGastoFijoBearing({ candidatos, categorias }: { candidatos: Candidato
 
   function elegir(c: CandidatoProveedor) {
     setSel(c);
-    setLabel(c.proveedor);
-    setCategoria(c.categoria || categorias[0] || "");
+    // Si solo tiene una cuenta libre, la elegimos directamente; si hay varias, "todas".
+    const libres = c.cuentas.filter(cu => !cu.yaFijo);
+    const cuentaInicial = c.cuentas.length > 1 && libres.length === 1 ? libres[0] : null;
+    setCuentaSel(cuentaInicial);
+    setLabel(cuentaInicial ? `${c.proveedor} · ${cuentaInicial.label}` : c.proveedor);
+    setCategoria((cuentaInicial?.label) || c.categoria || categorias[0] || "");
     // Sugerimos la BASE (sin IVA) — el portal calcula el IVA por detrás.
-    setMensual(c.base ? String(c.base.toFixed(2)) : "");
+    const base = cuentaInicial ? cuentaInicial.base : c.base;
+    setMensual(base ? String(base.toFixed(2)) : "");
   }
 
-  function cerrar() { setOpen(false); setSel(null); setQ(""); }
+  function elegirCuenta(cu: CuentaProveedor | null) {
+    if (!sel) return;
+    setCuentaSel(cu);
+    setLabel(cu ? `${sel.proveedor} · ${cu.label}` : sel.proveedor);
+    setCategoria((cu?.label) || sel.categoria || categorias[0] || "");
+    const base = cu ? cu.base : sel.base;
+    setMensual(base ? String(base.toFixed(2)) : "");
+  }
+
+  function cerrar() { setOpen(false); setSel(null); setCuentaSel(null); setQ(""); }
 
   function guardar() {
     if (!sel) return;
@@ -171,6 +194,8 @@ function AddGastoFijoBearing({ candidatos, categorias }: { candidatos: Candidato
         categoria: categoria || null,
         nota: null,
         empresa: "bearing",
+        cuenta_id: cuentaSel?.id ?? null,
+        cuenta_label: cuentaSel?.label ?? null,
       });
       cerrar();
       router.refresh();
@@ -229,6 +254,35 @@ function AddGastoFijoBearing({ candidatos, categorias }: { candidatos: Candidato
                   <p className="text-[11px] text-gray-400 uppercase tracking-wide font-bold">Proveedor</p>
                   <p className="text-sm font-bold text-[#2E1A47]">{sel.proveedor}</p>
                 </div>
+
+                {sel.cuentas.length > 1 && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">
+                      Este proveedor tiene <b>{sel.cuentas.length} tipos de factura</b> — ¿cuál es este fijo?
+                    </label>
+                    <div className="space-y-1.5">
+                      <button type="button" onClick={() => elegirCuenta(null)}
+                        className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl border transition-colors ${cuentaSel === null ? "border-[#2E1A47] bg-[#EEEBF3]/60" : "border-gray-200 hover:bg-gray-50"}`}>
+                        <span className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 ${cuentaSel === null ? "border-[#2E1A47] bg-[#2E1A47]" : "border-gray-300"}`} />
+                        <span className="flex-1 text-sm text-gray-700">Todas las facturas de {sel.proveedor}</span>
+                      </button>
+                      {sel.cuentas.map(cu => (
+                        <button key={cu.id} type="button" disabled={cu.yaFijo} onClick={() => elegirCuenta(cu)}
+                          className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl border transition-colors ${cu.yaFijo ? "opacity-40 cursor-default border-gray-100" : cuentaSel?.id === cu.id ? "border-[#2E1A47] bg-[#EEEBF3]/60" : "border-gray-200 hover:bg-gray-50"}`}>
+                          <span className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 ${cuentaSel?.id === cu.id ? "border-[#2E1A47] bg-[#2E1A47]" : "border-gray-300"}`} />
+                          <span className="flex-1 min-w-0">
+                            <span className="text-sm text-gray-700">{cu.label}</span>
+                            <span className="text-[11px] text-gray-400 ml-1">· {cu.n} factura{cu.n !== 1 ? "s" : ""}</span>
+                          </span>
+                          <span className="text-xs font-bold text-[#2E1A47] whitespace-nowrap">{eur(cu.base)} <span className="text-[9px] font-normal text-gray-400">s/IVA</span></span>
+                          {cu.yaFijo && <span className="text-[9px] font-bold uppercase bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full px-1.5 py-0.5">ya fijo</span>}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-1.5">Elige una cuenta para separar, p. ej., telecomunicaciones del renting. Puedes crear otro fijo para la otra factura.</p>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 mb-1">Nombre en el panel</label>
                   <input value={label} onChange={e => setLabel(e.target.value)}
@@ -282,9 +336,10 @@ export function ObliviateFijoCell({ id, ym, estado, importe, aplica, esPasado, c
   const [pending, start] = useTransition();
   const router = useRouter();
   const w = compact ? "w-8" : "w-14";
+  const mesNombre = MESES_LARGOS[Number(ym.split("-")[1]) - 1] ?? "";
 
   if (!aplica) {
-    return <div className={`mx-auto ${w} h-8 rounded-lg bg-gray-50 border border-gray-100`} title="No aplica este mes" />;
+    return <div className={`mx-auto ${w} h-8 rounded-lg bg-gray-50 border border-gray-100`} title={`${mesNombre} · no aplica este mes`} />;
   }
 
   const cls = estado === "pagada" ? "bg-emerald-500 hover:bg-emerald-600 text-white"
@@ -315,7 +370,7 @@ export function ObliviateFijoCell({ id, ym, estado, importe, aplica, esPasado, c
   return (
     <>
       <button ref={btnRef} type="button" disabled={pending} onClick={toggle}
-        title={`${importe != null ? eur(importe) : ""} · elegir estado / importe`}
+        title={`${mesNombre} · ${importe != null ? eur(importe) + " · " : ""}elegir estado / importe`}
         className={`mx-auto ${w} h-8 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors disabled:opacity-60 ${cls}`}>
         {pending ? "…" : disp}
       </button>
@@ -456,8 +511,8 @@ export function BearingMesCell({ id, mes, estipulado }: {
   const [pending, start] = useTransition();
   const router = useRouter();
 
-  const tieneAlgo = mes.n > 0 || mes.nota;
   const symbol = mes.estado === "pagado" ? "✓" : mes.estado === "sin_pagar" ? "€" : mes.estado === "falta" ? "✕" : "";
+  const mesNombre = MESES_LARGOS[Number(mes.ym.split("-")[1]) - 1] ?? "";
 
   function toggle() {
     if (open) { setOpen(false); return; }
@@ -470,11 +525,17 @@ export function BearingMesCell({ id, mes, estipulado }: {
     setOpen(false);
     start(async () => { await setNotaMesFijo(id, mes.ym, texto.trim() || null); router.refresh(); });
   }
+  // "Contratamos algo más": adopta el importe real de este mes como el nuevo
+  // importe fijo, para que deje de saltar el aviso todos los meses.
+  function fijarNuevoImporte() {
+    setOpen(false);
+    start(async () => { await setImporteBaseFijo(id, Math.round(mes.base * 100) / 100); router.refresh(); });
+  }
 
   return (
     <>
       <button ref={btnRef} type="button" onClick={toggle} disabled={pending}
-        title={mes.n > 0 ? `${eur(mes.base)} s/IVA · ${mes.n} factura${mes.n !== 1 ? "s" : ""}` : mes.estado === "falta" ? "sin factura (mes pasado)" : "aún no toca"}
+        title={`${mesNombre} · ${mes.n > 0 ? `${eur(mes.base)} s/IVA · ${mes.n} factura${mes.n !== 1 ? "s" : ""}` : mes.estado === "falta" ? "sin factura (mes pasado)" : "aún no toca"}`}
         className={`relative mx-auto w-8 h-8 rounded-lg flex items-center justify-center text-[9px] font-bold transition-colors disabled:opacity-50 ${COLOR_MES[mes.estado]} ${mes.overcharge ? "ring-2 ring-red-500 ring-offset-1" : ""}`}>
         {pending ? "…" : symbol}
         {mes.overcharge && <span className="absolute -top-2 -right-1.5 text-[11px] leading-none">⚠️</span>}
@@ -498,7 +559,14 @@ export function BearingMesCell({ id, mes, estipulado }: {
                   </div>
                 )}
                 {mes.overcharge && (
-                  <p className="mt-1.5 text-[11px] font-bold text-red-600 bg-red-50 rounded-lg px-2 py-1">⚠️ {eur(mes.exceso)} más de lo estipulado</p>
+                  <>
+                    <p className="mt-1.5 text-[11px] font-bold text-red-600 bg-red-50 rounded-lg px-2 py-1">⚠️ {eur(mes.exceso)} más de lo estipulado</p>
+                    <button type="button" onClick={fijarNuevoImporte}
+                      className="mt-1.5 w-full text-[11px] font-semibold text-[#2E1A47] bg-[#EEEBF3] hover:bg-[#e2ddec] rounded-lg px-2 py-1.5 transition-colors">
+                      Es el nuevo importe fijo → poner {eur(mes.base)}
+                    </button>
+                    <p className="text-[9px] text-gray-400 mt-1 leading-tight">Úsalo si has contratado algo más y este es el importe a partir de ahora (deja de avisar).</p>
+                  </>
                 )}
               </div>
             ) : (

@@ -613,10 +613,15 @@ export const gastosFijos = pgTable("gastos_fijos", {
   proveedor_match: text("proveedor_match").notNull(),
   // Id de contacto de Holded: si está, el match es exacto (más fiable que el nombre).
   holded_contact_id: text("holded_contact_id"),
-  // Importe mensual esperado con IVA; null = importe variable.
+  // Importe mensual esperado (base, sin IVA); null = importe variable.
   mensual: numeric("mensual", { precision: 10, scale: 2 }),
   categoria: text("categoria"),
   nota: text("nota"),
+  // Filtro por cuenta contable de Holded: si está, el fijo solo casa las
+  // facturas de ese proveedor CON esta cuenta. Permite separar dos gastos del
+  // mismo proveedor (p. ej. Movistar: telecomunicaciones vs. renting de iPhone).
+  cuenta_id: text("cuenta_id"),
+  cuenta_label: text("cuenta_label"),
   // Empresa a la que pertenece el gasto fijo: bearing (cruza con Holded) u
   // obliviate (manual, no está en Holded).
   empresa: text("empresa").notNull().default("bearing"),

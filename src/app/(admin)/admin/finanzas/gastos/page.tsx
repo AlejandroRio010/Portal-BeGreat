@@ -5,10 +5,10 @@ import { db } from "@/db";
 import { operations, tarjetaCargos } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { getGastos, type HoldedGasto, CATEGORIAS_GASTO } from "@/lib/holded";
-import { getGastosFijos, esDelFijo, norm, importeFijoMes, conIva } from "@/lib/gastosFijos";
+import { getGastosFijos, esDelFijo, importeFijoMes, conIva, construirCandidatos } from "@/lib/gastosFijos";
 import { BUCKETS, bucketDe } from "@/lib/gastosBuckets";
 import { fmtEur } from "@/lib/format";
-import { AddGastoFijoButton, CargoTarjetaEdit, type CandidatoProveedor } from "./GastosFijosManage";
+import { AddGastoFijoButton, CargoTarjetaEdit } from "./GastosFijosManage";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +54,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   const fijosDef = await getGastosFijos();
   const fijosBearing = fijosDef.filter(f => f.empresa === "bearing");   // cruzan con Holded
   const fijosObliviate = fijosDef.filter(f => f.empresa === "obliviate"); // manuales
-  const esFijo = (g: HoldedGasto) => fijosBearing.some(f => esDelFijo(f, g.proveedor, g.contact_id));
+  const esFijo = (g: HoldedGasto) => fijosBearing.some(f => esDelFijo(f, g.proveedor, g.contact_id, g.cuenta_id));
   const mesIdx = Number(mes.split("-")[1]) - 1;
   const ymKey = `${Number(mes.split("-")[0])}-${mesIdx + 1}`;
   // Fijos de Obliviate que aplican a este mes (mensuales siempre; anuales solo en su
@@ -91,19 +91,12 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
 
   // Fijos del mes agrupados por proveedor fijo (solo Bearing, que cruza con Holded)
   const fijosMes = fijosBearing.map(f => {
-    const facts = delMes.filter(g => esDelFijo(f, g.proveedor, g.contact_id));
+    const facts = delMes.filter(g => esDelFijo(f, g.proveedor, g.contact_id, g.cuenta_id));
     return { f, facts, total: facts.reduce((s, g) => s + g.total, 0), pagado: facts.length > 0 && facts.every(g => g.estado === "pagada"), presente: facts.length > 0 };
   }).filter(x => x.presente);
 
-  // Candidatos para "añadir gasto fijo": proveedores vistos (dedup), con su última factura
-  const candMap = new Map<string, CandidatoProveedor>();
-  for (const g of gastos) {
-    const key = g.contact_id ?? norm(g.proveedor);
-    const prev = candMap.get(key);
-    if (!prev) candMap.set(key, { proveedor: g.proveedor, contactId: g.contact_id, categoria: g.categoria, importe: g.total, base: g.subtotal, fecha: g.date, n: 1, yaFijo: esFijo(g) });
-    else { prev.n++; if (g.date > prev.fecha) { prev.fecha = g.date; prev.importe = g.total; prev.base = g.subtotal; prev.categoria = g.categoria; } }
-  }
-  const candidatos = [...candMap.values()];
+  // Candidatos para "añadir gasto fijo" (con desglose por cuenta contable)
+  const candidatos = construirCandidatos(gastos, fijosBearing);
 
   const anyo = Number(mes.split("-")[0]);
   const filaGastos = (lista: HoldedGasto[]) => (

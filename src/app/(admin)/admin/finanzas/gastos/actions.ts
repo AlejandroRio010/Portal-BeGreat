@@ -21,6 +21,8 @@ export interface NuevoGastoFijo {
   empresa?: string;              // "bearing" (cruza Holded) | "obliviate" (manual)
   periodicidad?: string;         // "mensual" | "anual"
   mes_cobro?: number | null;     // 1-12, solo anuales
+  cuenta_id?: string | null;     // acota el fijo a una cuenta contable de Holded
+  cuenta_label?: string | null;  // etiqueta legible de esa cuenta
 }
 
 /** Alta de un gasto fijo. Bearing → desde el buscador de facturas de Holded;
@@ -43,6 +45,8 @@ export async function crearGastoFijo(input: NuevoGastoFijo) {
     empresa,
     periodicidad: input.periodicidad === "anual" ? "anual" : "mensual",
     mes_cobro: input.periodicidad === "anual" && input.mes_cobro ? input.mes_cobro : null,
+    cuenta_id: empresa === "obliviate" ? null : (input.cuenta_id || null),
+    cuenta_label: empresa === "obliviate" ? null : (input.cuenta_label || null),
   });
 
   revalidatePath("/admin/finanzas/gastos");
