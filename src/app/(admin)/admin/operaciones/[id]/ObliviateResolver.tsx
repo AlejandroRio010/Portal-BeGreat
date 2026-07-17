@@ -27,13 +27,14 @@ export default function ObliviateResolver({ value, onChange, esperado, verbo }: 
         <button type="button" onClick={() => onChange(null)} className="text-[10px] text-gray-400 hover:text-red-500">✕ quitar</button>
       </div>
       <div className="grid grid-cols-2 gap-1.5">
-        <input type="number" step="0.01" placeholder="Importe €" value={value.importe}
+        <input type="number" step="0.01" placeholder="Importe sin IVA" value={value.importe}
           onChange={e => onChange({ ...value, importe: e.target.value })}
           className="border border-amber-200 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:border-amber-400" />
         <input type="date" value={value.fecha}
           onChange={e => onChange({ ...value, fecha: e.target.value })}
           className="border border-amber-200 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:border-amber-400" />
       </div>
+      <p className="text-[9px] text-amber-700/70 mt-1">Importe <b>sin IVA</b> (base). El IVA/IRPF lo calcula el portal por detrás para impuestos.</p>
     </div>
   );
 }
