@@ -24,7 +24,8 @@ export default async function GastosFijosPage() {
   try { gastos = await getGastos({ incluirBorradores: true }); } catch (e: any) { holdedError = e?.message ?? "Error Holded"; }
 
   const delAnyo = gastos.filter(g => g.date.startsWith(String(anyo)));
-  const fijosDef = await getGastosFijos();
+  // Solo los de Bearing cruzan con Holded; los de Obliviate son manuales (se ven en la vista mensual)
+  const fijosDef = (await getGastosFijos()).filter(f => f.empresa === "bearing");
 
   const filas = fijosDef.map(gf => {
     const meses = CORTOS.map((_, m) => {

@@ -16,6 +16,17 @@ export interface GastoFijo {
   mensual: number | null;           // importe mensual con IVA; null si es variable
   categoria: string;
   nota?: string | null;
+  empresa: string;                  // "bearing" (cruza Holded) | "obliviate" (manual)
+  periodicidad: string;             // "mensual" | "anual"
+  mes_cobro: number | null;         // 1-12, solo para los anuales
+}
+
+/** Importe del fijo que aplica a un mes concreto (mesIdx 0-11).
+ *  Los anuales solo cuentan en su mes de cobro; los mensuales, todos los meses. */
+export function importeFijoMes(f: GastoFijo, mesIdx: number): number {
+  const imp = f.mensual ?? 0;
+  if (f.periodicidad === "anual") return f.mes_cobro === mesIdx + 1 ? imp : 0;
+  return imp;
 }
 
 /** Lista de gastos fijos configurada (desde la tabla `gastos_fijos`). */
@@ -34,6 +45,9 @@ export async function getGastosFijos(): Promise<GastoFijo[]> {
       mensual: r.mensual != null ? Number(r.mensual) : null,
       categoria: r.categoria ?? "Otros gastos",
       nota: r.nota,
+      empresa: r.empresa ?? "bearing",
+      periodicidad: r.periodicidad ?? "mensual",
+      mes_cobro: r.mes_cobro ?? null,
     }));
 }
 

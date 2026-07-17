@@ -620,6 +620,10 @@ export const gastosFijos = pgTable("gastos_fijos", {
   // Empresa a la que pertenece el gasto fijo: bearing (cruza con Holded) u
   // obliviate (manual, no está en Holded).
   empresa: text("empresa").notNull().default("bearing"),
+  // Periodicidad del cobro: "mensual" (todos los meses) o "anual" (solo en
+  // mes_cobro, p. ej. renovación de dominio). Para los fijos manuales de Obliviate.
+  periodicidad: text("periodicidad").notNull().default("mensual"),
+  mes_cobro: integer("mes_cobro"), // 1-12, solo para los anuales
   activo: boolean("activo").notNull().default(true),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
