@@ -75,8 +75,10 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Las que cuadran con el importe esperado (base o base+IVA) primero
-  const cerca = (t: number, v: number) => v > 0 && Math.abs(t - v) <= Math.max(1, v * 0.015);
+  // Las que cuadran con el importe esperado (base o base+IVA) primero.
+  // Tolerancia exacta (±1 € para absorber céntimos de redondeo de IVA), no un %:
+  // el tick solo debe salir en la factura que realmente cuadra, no en aproximadas.
+  const cerca = (t: number, v: number) => v > 0 && Math.abs(t - v) <= 1;
   const coincide = (t: number) => cerca(t, esperadoBase) || cerca(t, esperadoConIva);
   out.sort((a, b) => Number(coincide(b.total)) - Number(coincide(a.total)));
 

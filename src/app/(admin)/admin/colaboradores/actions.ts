@@ -28,7 +28,9 @@ export async function crearColaboradorRapido(input: { nombre: string; cif?: stri
     role: "colaborador",
     identificador: codigo,
     codigo,
-    activo: false, // sin acceso hasta configurar credenciales en su ficha
+    // Activo = seleccionable en operaciones (para atribuir comisiones). El acceso
+    // al portal es aparte (requiere crear su usuario), así que no puede entrar.
+    activo: true,
     razon_social: nombre,
     cif: input.cif?.trim() || null,
     es_autonomo: !!input.es_autonomo,

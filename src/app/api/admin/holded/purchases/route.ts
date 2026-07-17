@@ -75,7 +75,9 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const cerca = (t: number, v: number) => v > 0 && Math.abs(t - v) <= Math.max(1, v * 0.02);
+  // Tolerancia exacta (±1 € para céntimos de redondeo de IVA/IRPF), no un %:
+  // el tick de "cuadra" solo sale en la factura que realmente coincide.
+  const cerca = (t: number, v: number) => v > 0 && Math.abs(t - v) <= 1;
   const coincide = (t: number) => objetivos.some(v => cerca(t, v));
   out.sort((a, b) => Number(coincide(b.total)) - Number(coincide(a.total)));
 
