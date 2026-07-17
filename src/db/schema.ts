@@ -631,6 +631,19 @@ export const gastosFijos = pgTable("gastos_fijos", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── Cargos mensuales de tarjeta de crédito ──────────────────────────────────
+// Para el CF cuenta el cargo GLOBAL que la tarjeta (Sabadell "business mc") pasa
+// a la cuenta cada mes; el detalle (gasolina/parking) es solo informativo, no
+// suma (evita doble conteo con las facturas de Holded).
+export const tarjetaCargos = pgTable("tarjeta_cargos", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  year: integer("year").notNull(),
+  month: integer("month").notNull(),
+  importe: numeric("importe", { precision: 12, scale: 2 }).notNull(),
+  nota: text("nota"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Cotizador: deals de referencia para calibrar TAEs ────────────────────────
 export const cotizadorDeals = pgTable("cotizador_deals", {
   id: uuid("id").primaryKey().defaultRandom(),

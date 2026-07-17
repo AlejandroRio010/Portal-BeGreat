@@ -2,8 +2,8 @@
 
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { gastosFijos } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { gastosFijos, tarjetaCargos } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 async function requireAdmin() {
@@ -68,6 +68,18 @@ export async function setEstadoFijo(id: string, ym: string, estado?: string, imp
   else map[ym] = { ...(e ? { e } : {}), ...(i != null ? { i } : {}) };
   await db.update(gastosFijos).set({ estado_manual: map }).where(eq(gastosFijos.id, id));
   revalidatePath("/admin/finanzas/gastos/fijos");
+  revalidatePath("/admin/finanzas/gastos");
+}
+
+/** Fija (o borra) el cargo mensual global de la tarjeta de crédito de un mes. */
+export async function setCargoTarjeta(year: number, month: number, importe: number | null) {
+  await requireAdmin();
+  if (importe == null || Number.isNaN(importe) || importe <= 0) {
+    await db.delete(tarjetaCargos).where(and(eq(tarjetaCargos.year, year), eq(tarjetaCargos.month, month)));
+  } else {
+    await db.insert(tarjetaCargos).values({ year, month, importe: String(importe) })
+      .onConflictDoUpdate({ target: [tarjetaCargos.year, tarjetaCargos.month], set: { importe: String(importe) } });
+  }
   revalidatePath("/admin/finanzas/gastos");
 }
 

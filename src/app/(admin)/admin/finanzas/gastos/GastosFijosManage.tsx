@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { crearGastoFijo, borrarGastoFijo, setEstadoFijo, setImporteBaseFijo } from "./actions";
+import { crearGastoFijo, borrarGastoFijo, setEstadoFijo, setImporteBaseFijo, setCargoTarjeta } from "./actions";
 
 export interface CandidatoProveedor {
   proveedor: string;
@@ -254,6 +254,37 @@ export function ImporteBaseFijoEdit({ id, mensual, periodicidad }: { id: string;
       onClick={() => { setVal(mensual != null ? String(mensual) : ""); setEditing(true); }}
       title="Editar importe" className="text-sm font-bold text-amber-800 hover:underline whitespace-nowrap">
       {pending ? "…" : (mensual != null ? `${eur(mensual)}${periodicidad === "anual" ? "/año" : ""}` : "—")}
+    </button>
+  );
+}
+
+// ─── Cargo mensual de la tarjeta de crédito (editable) ────────────────────────
+export function CargoTarjetaEdit({ year, month, importe }: { year: number; month: number; importe: number | null }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState("");
+  const [pending, start] = useTransition();
+  const router = useRouter();
+
+  function guardar() {
+    setEditing(false);
+    const n = val.trim() === "" ? null : Number(val.replace(",", "."));
+    start(async () => { await setCargoTarjeta(year, month, n); router.refresh(); });
+  }
+
+  if (editing) {
+    return (
+      <input autoFocus type="number" step="0.01" value={val}
+        onChange={e => setVal(e.target.value)} onBlur={guardar}
+        onKeyDown={e => { if (e.key === "Enter") guardar(); if (e.key === "Escape") setEditing(false); }}
+        className="w-32 border border-[#2E1A47]/30 rounded-lg px-2 py-1 text-xl font-black text-[#2E1A47] focus:outline-none" placeholder="0,00 €" />
+    );
+  }
+  return (
+    <button type="button" disabled={pending}
+      onClick={() => { setVal(importe != null ? String(importe) : ""); setEditing(true); }}
+      title="Editar el cargo de la tarjeta de este mes"
+      className={`text-xl font-black hover:underline ${importe != null ? "text-[#2E1A47]" : "text-gray-300"}`}>
+      {pending ? "…" : (importe != null ? eur(importe) : "+ poner cargo")}
     </button>
   );
 }

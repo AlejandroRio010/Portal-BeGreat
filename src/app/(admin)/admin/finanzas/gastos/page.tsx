@@ -2,12 +2,13 @@ import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/db";
-import { operations } from "@/db/schema";
+import { operations, tarjetaCargos } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
 import { getGastos, type HoldedGasto, CATEGORIAS_GASTO } from "@/lib/holded";
 import { getGastosFijos, esDelFijo, norm, importeFijoMes, conIva } from "@/lib/gastosFijos";
 import { BUCKETS, bucketDe } from "@/lib/gastosBuckets";
 import { fmtEur } from "@/lib/format";
-import { AddGastoFijoButton, type CandidatoProveedor } from "./GastosFijosManage";
+import { AddGastoFijoButton, CargoTarjetaEdit, type CandidatoProveedor } from "./GastosFijosManage";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,12 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
     }
   }
 
+  // Cargo mensual global de la tarjeta de crédito (Sabadell "business mc")
+  const [anyoN, mesN] = mes.split("-").map(Number);
+  const [cargoRow] = await db.select({ importe: tarjetaCargos.importe }).from(tarjetaCargos)
+    .where(and(eq(tarjetaCargos.year, anyoN), eq(tarjetaCargos.month, mesN))).limit(1);
+  const cargoTarjeta = cargoRow ? Number(cargoRow.importe) : 0;
+
   const fijosDef = await getGastosFijos();
   const fijosBearing = fijosDef.filter(f => f.empresa === "bearing");   // cruzan con Holded
   const fijosObliviate = fijosDef.filter(f => f.empresa === "obliviate"); // manuales
@@ -66,15 +73,21 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   const baseObliviate = obliviateMes.reduce((s, x) => s + x.base, 0);
 
   const delMes = gastos.filter(g => g.date.startsWith(mes));
+  const esTarjeta = (g: HoldedGasto) => bucketDe(g) === "tarjeta";
   const fijos = delMes.filter(esFijo);
-  const variables = delMes.filter(g => !esFijo(g));
-  const baseMes = delMes.reduce((s, g) => s + g.subtotal, 0);
-  const ivaMes = delMes.reduce((s, g) => s + g.tax, 0);
-  const totalMes = delMes.reduce((s, g) => s + g.total, 0);
+  // Las variables NO incluyen la tarjeta (esa cuenta por su cargo global, no por factura)
+  const variables = delMes.filter(g => !esFijo(g) && !esTarjeta(g));
+  const tarjetaInvoices = delMes.filter(g => !esFijo(g) && esTarjeta(g)); // solo detalle informativo
+  const detalleTarjeta = tarjetaInvoices.reduce((s, g) => s + g.total, 0);
+  // Base/IVA/total solo de lo que cuenta por factura (sin tarjeta)
+  const contados = delMes.filter(g => !esTarjeta(g));
+  const baseMes = contados.reduce((s, g) => s + g.subtotal, 0);
+  const ivaMes = contados.reduce((s, g) => s + g.tax, 0);
+  const totalContados = contados.reduce((s, g) => s + g.total, 0);
   const totalFijos = fijos.reduce((s, g) => s + g.total, 0);
-  const totalVariables = variables.reduce((s, g) => s + g.total, 0);
-  const pendiente = delMes.filter(g => g.estado !== "pagada").reduce((s, g) => s + g.pendiente, 0);
-  const retencion = delMes.reduce((s, g) => s + g.retencion, 0);
+  const totalVariables = variables.reduce((s, g) => s + g.total, 0) + cargoTarjeta;
+  const pendiente = contados.filter(g => g.estado !== "pagada").reduce((s, g) => s + g.pendiente, 0);
+  const retencion = contados.reduce((s, g) => s + g.retencion, 0);
 
   // Fijos del mes agrupados por proveedor fijo (solo Bearing, que cruza con Holded)
   const fijosMes = fijosBearing.map(f => {
@@ -157,7 +170,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
             <div className="bg-[#2E1A47] px-6 py-5">
               <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Gastado en {mesLabel(mes).split(" ")[0]} · sin IVA</p>
               <p className="text-2xl font-black text-white">{fmtEur(baseMes + baseObliviate)}</p>
-              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">+ IVA {fmtEur(ivaMes + (totalObliviate - baseObliviate))} · total {fmtEur(totalMes + totalObliviate)}</p>
+              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">+ IVA {fmtEur(ivaMes + (totalObliviate - baseObliviate))}{cargoTarjeta > 0 ? ` · 💳 ${fmtEur(cargoTarjeta)}` : ""} · caja {fmtEur(totalContados + cargoTarjeta + totalObliviate)}</p>
             </div>
             <div className="bg-white border border-gray-200 px-6 py-5">
               <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1.5">Gastos fijos</p>
@@ -234,7 +247,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
 
           {/* Gastos variables del mes, por tipo */}
           <div>
-            <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider mb-3">Gastos variables de {mesLabel(mes)} · {fmtEur(totalVariables)}</h2>
+            <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider mb-3">Gastos variables de {mesLabel(mes)} · {fmtEur(totalVariables - cargoTarjeta)}</h2>
             {variables.length === 0 ? (
               <div className="bg-white border border-gray-100 shadow-sm py-14 text-center"><p className="text-sm text-gray-400">Sin gastos variables este mes.</p></div>
             ) : (
@@ -276,6 +289,47 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                 })}
               </div>
             )}
+          </div>
+
+          {/* Tarjeta de crédito — cuenta el cargo global; el detalle es solo info */}
+          <div className="mt-6">
+            <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider mb-3">💳 Tarjeta de crédito de {mesLabel(mes)}</h2>
+            <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5">
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Cargo del mes · Sabadell «business mc»</p>
+                  <CargoTarjetaEdit year={anyoN} month={mesN} importe={cargoTarjeta || null} />
+                  <p className="text-[10px] text-gray-400 mt-0.5">Esto es lo que cuenta en la caja.</p>
+                </div>
+                <div className="sm:text-right">
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Con factura (info, no suma)</p>
+                  <p className="text-xl font-black text-emerald-700">{fmtEur(detalleTarjeta)}</p>
+                  <p className="text-[10px] text-gray-400">{tarjetaInvoices.length} fact. de gasolina/parking</p>
+                </div>
+                <div className="sm:text-right">
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Resto (dietas y otros)</p>
+                  <p className="text-xl font-black text-gray-500">{cargoTarjeta > 0 ? fmtEur(Math.max(0, cargoTarjeta - detalleTarjeta)) : "—"}</p>
+                  <p className="text-[10px] text-gray-400">sin factura</p>
+                </div>
+              </div>
+              {tarjetaInvoices.length > 0 && (
+                <div className="mt-4 border-t border-gray-100 pt-3">
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Detalle con factura (solo información)</p>
+                  <div className="divide-y divide-gray-50">
+                    {tarjetaInvoices.map(g => (
+                      <a key={g.id} href={holdedUrl(g.id)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between gap-2 py-1.5 px-2 rounded hover:bg-[#EEEBF3]/30">
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span className="text-[10px] text-gray-400 whitespace-nowrap">{new Date(g.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span>
+                          <span className="text-xs font-medium text-gray-700 truncate">{g.proveedor}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap">{g.categoria}</span>
+                        </span>
+                        <span className="text-xs font-bold text-gray-700 whitespace-nowrap">{fmtEur(g.total)}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}
