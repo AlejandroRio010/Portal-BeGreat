@@ -2,13 +2,12 @@ import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getGastos, type HoldedGasto } from "@/lib/holded";
-import { getGastosFijos, importeFijoMes, construirCandidatos } from "@/lib/gastosFijos";
-import { getLibroDiario, estadoLibroPorProveedor, movimientosQueCasan, proveedoresDelLibro, type LibroLinea } from "@/lib/holdedLedger";
+import { getGastosFijos, esDelFijo, importeFijoMes, construirCandidatos } from "@/lib/gastosFijos";
 import { getCategoriasGasto } from "@/lib/categorias";
 import { fmtEur } from "@/lib/format";
 import {
   AddGastoFijoButton, RemoveGastoFijoButton, ObliviateFijoCell, ImporteBaseFijoEdit,
-  FijoInfoEdit, BearingMesCell, ProveedorFijoEditor, type BearingMes,
+  FijoInfoEdit, BearingMesCell, type BearingMes,
 } from "../GastosFijosManage";
 
 export const dynamic = "force-dynamic";
@@ -34,44 +33,39 @@ export default async function GastosFijosPage() {
   const mesActualIdx = hoy.getMonth();
 
   let gastos: HoldedGasto[] = [];
-  let diario: LibroLinea[] = [];
   let holdedError: string | null = null;
-  try {
-    [gastos, diario] = await Promise.all([getGastos({ incluirBorradores: true }), getLibroDiario()]);
-  } catch (e: any) { holdedError = e?.message ?? "Error Holded"; }
+  try { gastos = await getGastos({ incluirBorradores: true }); } catch (e: any) { holdedError = e?.message ?? "Error Holded"; }
 
+  const delAnyo = gastos.filter(g => g.date.startsWith(String(anyo)));
   const allFijos = await getGastosFijos();
   const categoriasGasto = await getCategoriasGasto();
-  const fijosDef = allFijos.filter(f => f.empresa === "bearing");        // se leen del libro diario
+  const fijosDef = allFijos.filter(f => f.empresa === "bearing");        // cruzan con Holded
   const fijosObliviate = allFijos.filter(f => f.empresa === "obliviate"); // manuales
 
-  // Sugerencias de proveedor (nombres tal cual aparecen en el diario)
-  const sugerenciasProv = [...new Set(proveedoresDelLibro(diario).map(p => p.nombre))];
-
-  // ── Bearing: mes a mes LEÍDO DEL LIBRO DIARIO (base sin IVA) ──
-  // Factura contabilizada → recibida; acreedor liquidado → pagada.
+  // ── Bearing: mes a mes desde las compras de Holded (base sin IVA) ──
+  // Casa por contacto exacto (contact_id) → coge todas las facturas del proveedor.
   const filasBearing = fijosDef.map(gf => {
-    const est = estadoLibroPorProveedor(diario, gf.match, anyo);
-    const movimientos = movimientosQueCasan(diario, gf.match);
     const meses: BearingMes[] = CORTOS.map((_, m) => {
-      const ymKey = `${anyo}-${m + 1}`;
-      const em = est[m];
-      const base = em.base;
-      const hay = em.hayFactura;
+      const pref = `${anyo}-${String(m + 1).padStart(2, "0")}`;   // para casar la fecha
+      const ymKey = `${anyo}-${m + 1}`;                            // clave de la nota (sin padding)
+      const facts = delAnyo.filter(g => g.date.startsWith(pref) && esDelFijo(gf, g.proveedor, g.contact_id, g.cuenta_id));
+      const base = facts.reduce((s, g) => s + g.subtotal, 0);
+      const hay = facts.length > 0;
+      const pagadas = hay && facts.every(g => g.estado === "pagada");
       let estado: BearingMes["estado"];
-      if (hay && em.pagada) estado = "pagado";
+      if (pagadas) estado = "pagado";
       else if (hay) estado = "sin_pagar";
       else if (m < mesActualIdx) estado = "falta";
       else estado = "futuro";
       const over = hay && esSobrecoste(base, gf.mensual);
       return {
-        ym: ymKey, estado, base, n: hay ? 1 : 0, holdedId: null,
+        ym: ymKey, estado, base, n: facts.length, holdedId: facts[0]?.id ?? null,
         overcharge: over, exceso: over ? base - (gf.mensual ?? 0) : 0,
         nota: notaDeMes(gf.estado_manual?.[ymKey]),
       };
     });
     const avisos = meses.filter(m => m.overcharge);
-    return { gf, meses, avisos, movimientos };
+    return { gf, meses, avisos };
   });
 
   // ── Obliviate: mes a mes manual ──
@@ -113,7 +107,7 @@ export default async function GastosFijosPage() {
           <Link href="/admin/finanzas/categorias" className="text-xs font-semibold text-[#2E1A47] bg-[#EEEBF3] hover:bg-[#e2ddec] rounded-xl px-3 py-1.5 transition-colors whitespace-nowrap">🏷️ Categorías</Link>
         </div>
         <p className="text-sm text-gray-400 mt-1">
-          <b className="text-[#2E1A47]">Bearing</b> se lee del <b>libro diario</b> de Holded: al contabilizar la factura → <span className="text-amber-600 font-semibold">recibida</span>, al saldar el proveedor → <span className="text-emerald-600 font-semibold">pagada</span>. Cada fijo muestra el proveedor que busca en el diario (<span className="text-emerald-600">🔗</span> = lo encuentra; <span className="text-amber-600">⚠️</span> = afínalo). <b className="text-amber-700">Obliviate</b> se marca a mano. Importes <b>sin IVA</b>; el <span className="text-red-600 font-semibold">⚠️</span> de un mes avisa de sobrecoste.
+          <b className="text-[#2E1A47]">Bearing</b> cruza con las facturas de Holded por proveedor: al llegar → <span className="text-amber-600 font-semibold">recibida</span>, al conciliarse el pago → <span className="text-emerald-600 font-semibold">pagada</span>. <b className="text-amber-700">Obliviate</b> se marca a mano. Importes <b>sin IVA</b> (se muestra "+ IVA"); el <span className="text-red-600 font-semibold">⚠️</span> de un mes avisa de sobrecoste.
         </p>
       </div>
 
@@ -158,12 +152,11 @@ export default async function GastosFijosPage() {
               </div>
               <div className="divide-y divide-gray-50">
                 {filasBearing.length === 0 && <p className="px-4 py-8 text-center text-xs text-gray-300">Sin gastos fijos. Añade uno con ＋</p>}
-                {filasBearing.map(({ gf, meses, avisos, movimientos }) => (
+                {filasBearing.map(({ gf, meses, avisos }) => (
                   <div key={gf.id} className="group px-4 py-3">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0 flex-1">
                         <FijoInfoEdit id={gf.id} label={gf.label} nota={gf.nota} categoria={gf.categoria} tono="bearing" />
-                        <ProveedorFijoEditor id={gf.id} match={gf.match} movimientos={movimientos} sugerencias={sugerenciasProv} />
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <ImporteBaseFijoEdit id={gf.id} mensual={gf.mensual} periodicidad={gf.periodicidad} tono="bearing" />
