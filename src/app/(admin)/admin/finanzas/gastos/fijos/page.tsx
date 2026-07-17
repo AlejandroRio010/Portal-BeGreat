@@ -2,9 +2,9 @@ import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getGastos, type HoldedGasto, CATEGORIAS_GASTO } from "@/lib/holded";
-import { getGastosFijos, esDelFijo, norm } from "@/lib/gastosFijos";
+import { getGastosFijos, esDelFijo, norm, importeFijoMes } from "@/lib/gastosFijos";
 import { fmtEur } from "@/lib/format";
-import { AddGastoFijoButton, RemoveGastoFijoButton, ObliviateFijoCell, type CandidatoProveedor } from "../GastosFijosManage";
+import { AddGastoFijoButton, RemoveGastoFijoButton, ObliviateFijoCell, ImporteBaseFijoEdit, type CandidatoProveedor } from "../GastosFijosManage";
 
 export const dynamic = "force-dynamic";
 
@@ -49,13 +49,16 @@ export default async function GastosFijosPage() {
   const obliviateAnual = fijosObliviate.filter(f => f.periodicidad === "anual").reduce((s, g) => s + (g.mensual ?? 0), 0);
   const totalMensual = fijosDef.reduce((s, g) => s + (g.mensual ?? 0), 0) + obliviateMensual;
 
-  // Filas de Obliviate (manuales): cada mes con su estado y si aplica
+  // Filas de Obliviate (manuales): cada mes con su estado + importe y si aplica
   const filasObliviate = fijosObliviate.map(gf => {
     const meses = CORTOS.map((_, m) => {
       const aplica = gf.periodicidad === "mensual" || gf.mes_cobro === m + 1;
       const ym = `${anyo}-${m + 1}`;
-      const estado = (gf.estado_manual[ym] as "recibida" | "pagada") ?? "pendiente";
-      return { m, aplica, ym, estado, esPasado: m < mesActualIdx };
+      const cell = gf.estado_manual?.[ym];
+      const estado = (typeof cell === "string" ? cell : cell?.e) ?? "pendiente";
+      const override = typeof cell === "object" && cell ? cell.i : undefined;
+      const importe = override ?? importeFijoMes(gf, m);
+      return { m, aplica, ym, estado, importe, esPasado: m < mesActualIdx };
     });
     return { gf, meses };
   });
@@ -203,10 +206,12 @@ export default async function GastosFijosPage() {
                               </span>
                             </div>
                           </td>
-                          <td className="px-3 py-3 text-right text-sm font-bold text-amber-800 whitespace-nowrap">{gf.periodicidad === "anual" ? "anual" : (gf.mensual != null ? fmtEur(gf.mensual) : "—")}</td>
-                          {meses.map(({ m, ym, estado, aplica, esPasado }) => (
+                          <td className="px-3 py-3 text-right whitespace-nowrap">
+                            <ImporteBaseFijoEdit id={gf.id} mensual={gf.mensual} periodicidad={gf.periodicidad} />
+                          </td>
+                          {meses.map(({ m, ym, estado, importe, aplica, esPasado }) => (
                             <td key={m} className="px-1 py-2 text-center">
-                              <ObliviateFijoCell id={gf.id} ym={ym} estado={estado} aplica={aplica} esPasado={esPasado} />
+                              <ObliviateFijoCell id={gf.id} ym={ym} estado={estado} importe={importe} aplica={aplica} esPasado={esPasado} />
                             </td>
                           ))}
                         </tr>

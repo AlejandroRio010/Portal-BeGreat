@@ -38,8 +38,14 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   const fijosObliviate = fijosDef.filter(f => f.empresa === "obliviate"); // manuales
   const esFijo = (g: HoldedGasto) => fijosBearing.some(f => esDelFijo(f, g.proveedor, g.contact_id));
   const mesIdx = Number(mes.split("-")[1]) - 1;
-  // Fijos de Obliviate que aplican a este mes (mensuales siempre; anuales solo en su mes)
-  const obliviateMes = fijosObliviate.map(f => ({ f, importe: importeFijoMes(f, mesIdx) })).filter(x => x.importe > 0);
+  const ymKey = `${Number(mes.split("-")[0])}-${mesIdx + 1}`;
+  // Fijos de Obliviate que aplican a este mes (mensuales siempre; anuales solo en su
+  // mes), respetando el override de importe manual si lo hay.
+  const obliviateMes = fijosObliviate.map(f => {
+    const cell = f.estado_manual?.[ymKey];
+    const override = typeof cell === "object" && cell ? cell.i : undefined;
+    return { f, importe: override ?? importeFijoMes(f, mesIdx) };
+  }).filter(x => x.importe > 0);
   const totalObliviate = obliviateMes.reduce((s, x) => s + x.importe, 0);
 
   const delMes = gastos.filter(g => g.date.startsWith(mes));

@@ -19,7 +19,9 @@ export interface GastoFijo {
   empresa: string;                  // "bearing" (cruza Holded) | "obliviate" (manual)
   periodicidad: string;             // "mensual" | "anual"
   mes_cobro: number | null;         // 1-12, solo para los anuales
-  estado_manual: Record<string, string>; // { "2026-3": "recibida" | "pagada" }
+  // Estado + importe manual por mes: { "2026-3": { e?: "recibida"|"pagada", i?: number } }
+  // (tolera el formato antiguo string: "recibida"|"pagada")
+  estado_manual: Record<string, any>;
 }
 
 /** Importe del fijo que aplica a un mes concreto (mesIdx 0-11).
@@ -49,7 +51,7 @@ export async function getGastosFijos(): Promise<GastoFijo[]> {
       empresa: r.empresa ?? "bearing",
       periodicidad: r.periodicidad ?? "mensual",
       mes_cobro: r.mes_cobro ?? null,
-      estado_manual: (r.estado_manual as Record<string, string>) ?? {},
+      estado_manual: (r.estado_manual as Record<string, any>) ?? {},
     }));
 }
 

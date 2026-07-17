@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { crearGastoFijo, borrarGastoFijo, setEstadoFijo } from "./actions";
+import { crearGastoFijo, borrarGastoFijo, setEstadoFijo, setImporteBaseFijo } from "./actions";
 
 export interface CandidatoProveedor {
   proveedor: string;
@@ -155,59 +155,106 @@ const ESTADO_OPCIONES = [
   { val: "pagada", label: "Pagada", dot: "bg-emerald-500" },
 ];
 
-export function ObliviateFijoCell({ id, ym, estado, aplica, esPasado }: {
-  id: string; ym: string; estado: "pendiente" | "recibida" | "pagada"; aplica: boolean; esPasado: boolean;
+export function ObliviateFijoCell({ id, ym, estado, importe, aplica, esPasado }: {
+  id: string; ym: string; estado: "pendiente" | "recibida" | "pagada"; importe: number | null; aplica: boolean; esPasado: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [imp, setImp] = useState("");
   const btnRef = useRef<HTMLButtonElement>(null);
   const [pending, start] = useTransition();
   const router = useRouter();
 
   if (!aplica) {
-    return <div className="mx-auto w-8 h-8 rounded-lg bg-gray-50 border border-gray-100" title="No aplica este mes" />;
+    return <div className="mx-auto w-14 h-8 rounded-lg bg-gray-50 border border-gray-100" title="No aplica este mes" />;
   }
 
   const cls = estado === "pagada" ? "bg-emerald-500 hover:bg-emerald-600 text-white"
     : estado === "recibida" ? "bg-amber-400 hover:bg-amber-500 text-white"
     : esPasado ? "bg-red-500 hover:bg-red-600 text-white"
-    : "bg-gray-100 hover:bg-gray-200 text-gray-400";
-  const icon = estado === "pagada" ? "✓" : estado === "recibida" ? "€" : esPasado ? "✕" : "▾";
+    : "bg-gray-100 hover:bg-gray-200 text-gray-500";
+  const disp = importe != null ? Math.round(importe).toLocaleString("es-ES") : "▾";
 
   function toggle() {
     if (open) { setOpen(false); return; }
+    setImp(importe != null ? String(importe) : "");
     const r = btnRef.current?.getBoundingClientRect();
-    if (r) setPos({ top: r.bottom + 4, left: Math.min(r.left, window.innerWidth - 180) });
+    if (r) setPos({ top: r.bottom + 4, left: Math.min(r.left, window.innerWidth - 220) });
     setOpen(true);
   }
-  function elegir(nuevo: string) {
+  function elegirEstado(nuevo: string) {
     setOpen(false);
-    start(async () => { await setEstadoFijo(id, ym, nuevo); router.refresh(); });
+    start(async () => { await setEstadoFijo(id, ym, nuevo, undefined); router.refresh(); });
+  }
+  function guardarImporte() {
+    setOpen(false);
+    const val = imp.trim() === "" ? null : Number(imp.replace(",", "."));
+    start(async () => { await setEstadoFijo(id, ym, undefined, val); router.refresh(); });
   }
 
   return (
     <>
       <button ref={btnRef} type="button" disabled={pending} onClick={toggle}
-        title="Elegir estado"
-        className={`mx-auto w-8 h-8 rounded-lg flex items-center justify-center text-[9px] font-bold transition-colors disabled:opacity-60 ${cls}`}>
-        {pending ? "…" : icon}
+        title={`${importe != null ? eur(importe) : ""} · elegir estado / importe`}
+        className={`mx-auto w-14 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors disabled:opacity-60 ${cls}`}>
+        {pending ? "…" : disp}
       </button>
       {open && pos && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="fixed z-50 bg-white border border-gray-200 rounded-xl shadow-xl w-44 py-1" style={{ top: pos.top, left: pos.left }}>
+          <div className="fixed z-50 bg-white border border-gray-200 rounded-xl shadow-xl w-52 py-1" style={{ top: pos.top, left: pos.left }}>
+            <p className="px-3 pt-1.5 pb-0.5 text-[9px] font-bold uppercase tracking-wider text-gray-400">Estado</p>
             {ESTADO_OPCIONES.map(o => (
-              <button key={o.val} type="button" onClick={() => elegir(o.val)}
+              <button key={o.val} type="button" onClick={() => elegirEstado(o.val)}
                 className="w-full px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-[#EEEBF3] text-left">
                 <span className={`w-2.5 h-2.5 rounded-full ${o.dot}`} />
                 <span className="flex-1 text-gray-700">{o.label}</span>
                 {estado === o.val && <span className="text-[#2E1A47] font-bold">✓</span>}
               </button>
             ))}
+            <div className="border-t border-gray-100 mt-1 px-3 py-2">
+              <label className="text-[9px] font-bold uppercase tracking-wider text-gray-400 block mb-1">Importe de este mes (€)</label>
+              <div className="flex gap-1.5">
+                <input autoFocus type="number" step="0.01" value={imp} onChange={e => setImp(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") guardarImporte(); }}
+                  className="flex-1 w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" placeholder="0,00" />
+                <button type="button" onClick={guardarImporte} className="bg-[#2E1A47] text-white text-xs font-semibold rounded-lg px-3">OK</button>
+              </div>
+            </div>
           </div>
         </>
       )}
     </>
+  );
+}
+
+// ─── Importe base editable (columna €/mes) ────────────────────────────────────
+export function ImporteBaseFijoEdit({ id, mensual, periodicidad }: { id: string; mensual: number | null; periodicidad: string }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState("");
+  const [pending, start] = useTransition();
+  const router = useRouter();
+
+  function guardar() {
+    setEditing(false);
+    const n = val.trim() === "" ? null : Number(val.replace(",", "."));
+    start(async () => { await setImporteBaseFijo(id, n); router.refresh(); });
+  }
+
+  if (editing) {
+    return (
+      <input autoFocus type="number" step="0.01" value={val}
+        onChange={e => setVal(e.target.value)} onBlur={guardar}
+        onKeyDown={e => { if (e.key === "Enter") guardar(); if (e.key === "Escape") setEditing(false); }}
+        className="w-20 border border-amber-300 rounded px-1.5 py-1 text-sm text-right focus:outline-none" />
+    );
+  }
+  return (
+    <button type="button" disabled={pending}
+      onClick={() => { setVal(mensual != null ? String(mensual) : ""); setEditing(true); }}
+      title="Editar importe" className="text-sm font-bold text-amber-800 hover:underline whitespace-nowrap">
+      {pending ? "…" : (mensual != null ? `${eur(mensual)}${periodicidad === "anual" ? "/año" : ""}` : "—")}
+    </button>
   );
 }
 
