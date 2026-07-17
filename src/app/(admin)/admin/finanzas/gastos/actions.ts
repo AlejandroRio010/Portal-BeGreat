@@ -53,6 +53,19 @@ export async function crearGastoFijo(input: NuevoGastoFijo) {
   revalidatePath("/admin/finanzas/gastos/fijos");
 }
 
+/** Fija el proveedor (término que se busca en el libro diario) de un gasto fijo.
+ *  Opcionalmente enlaza el contacto de Holded. Con esto el diario "busca bien". */
+export async function setProveedorFijo(id: string, proveedorMatch: string, holdedContactId?: string | null) {
+  await requireAdmin();
+  const m = proveedorMatch?.trim();
+  if (!m) return;
+  const set: Record<string, any> = { proveedor_match: m };
+  if (holdedContactId !== undefined) set.holded_contact_id = holdedContactId || null;
+  await db.update(gastosFijos).set(set).where(eq(gastosFijos.id, id));
+  revalidatePath("/admin/finanzas/gastos/fijos");
+  revalidatePath("/admin/finanzas/gastos");
+}
+
 /** Edita el nombre y/o el concepto (nota) de un gasto fijo. */
 export async function editarGastoFijo(id: string, campos: { label?: string; nota?: string | null }) {
   await requireAdmin();

@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { crearGastoFijo, borrarGastoFijo, setEstadoFijo, setImporteBaseFijo, setCargoTarjeta, editarGastoFijo, setNotaMesFijo } from "./actions";
+import { crearGastoFijo, borrarGastoFijo, setEstadoFijo, setImporteBaseFijo, setCargoTarjeta, editarGastoFijo, setNotaMesFijo, setProveedorFijo } from "./actions";
 
 export interface CuentaProveedor {
   id: string;           // id de la cuenta contable en Holded
@@ -431,8 +431,11 @@ export function ImporteBaseFijoEdit({ id, mensual, periodicidad, tono = "oblivia
   return (
     <button type="button" disabled={pending}
       onClick={() => { setVal(mensual != null ? String(mensual) : ""); setEditing(true); }}
-      title="Editar importe (sin IVA)" className={`text-sm font-bold ${txt} hover:underline whitespace-nowrap`}>
-      {pending ? "…" : (mensual != null ? `${eur(mensual)}${periodicidad === "anual" ? "/año" : ""}` : "＋ importe")}
+      title={mensual != null ? `Base sin IVA. Con IVA (21%): ${eur(mensual * 1.21)} · clic para editar` : "Poner importe (sin IVA)"}
+      className={`text-sm font-bold ${txt} hover:underline whitespace-nowrap`}>
+      {pending ? "…" : (mensual != null
+        ? <>{eur(mensual)}<span className="text-[10px] font-normal text-gray-400"> + IVA{periodicidad === "anual" ? " /año" : ""}</span></>
+        : "＋ importe")}
     </button>
   );
 }
@@ -480,7 +483,52 @@ export function FijoInfoEdit({ id, label, nota, categoria, tono = "bearing" }: {
   );
 }
 
-// ─── Celda de mes de Bearing: estado (de Holded) + aviso de sobrecoste + nota ──
+// ─── Proveedor del fijo: término que se busca en el libro diario ──────────────
+// "Minisección" por gasto fijo para dar de alta / afinar su proveedor y ver al
+// momento si el libro diario lo encuentra bien.
+export function ProveedorFijoEditor({ id, match, movimientos, sugerencias }: {
+  id: string; match: string; movimientos: number; sugerencias: string[];
+}) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(match);
+  const [pending, start] = useTransition();
+  const router = useRouter();
+  const listId = `prov-${id}`;
+
+  function guardar() {
+    setEditing(false);
+    const m = val.trim();
+    if (!m || m === match) return;
+    start(async () => { await setProveedorFijo(id, m); router.refresh(); });
+  }
+
+  if (editing) {
+    return (
+      <div className="mt-1 flex items-center gap-1.5">
+        <input autoFocus value={val} onChange={e => setVal(e.target.value)} list={listId}
+          onKeyDown={e => { if (e.key === "Enter") guardar(); if (e.key === "Escape") { setEditing(false); setVal(match); } }}
+          placeholder="Nombre en el diario, p. ej. Telefonica"
+          className="flex-1 min-w-0 border border-[#2E1A47]/40 rounded-lg px-2 py-1 text-[11px] focus:outline-none" />
+        <datalist id={listId}>{sugerencias.map(s => <option key={s} value={s} />)}</datalist>
+        <button type="button" onClick={guardar} className="text-[10px] font-bold text-white bg-[#2E1A47] rounded px-2 py-1">OK</button>
+        <button type="button" onClick={() => { setEditing(false); setVal(match); }} className="text-[10px] text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+    );
+  }
+  const ok = movimientos > 0;
+  return (
+    <button type="button" onClick={() => { setVal(match); setEditing(true); }}
+      title="Vincular / cambiar el proveedor que se busca en el libro diario"
+      className="mt-1 inline-flex items-center gap-1.5 text-[10px] text-gray-400 hover:text-[#2E1A47] group/prov">
+      <span className={ok ? "text-emerald-500" : "text-amber-500"}>{ok ? "🔗" : "⚠️"}</span>
+      <span className="font-medium">{pending ? "…" : match}</span>
+      <span className={ok ? "text-emerald-600" : "text-amber-600"}>· {ok ? `${movimientos} en el diario` : "sin coincidencias"}</span>
+      <span className="opacity-0 group-hover/prov:opacity-100 text-gray-300 transition-opacity">✎</span>
+    </button>
+  );
+}
+
+// ─── Celda de mes de Bearing: estado (del libro diario) + sobrecoste + nota ────
 export interface BearingMes {
   ym: string;                 // clave no-padded "2026-3" (para la nota)
   estado: "pagado" | "sin_pagar" | "falta" | "futuro";
