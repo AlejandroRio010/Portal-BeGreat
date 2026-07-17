@@ -107,7 +107,7 @@ interface Props {
   // entity/office lists
   allEntities: EntityRow[];
   allOffices: OfficeRow[];
-  allColaboradores?: { id: string; nombre: string; role: string }[];
+  allColaboradores?: { id: string; nombre: string; role: string; es_autonomo?: boolean }[];
   customFieldDefs?: CustomField[];
   customFieldValues?: CustomFieldValue[];
 }
@@ -996,6 +996,18 @@ export default function AdminOpForm({
                               placeholder="0,00 €" className="w-full border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" />
                           </div>
                         </div>
+                        {(() => {
+                          const colabAut = allColaboradores.find(ac => ac.id === c.id)?.es_autonomo;
+                          const base = parseFloat(c.importe) || 0;
+                          if (!colabAut || base <= 0) return null;
+                          const iva = base * 0.21, irpf = base * 0.07, total = base + iva - irpf;
+                          const f = (n: number) => n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                          return (
+                            <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 text-[10px] text-amber-800 leading-relaxed">
+                              <span className="font-bold uppercase tracking-wide">Autónomo</span> · {f(base)} + IVA 21% {f(iva)} − IRPF 7% <b>{f(irpf)}</b> = <b>{f(total)} €</b> a pagar
+                            </div>
+                          );
+                        })()}
                         {/* Pago de la comisión: factura de compra del colaborador en Holded */}
                         <div className="mt-2 border-t border-dashed border-gray-100 pt-2">
                           <div className="flex items-center gap-1.5 mb-1.5">
