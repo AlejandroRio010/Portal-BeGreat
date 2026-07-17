@@ -6,6 +6,8 @@ import { operations, tarjetaCargos } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { getGastos, type HoldedGasto } from "@/lib/holded";
 import { getGastosFijos, esDelFijo, importeFijoMes, conIva, construirCandidatos } from "@/lib/gastosFijos";
+import { getLibroDiario, type LibroLinea } from "@/lib/holdedLedger";
+import { resumenTarjeta, TARJETAS } from "@/lib/tarjetas";
 import { getCategoriasGasto } from "@/lib/categorias";
 import { BUCKETS, bucketDe } from "@/lib/gastosBuckets";
 import { fmtEur } from "@/lib/format";
@@ -34,8 +36,10 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   const mes = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? sp.mes! : mesActual;
 
   let gastos: HoldedGasto[] = [];
+  let diario: LibroLinea[] = [];
   let holdedError: string | null = null;
   try { gastos = await getGastos({ incluirBorradores: true }); } catch (e: any) { holdedError = e?.message ?? "Error Holded"; }
+  try { diario = await getLibroDiario(); } catch { /* si falla el diario, la tarjeta cae a manual */ }
 
   // Mapa factura de compra → operación que la tiene ligada (comisiones / mercadería)
   const ops = await db.select({ id: operations.id, nombre: operations.nombre, holded_purchases: operations.holded_purchases }).from(operations);
@@ -46,11 +50,17 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
     }
   }
 
-  // Cargo mensual global de la tarjeta de crédito (Sabadell "business mc")
+  // Tarjeta Sabadell «business MC» (cuenta 52000004) leída del libro diario:
+  // el recibo que el banco cobra ese mes cuenta en caja; los tickets son detalle.
   const [anyoN, mesN] = mes.split("-").map(Number);
+  const CUENTA_SABADELL = TARJETAS[0].cuenta;
+  const tarjetaMes = resumenTarjeta(diario, CUENTA_SABADELL, anyoN)[mesN - 1] ?? { mesIdx: mesN - 1, cargo: 0, gastado: 0, tickets: [] };
+  const cargoAuto = tarjetaMes.cargo;
+  // La tabla tarjeta_cargos actúa ahora como override manual (si se fija a mano)
   const [cargoRow] = await db.select({ importe: tarjetaCargos.importe }).from(tarjetaCargos)
     .where(and(eq(tarjetaCargos.year, anyoN), eq(tarjetaCargos.month, mesN))).limit(1);
-  const cargoTarjeta = cargoRow ? Number(cargoRow.importe) : 0;
+  const cargoManual = cargoRow ? Number(cargoRow.importe) : null;
+  const cargoTarjeta = cargoManual != null ? cargoManual : cargoAuto;
 
   const fijosDef = await getGastosFijos();
   const categoriasGasto = await getCategoriasGasto();
@@ -79,8 +89,6 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   const fijos = delMes.filter(esFijo);
   // Las variables NO incluyen la tarjeta (esa cuenta por su cargo global, no por factura)
   const variables = delMes.filter(g => !esFijo(g) && !esTarjeta(g));
-  const tarjetaInvoices = delMes.filter(g => !esFijo(g) && esTarjeta(g)); // solo detalle informativo
-  const detalleTarjeta = tarjetaInvoices.reduce((s, g) => s + g.total, 0);
   // Base/IVA/total solo de lo que cuenta por factura (sin tarjeta)
   const contados = delMes.filter(g => !esTarjeta(g));
   const baseMes = contados.reduce((s, g) => s + g.subtotal, 0);
@@ -286,40 +294,40 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
             )}
           </div>
 
-          {/* Tarjeta de crédito — cuenta el cargo global; el detalle es solo info */}
+          {/* Tarjeta Sabadell — cuenta el RECIBO del banco (del diario); tickets = detalle */}
           <div className="mt-6">
-            <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider mb-3">💳 Tarjeta de crédito de {mesLabel(mes)}</h2>
+            <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider mb-3">💳 Tarjeta {TARJETAS[0].label} · {mesLabel(mes)}</h2>
             <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5">
-              <div className="grid sm:grid-cols-3 gap-4">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Cargo del mes · Sabadell «business mc»</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Recibo cobrado por el banco · cuenta en caja</p>
                   <CargoTarjetaEdit year={anyoN} month={mesN} importe={cargoTarjeta || null} />
-                  <p className="text-[10px] text-gray-400 mt-0.5">Esto es lo que cuenta en la caja.</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">
+                    {cargoManual != null
+                      ? <>fijado a mano · el diario dice <b>{fmtEur(cargoAuto)}</b></>
+                      : cargoAuto > 0.005
+                        ? <>automático del <b>libro diario</b> (cuenta 52000004)</>
+                        : <>este mes el banco no ha cobrado recibo</>}
+                  </p>
                 </div>
                 <div className="sm:text-right">
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Con factura (info, no suma)</p>
-                  <p className="text-xl font-black text-emerald-700">{fmtEur(detalleTarjeta)}</p>
-                  <p className="text-[10px] text-gray-400">{tarjetaInvoices.length} fact. de gasolina/parking</p>
-                </div>
-                <div className="sm:text-right">
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Resto (dietas y otros)</p>
-                  <p className="text-xl font-black text-gray-500">{cargoTarjeta > 0 ? fmtEur(Math.max(0, cargoTarjeta - detalleTarjeta)) : "—"}</p>
-                  <p className="text-[10px] text-gray-400">sin factura</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Gastado con la tarjeta este mes (info)</p>
+                  <p className="text-xl font-black text-gray-500">{fmtEur(tarjetaMes.gastado)}</p>
+                  <p className="text-[10px] text-gray-400">{tarjetaMes.tickets.length} ticket{tarjetaMes.tickets.length !== 1 ? "s" : ""} · se cobra en próximos recibos</p>
                 </div>
               </div>
-              {tarjetaInvoices.length > 0 && (
+              {tarjetaMes.tickets.length > 0 && (
                 <div className="mt-4 border-t border-gray-100 pt-3">
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Detalle con factura (solo información)</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Tickets de {mesLabel(mes)} · detalle, no suma en caja</p>
                   <div className="divide-y divide-gray-50">
-                    {tarjetaInvoices.map(g => (
-                      <a key={g.id} href={holdedUrl(g.id)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between gap-2 py-1.5 px-2 rounded hover:bg-[#EEEBF3]/30">
+                    {tarjetaMes.tickets.map((t, i) => (
+                      <div key={i} className="flex items-center justify-between gap-2 py-1.5 px-2">
                         <span className="flex items-center gap-2 min-w-0">
-                          <span className="text-[10px] text-gray-400 whitespace-nowrap">{new Date(g.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span>
-                          <span className="text-xs font-medium text-gray-700 truncate">{g.proveedor}</span>
-                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap">{g.categoria}</span>
+                          <span className="text-[10px] text-gray-400 whitespace-nowrap">{new Date(t.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span>
+                          <span className="text-xs font-medium text-gray-700 truncate">{t.desc}</span>
                         </span>
-                        <span className="text-xs font-bold text-gray-700 whitespace-nowrap">{fmtEur(g.total)}</span>
-                      </a>
+                        <span className="text-xs font-bold text-gray-700 whitespace-nowrap">{fmtEur(t.importe)}</span>
+                      </div>
                     ))}
                   </div>
                 </div>

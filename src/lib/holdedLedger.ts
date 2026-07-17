@@ -9,6 +9,7 @@ import { FINANZAS_DESDE } from "@/lib/holded";
 
 export interface LibroLinea {
   entry: number;         // entry_number (asiento)
+  line: number;          // nº de línea dentro del asiento
   date: string;          // YYYY-MM-DD
   mesIdx: number;        // 0-11
   anyo: number;
@@ -51,7 +52,7 @@ export async function getLibroDiario(): Promise<LibroLinea[]> {
       const [dd, mm, yyyy] = String(l.date).split("/");
       const anyo = Number(yyyy), mesIdx = Number(mm) - 1;
       out.push({
-        entry: l.entry_number, date: `${yyyy}-${mm}-${dd}`, mesIdx, anyo,
+        entry: l.entry_number, line: l.line, date: `${yyyy}-${mm}-${dd}`, mesIdx, anyo,
         type: l.type ?? "", description: l.description ?? "", account: String(l.account),
         debit: num(l.debit), credit: num(l.credit),
       });
@@ -59,7 +60,15 @@ export async function getLibroDiario(): Promise<LibroLinea[]> {
     if (!data.cursor || !items.length) break;
     cursor = data.cursor;
   }
-  return out;
+  // CRÍTICO: el API devuelve líneas duplicadas (mismo asiento+línea varias veces).
+  // Deduplicamos por (entry, line) o cualquier suma saldría inflada.
+  const vistos = new Set<string>();
+  return out.filter(l => {
+    const k = `${l.entry}|${l.line}`;
+    if (vistos.has(k)) return false;
+    vistos.add(k);
+    return true;
+  });
 }
 
 // Asientos agrupados por número (para razonar por factura/pago completo)
