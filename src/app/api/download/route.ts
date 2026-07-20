@@ -11,6 +11,8 @@ export async function GET(req: NextRequest) {
 
   const docId = req.nextUrl.searchParams.get("docId");
   if (!docId) return NextResponse.json({ error: "Falta docId" }, { status: 400 });
+  // ?inline=1 → el navegador lo muestra (vista previa) en vez de descargarlo
+  const disposition = req.nextUrl.searchParams.get("inline") === "1" ? "inline" : "attachment";
 
   const role = (session.user as any).role;
   const collaboratorId = (session.user as any).collaboratorId as string | undefined;
@@ -105,7 +107,7 @@ export async function GET(req: NextRequest) {
       return new NextResponse(new Uint8Array(buffer), {
         headers: {
           "Content-Type": contentType,
-          "Content-Disposition": `attachment; filename="${doc.filename}"`,
+          "Content-Disposition": `${disposition}; filename="${doc.filename}"`,
           "Content-Length": buffer.length.toString(),
         },
       });
@@ -124,7 +126,7 @@ export async function GET(req: NextRequest) {
   return new NextResponse(buffer, {
     headers: {
       "Content-Type": mimeType,
-      "Content-Disposition": `attachment; filename="${doc.filename}"`,
+      "Content-Disposition": `${disposition}; filename="${doc.filename}"`,
       "Content-Length": buffer.length.toString(),
     },
   });

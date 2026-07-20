@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 interface Doc {
@@ -24,6 +24,14 @@ function cloudinaryDownloadUrl(url: string, filename: string): string {
   return url.replace("/upload/", `/upload/fl_attachment:${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}/`);
 }
 
+// ── Tipos con vista previa en el navegador (PDF e imágenes) ──
+const IMG_EXT = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "avif"];
+const extOf = (name: string) => (name.split(".").pop() || "").toLowerCase();
+const isImage = (name: string) => IMG_EXT.includes(extOf(name));
+const isPdf = (name: string) => extOf(name) === "pdf";
+const isPreviewable = (name: string) => isPdf(name) || isImage(name);
+const iconOf = (name: string) => (isImage(name) ? "🖼️" : isPdf(name) ? "📕" : "📄");
+
 export default function DocumentsSection({ docs, operationId, apiUrl, title = "Documentos", oneDriveFolder, canDelete = false }: { docs: Doc[]; operationId?: string; apiUrl?: string; title?: string; oneDriveFolder?: string; canDelete?: boolean }) {
   const resolvedApiUrl = apiUrl ?? `/api/operations/${operationId}/documents`;
   const router = useRouter();
@@ -37,6 +45,15 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
 
   const [duplicates, setDuplicates] = useState<string[]>([]);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [previewDoc, setPreviewDoc] = useState<Doc | null>(null);
+
+  // Cerrar la vista previa con Escape
+  useEffect(() => {
+    if (!previewDoc) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setPreviewDoc(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [previewDoc]);
 
   const DIRECT_UPLOAD_THRESHOLD = 4 * 1024 * 1024; // 4MB
   const CHUNK_SIZE = 3_276_800; // 3.125MB (multiple of 320KB)
@@ -217,13 +234,20 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
               return (
                 <div key={d.id} className={`flex items-center justify-between px-4 py-3 group ${isDupe ? "bg-amber-50 border border-amber-200" : "bg-gray-50 border border-gray-100"}`}>
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <span className="text-lg flex-shrink-0">📄</span>
+                    <span className="text-lg flex-shrink-0">{iconOf(d.filename)}</span>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <a href={`/api/download?docId=${d.id}`} target="_blank" rel="noopener noreferrer"
-                          className="text-sm font-semibold text-gray-800 hover:text-[#2E1A47] hover:underline truncate">
-                          {d.filename}
-                        </a>
+                        {isPreviewable(d.filename) ? (
+                          <button type="button" onClick={() => setPreviewDoc(d)} title="Vista previa"
+                            className="text-sm font-semibold text-gray-800 hover:text-[#2E1A47] hover:underline truncate text-left">
+                            {d.filename}
+                          </button>
+                        ) : (
+                          <a href={`/api/download?docId=${d.id}`} target="_blank" rel="noopener noreferrer"
+                            className="text-sm font-semibold text-gray-800 hover:text-[#2E1A47] hover:underline truncate">
+                            {d.filename}
+                          </a>
+                        )}
                         {isDupe && (
                           <span className="text-[10px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-700 flex-shrink-0">
                             DUPLICADO
@@ -241,12 +265,24 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
                       </div>
                     </div>
                   </div>
-                  {canDelete && (
-                    <button onClick={() => handleDelete(d.id)}
-                      className="text-[10px] text-red-400 hover:text-red-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-                      Eliminar
-                    </button>
-                  )}
+                  <div className="flex items-center gap-3 ml-2 flex-shrink-0">
+                    {isPreviewable(d.filename) && (
+                      <button onClick={() => setPreviewDoc(d)} title="Vista previa"
+                        className="text-gray-300 hover:text-[#2E1A47] opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                      </button>
+                    )}
+                    <a href={`/api/download?docId=${d.id}`} target="_blank" rel="noopener noreferrer" title="Descargar"
+                      className="text-gray-300 hover:text-[#2E1A47] opacity-0 group-hover:opacity-100 transition-opacity">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    </a>
+                    {canDelete && (
+                      <button onClick={() => handleDelete(d.id)}
+                        className="text-[10px] text-red-400 hover:text-red-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                        Eliminar
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -324,6 +360,26 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
         </div>
       )}
       </>)}
+
+      {/* Vista previa (PDF / imágenes) sin descargar */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-[60] bg-black/75 flex flex-col" onClick={() => setPreviewDoc(null)}>
+          <div className="flex items-center justify-between gap-4 px-4 py-2.5 bg-[#2E1A47] text-white" onClick={e => e.stopPropagation()}>
+            <span className="text-sm font-semibold truncate flex items-center gap-2"><span>{iconOf(previewDoc.filename)}</span>{previewDoc.filename}</span>
+            <div className="flex items-center gap-4 flex-shrink-0">
+              <a href={`/api/download?docId=${previewDoc.id}`} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold hover:underline whitespace-nowrap">⤓ Descargar</a>
+              <button onClick={() => setPreviewDoc(null)} title="Cerrar (Esc)" className="text-2xl leading-none hover:text-white/60">×</button>
+            </div>
+          </div>
+          <div className="flex-1 min-h-0 p-3 sm:p-6 flex items-center justify-center overflow-auto" onClick={e => e.stopPropagation()}>
+            {isImage(previewDoc.filename) ? (
+              <img src={`/api/download?docId=${previewDoc.id}&inline=1`} alt={previewDoc.filename} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+            ) : (
+              <iframe src={`/api/download?docId=${previewDoc.id}&inline=1`} title={previewDoc.filename} className="w-full h-full bg-white rounded-lg shadow-2xl" />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
