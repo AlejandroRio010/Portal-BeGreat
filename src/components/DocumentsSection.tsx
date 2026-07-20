@@ -59,6 +59,18 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
   const CHUNK_SIZE = 3_276_800; // 3.125MB (multiple of 320KB)
 
   async function uploadDirect(file: File): Promise<{ url: string; filename: string; size: number }> {
+    // Leer ANTES de crear la sesión: si el archivo no se puede leer (placeholder
+    // de iCloud/OneDrive, o a medio descargar) fallamos ya, con mensaje claro.
+    let buffer: ArrayBuffer;
+    try {
+      buffer = await file.arrayBuffer();
+    } catch {
+      throw new Error("no se pudo leer el archivo. Ábrelo en tu ordenador (que se descargue del todo) y vuelve a subirlo.");
+    }
+    if (buffer.byteLength === 0 || buffer.byteLength !== file.size) {
+      throw new Error("el archivo se leyó vacío o incompleto. Ábrelo en tu ordenador y vuelve a subirlo.");
+    }
+
     const sessionRes = await fetch("/api/upload/session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -70,7 +82,6 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
     }
     const { uploadUrl } = await sessionRes.json();
 
-    const buffer = await file.arrayBuffer();
     let offset = 0;
     let itemId = "";
 
@@ -94,6 +105,7 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
       offset = end;
     }
 
+    if (!itemId) throw new Error("OneDrive no confirmó la subida. Vuelve a intentarlo.");
     return { url: `onedrive:${itemId}`, filename: file.name, size: file.size };
   }
 
@@ -106,6 +118,12 @@ export default function DocumentsSection({ docs, operationId, apiUrl, title = "D
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       setUploadProgress(`${i + 1} de ${files.length}: ${file.name}`);
+      // Archivo vacío = casi siempre un placeholder de iCloud/OneDrive sin
+      // descargar en este ordenador. Avisamos YA en vez de subir basura.
+      if (file.size === 0) {
+        errors.push(`${file.name}: está vacío (0 KB). Ábrelo en tu ordenador para que se descargue del todo y vuelve a subirlo.`);
+        continue;
+      }
       try {
         let result: { url: string; filename: string; size: number };
 

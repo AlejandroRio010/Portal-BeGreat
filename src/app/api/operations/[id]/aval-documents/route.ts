@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { avalDocuments, operations } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { deleteFile } from "@/lib/onedrive";
+import { deleteFile, verificarSubida } from "@/lib/onedrive";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -23,6 +23,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { url, filename, size } = await req.json();
   if (!url || !filename) return NextResponse.json({ error: "Faltan datos" }, { status: 400 });
+
+  // Barrera final: no registrar jamás un documento vacío o que no esté en OneDrive
+  const problema = await verificarSubida(url, size);
+  if (problema) return NextResponse.json({ error: problema }, { status: 400 });
 
   // A qué avalista pertenece el documento (key dentro de operations.avalistas)
   const avalistaKey = req.nextUrl.searchParams.get("avalista");

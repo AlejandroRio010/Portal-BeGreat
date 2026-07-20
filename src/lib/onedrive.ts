@@ -89,6 +89,12 @@ export async function uploadFile(folderPath: string, filename: string, buffer: B
       throw new Error(`OneDrive upload failed: ${res.status} ${err}`);
     }
     const item = await res.json();
+    // Verificar que OneDrive guardó exactamente lo que enviamos (una subida
+    // corrupta/vacía no debe registrarse jamás como si hubiera ido bien).
+    if (typeof item.size === "number" && item.size !== buffer.length) {
+      await deleteFile(item.id).catch(() => {});
+      throw new Error(`La subida quedó corrupta (OneDrive guardó ${item.size} de ${buffer.length} bytes). Vuelve a subir el archivo.`);
+    }
     return item.id as string;
   }
 
@@ -110,6 +116,7 @@ export async function uploadFile(folderPath: string, filename: string, buffer: B
   const CHUNK_SIZE = 3_276_800; // 3.125MB (must be multiple of 320KB)
   let offset = 0;
   let itemId = "";
+  let itemSize: number | null = null;
 
   while (offset < buffer.length) {
     const end = Math.min(offset + CHUNK_SIZE, buffer.length);
@@ -128,10 +135,51 @@ export async function uploadFile(folderPath: string, filename: string, buffer: B
     }
     const data = await res.json();
     if (data.id) itemId = data.id;
+    if (typeof data.size === "number") itemSize = data.size;
     offset = end;
   }
 
+  // Sin id no hay confirmación real; y si el tamaño no cuadra, la subida quedó mal.
+  if (!itemId) throw new Error("OneDrive no confirmó la subida. Vuelve a subir el archivo.");
+  if (itemSize != null && itemSize !== buffer.length) {
+    await deleteFile(itemId).catch(() => {});
+    throw new Error(`La subida quedó corrupta (OneDrive guardó ${itemSize} de ${buffer.length} bytes). Vuelve a subir el archivo.`);
+  }
   return itemId;
+}
+
+/** Tamaño real de un archivo en OneDrive. null = no existe (404); lanza en otros errores. */
+export async function getItemSize(itemId: string): Promise<number | null> {
+  const token = await getToken();
+  const res = await fetch(
+    `https://graph.microsoft.com/v1.0/users/${DRIVE_USER_ID}/drive/items/${itemId}?$select=size`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`OneDrive item check failed: ${res.status}`);
+  const item = await res.json();
+  return typeof item.size === "number" ? item.size : null;
+}
+
+/** Última barrera antes de registrar un documento: comprueba que el archivo
+ *  existe en OneDrive y NO está vacío. Devuelve el mensaje de error o null si
+ *  todo bien. Si Graph no responde (red caída), no bloquea el registro. */
+export async function verificarSubida(url: string, declaredSize?: number | null): Promise<string | null> {
+  if (typeof declaredSize === "number" && declaredSize <= 0)
+    return "El archivo está vacío (0 KB). Suele pasar con archivos de iCloud/OneDrive sin descargar al ordenador: ábrelo primero y vuelve a subirlo.";
+  if (!url.startsWith("onedrive:")) return null;
+  const itemId = url.slice("onedrive:".length);
+  if (!itemId) return "La subida no se completó. Vuelve a subir el archivo.";
+  let size: number | null;
+  try { size = await getItemSize(itemId); } catch { return null; }
+  if (size === null) return "El archivo no llegó a OneDrive. Vuelve a subirlo.";
+  if (size === 0) {
+    await deleteFile(itemId).catch(() => {});
+    return "El archivo se subió vacío (0 KB). Suele pasar con archivos de iCloud/OneDrive sin descargar: ábrelo primero y vuelve a subirlo.";
+  }
+  if (typeof declaredSize === "number" && declaredSize > 0 && size !== declaredSize)
+    return `La subida quedó incompleta (${size} de ${declaredSize} bytes). Vuelve a subir el archivo.`;
+  return null;
 }
 
 export async function createUploadSession(folderPath: string, filename: string): Promise<{ uploadUrl: string }> {

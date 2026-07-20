@@ -14,6 +14,14 @@ export async function POST(req: NextRequest) {
 
   const arrayBuf = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuf);
+  // Un archivo vacío no se sube jamás: suele ser un placeholder de iCloud/OneDrive
+  // sin descargar en el ordenador del usuario, o un archivo a medio bajar.
+  if (buffer.length === 0) {
+    return NextResponse.json(
+      { error: `"${file.name}" está vacío (0 KB). Ábrelo en tu ordenador para que se descargue del todo y vuelve a subirlo.` },
+      { status: 400 }
+    );
+  }
   const folderPath = folder || "Sin clasificar";
 
   try {
