@@ -53,6 +53,8 @@ export interface TicketTarjeta {
   pagaFactura: boolean;
   /** Referencia de documento del apunte (para casarla con la factura de Holded). */
   ref: string | null;
+  /** Viene de una factura del cajón tarjeta aún sin conciliar como movimiento. */
+  esFactura?: boolean;
 }
 export interface TarjetaMes {
   mesIdx: number;

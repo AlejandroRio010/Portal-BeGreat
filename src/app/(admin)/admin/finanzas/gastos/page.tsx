@@ -7,7 +7,7 @@ import { and, eq } from "drizzle-orm";
 import { getGastos, type HoldedGasto } from "@/lib/holded";
 import { getGastosFijos, esDelFijo, importeFijoMes, conIva, construirCandidatos } from "@/lib/gastosFijos";
 import { getLibroDiario, type LibroLinea } from "@/lib/holdedLedger";
-import { resumenTarjeta, TARJETAS, CATEGORIAS_TICKET, normRef, type TarjetaMes } from "@/lib/tarjetas";
+import { resumenTarjeta, TARJETAS, CATEGORIAS_TICKET, normRef, categoriaTicket, type TarjetaMes } from "@/lib/tarjetas";
 import { getCategoriasGasto } from "@/lib/categorias";
 import { BUCKETS, bucketDe } from "@/lib/gastosBuckets";
 import { fmtEur } from "@/lib/format";
@@ -98,6 +98,28 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   });
   // Lo que las tarjetas suman en caja este mes (recibos menos facturas ya contadas)
   const cargoTarjeta = tarjetas.reduce((s, t) => s + t.enCaja, 0);
+
+  // Facturas del mes del cajón tarjeta (gasolina, parking…) que AÚN no están
+  // conciliadas como movimiento en ninguna cuenta 52x: se enseñan ya como
+  // gastado del mes (con su categoría) en la Sabadell —la tarjeta de gastos—.
+  // Dedup por nº de documento: cuando la conciliación las coloque, desaparecen
+  // de aquí y quedan como movimiento. No suman en caja (eso lo hace el recibo).
+  const refsEnTarjetas = new Set<string>();
+  for (const t of tarjetas) for (const tk of t.mesData.tickets) if (tk.ref) refsEnTarjetas.add(normRef(tk.ref));
+  const sab = tarjetas[0];
+  for (const g of gastos) {
+    if (!g.date.startsWith(mes) || bucketConLink(g) !== "tarjeta") continue;
+    const ref = normRef(g.document_number);
+    if (ref && refsEnTarjetas.has(ref)) continue;
+    const categoria = categoriaTicket(`${g.proveedor} ${g.description ?? ""}`);
+    sab.mesData.tickets.push({
+      date: g.date, mesIdx: mesN - 1, desc: `${g.proveedor}${g.description ? ` · ${g.description}` : ""}`,
+      importe: g.total, categoria, pagaFactura: false, ref: ref || null, esFactura: true,
+    });
+    sab.mesData.gastado += g.total;
+    sab.mesData.porCategoria[categoria] += g.total;
+  }
+  sab.mesData.tickets.sort((a, b) => b.importe - a.importe);
   // La tarjeta se cobra A MES VENCIDO: el recibo de un mes cubre el gasto del mes
   // anterior. Meses pasados (≤ jun 2026): solo el recibo, sin desglose retroactivo.
   // Desde julio 2026: minisección "Gastado en el mes" por categorías, alimentada
@@ -412,6 +434,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                               {t.pagaFactura
                                 ? <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap">📄 Factura</span>
                                 : <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap">{cat?.emoji} {cat?.label}</span>}
+                              {t.esFactura && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-gray-50 text-gray-400 border border-gray-200 whitespace-nowrap" title="Factura de Holded aún sin conciliar como movimiento de tarjeta">📄 con factura</span>}
                             </span>
                             <span className="text-xs font-bold text-gray-700 whitespace-nowrap">{fmtEur(t.importe)}</span>
                           </div>
