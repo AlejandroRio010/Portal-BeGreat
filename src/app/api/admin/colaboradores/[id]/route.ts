@@ -12,12 +12,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const body = await req.json();
-  const { nombre, email, telefono, cif, web, razon_social, num_trabajadores, activo, es_autonomo,
+  const { nombre, email, telefono, cif, web, razon_social, num_trabajadores, activo, es_autonomo, irpf_pct,
           puede_editar_ops, puede_ver_entidades, puede_publicar_sin_validar, puede_enviar_recordatorios, nivel_entidades } = body;
 
   const updateData: Record<string, unknown> = {};
 
   if (es_autonomo !== undefined) updateData.es_autonomo = !!es_autonomo;
+  if (irpf_pct !== undefined) {
+    const n = irpf_pct == null ? null : Number(irpf_pct);
+    updateData.irpf_pct = n != null && !Number.isNaN(n) && n >= 0 && n <= 50 ? String(n) : null;
+  }
 
   // Permisos-only update (no nombre/email required)
   if (puede_editar_ops !== undefined) updateData.puede_editar_ops = puede_editar_ops;

@@ -43,12 +43,14 @@ export async function GET(req: NextRequest) {
   const contraparte = (p.get("contraparte") ?? "").trim();
   const esperadoBase = parseFloat(p.get("esperado") ?? "") || 0;
   // Tipo fiscal de la contraparte (del panel de colaboradores): afina el objetivo.
-  //  · autonomo=1 → factura con IVA 21% y retención IRPF 7%: base * 1.14
+  //  · autonomo=1 → factura con IVA 21% y retención IRPF (irpf=%, por defecto 7):
+  //    base * (1.21 − irpf/100)
   //  · autonomo=0 → empresa, factura con IVA 21%: base * 1.21
   //  · sin param (mercadería / contraparte desconocida) → los tres posibles
   const autonomo = p.get("autonomo");
+  const irpfPct = Math.min(50, Math.max(0, parseFloat(p.get("irpf") ?? "") || 7));
   const objetivos =
-    autonomo === "1" ? [esperadoBase * 1.14]
+    autonomo === "1" ? [esperadoBase * (1.21 - irpfPct / 100)]
     : autonomo === "0" ? [esperadoBase * 1.21]
     : [esperadoBase, esperadoBase * 1.21, esperadoBase * 1.14];
 

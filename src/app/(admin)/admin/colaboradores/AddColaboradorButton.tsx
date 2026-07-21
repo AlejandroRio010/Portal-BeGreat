@@ -9,6 +9,7 @@ export default function AddColaboradorButton() {
   const [nombre, setNombre] = useState("");
   const [cif, setCif] = useState("");
   const [esAutonomo, setEsAutonomo] = useState(false);
+  const [irpf, setIrpf] = useState("7");
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
   const router = useRouter();
@@ -18,8 +19,8 @@ export default function AddColaboradorButton() {
     setError("");
     start(async () => {
       try {
-        await crearColaboradorRapido({ nombre, cif, es_autonomo: esAutonomo });
-        setNombre(""); setCif(""); setEsAutonomo(false); setOpen(false);
+        await crearColaboradorRapido({ nombre, cif, es_autonomo: esAutonomo, irpf_pct: esAutonomo ? Number(irpf.replace(",", ".")) || 7 : null });
+        setNombre(""); setCif(""); setEsAutonomo(false); setIrpf("7"); setOpen(false);
         router.refresh();
       } catch (e: any) {
         setError(e?.message ?? "Error al crear");
@@ -54,12 +55,24 @@ export default function AddColaboradorButton() {
                 <input value={cif} onChange={e => setCif(e.target.value)} placeholder="B12345678"
                   className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:border-[#2E1A47]/40" />
               </div>
-              <label className="flex items-start gap-2.5 cursor-pointer bg-[#EEEBF3]/50 rounded-xl px-4 py-3">
-                <input type="checkbox" checked={esAutonomo} onChange={e => setEsAutonomo(e.target.checked)} className="mt-0.5 accent-[#2E1A47]" />
-                <span className="text-xs text-gray-600">
-                  <b className="text-[#2E1A47]">Es autónomo</b> — sus facturas llevan <b>IVA 21% y retención de IRPF 7%</b>. Se tiene en cuenta al buscar su pago y para el cálculo de impuestos.
-                </span>
-              </label>
+              <div className="bg-[#EEEBF3]/50 rounded-xl px-4 py-3 space-y-3">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input type="checkbox" checked={esAutonomo} onChange={e => setEsAutonomo(e.target.checked)} className="mt-0.5 accent-[#2E1A47]" />
+                  <span className="text-xs text-gray-600">
+                    <b className="text-[#2E1A47]">Es autónomo</b> — sus facturas llevan <b>IVA 21% y retención de IRPF</b>. Se tiene en cuenta al buscar su pago y para el cálculo de impuestos.
+                  </span>
+                </label>
+                {esAutonomo && (
+                  <div className="pl-6">
+                    <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Retención de IRPF (%)</label>
+                    <div className="flex items-center gap-2">
+                      <input type="number" step="0.5" min="0" max="50" value={irpf} onChange={e => setIrpf(e.target.value)}
+                        className="w-24 rounded-xl border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#2E1A47]/40" />
+                      <span className="text-[10px] text-gray-400">7% autónomos nuevos · 15% el general</span>
+                    </div>
+                  </div>
+                )}
+              </div>
               {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
             </div>
             <div className="px-6 py-4 border-t border-gray-100 flex items-center gap-3">

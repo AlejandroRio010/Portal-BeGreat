@@ -19,6 +19,7 @@ interface Colab {
   razon_social?: string | null;
   num_trabajadores?: number | null;
   es_autonomo?: boolean;
+  irpf_pct?: string | number | null;
 }
 
 export default function ColaboradorEditModal({ colab }: { colab: Colab }) {
@@ -27,6 +28,7 @@ export default function ColaboradorEditModal({ colab }: { colab: Colab }) {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [esAutonomo, setEsAutonomo] = useState(!!colab.es_autonomo);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,6 +47,9 @@ export default function ColaboradorEditModal({ colab }: { colab: Colab }) {
       num_trabajadores: form.get("num_trabajadores") ? Number(form.get("num_trabajadores")) : null,
       activo: form.get("activo") === "true",
       es_autonomo: form.get("es_autonomo") === "on",
+      irpf_pct: form.get("es_autonomo") === "on" && form.get("irpf_pct")
+        ? Number(String(form.get("irpf_pct")).replace(",", "."))
+        : null,
     };
 
     const res = await fetch(`/api/admin/colaboradores/${colab.id}`, {
@@ -126,12 +131,25 @@ export default function ColaboradorEditModal({ colab }: { colab: Colab }) {
                   </select>
                 </div>
 
-                <label className="flex items-start gap-2.5 cursor-pointer bg-[#EEEBF3]/50 px-4 py-3">
-                  <input type="checkbox" name="es_autonomo" defaultChecked={!!colab.es_autonomo} className="mt-0.5 accent-[#2E1A47]" />
-                  <span className="text-xs text-gray-600">
-                    <b className="text-[#2E1A47]">Es autónomo</b> — sus facturas llevan IVA 21% y retención de IRPF 7% (se usa al buscar su pago y para impuestos).
-                  </span>
-                </label>
+                <div className="bg-[#EEEBF3]/50 px-4 py-3 space-y-3">
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input type="checkbox" name="es_autonomo" checked={esAutonomo} onChange={e => setEsAutonomo(e.target.checked)} className="mt-0.5 accent-[#2E1A47]" />
+                    <span className="text-xs text-gray-600">
+                      <b className="text-[#2E1A47]">Es autónomo</b> — sus facturas llevan IVA 21% y retención de IRPF (se usa al buscar su pago y para impuestos).
+                    </span>
+                  </label>
+                  {esAutonomo && (
+                    <div className="pl-6">
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Retención de IRPF (%)</label>
+                      <div className="flex items-center gap-2">
+                        <input name="irpf_pct" type="number" step="0.5" min="0" max="50"
+                          defaultValue={colab.irpf_pct != null ? Number(colab.irpf_pct) : 7}
+                          className="w-24 px-3 py-2 border border-gray-200 text-sm bg-white focus:outline-none focus:border-[#2E1A47]" />
+                        <span className="text-[10px] text-gray-400">7% autónomos nuevos · 15% el general</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
               </div>

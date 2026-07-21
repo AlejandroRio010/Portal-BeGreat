@@ -107,7 +107,7 @@ interface Props {
   // entity/office lists
   allEntities: EntityRow[];
   allOffices: OfficeRow[];
-  allColaboradores?: { id: string; nombre: string; role: string; es_autonomo?: boolean }[];
+  allColaboradores?: { id: string; nombre: string; role: string; es_autonomo?: boolean; irpf_pct?: number | null }[];
   customFieldDefs?: CustomField[];
   customFieldValues?: CustomFieldValue[];
 }
@@ -997,14 +997,15 @@ export default function AdminOpForm({
                           </div>
                         </div>
                         {(() => {
-                          const colabAut = allColaboradores.find(ac => ac.id === c.id)?.es_autonomo;
+                          const ac = allColaboradores.find(ac => ac.id === c.id);
                           const base = parseFloat(c.importe) || 0;
-                          if (!colabAut || base <= 0) return null;
-                          const iva = base * 0.21, irpf = base * 0.07, total = base + iva - irpf;
+                          if (!ac?.es_autonomo || base <= 0) return null;
+                          const pct = ac.irpf_pct ?? 7;
+                          const iva = base * 0.21, irpf = base * (pct / 100), total = base + iva - irpf;
                           const f = (n: number) => n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                           return (
                             <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 text-[10px] text-amber-800 leading-relaxed">
-                              <span className="font-bold uppercase tracking-wide">Autónomo</span> · {f(base)} + IVA 21% {f(iva)} − IRPF 7% <b>{f(irpf)}</b> = <b>{f(total)} €</b> a pagar
+                              <span className="font-bold uppercase tracking-wide">Autónomo</span> · {f(base)} + IVA 21% {f(iva)} − IRPF {pct}% <b>{f(irpf)}</b> = <b>{f(total)} €</b> a pagar
                             </div>
                           );
                         })()}
@@ -1014,24 +1015,29 @@ export default function AdminOpForm({
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                             <span className="text-[9px] text-gray-400 uppercase tracking-wider">Pago · factura de compra en Holded</span>
                           </div>
-                          {c.id ? (
+                          {c.id ? (() => {
+                            const ac = allColaboradores.find(a => a.id === c.id);
+                            const pct = ac?.irpf_pct ?? 7;
+                            return (
                             <>
                               <PurchasePicker
                                 opId={opId}
                                 contraparte={c.nombre}
                                 esperado={c.importe}
-                                autonomo={!!allColaboradores.find(ac => ac.id === c.id)?.es_autonomo}
+                                autonomo={!!ac?.es_autonomo}
+                                irpfPct={ac?.es_autonomo ? pct : null}
                                 selected={comisionLinks(c.id)}
                                 onChange={next => setComisionLinks(c.id!, next)}
                                 accent="amber"
                                 placeholder="Buscar factura de comisión…"
-                                hint={allColaboradores.find(ac => ac.id === c.id)?.es_autonomo
-                                  ? `Compras de ${c.nombre || "este colaborador"} · autónomo: busca base + IVA 21% − IRPF 7%`
+                                hint={ac?.es_autonomo
+                                  ? `Compras de ${c.nombre || "este colaborador"} · autónomo: busca base + IVA 21% − IRPF ${pct}%`
                                   : `Compras de ${c.nombre || "este colaborador"} · empresa: busca base + IVA 21%`}
                               />
                               <ObliviateResolver value={getObl("comision", c.id)} onChange={v => setObl("comision", c.id!, v)} esperado={c.importe} verbo="pagado" />
                             </>
-                          ) : (
+                            );
+                          })() : (
                             <p className="text-[9px] text-gray-400">Selecciona la persona para vincular su factura de pago.</p>
                           )}
                         </div>

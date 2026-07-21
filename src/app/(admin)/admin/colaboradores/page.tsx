@@ -20,6 +20,7 @@ export default async function AdminColaboradoresPage() {
       razon_social: collaborators.razon_social,
       num_trabajadores: collaborators.num_trabajadores,
       es_autonomo: collaborators.es_autonomo,
+      irpf_pct: collaborators.irpf_pct,
     })
     .from(collaborators)
     .where(eq(collaborators.role, "colaborador"))

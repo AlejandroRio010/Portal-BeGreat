@@ -43,6 +43,8 @@ export const collaborators = pgTable("collaborators", {
   // Autónomo → sus facturas llevan IVA 21% y retención de IRPF 7% (para el motor
   // de comisiones/pagos y el futuro cálculo de impuestos).
   es_autonomo: boolean("es_autonomo").notNull().default(false),
+  // Retención de IRPF del autónomo (%): la mayoría 7, otros 15. null = 7.
+  irpf_pct: numeric("irpf_pct", { precision: 4, scale: 2 }),
   notas_internas: text("notas_internas"),
   puede_editar_ops: boolean("puede_editar_ops").notNull().default(false),
   puede_ver_entidades: boolean("puede_ver_entidades").notNull().default(false),

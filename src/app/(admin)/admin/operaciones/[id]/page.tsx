@@ -167,7 +167,9 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
   const opTasks = await db.select().from(operationTasks).where(eq(operationTasks.operation_id, id)).orderBy(operationTasks.created_at);
 
   const admins = await db.select({ id: collaborators.id, nombre: collaborators.nombre }).from(collaborators).where(eq(collaborators.role, "admin"));
-  const allColaboradores = await db.select({ id: collaborators.id, nombre: collaborators.nombre, role: collaborators.role, es_autonomo: collaborators.es_autonomo }).from(collaborators).where(eq(collaborators.activo, true)).orderBy(collaborators.nombre);
+  const allColaboradoresRaw = await db.select({ id: collaborators.id, nombre: collaborators.nombre, role: collaborators.role, es_autonomo: collaborators.es_autonomo, irpf_pct: collaborators.irpf_pct }).from(collaborators).where(eq(collaborators.activo, true)).orderBy(collaborators.nombre);
+  // numeric llega como string desde Drizzle → a número para el cálculo de IRPF
+  const allColaboradores = allColaboradoresRaw.map(c => ({ ...c, irpf_pct: c.irpf_pct != null ? Number(c.irpf_pct) : null }));
   const taskAssignees: { id: string; nombre: string }[] = [];
   if (op.colaborador_id && op.colaborador_nombre) {
     taskAssignees.push({ id: op.colaborador_id, nombre: op.colaborador_nombre });
