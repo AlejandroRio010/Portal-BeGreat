@@ -4,15 +4,20 @@
 // contrapartida en banco 57x). Los tickets (gasolina/parking/dietas cargados a
 // la tarjeta) son solo el desglose, no se cuentan aparte (evita doble conteo).
 
-import { type LibroLinea } from "@/lib/holdedLedger";
+import { type LibroLinea, esAcreedor } from "@/lib/holdedLedger";
 
 export interface TarjetaDef { cuenta: string; label: string; banco: string; }
 
-// De momento solo la Sabadell (vamos una a una). Las otras cuando toque:
-//  52000005 Bankinter (paga Microsoft/Holded → ya son fijos, ojo doble conteo)
-//  52000009 Laboral Kutxa (hoteles/dietas)
+// Las 3 tarjetas de crédito, todas con el MISMO mecanismo: recibo a mes vencido
+// (caja) + movimientos del mes clasificados. Cada movimiento se identifica como
+// ticket (solo existe en la tarjeta) o pago de una factura registrada (el
+// asiento toca la cuenta 40x del proveedor) — esas facturas ya cuentan en
+// fijos/variables, así que se descuentan del recibo en caja para no duplicar.
+// Da igual qué tarjeta se use para qué: la clasificación es automática.
 export const TARJETAS: TarjetaDef[] = [
   { cuenta: "52000004", label: "Sabadell «business MC»", banco: "Sabadell" },
+  { cuenta: "52000005", label: "Bankinter", banco: "Bankinter" },
+  { cuenta: "52000009", label: "Laboral Kutxa", banco: "Laboral Kutxa" },
 ];
 export const tarjetaDe = (cuenta: string) => TARJETAS.find(t => t.cuenta === cuenta) ?? null;
 
@@ -37,14 +42,29 @@ export function categoriaTicket(desc: string): CategoriaTicket {
   return "dietas";
 }
 
-export interface TicketTarjeta { date: string; mesIdx: number; desc: string; importe: number; categoria: CategoriaTicket; }
+export interface TicketTarjeta {
+  date: string;
+  mesIdx: number;
+  desc: string;
+  importe: number;
+  categoria: CategoriaTicket;
+  /** El asiento toca la cuenta 40x de un proveedor → es el pago de una factura
+   *  registrada (esa factura ya cuenta en fijos/variables), no un ticket. */
+  pagaFactura: boolean;
+  /** Referencia de documento del apunte (para casarla con la factura de Holded). */
+  ref: string | null;
+}
 export interface TarjetaMes {
   mesIdx: number;
   cargo: number;
-  gastado: number;
+  gastado: number;                              // todo lo cargado a la tarjeta en el mes
+  pagosFactura: number;                         // parte que son pagos de facturas registradas
   tickets: TicketTarjeta[];
-  porCategoria: Record<CategoriaTicket, number>;
+  porCategoria: Record<CategoriaTicket, number>; // solo tickets (sin pagos de factura)
 }
+
+/** Normaliza una referencia de documento para casar apunte ↔ factura de Holded. */
+export const normRef = (s: string) => (s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
 // Referencia de documento para deduplicar el mismo ticket contabilizado dos
 // veces (una como "purchase" y otra como "expense"), que sí comparten ref.
@@ -58,26 +78,29 @@ export function resumenTarjeta(entries: LibroLinea[], cuenta: string, anyo: numb
   const byE = new Map<number, LibroLinea[]>();
   for (const l of entries) { if (!byE.has(l.entry)) byE.set(l.entry, []); byE.get(l.entry)!.push(l); }
   const meses: TarjetaMes[] = Array.from({ length: 12 }, (_, mesIdx) => ({
-    mesIdx, cargo: 0, gastado: 0, tickets: [],
+    mesIdx, cargo: 0, gastado: 0, pagosFactura: 0, tickets: [],
     porCategoria: { gasolina: 0, parking: 0, dietas: 0 },
   }));
   const vistos = new Set<string>();
   for (const ls of byE.values()) {
     const tocaBanco = ls.some(l => l.account.startsWith("57"));
+    const tocaProveedor = ls.some(l => esAcreedor(l.account));
     for (const l of ls) {
       if (l.account !== cuenta || l.anyo !== anyo) continue;
       // Débito con contrapartida en banco = el banco liquida la tarjeta → cuenta en caja
       if (l.debit > 0.005 && tocaBanco) { meses[l.mesIdx].cargo += l.debit; continue; }
-      // Crédito = ticket cargado a la tarjeta (detalle)
+      // Crédito = cargo a la tarjeta: ticket, o pago de una factura registrada
       if (l.credit > 0.005) {
         const ref = refDoc(l.description);
         const k = ref ? `${l.date}|${l.credit.toFixed(2)}|${ref}` : `e${l.entry}|${l.line}`;
         if (vistos.has(k)) continue;
         vistos.add(k);
+        const pagaFactura = tocaProveedor;
         const categoria = categoriaTicket(l.description);
-        meses[l.mesIdx].tickets.push({ date: l.date, mesIdx: l.mesIdx, desc: l.description || "(sin concepto)", importe: l.credit, categoria });
+        meses[l.mesIdx].tickets.push({ date: l.date, mesIdx: l.mesIdx, desc: l.description || "(sin concepto)", importe: l.credit, categoria, pagaFactura, ref });
         meses[l.mesIdx].gastado += l.credit;
-        meses[l.mesIdx].porCategoria[categoria] += l.credit;
+        if (pagaFactura) meses[l.mesIdx].pagosFactura += l.credit;
+        else meses[l.mesIdx].porCategoria[categoria] += l.credit;
       }
     }
   }

@@ -7,7 +7,7 @@ import { and, eq } from "drizzle-orm";
 import { getGastos, type HoldedGasto } from "@/lib/holded";
 import { getGastosFijos, esDelFijo, importeFijoMes, conIva, construirCandidatos } from "@/lib/gastosFijos";
 import { getLibroDiario, type LibroLinea } from "@/lib/holdedLedger";
-import { resumenTarjeta, TARJETAS, CATEGORIAS_TICKET } from "@/lib/tarjetas";
+import { resumenTarjeta, TARJETAS, CATEGORIAS_TICKET, normRef, type TarjetaMes } from "@/lib/tarjetas";
 import { getCategoriasGasto } from "@/lib/categorias";
 import { BUCKETS, bucketDe } from "@/lib/gastosBuckets";
 import { fmtEur } from "@/lib/format";
@@ -59,17 +59,45 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
     return bucketDe(g);
   };
 
-  // Tarjeta Sabadell «business MC» (cuenta 52000004) leída del libro diario:
-  // el recibo que el banco cobra ese mes cuenta en caja; los tickets son detalle.
+  // ── Tarjetas de crédito: mecanismo ÚNICO para las 3 (da igual qué tarjeta se
+  // use para qué). Del diario, por la cuenta 52x de cada una:
+  //  · Recibo del mes (a mes vencido: cubre el gasto del mes anterior) → caja.
+  //  · Cada movimiento se clasifica: ticket (lo cuenta la tarjeta) o pago de
+  //    factura registrada. Si esa factura ya cuenta en fijos/variables, su parte
+  //    se DESCUENTA del recibo en caja (así Microsoft por Bankinter no duplica);
+  //    si la factura es del cajón tarjeta (gasolina…), la cubre el recibo.
   const [anyoN, mesN] = mes.split("-").map(Number);
-  const CUENTA_SABADELL = TARJETAS[0].cuenta;
-  const tarjetaMes = resumenTarjeta(diario, CUENTA_SABADELL, anyoN)[mesN - 1] ?? { mesIdx: mesN - 1, cargo: 0, gastado: 0, tickets: [] };
-  const cargoAuto = tarjetaMes.cargo;
-  // La tabla tarjeta_cargos actúa ahora como override manual (si se fija a mano)
+  // Nº de documento de cada compra → ¿cuenta en el lado de facturas?
+  const docContada = new Map<string, boolean>();
+  for (const g of gastos) {
+    const dn = normRef(g.document_number);
+    if (dn) docContada.set(dn, bucketConLink(g) !== "tarjeta");
+  }
+  // Override manual (tabla tarjeta_cargos) — aplica solo a la Sabadell
   const [cargoRow] = await db.select({ importe: tarjetaCargos.importe }).from(tarjetaCargos)
     .where(and(eq(tarjetaCargos.year, anyoN), eq(tarjetaCargos.month, mesN))).limit(1);
   const cargoManual = cargoRow ? Number(cargoRow.importe) : null;
-  const cargoTarjeta = cargoManual != null ? cargoManual : cargoAuto;
+
+  const MES_TARJETA_VACIO: TarjetaMes = { mesIdx: mesN - 1, cargo: 0, gastado: 0, pagosFactura: 0, tickets: [], porCategoria: { gasolina: 0, parking: 0, dietas: 0 } };
+  const tarjetas = TARJETAS.map((def, idx) => {
+    const resumen = resumenTarjeta(diario, def.cuenta, anyoN);
+    const mesData = resumen[mesN - 1] ?? MES_TARJETA_VACIO;
+    // Facturas ya contadas (fijos/variables) que este recibo paga: las del mes anterior
+    const prev = mesN >= 2 ? resumen[mesN - 2] : null;
+    let facturasContadas = 0;
+    for (const tk of prev?.tickets ?? []) {
+      if (tk.pagaFactura && tk.ref && (docContada.get(normRef(tk.ref)) ?? false)) facturasContadas += tk.importe;
+    }
+    const esSabadell = idx === 0;
+    const cargoAuto = mesData.cargo;
+    const recibo = esSabadell && cargoManual != null ? cargoManual : cargoAuto;
+    facturasContadas = Math.min(facturasContadas, recibo);
+    const enCaja = Math.max(0, recibo - facturasContadas);
+    const actividad = resumen.some(m => m.cargo > 0.005 || m.tickets.length > 0);
+    return { def, mesData, cargoAuto, manual: esSabadell ? cargoManual : null, recibo, facturasContadas, enCaja, esSabadell, actividad };
+  });
+  // Lo que las tarjetas suman en caja este mes (recibos menos facturas ya contadas)
+  const cargoTarjeta = tarjetas.reduce((s, t) => s + t.enCaja, 0);
   // La tarjeta se cobra A MES VENCIDO: el recibo de un mes cubre el gasto del mes
   // anterior. Meses pasados (≤ jun 2026): solo el recibo, sin desglose retroactivo.
   // Desde julio 2026: minisección "Gastado en el mes" por categorías, alimentada
@@ -310,71 +338,92 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
             )}
           </div>
 
-          {/* Tarjeta Sabadell — cuenta el RECIBO del banco (del diario); tickets = detalle */}
-          <div className="mt-6">
-            <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider mb-3">💳 Tarjeta {TARJETAS[0].label} · {mesLabel(mes)}</h2>
-            <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Recibo cobrado por el banco · cuenta en caja</p>
-                  <CargoTarjetaEdit year={anyoN} month={mesN} importe={cargoTarjeta || null} />
-                  <p className="text-[10px] text-gray-400 mt-0.5">
-                    A mes vencido: <b>cubre el gasto de {mesAnteriorNombre}</b> ·{" "}
-                    {cargoManual != null
-                      ? <>fijado a mano · el diario dice <b>{fmtEur(cargoAuto)}</b></>
-                      : cargoAuto > 0.005
-                        ? <>automático del <b>libro diario</b> (cuenta 52000004)</>
-                        : <>este mes el banco no ha cobrado recibo</>}
-                  </p>
+          {/* Tarjetas de crédito — mismo mecanismo para las 3: recibo a mes vencido
+              (caja, descontando facturas ya contadas) + gastado del mes por categorías */}
+          {tarjetas.filter(t => t.actividad).map(tj => (
+            <div className="mt-6" key={tj.def.cuenta}>
+              <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider mb-3">💳 Tarjeta {tj.def.label} · {mesLabel(mes)}</h2>
+              <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Recibo cobrado por el banco</p>
+                    {tj.esSabadell ? (
+                      <CargoTarjetaEdit year={anyoN} month={mesN} importe={tj.recibo || null} />
+                    ) : (
+                      <p className={`text-xl font-black ${tj.recibo > 0.005 ? "text-[#2E1A47]" : "text-gray-300"}`}>{tj.recibo > 0.005 ? fmtEur(tj.recibo) : "sin recibo"}</p>
+                    )}
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      A mes vencido: <b>cubre el gasto de {mesAnteriorNombre}</b> ·{" "}
+                      {tj.manual != null
+                        ? <>fijado a mano · el diario dice <b>{fmtEur(tj.cargoAuto)}</b></>
+                        : tj.cargoAuto > 0.005
+                          ? <>automático del <b>libro diario</b> (cuenta {tj.def.cuenta})</>
+                          : <>este mes el banco no ha cobrado recibo</>}
+                    </p>
+                    {tj.facturasContadas > 0.005 ? (
+                      <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1 mt-1.5">
+                        📄 Incluye <b>{fmtEur(tj.facturasContadas)}</b> de facturas ya contadas en fijos/variables → en caja suma <b>{fmtEur(tj.enCaja)}</b> (sin duplicar)
+                      </p>
+                    ) : tj.recibo > 0.005 && (
+                      <p className="text-[10px] text-gray-400 mt-1">En caja suma {fmtEur(tj.enCaja)}</p>
+                    )}
+                  </div>
+                  {!verDetalleTarjeta && (
+                    <div className="sm:text-right self-center">
+                      <p className="text-[10px] text-gray-400">En los meses pasados la tarjeta cuenta solo por el recibo del banco.<br />Desde julio 2026, tu conciliación semanal alimenta el desglose por categorías.</p>
+                    </div>
+                  )}
                 </div>
-                {!verDetalleTarjeta && (
-                  <div className="sm:text-right self-center">
-                    <p className="text-[10px] text-gray-400">En los meses pasados la tarjeta cuenta solo por el recibo del banco.<br />Desde julio 2026, tu conciliación semanal alimenta el desglose por categorías.</p>
+                {verDetalleTarjeta && (
+                  <div className="mt-4 border-t border-gray-100 pt-3">
+                    {/* Minisección "Gastado en el mes": se alimenta de la conciliación semanal
+                        y se cobrará en el recibo del mes siguiente (a mes vencido) */}
+                    <div className="flex items-baseline justify-between gap-3 mb-2 flex-wrap">
+                      <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">🧾 Gastado en {mesLabel(mes)} · {fmtEur(tj.mesData.gastado)}</p>
+                      <p className="text-[10px] text-gray-400">se cobrará en el recibo de {mesSiguienteNombre} · no suma en caja este mes</p>
+                    </div>
+                    {tj.mesData.tickets.length === 0 ? (
+                      <p className="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">Aún no hay movimientos conciliados de {mesLabel(mes)} — se irá llenando con tu conciliación semanal.</p>
+                    ) : (<>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {CATEGORIAS_TICKET.map(c => {
+                        const v = tj.mesData.porCategoria[c.key];
+                        if (v <= 0.005) return null;
+                        return (
+                          <span key={c.key} className="inline-flex items-center gap-1.5 bg-[#EEEBF3] text-[#2E1A47] rounded-xl px-3 py-1.5 text-xs font-semibold">
+                            {c.emoji} {c.label} · {fmtEur(v)}
+                          </span>
+                        );
+                      })}
+                      {tj.mesData.pagosFactura > 0.005 && (
+                        <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl px-3 py-1.5 text-xs font-semibold">
+                          📄 Pagos de factura · {fmtEur(tj.mesData.pagosFactura)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {tj.mesData.tickets.map((t, i) => {
+                        const cat = CATEGORIAS_TICKET.find(c => c.key === t.categoria);
+                        return (
+                          <div key={i} className="flex items-center justify-between gap-2 py-1.5 px-2">
+                            <span className="flex items-center gap-2 min-w-0">
+                              <span className="text-[10px] text-gray-400 whitespace-nowrap">{new Date(t.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span>
+                              <span className="text-xs font-medium text-gray-700 truncate">{t.desc}</span>
+                              {t.pagaFactura
+                                ? <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap">📄 Factura</span>
+                                : <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap">{cat?.emoji} {cat?.label}</span>}
+                            </span>
+                            <span className="text-xs font-bold text-gray-700 whitespace-nowrap">{fmtEur(t.importe)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    </>)}
                   </div>
                 )}
               </div>
-              {verDetalleTarjeta && (
-                <div className="mt-4 border-t border-gray-100 pt-3">
-                  {/* Minisección "Gastado en el mes": se alimenta de la conciliación semanal
-                      y se cobrará en el recibo del mes siguiente (a mes vencido) */}
-                  <div className="flex items-baseline justify-between gap-3 mb-2 flex-wrap">
-                    <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">🧾 Gastado en {mesLabel(mes)} · {fmtEur(tarjetaMes.gastado)}</p>
-                    <p className="text-[10px] text-gray-400">se cobrará en el recibo de {mesSiguienteNombre} · no suma en caja este mes</p>
-                  </div>
-                  {tarjetaMes.tickets.length === 0 ? (
-                    <p className="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">Aún no hay movimientos conciliados de {mesLabel(mes)} — se irá llenando con tu conciliación semanal.</p>
-                  ) : (<>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {CATEGORIAS_TICKET.map(c => {
-                      const v = tarjetaMes.porCategoria[c.key];
-                      if (v <= 0.005) return null;
-                      return (
-                        <span key={c.key} className="inline-flex items-center gap-1.5 bg-[#EEEBF3] text-[#2E1A47] rounded-xl px-3 py-1.5 text-xs font-semibold">
-                          {c.emoji} {c.label} · {fmtEur(v)}
-                        </span>
-                      );
-                    })}
-                  </div>
-                  <div className="divide-y divide-gray-50">
-                    {tarjetaMes.tickets.map((t, i) => {
-                      const cat = CATEGORIAS_TICKET.find(c => c.key === t.categoria);
-                      return (
-                        <div key={i} className="flex items-center justify-between gap-2 py-1.5 px-2">
-                          <span className="flex items-center gap-2 min-w-0">
-                            <span className="text-[10px] text-gray-400 whitespace-nowrap">{new Date(t.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span>
-                            <span className="text-xs font-medium text-gray-700 truncate">{t.desc}</span>
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap">{cat?.emoji} {cat?.label}</span>
-                          </span>
-                          <span className="text-xs font-bold text-gray-700 whitespace-nowrap">{fmtEur(t.importe)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  </>)}
-                </div>
-              )}
             </div>
-          </div>
+          ))}
         </>
       )}
     </div>
