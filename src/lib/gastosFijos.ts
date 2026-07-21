@@ -8,6 +8,15 @@ import { db } from "@/db";
 import { gastosFijos as gastosFijosTable } from "@/db/schema";
 import { asc } from "drizzle-orm";
 
+// Concepto dentro de un fijo agrupado (p. ej. IONOS factura hosting + correo +
+// dominios + SSL juntos). importe SIN IVA; los anuales solo cuentan en su mes.
+export interface ComponenteFijo {
+  concepto: string;
+  importe: number;
+  periodicidad: "mensual" | "anual";
+  mes?: number | null; // 1-12, solo anuales
+}
+
 export interface GastoFijo {
   id: string;
   label: string;
@@ -24,6 +33,8 @@ export interface GastoFijo {
   // Estado + importe manual por mes: { "2026-3": { e?: "recibida"|"pagada", i?: number } }
   // (tolera el formato antiguo string: "recibida"|"pagada")
   estado_manual: Record<string, any>;
+  // Desglose de conceptos si es un fijo agrupado (una factura, varios conceptos)
+  desglose: ComponenteFijo[] | null;
 }
 
 // IVA de los gastos fijos de Obliviate (servicios → 21%). Los importes se guardan
@@ -32,11 +43,30 @@ export const IVA_OBLIVIATE = 0.21;
 export const conIva = (base: number) => base * (1 + IVA_OBLIVIATE);
 
 /** Importe (base, SIN IVA) del fijo que aplica a un mes concreto (mesIdx 0-11).
- *  Los anuales solo cuentan en su mes de cobro; los mensuales, todos los meses. */
+ *  Los anuales solo cuentan en su mes de cobro; los mensuales, todos los meses.
+ *  Si el fijo tiene desglose (IONOS), se suman los conceptos que tocan ese mes. */
 export function importeFijoMes(f: GastoFijo, mesIdx: number): number {
+  if (f.desglose?.length) {
+    return f.desglose.reduce((s, c) => {
+      if (c.periodicidad === "anual") return c.mes === mesIdx + 1 ? s + c.importe : s;
+      return s + c.importe;
+    }, 0);
+  }
   const imp = f.mensual ?? 0;
   if (f.periodicidad === "anual") return f.mes_cobro === mesIdx + 1 ? imp : 0;
   return imp;
+}
+
+/** Parte mensual recurrente del fijo (para el KPI "coste fijo mensual"). */
+export function parteMensual(f: GastoFijo): number {
+  if (f.desglose?.length) return f.desglose.filter(c => c.periodicidad === "mensual").reduce((s, c) => s + c.importe, 0);
+  return f.periodicidad === "mensual" ? f.mensual ?? 0 : 0;
+}
+
+/** Suma de conceptos anuales del fijo (para el KPI "anualizado"). */
+export function parteAnual(f: GastoFijo): number {
+  if (f.desglose?.length) return f.desglose.filter(c => c.periodicidad === "anual").reduce((s, c) => s + c.importe, 0);
+  return f.periodicidad === "anual" ? f.mensual ?? 0 : 0;
 }
 
 /** Lista de gastos fijos configurada (desde la tabla `gastos_fijos`). */
@@ -61,6 +91,7 @@ export async function getGastosFijos(): Promise<GastoFijo[]> {
       periodicidad: r.periodicidad ?? "mensual",
       mes_cobro: r.mes_cobro ?? null,
       estado_manual: (r.estado_manual as Record<string, any>) ?? {},
+      desglose: (r.desglose as ComponenteFijo[] | null) ?? null,
     }));
 }
 

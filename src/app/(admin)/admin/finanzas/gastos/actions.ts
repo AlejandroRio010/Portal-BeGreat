@@ -145,6 +145,20 @@ export async function setCargoTarjeta(year: number, month: number, importe: numb
   revalidatePath("/admin/finanzas/gastos");
 }
 
+/** Edita el importe (sin IVA) de un concepto del desglose de un fijo agrupado
+ *  (p. ej. el hosting dentro de la minisección IONOS). */
+export async function setImporteComponente(id: string, index: number, importe: number) {
+  await requireAdmin();
+  if (importe == null || Number.isNaN(importe) || importe < 0) throw new Error("Importe inválido");
+  const [row] = await db.select({ desglose: gastosFijos.desglose }).from(gastosFijos).where(eq(gastosFijos.id, id)).limit(1);
+  const lista = (row?.desglose as any[] | null) ?? [];
+  if (!lista[index]) throw new Error("Concepto no encontrado");
+  const nuevo = lista.map((c, i) => (i === index ? { ...c, importe } : c));
+  await db.update(gastosFijos).set({ desglose: nuevo }).where(eq(gastosFijos.id, id));
+  revalidatePath("/admin/finanzas/gastos/fijos");
+  revalidatePath("/admin/finanzas/gastos");
+}
+
 /** Edita el importe base mensual de un gasto fijo. */
 export async function setImporteBaseFijo(id: string, mensual: number | null) {
   await requireAdmin();

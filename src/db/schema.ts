@@ -632,6 +632,11 @@ export const gastosFijos = pgTable("gastos_fijos", {
   // Estado manual por mes (para los de Obliviate, que no cruzan con Holded):
   // { "2026-3": "recibida" | "pagada" }. Ausente = pendiente.
   estado_manual: jsonb("estado_manual").default({}),
+  // Desglose de conceptos de un fijo "agrupado" (p. ej. IONOS: hosting + correo
+  // + dominios + SSL en una sola factura mensual). Si está, el importe esperado
+  // de cada mes se calcula sumando los conceptos que tocan ese mes:
+  // [{ concepto, importe (sin IVA), periodicidad: "mensual"|"anual", mes?: 1-12 }]
+  desglose: jsonb("desglose"),
   activo: boolean("activo").notNull().default(true),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });

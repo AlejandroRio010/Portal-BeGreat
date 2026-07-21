@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { crearGastoFijo, borrarGastoFijo, setEstadoFijo, setImporteBaseFijo, setCargoTarjeta, editarGastoFijo, setNotaMesFijo, setProveedorFijo } from "./actions";
+import { crearGastoFijo, borrarGastoFijo, setEstadoFijo, setImporteBaseFijo, setCargoTarjeta, editarGastoFijo, setNotaMesFijo, setProveedorFijo, setImporteComponente } from "./actions";
 
 export interface CuentaProveedor {
   id: string;           // id de la cuenta contable en Holded
@@ -326,8 +326,10 @@ const ESTADO_OPCIONES = [
   { val: "pagada", label: "Pagada", dot: "bg-emerald-500" },
 ];
 
-export function ObliviateFijoCell({ id, ym, estado, importe, aplica, esPasado, compact = false }: {
+export function ObliviateFijoCell({ id, ym, estado, importe, aplica, esPasado, compact = false, esperado = null }: {
   id: string; ym: string; estado: "pendiente" | "recibida" | "pagada"; importe: number | null; aplica: boolean; esPasado: boolean; compact?: boolean;
+  /** Importe esperado del mes (desglose); si el marcado difiere, sale ⚠ de incidencia */
+  esperado?: number | null;
 }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -349,6 +351,8 @@ export function ObliviateFijoCell({ id, ym, estado, importe, aplica, esPasado, c
   const disp = compact
     ? (estado === "pagada" ? "✓" : estado === "recibida" ? "€" : esPasado ? "✕" : "▾")
     : (importe != null ? Math.round(importe).toLocaleString("es-ES") : "▾");
+  // Incidencia: el importe marcado del mes no cuadra con lo esperado (sube O baja)
+  const desvio = esperado != null && importe != null && Math.abs(importe - esperado) > 0.5;
 
   function toggle() {
     if (open) { setOpen(false); return; }
@@ -370,9 +374,10 @@ export function ObliviateFijoCell({ id, ym, estado, importe, aplica, esPasado, c
   return (
     <>
       <button ref={btnRef} type="button" disabled={pending} onClick={toggle}
-        title={`${mesNombre} · ${importe != null ? eur(importe) + " · " : ""}elegir estado / importe`}
-        className={`mx-auto ${w} h-8 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors disabled:opacity-60 ${cls}`}>
+        title={`${mesNombre} · ${importe != null ? eur(importe) + " · " : ""}${desvio ? `⚠️ esperado ${eur(esperado!)} · ` : ""}elegir estado / importe`}
+        className={`relative mx-auto ${w} h-8 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors disabled:opacity-60 ${cls} ${desvio ? "ring-2 ring-red-500 ring-offset-1" : ""}`}>
         {pending ? "…" : disp}
+        {desvio && <span className="absolute -top-2 -right-1.5 text-[11px] leading-none">⚠️</span>}
       </button>
       {open && pos && (
         <>
@@ -388,11 +393,13 @@ export function ObliviateFijoCell({ id, ym, estado, importe, aplica, esPasado, c
               </button>
             ))}
             <div className="border-t border-gray-100 mt-1 px-3 py-2">
-              <label className="text-[9px] font-bold uppercase tracking-wider text-gray-400 block mb-1">Importe de este mes (€ sin IVA)</label>
+              <label className="text-[9px] font-bold uppercase tracking-wider text-gray-400 block mb-1">
+                Importe de este mes (€ sin IVA){esperado != null && <span className="normal-case font-normal"> · esperado {eur(esperado)}</span>}
+              </label>
               <div className="flex gap-1.5">
                 <input autoFocus type="number" step="0.01" value={imp} onChange={e => setImp(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") guardarImporte(); }}
-                  className="flex-1 w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" placeholder="0,00" />
+                  className="flex-1 w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-[#2E1A47]" placeholder={esperado != null ? String(esperado) : "0,00"} />
                 <button type="button" onClick={guardarImporte} className="bg-[#2E1A47] text-white text-xs font-semibold rounded-lg px-3">OK</button>
               </div>
             </div>
@@ -436,6 +443,36 @@ export function ImporteBaseFijoEdit({ id, mensual, periodicidad, tono = "oblivia
       {pending ? "…" : (mensual != null
         ? <>{eur(mensual)}<span className="text-[10px] font-normal text-gray-400"> + IVA{periodicidad === "anual" ? " /año" : ""}</span></>
         : "＋ importe")}
+    </button>
+  );
+}
+
+// ─── Importe editable de un concepto del desglose (minisección IONOS) ─────────
+export function ComponenteImporteEdit({ fijoId, index, importe }: { fijoId: string; index: number; importe: number }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState("");
+  const [pending, start] = useTransition();
+  const router = useRouter();
+
+  function guardar() {
+    setEditing(false);
+    const n = Number(val.replace(",", "."));
+    if (val.trim() === "" || Number.isNaN(n) || n === importe) return;
+    start(async () => { await setImporteComponente(fijoId, index, n); router.refresh(); });
+  }
+
+  if (editing) {
+    return (
+      <input autoFocus type="number" step="0.01" value={val}
+        onChange={e => setVal(e.target.value)} onBlur={guardar}
+        onKeyDown={e => { if (e.key === "Enter") guardar(); if (e.key === "Escape") setEditing(false); }}
+        className="w-16 border border-amber-300 rounded px-1 py-0.5 text-[11px] text-right focus:outline-none" />
+    );
+  }
+  return (
+    <button type="button" disabled={pending} onClick={() => { setVal(String(importe)); setEditing(true); }}
+      title="Editar importe (sin IVA)" className="font-semibold text-amber-800 hover:underline whitespace-nowrap">
+      {pending ? "…" : eur(importe)}
     </button>
   );
 }

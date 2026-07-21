@@ -2,12 +2,12 @@ import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getGastos, type HoldedGasto } from "@/lib/holded";
-import { getGastosFijos, esDelFijo, importeFijoMes, construirCandidatos } from "@/lib/gastosFijos";
+import { getGastosFijos, esDelFijo, importeFijoMes, parteMensual, parteAnual, construirCandidatos } from "@/lib/gastosFijos";
 import { getCategoriasGasto } from "@/lib/categorias";
 import { fmtEur } from "@/lib/format";
 import {
   AddGastoFijoButton, RemoveGastoFijoButton, ObliviateFijoCell, ImporteBaseFijoEdit,
-  FijoInfoEdit, BearingMesCell, type BearingMes,
+  FijoInfoEdit, BearingMesCell, ComponenteImporteEdit, type BearingMes,
 } from "../GastosFijosManage";
 
 export const dynamic = "force-dynamic";
@@ -75,18 +75,19 @@ export default async function GastosFijosPage() {
       const ym = `${anyo}-${m + 1}`;
       const cell = gf.estado_manual?.[ym];
       const override = typeof cell === "object" && cell ? cell.i : undefined;
-      const importe = override ?? importeFijoMes(gf, m);
+      const esperado = importeFijoMes(gf, m);
+      const importe = override ?? esperado;
       const estadoDefault = m <= mesActualIdx ? "pagada" : "pendiente";
       const estado = (typeof cell === "string" ? cell : cell?.e) ?? estadoDefault;
-      return { m, aplica, ym, estado, importe, esPasado: m < mesActualIdx };
+      return { m, aplica, ym, estado, importe, esperado, esPasado: m < mesActualIdx };
     });
     return { gf, meses };
   });
 
-  // ── KPIs (todo base, sin IVA) ──
-  const mensualBearing = fijosDef.filter(f => f.periodicidad === "mensual").reduce((s, g) => s + (g.mensual ?? 0), 0);
-  const mensualObliviate = fijosObliviate.filter(f => f.periodicidad === "mensual").reduce((s, g) => s + (g.mensual ?? 0), 0);
-  const anualExtra = allFijos.filter(f => f.periodicidad === "anual").reduce((s, g) => s + (g.mensual ?? 0), 0);
+  // ── KPIs (todo base, sin IVA; parteMensual/parteAnual entienden los desgloses) ──
+  const mensualBearing = fijosDef.reduce((s, g) => s + parteMensual(g), 0);
+  const mensualObliviate = fijosObliviate.reduce((s, g) => s + parteMensual(g), 0);
+  const anualExtra = allFijos.reduce((s, g) => s + parteAnual(g), 0);
   const totalMensualBase = mensualBearing + mensualObliviate;
   const anualizadoBase = totalMensualBase * 12 + anualExtra;
   const totalAvisos = filasBearing.reduce((s, f) => s + f.avisos.length, 0);
@@ -204,17 +205,37 @@ export default async function GastosFijosPage() {
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0 flex-1"><FijoInfoEdit id={gf.id} label={gf.label} nota={gf.nota} categoria={gf.categoria} tono="obliviate" /></div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <ImporteBaseFijoEdit id={gf.id} mensual={gf.mensual} periodicidad={gf.periodicidad} tono="obliviate" />
+                        {gf.desglose?.length ? (
+                          <span className="text-sm font-bold text-amber-800 whitespace-nowrap" title="Suma de los conceptos mensuales del desglose">
+                            {fmtEur(parteMensual(gf))}<span className="text-[10px] font-normal text-gray-400"> + IVA/mes</span>
+                          </span>
+                        ) : (
+                          <ImporteBaseFijoEdit id={gf.id} mensual={gf.mensual} periodicidad={gf.periodicidad} tono="obliviate" />
+                        )}
                         <span className="opacity-0 group-hover:opacity-100 transition-opacity"><RemoveGastoFijoButton id={gf.id} label={gf.label} /></span>
                       </div>
                     </div>
                     <div className="grid grid-cols-12 gap-1">
                       {meses.map((cell, i) => (
                         <div key={i} className="flex justify-center">
-                          <ObliviateFijoCell id={gf.id} ym={cell.ym} estado={cell.estado} importe={cell.importe} aplica={cell.aplica} esPasado={cell.esPasado} compact />
+                          <ObliviateFijoCell id={gf.id} ym={cell.ym} estado={cell.estado} importe={cell.importe} esperado={cell.esperado} aplica={cell.aplica} esPasado={cell.esPasado} compact />
                         </div>
                       ))}
                     </div>
+                    {gf.desglose && gf.desglose.length > 0 && (
+                      <div className="mt-2 bg-amber-50/50 border border-amber-100 rounded-lg px-3 py-2 space-y-1">
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-gray-600">
+                          {gf.desglose.map((c, i) => (
+                            <span key={i} className="flex items-center gap-1 whitespace-nowrap">
+                              <span>{c.concepto}</span>
+                              <ComponenteImporteEdit fijoId={gf.id} index={i} importe={c.importe} />
+                              <span className="text-gray-400">{c.periodicidad === "anual" ? `/año · ${CORTOS[(c.mes ?? 1) - 1]}` : "/mes"}</span>
+                            </span>
+                          ))}
+                        </div>
+                        <p className="text-[9px] text-amber-700/60">Una sola factura al mes: el importe esperado de cada mes suma lo que toca (mensuales + renovaciones). Si el cobro real difiere, ajusta el importe en la celda y saldrá ⚠.</p>
+                      </div>
+                    )}
                     {gf.periodicidad === "anual" && (
                       <p className="mt-1.5 text-[10px] text-amber-700/70">Anual · solo cuenta en {CORTOS[(gf.mes_cobro ?? 1) - 1]}</p>
                     )}
