@@ -41,14 +41,23 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   try { gastos = await getGastos({ incluirBorradores: true }); } catch (e: any) { holdedError = e?.message ?? "Error Holded"; }
   try { diario = await getLibroDiario(); } catch { /* si falla el diario, la tarjeta cae a manual */ }
 
-  // Mapa factura de compra → operación que la tiene ligada (comisiones / mercadería)
+  // Mapa factura de compra → operación que la tiene ligada, con el tipo de vínculo
+  // ("pago" = compra de mercadería, "comision" = comisión de colaborador)
   const ops = await db.select({ id: operations.id, nombre: operations.nombre, holded_purchases: operations.holded_purchases }).from(operations);
-  const opDePurchase = new Map<string, { id: string; nombre: string }>();
+  const opDePurchase = new Map<string, { id: string; nombre: string; tipo?: string }>();
   for (const o of ops) {
-    for (const p of (o.holded_purchases as { id?: string }[] | null) ?? []) {
-      if (p?.id) opDePurchase.set(p.id, { id: o.id, nombre: o.nombre ?? "Operación" });
+    for (const p of (o.holded_purchases as { id?: string; tipo?: string }[] | null) ?? []) {
+      if (p?.id) opDePurchase.set(p.id, { id: o.id, nombre: o.nombre ?? "Operación", tipo: p.tipo });
     }
   }
+  // El vínculo a la operación manda sobre la cuenta contable: una factura ligada
+  // como pago de mercadería cae en su cajón aunque la cuenta no esté mapeada.
+  const bucketConLink = (g: HoldedGasto) => {
+    const link = opDePurchase.get(g.id);
+    if (link?.tipo === "pago") return "mercaderia";
+    if (link?.tipo === "comision") return "comisiones";
+    return bucketDe(g);
+  };
 
   // Tarjeta Sabadell «business MC» (cuenta 52000004) leída del libro diario:
   // el recibo que el banco cobra ese mes cuenta en caja; los tickets son detalle.
@@ -85,7 +94,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   const baseObliviate = obliviateMes.reduce((s, x) => s + x.base, 0);
 
   const delMes = gastos.filter(g => g.date.startsWith(mes));
-  const esTarjeta = (g: HoldedGasto) => bucketDe(g) === "tarjeta";
+  const esTarjeta = (g: HoldedGasto) => bucketConLink(g) === "tarjeta";
   const fijos = delMes.filter(esFijo);
   // Las variables NO incluyen la tarjeta (esa cuenta por su cargo global, no por factura)
   const variables = delMes.filter(g => !esFijo(g) && !esTarjeta(g));
@@ -256,7 +265,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
             ) : (
               <div className="space-y-6">
                 {BUCKETS.map(b => {
-                  const items = variables.filter(g => bucketDe(g) === b.key);
+                  const items = variables.filter(g => bucketConLink(g) === b.key);
                   if (items.length === 0) return null;
                   const sub = items.reduce((s, g) => s + g.total, 0);
                   return (

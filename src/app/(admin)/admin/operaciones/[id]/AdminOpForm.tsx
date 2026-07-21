@@ -945,11 +945,12 @@ export default function AdminOpForm({
                           opId={opId}
                           contraparte={facturaDestinatario === "cliente" ? (clientNombre ?? "") : (supplierNombre ?? "")}
                           esperado={importeNum}
+                          autonomo={false}
                           selected={pagoLinks}
                           onChange={setPagoLinks}
                           accent="purple"
                           placeholder="Buscar factura de compra…"
-                          hint="Lo que pagamos al proveedor/cliente por el equipo · sin las ya vinculadas a otra op"
+                          hint="Lo que pagamos al proveedor/cliente por el equipo · busca importe + IVA 21% · sin las ya vinculadas a otra op"
                         />
                         <ObliviateResolver value={getObl("mercaderia", null)} onChange={v => setObl("mercaderia", null, v)} esperado={importeNum} verbo="pagado" />
                       </div>
