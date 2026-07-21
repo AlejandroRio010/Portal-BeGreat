@@ -70,10 +70,13 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
     .where(and(eq(tarjetaCargos.year, anyoN), eq(tarjetaCargos.month, mesN))).limit(1);
   const cargoManual = cargoRow ? Number(cargoRow.importe) : null;
   const cargoTarjeta = cargoManual != null ? cargoManual : cargoAuto;
-  // Hasta julio 2026 la tarjeta solo cuenta por el recibo del banco (sin desglose
-  // retroactivo); desde agosto, la conciliación semanal alimenta el desglose por
-  // categorías (dietas / gasolina / parking) automáticamente.
-  const verDetalleTarjeta = mes >= "2026-08";
+  // La tarjeta se cobra A MES VENCIDO: el recibo de un mes cubre el gasto del mes
+  // anterior. Meses pasados (≤ jun 2026): solo el recibo, sin desglose retroactivo.
+  // Desde julio 2026: minisección "Gastado en el mes" por categorías, alimentada
+  // por la conciliación semanal de los movimientos (se cobrará al mes siguiente).
+  const verDetalleTarjeta = mes >= "2026-07";
+  const mesAnteriorNombre = MESES[(mesN + 10) % 12];  // nombre del mes anterior
+  const mesSiguienteNombre = MESES[mesN % 12];        // nombre del mes siguiente
 
   const fijosDef = await getGastosFijos();
   const categoriasGasto = await getCategoriasGasto();
@@ -316,6 +319,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                   <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Recibo cobrado por el banco · cuenta en caja</p>
                   <CargoTarjetaEdit year={anyoN} month={mesN} importe={cargoTarjeta || null} />
                   <p className="text-[10px] text-gray-400 mt-0.5">
+                    A mes vencido: <b>cubre el gasto de {mesAnteriorNombre}</b> ·{" "}
                     {cargoManual != null
                       ? <>fijado a mano · el diario dice <b>{fmtEur(cargoAuto)}</b></>
                       : cargoAuto > 0.005
@@ -323,21 +327,23 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                         : <>este mes el banco no ha cobrado recibo</>}
                   </p>
                 </div>
-                {verDetalleTarjeta ? (
-                  <div className="sm:text-right">
-                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Gastado con la tarjeta este mes (info)</p>
-                    <p className="text-xl font-black text-gray-500">{fmtEur(tarjetaMes.gastado)}</p>
-                    <p className="text-[10px] text-gray-400">{tarjetaMes.tickets.length} ticket{tarjetaMes.tickets.length !== 1 ? "s" : ""} · se cobra en próximos recibos</p>
-                  </div>
-                ) : (
+                {!verDetalleTarjeta && (
                   <div className="sm:text-right self-center">
-                    <p className="text-[10px] text-gray-400">Hasta julio 2026 la tarjeta cuenta solo por el recibo del banco.<br />Desde agosto, tu conciliación semanal alimenta el desglose por categorías.</p>
+                    <p className="text-[10px] text-gray-400">En los meses pasados la tarjeta cuenta solo por el recibo del banco.<br />Desde julio 2026, tu conciliación semanal alimenta el desglose por categorías.</p>
                   </div>
                 )}
               </div>
-              {verDetalleTarjeta && tarjetaMes.tickets.length > 0 && (
+              {verDetalleTarjeta && (
                 <div className="mt-4 border-t border-gray-100 pt-3">
-                  {/* Desglose por categorías: dietas / gasolina / parking */}
+                  {/* Minisección "Gastado en el mes": se alimenta de la conciliación semanal
+                      y se cobrará en el recibo del mes siguiente (a mes vencido) */}
+                  <div className="flex items-baseline justify-between gap-3 mb-2 flex-wrap">
+                    <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">🧾 Gastado en {mesLabel(mes)} · {fmtEur(tarjetaMes.gastado)}</p>
+                    <p className="text-[10px] text-gray-400">se cobrará en el recibo de {mesSiguienteNombre} · no suma en caja este mes</p>
+                  </div>
+                  {tarjetaMes.tickets.length === 0 ? (
+                    <p className="text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">Aún no hay movimientos conciliados de {mesLabel(mes)} — se irá llenando con tu conciliación semanal.</p>
+                  ) : (<>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {CATEGORIAS_TICKET.map(c => {
                       const v = tarjetaMes.porCategoria[c.key];
@@ -349,7 +355,6 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                       );
                     })}
                   </div>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Movimientos de {mesLabel(mes)} · detalle, no suma en caja (se cobran en el recibo)</p>
                   <div className="divide-y divide-gray-50">
                     {tarjetaMes.tickets.map((t, i) => {
                       const cat = CATEGORIAS_TICKET.find(c => c.key === t.categoria);
@@ -365,6 +370,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                       );
                     })}
                   </div>
+                  </>)}
                 </div>
               )}
             </div>
