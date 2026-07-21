@@ -664,6 +664,8 @@ export const tarjetaCargos = pgTable("tarjeta_cargos", {
   id: uuid("id").primaryKey().defaultRandom(),
   year: integer("year").notNull(),
   month: integer("month").notNull(),
+  // Cuenta contable principal de la tarjeta (ver TARJETAS en lib/tarjetas.ts)
+  cuenta: text("cuenta").notNull().default("52000004"),
   importe: numeric("importe", { precision: 12, scale: 2 }).notNull(),
   nota: text("nota"),
   created_at: timestamp("created_at").defaultNow().notNull(),

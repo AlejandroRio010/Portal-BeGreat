@@ -73,10 +73,13 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
     const dn = normRef(g.document_number);
     if (dn) docContada.set(dn, bucketConLink(g) !== "tarjeta");
   }
-  // Override manual (tabla tarjeta_cargos) — aplica solo a la Sabadell
-  const [cargoRow] = await db.select({ importe: tarjetaCargos.importe }).from(tarjetaCargos)
-    .where(and(eq(tarjetaCargos.year, anyoN), eq(tarjetaCargos.month, mesN))).limit(1);
-  const cargoManual = cargoRow ? Number(cargoRow.importe) : null;
+  // Cargos manuales por tarjeta y mes (tabla tarjeta_cargos): completan o
+  // corrigen el recibo cuando la contabilidad no lo tiene (p. ej. marzo 2026,
+  // cuya conciliación bancaria quedó incompleta).
+  const cargoRows = await db.select({ month: tarjetaCargos.month, cuenta: tarjetaCargos.cuenta, importe: tarjetaCargos.importe })
+    .from(tarjetaCargos).where(eq(tarjetaCargos.year, anyoN));
+  const cargoManualDe = new Map<string, number>();
+  for (const r of cargoRows) cargoManualDe.set(`${r.month}|${r.cuenta}`, Number(r.importe));
 
   const MES_TARJETA_VACIO: TarjetaMes = { mesIdx: mesN - 1, cargo: 0, gastado: 0, pagosFactura: 0, tickets: [], porCategoria: { gasolina: 0, parking: 0, dietas: 0 } };
   const tarjetas = TARJETAS.map((def, idx) => {
@@ -101,7 +104,9 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
     let descuentoMes = 0;
     for (let m = 0; m < mesN; m++) {
       const datos = resumen[m];
-      const descuento = Math.min(arrastre, datos.cargo);
+      // El cargo del mes en el recorrido incluye el manual si lo hay
+      const cargoM = cargoManualDe.get(`${m + 1}|${def.cuenta}`) ?? datos.cargo;
+      const descuento = Math.min(arrastre, cargoM);
       if (m === mesN - 1) descuentoMes = descuento;
       arrastre -= descuento;
       for (const tk of datos.tickets) {
@@ -110,14 +115,15 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
     }
     const esSabadell = idx === 0;
     const cargoAuto = mesData.cargo;
-    const recibo = esSabadell && cargoManual != null ? cargoManual : cargoAuto;
+    const manual = cargoManualDe.get(`${mesN}|${def.cuenta}`) ?? null;
+    const recibo = manual ?? cargoAuto;
     const facturasContadas = Math.min(descuentoMes, recibo);
     const enCaja = Math.max(0, recibo - facturasContadas);
-    const actividad = resumen.some(m => m.cargo > 0.005 || m.tickets.length > 0);
+    const actividad = resumen.some(m => m.cargo > 0.005 || m.tickets.length > 0) || cargoRows.some(r => r.cuenta === def.cuenta);
     // Gasto del mes anterior: si lo hubo y este mes no aparece recibo, algo falta
     // en la contabilidad (el banco cobra a mes vencido sí o sí).
     const gastadoPrev = mesN >= 2 ? resumen[mesN - 2]?.gastado ?? 0 : 0;
-    return { def, resumen, mesData, cargoAuto, manual: esSabadell ? cargoManual : null, recibo, facturasContadas, enCaja, esSabadell, actividad, gastadoPrev };
+    return { def, resumen, mesData, cargoAuto, manual, recibo, facturasContadas, enCaja, esSabadell, actividad, gastadoPrev };
   });
   // Lo que las tarjetas suman en caja este mes (recibos menos facturas ya contadas)
   const cargoTarjeta = tarjetas.reduce((s, t) => s + t.enCaja, 0);
@@ -395,11 +401,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Recibo cobrado por el banco</p>
-                    {tj.esSabadell ? (
-                      <CargoTarjetaEdit year={anyoN} month={mesN} importe={tj.recibo || null} />
-                    ) : (
-                      <p className={`text-xl font-black ${tj.recibo > 0.005 ? "text-[#2E1A47]" : "text-gray-300"}`}>{tj.recibo > 0.005 ? fmtEur(tj.recibo) : "sin recibo"}</p>
-                    )}
+                    <CargoTarjetaEdit year={anyoN} month={mesN} cuenta={tj.def.cuenta} importe={tj.recibo || null} />
                     <p className="text-[10px] text-gray-400 mt-0.5">
                       A mes vencido: <b>cubre el gasto de {mesAnteriorNombre}</b> ·{" "}
                       {tj.manual != null
@@ -417,7 +419,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                     )}
                     {tj.recibo <= 0.005 && tj.gastadoPrev > 0.005 && (
                       <p className="text-[10px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-2 py-1 mt-1.5">
-                        ⚠️ En {mesAnteriorNombre} se gastaron <b>{fmtEur(tj.gastadoPrev)}</b> con esta tarjeta y este mes no aparece ningún recibo del banco en la contabilidad. Falta por conciliar/apuntar el cargo — revisa el extracto{tj.esSabadell ? " (o ponlo a mano aquí arriba)" : ""}.
+                        ⚠️ En {mesAnteriorNombre} se gastaron <b>{fmtEur(tj.gastadoPrev)}</b> con esta tarjeta y este mes no aparece ningún recibo del banco en la contabilidad. Falta por conciliar/apuntar el cargo — revisa el extracto (o ponlo a mano aquí arriba).
                       </p>
                     )}
                   </div>

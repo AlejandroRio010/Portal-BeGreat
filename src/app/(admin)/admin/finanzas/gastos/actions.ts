@@ -133,14 +133,15 @@ export async function setEstadoFijo(id: string, ym: string, estado?: string, imp
   revalidatePath("/admin/finanzas/gastos");
 }
 
-/** Fija (o borra) el cargo mensual global de la tarjeta de crédito de un mes. */
-export async function setCargoTarjeta(year: number, month: number, importe: number | null) {
+/** Fija (o borra) el cargo mensual manual de una tarjeta en un mes (completa o
+ *  corrige el recibo cuando la contabilidad no lo tiene). */
+export async function setCargoTarjeta(year: number, month: number, importe: number | null, cuenta = "52000004") {
   await requireAdmin();
   if (importe == null || Number.isNaN(importe) || importe <= 0) {
-    await db.delete(tarjetaCargos).where(and(eq(tarjetaCargos.year, year), eq(tarjetaCargos.month, month)));
+    await db.delete(tarjetaCargos).where(and(eq(tarjetaCargos.year, year), eq(tarjetaCargos.month, month), eq(tarjetaCargos.cuenta, cuenta)));
   } else {
-    await db.insert(tarjetaCargos).values({ year, month, importe: String(importe) })
-      .onConflictDoUpdate({ target: [tarjetaCargos.year, tarjetaCargos.month], set: { importe: String(importe) } });
+    await db.insert(tarjetaCargos).values({ year, month, cuenta, importe: String(importe) })
+      .onConflictDoUpdate({ target: [tarjetaCargos.year, tarjetaCargos.month, tarjetaCargos.cuenta], set: { importe: String(importe) } });
   }
   revalidatePath("/admin/finanzas/gastos");
 }

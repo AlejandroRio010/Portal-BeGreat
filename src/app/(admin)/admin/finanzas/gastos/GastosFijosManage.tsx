@@ -674,8 +674,8 @@ export function BearingMesCell({ id, mes, estipulado }: {
   );
 }
 
-// ─── Cargo mensual de la tarjeta de crédito (editable) ────────────────────────
-export function CargoTarjetaEdit({ year, month, importe }: { year: number; month: number; importe: number | null }) {
+// ─── Cargo mensual de la tarjeta de crédito (editable, por tarjeta) ───────────
+export function CargoTarjetaEdit({ year, month, importe, cuenta = "52000004" }: { year: number; month: number; importe: number | null; cuenta?: string }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState("");
   const [pending, start] = useTransition();
@@ -684,7 +684,7 @@ export function CargoTarjetaEdit({ year, month, importe }: { year: number; month
   function guardar() {
     setEditing(false);
     const n = val.trim() === "" ? null : Number(val.replace(",", "."));
-    start(async () => { await setCargoTarjeta(year, month, n); router.refresh(); });
+    start(async () => { await setCargoTarjeta(year, month, n, cuenta); router.refresh(); });
   }
 
   if (editing) {
