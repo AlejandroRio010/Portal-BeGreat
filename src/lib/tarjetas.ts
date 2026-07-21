@@ -16,8 +16,35 @@ export const TARJETAS: TarjetaDef[] = [
 ];
 export const tarjetaDe = (cuenta: string) => TARJETAS.find(t => t.cuenta === cuenta) ?? null;
 
-export interface TicketTarjeta { date: string; mesIdx: number; desc: string; importe: number; }
-export interface TarjetaMes { mesIdx: number; cargo: number; gastado: number; tickets: TicketTarjeta[]; }
+// Categorías del gasto de tarjeta. Se clasifica por el concepto del apunte del
+// diario (los movimientos que se concilian semana a semana); dietas es el cajón
+// por defecto (restaurantes y demás no llevan patrón fijo).
+export type CategoriaTicket = "gasolina" | "parking" | "dietas";
+export const CATEGORIAS_TICKET: { key: CategoriaTicket; label: string; emoji: string }[] = [
+  { key: "gasolina", label: "Gasolina", emoji: "⛽" },
+  { key: "parking", label: "Parking y peajes", emoji: "🅿️" },
+  { key: "dietas", label: "Dietas y otros", emoji: "🍽️" },
+];
+
+const normDesc = (s: string) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const RE_GASOLINA = /bisonte|campsa|repsol|cepsa|galp|shell|petroprix|ballenoil|plenoil|orpinsoil|estacion(es)? (de )?servicio|carburante|gasolinera|energy/;
+const RE_PARKING = /parking|aparcamiento|aparcamien|garaje|santipark|general oraa|general ora|lavado car|car spa|peaje|autopista|seitt|empark|telpark/;
+
+export function categoriaTicket(desc: string): CategoriaTicket {
+  const d = normDesc(desc);
+  if (RE_GASOLINA.test(d)) return "gasolina";
+  if (RE_PARKING.test(d)) return "parking";
+  return "dietas";
+}
+
+export interface TicketTarjeta { date: string; mesIdx: number; desc: string; importe: number; categoria: CategoriaTicket; }
+export interface TarjetaMes {
+  mesIdx: number;
+  cargo: number;
+  gastado: number;
+  tickets: TicketTarjeta[];
+  porCategoria: Record<CategoriaTicket, number>;
+}
 
 // Referencia de documento para deduplicar el mismo ticket contabilizado dos
 // veces (una como "purchase" y otra como "expense"), que sí comparten ref.
@@ -30,7 +57,10 @@ function refDoc(desc: string): string {
 export function resumenTarjeta(entries: LibroLinea[], cuenta: string, anyo: number): TarjetaMes[] {
   const byE = new Map<number, LibroLinea[]>();
   for (const l of entries) { if (!byE.has(l.entry)) byE.set(l.entry, []); byE.get(l.entry)!.push(l); }
-  const meses: TarjetaMes[] = Array.from({ length: 12 }, (_, mesIdx) => ({ mesIdx, cargo: 0, gastado: 0, tickets: [] }));
+  const meses: TarjetaMes[] = Array.from({ length: 12 }, (_, mesIdx) => ({
+    mesIdx, cargo: 0, gastado: 0, tickets: [],
+    porCategoria: { gasolina: 0, parking: 0, dietas: 0 },
+  }));
   const vistos = new Set<string>();
   for (const ls of byE.values()) {
     const tocaBanco = ls.some(l => l.account.startsWith("57"));
@@ -44,8 +74,10 @@ export function resumenTarjeta(entries: LibroLinea[], cuenta: string, anyo: numb
         const k = ref ? `${l.date}|${l.credit.toFixed(2)}|${ref}` : `e${l.entry}|${l.line}`;
         if (vistos.has(k)) continue;
         vistos.add(k);
-        meses[l.mesIdx].tickets.push({ date: l.date, mesIdx: l.mesIdx, desc: l.description || "(sin concepto)", importe: l.credit });
+        const categoria = categoriaTicket(l.description);
+        meses[l.mesIdx].tickets.push({ date: l.date, mesIdx: l.mesIdx, desc: l.description || "(sin concepto)", importe: l.credit, categoria });
         meses[l.mesIdx].gastado += l.credit;
+        meses[l.mesIdx].porCategoria[categoria] += l.credit;
       }
     }
   }

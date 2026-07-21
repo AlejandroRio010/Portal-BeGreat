@@ -7,7 +7,7 @@ import { and, eq } from "drizzle-orm";
 import { getGastos, type HoldedGasto } from "@/lib/holded";
 import { getGastosFijos, esDelFijo, importeFijoMes, conIva, construirCandidatos } from "@/lib/gastosFijos";
 import { getLibroDiario, type LibroLinea } from "@/lib/holdedLedger";
-import { resumenTarjeta, TARJETAS } from "@/lib/tarjetas";
+import { resumenTarjeta, TARJETAS, CATEGORIAS_TICKET } from "@/lib/tarjetas";
 import { getCategoriasGasto } from "@/lib/categorias";
 import { BUCKETS, bucketDe } from "@/lib/gastosBuckets";
 import { fmtEur } from "@/lib/format";
@@ -70,6 +70,10 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
     .where(and(eq(tarjetaCargos.year, anyoN), eq(tarjetaCargos.month, mesN))).limit(1);
   const cargoManual = cargoRow ? Number(cargoRow.importe) : null;
   const cargoTarjeta = cargoManual != null ? cargoManual : cargoAuto;
+  // Hasta julio 2026 la tarjeta solo cuenta por el recibo del banco (sin desglose
+  // retroactivo); desde agosto, la conciliación semanal alimenta el desglose por
+  // categorías (dietas / gasolina / parking) automáticamente.
+  const verDetalleTarjeta = mes >= "2026-08";
 
   const fijosDef = await getGastosFijos();
   const categoriasGasto = await getCategoriasGasto();
@@ -319,25 +323,47 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                         : <>este mes el banco no ha cobrado recibo</>}
                   </p>
                 </div>
-                <div className="sm:text-right">
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Gastado con la tarjeta este mes (info)</p>
-                  <p className="text-xl font-black text-gray-500">{fmtEur(tarjetaMes.gastado)}</p>
-                  <p className="text-[10px] text-gray-400">{tarjetaMes.tickets.length} ticket{tarjetaMes.tickets.length !== 1 ? "s" : ""} · se cobra en próximos recibos</p>
-                </div>
+                {verDetalleTarjeta ? (
+                  <div className="sm:text-right">
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Gastado con la tarjeta este mes (info)</p>
+                    <p className="text-xl font-black text-gray-500">{fmtEur(tarjetaMes.gastado)}</p>
+                    <p className="text-[10px] text-gray-400">{tarjetaMes.tickets.length} ticket{tarjetaMes.tickets.length !== 1 ? "s" : ""} · se cobra en próximos recibos</p>
+                  </div>
+                ) : (
+                  <div className="sm:text-right self-center">
+                    <p className="text-[10px] text-gray-400">Hasta julio 2026 la tarjeta cuenta solo por el recibo del banco.<br />Desde agosto, tu conciliación semanal alimenta el desglose por categorías.</p>
+                  </div>
+                )}
               </div>
-              {tarjetaMes.tickets.length > 0 && (
+              {verDetalleTarjeta && tarjetaMes.tickets.length > 0 && (
                 <div className="mt-4 border-t border-gray-100 pt-3">
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Tickets de {mesLabel(mes)} · detalle, no suma en caja</p>
-                  <div className="divide-y divide-gray-50">
-                    {tarjetaMes.tickets.map((t, i) => (
-                      <div key={i} className="flex items-center justify-between gap-2 py-1.5 px-2">
-                        <span className="flex items-center gap-2 min-w-0">
-                          <span className="text-[10px] text-gray-400 whitespace-nowrap">{new Date(t.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span>
-                          <span className="text-xs font-medium text-gray-700 truncate">{t.desc}</span>
+                  {/* Desglose por categorías: dietas / gasolina / parking */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {CATEGORIAS_TICKET.map(c => {
+                      const v = tarjetaMes.porCategoria[c.key];
+                      if (v <= 0.005) return null;
+                      return (
+                        <span key={c.key} className="inline-flex items-center gap-1.5 bg-[#EEEBF3] text-[#2E1A47] rounded-xl px-3 py-1.5 text-xs font-semibold">
+                          {c.emoji} {c.label} · {fmtEur(v)}
                         </span>
-                        <span className="text-xs font-bold text-gray-700 whitespace-nowrap">{fmtEur(t.importe)}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2">Movimientos de {mesLabel(mes)} · detalle, no suma en caja (se cobran en el recibo)</p>
+                  <div className="divide-y divide-gray-50">
+                    {tarjetaMes.tickets.map((t, i) => {
+                      const cat = CATEGORIAS_TICKET.find(c => c.key === t.categoria);
+                      return (
+                        <div key={i} className="flex items-center justify-between gap-2 py-1.5 px-2">
+                          <span className="flex items-center gap-2 min-w-0">
+                            <span className="text-[10px] text-gray-400 whitespace-nowrap">{new Date(t.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span>
+                            <span className="text-xs font-medium text-gray-700 truncate">{t.desc}</span>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap">{cat?.emoji} {cat?.label}</span>
+                          </span>
+                          <span className="text-xs font-bold text-gray-700 whitespace-nowrap">{fmtEur(t.importe)}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

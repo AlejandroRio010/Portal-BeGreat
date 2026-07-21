@@ -34,6 +34,6 @@ export const BUCKETS: BucketMeta[] = [
   { key: "comisiones", label: "Comisiones de colaboradores", emoji: "🤝", desc: "Lo que pagamos a cada colaborador por su comisión", nota: "se ligan a su operación" },
   { key: "mercaderia", label: "Compras de mercadería", emoji: "📦", desc: "Equipos de renting cuando BeGreat factura (se paga a proveedor/cliente)" },
   { key: "nomina", label: "Nóminas y personal", emoji: "👥", desc: "Sueldos y Seguridad Social" },
-  { key: "tarjeta", label: "Tarjeta de crédito", emoji: "💳", desc: "Dietas, combustible, parking", nota: "lo detallamos mañana" },
+  { key: "tarjeta", label: "Tarjeta de crédito", emoji: "💳", desc: "Dietas, combustible, parking", nota: "cuenta el recibo mensual del banco · detalle en la sección de abajo" },
   { key: "otros", label: "Otros gastos variables", emoji: "•", desc: "Gastos puntuales que no encajan en los anteriores" },
 ];
