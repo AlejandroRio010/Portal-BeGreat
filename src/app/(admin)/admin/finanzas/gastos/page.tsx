@@ -114,7 +114,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
     const facturasContadas = Math.min(descuentoMes, recibo);
     const enCaja = Math.max(0, recibo - facturasContadas);
     const actividad = resumen.some(m => m.cargo > 0.005 || m.tickets.length > 0);
-    return { def, mesData, cargoAuto, manual: esSabadell ? cargoManual : null, recibo, facturasContadas, enCaja, esSabadell, actividad };
+    return { def, resumen, mesData, cargoAuto, manual: esSabadell ? cargoManual : null, recibo, facturasContadas, enCaja, esSabadell, actividad };
   });
   // Lo que las tarjetas suman en caja este mes (recibos menos facturas ya contadas)
   const cargoTarjeta = tarjetas.reduce((s, t) => s + t.enCaja, 0);
@@ -124,8 +124,11 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   // gastado del mes (con su categoría) en la Sabadell —la tarjeta de gastos—.
   // Dedup por nº de documento: cuando la conciliación las coloque, desaparecen
   // de aquí y quedan como movimiento. No suman en caja (eso lo hace el recibo).
+  // Dedup contra los movimientos de TODO el año (una factura puede conciliarse
+  // como movimiento en un mes distinto al de su fecha, p. ej. factura 1-jul
+  // conciliada el 30-jun): si ya existe como movimiento, no se vuelve a añadir.
   const refsEnTarjetas = new Set<string>();
-  for (const t of tarjetas) for (const tk of t.mesData.tickets) if (tk.ref) refsEnTarjetas.add(normRef(tk.ref));
+  for (const t of tarjetas) for (const m of t.resumen) for (const tk of m.tickets) if (tk.ref) refsEnTarjetas.add(normRef(tk.ref));
   const sab = tarjetas[0];
   for (const g of gastos) {
     if (!g.date.startsWith(mes) || bucketConLink(g) !== "tarjeta") continue;
