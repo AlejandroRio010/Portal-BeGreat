@@ -114,7 +114,10 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
     const facturasContadas = Math.min(descuentoMes, recibo);
     const enCaja = Math.max(0, recibo - facturasContadas);
     const actividad = resumen.some(m => m.cargo > 0.005 || m.tickets.length > 0);
-    return { def, resumen, mesData, cargoAuto, manual: esSabadell ? cargoManual : null, recibo, facturasContadas, enCaja, esSabadell, actividad };
+    // Gasto del mes anterior: si lo hubo y este mes no aparece recibo, algo falta
+    // en la contabilidad (el banco cobra a mes vencido sí o sí).
+    const gastadoPrev = mesN >= 2 ? resumen[mesN - 2]?.gastado ?? 0 : 0;
+    return { def, resumen, mesData, cargoAuto, manual: esSabadell ? cargoManual : null, recibo, facturasContadas, enCaja, esSabadell, actividad, gastadoPrev };
   });
   // Lo que las tarjetas suman en caja este mes (recibos menos facturas ya contadas)
   const cargoTarjeta = tarjetas.reduce((s, t) => s + t.enCaja, 0);
@@ -411,6 +414,11 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                       </p>
                     ) : tj.recibo > 0.005 && (
                       <p className="text-[10px] text-gray-400 mt-1">En caja suma {fmtEur(tj.enCaja)}</p>
+                    )}
+                    {tj.recibo <= 0.005 && tj.gastadoPrev > 0.005 && (
+                      <p className="text-[10px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-2 py-1 mt-1.5">
+                        ⚠️ En {mesAnteriorNombre} se gastaron <b>{fmtEur(tj.gastadoPrev)}</b> con esta tarjeta y este mes no aparece ningún recibo del banco en la contabilidad. Falta por conciliar/apuntar el cargo — revisa el extracto{tj.esSabadell ? " (o ponlo a mano aquí arriba)" : ""}.
+                      </p>
                     )}
                   </div>
                   {!verDetalleTarjeta && (
