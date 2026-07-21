@@ -15,7 +15,7 @@ const ACCENTS = {
 // con IVA 21% e IRPF 7% por detrás). Igual que el cobro pero del lado del pago.
 export default function PurchasePicker({
   opId, contraparte, esperado, selected, onChange,
-  accent = "purple", placeholder = "Buscar factura de pago…", hint,
+  accent = "purple", placeholder = "Buscar factura de pago…", hint, autonomo = null,
 }: {
   opId: string;
   contraparte: string;
@@ -25,6 +25,9 @@ export default function PurchasePicker({
   accent?: "purple" | "amber";
   placeholder?: string;
   hint?: string;
+  /** Tipo fiscal de la contraparte: true = autónomo (×1,14), false = empresa (×1,21),
+   *  null = desconocido (el buscador prueba todos los objetivos). */
+  autonomo?: boolean | null;
 }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<any[]>([]);
@@ -41,6 +44,7 @@ export default function PurchasePicker({
       if (all) params.set("todas", "1");
       if (contraparte) params.set("contraparte", contraparte);
       if (esperado && Number(esperado) > 0) params.set("esperado", String(esperado));
+      if (autonomo != null) params.set("autonomo", autonomo ? "1" : "0");
       const res = await fetch(`/api/admin/holded/purchases?${params}`);
       setResults(res.ok ? await res.json() : []);
     } catch { setResults([]); } finally { setLoading(false); }

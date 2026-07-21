@@ -1020,11 +1020,14 @@ export default function AdminOpForm({
                                 opId={opId}
                                 contraparte={c.nombre}
                                 esperado={c.importe}
+                                autonomo={!!allColaboradores.find(ac => ac.id === c.id)?.es_autonomo}
                                 selected={comisionLinks(c.id)}
                                 onChange={next => setComisionLinks(c.id!, next)}
                                 accent="amber"
                                 placeholder="Buscar factura de comisión…"
-                                hint={`Compras de ${c.nombre || "este colaborador"} · IVA 21% / IRPF 7% por detrás`}
+                                hint={allColaboradores.find(ac => ac.id === c.id)?.es_autonomo
+                                  ? `Compras de ${c.nombre || "este colaborador"} · autónomo: busca base + IVA 21% − IRPF 7%`
+                                  : `Compras de ${c.nombre || "este colaborador"} · empresa: busca base + IVA 21%`}
                               />
                               <ObliviateResolver value={getObl("comision", c.id)} onChange={v => setObl("comision", c.id!, v)} esperado={c.importe} verbo="pagado" />
                             </>
