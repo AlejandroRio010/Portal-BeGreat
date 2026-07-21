@@ -80,18 +80,38 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
 
   const MES_TARJETA_VACIO: TarjetaMes = { mesIdx: mesN - 1, cargo: 0, gastado: 0, pagosFactura: 0, tickets: [], porCategoria: { gasolina: 0, parking: 0, dietas: 0 } };
   const tarjetas = TARJETAS.map((def, idx) => {
-    const resumen = resumenTarjeta(diario, def.cuenta, anyoN);
+    const resumen = resumenTarjeta(diario, def.cuentas, anyoN);
+    // Refuerzo: si el concepto del movimiento lleva el nº de una factura
+    // registrada en Holded, es un pago de factura aunque el asiento no toque
+    // la cuenta 40x del proveedor (pasa en las conciliaciones del banco).
+    for (const m of resumen) {
+      for (const tk of m.tickets) {
+        if (!tk.pagaFactura && tk.ref && docContada.has(normRef(tk.ref))) {
+          tk.pagaFactura = true;
+          m.pagosFactura += tk.importe;
+          m.porCategoria[tk.categoria] -= tk.importe;
+        }
+      }
+    }
     const mesData = resumen[mesN - 1] ?? MES_TARJETA_VACIO;
-    // Facturas ya contadas (fijos/variables) que este recibo paga: las del mes anterior
-    const prev = mesN >= 2 ? resumen[mesN - 2] : null;
-    let facturasContadas = 0;
-    for (const tk of prev?.tickets ?? []) {
-      if (tk.pagaFactura && tk.ref && (docContada.get(normRef(tk.ref)) ?? false)) facturasContadas += tk.importe;
+    // Descuento con ARRASTRE: los pagos de facturas ya contadas (fijos/variables)
+    // hechos con la tarjeta se descuentan del siguiente recibo que llegue (los
+    // ciclos del banco no siempre van mes a mes exactos).
+    let arrastre = 0;
+    let descuentoMes = 0;
+    for (let m = 0; m < mesN; m++) {
+      const datos = resumen[m];
+      const descuento = Math.min(arrastre, datos.cargo);
+      if (m === mesN - 1) descuentoMes = descuento;
+      arrastre -= descuento;
+      for (const tk of datos.tickets) {
+        if (tk.pagaFactura && tk.ref && (docContada.get(normRef(tk.ref)) ?? false)) arrastre += tk.importe;
+      }
     }
     const esSabadell = idx === 0;
     const cargoAuto = mesData.cargo;
     const recibo = esSabadell && cargoManual != null ? cargoManual : cargoAuto;
-    facturasContadas = Math.min(facturasContadas, recibo);
+    const facturasContadas = Math.min(descuentoMes, recibo);
     const enCaja = Math.max(0, recibo - facturasContadas);
     const actividad = resumen.some(m => m.cargo > 0.005 || m.tickets.length > 0);
     return { def, mesData, cargoAuto, manual: esSabadell ? cargoManual : null, recibo, facturasContadas, enCaja, esSabadell, actividad };
@@ -379,7 +399,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                       {tj.manual != null
                         ? <>fijado a mano · el diario dice <b>{fmtEur(tj.cargoAuto)}</b></>
                         : tj.cargoAuto > 0.005
-                          ? <>automático del <b>libro diario</b> (cuenta {tj.def.cuenta})</>
+                          ? <>automático del <b>libro diario</b> (cta {tj.def.cuentas.join(" + ")})</>
                           : <>este mes el banco no ha cobrado recibo</>}
                     </p>
                     {tj.facturasContadas > 0.005 ? (

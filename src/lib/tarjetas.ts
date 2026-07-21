@@ -6,7 +6,7 @@
 
 import { type LibroLinea, esAcreedor } from "@/lib/holdedLedger";
 
-export interface TarjetaDef { cuenta: string; label: string; banco: string; }
+export interface TarjetaDef { cuenta: string; cuentas: string[]; label: string; banco: string; }
 
 // Las 3 tarjetas de crédito, todas con el MISMO mecanismo: recibo a mes vencido
 // (caja) + movimientos del mes clasificados. Cada movimiento se identifica como
@@ -14,12 +14,15 @@ export interface TarjetaDef { cuenta: string; label: string; banco: string; }
 // asiento toca la cuenta 40x del proveedor) — esas facturas ya cuentan en
 // fijos/variables, así que se descuentan del recibo en caja para no duplicar.
 // Da igual qué tarjeta se use para qué: la clasificación es automática.
+// OJO: una tarjeta puede tener VARIAS cuentas contables (en abril 2026 la
+// contabilidad movió los movimientos de la Sabadell a 52010001 y los de la
+// Bankinter a 52010000; los recibos siguen en las cuentas antiguas).
 export const TARJETAS: TarjetaDef[] = [
-  { cuenta: "52000004", label: "Sabadell «business MC»", banco: "Sabadell" },
-  { cuenta: "52000005", label: "Bankinter", banco: "Bankinter" },
-  { cuenta: "52000009", label: "Laboral Kutxa", banco: "Laboral Kutxa" },
+  { cuenta: "52000004", cuentas: ["52000004", "52010001"], label: "Sabadell «business MC»", banco: "Sabadell" },
+  { cuenta: "52000005", cuentas: ["52000005", "52010000"], label: "Bankinter", banco: "Bankinter" },
+  { cuenta: "52000009", cuentas: ["52000009"], label: "Laboral Kutxa", banco: "Laboral Kutxa" },
 ];
-export const tarjetaDe = (cuenta: string) => TARJETAS.find(t => t.cuenta === cuenta) ?? null;
+export const tarjetaDe = (cuenta: string) => TARJETAS.find(t => t.cuentas.includes(cuenta)) ?? null;
 
 // Categorías del gasto de tarjeta. Se clasifica por el concepto del apunte del
 // diario (los movimientos que se concilian semana a semana); dietas es el cajón
@@ -32,7 +35,7 @@ export const CATEGORIAS_TICKET: { key: CategoriaTicket; label: string; emoji: st
 ];
 
 const normDesc = (s: string) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-const RE_GASOLINA = /bisonte|campsa|repsol|cepsa|galp|shell|petroprix|ballenoil|plenoil|orpinsoil|estacion(es)? (de )?servicio|carburante|gasolinera|energy/;
+const RE_GASOLINA = /bisonte|campsa|repsol|cepsa|galp|shell|petroprix|ballenoil|plenoil|orpinsoil|petronor|avia|disa|\bbp\b|estacion(es)? (de )?servicio|carburante|combustible|gasolinera|energy/;
 const RE_PARKING = /parking|aparcamiento|aparcamien|garaje|santipark|general oraa|general ora|lavado car|car spa|peaje|autopista|seitt|empark|telpark/;
 
 export function categoriaTicket(desc: string): CategoriaTicket {
@@ -75,8 +78,10 @@ function refDoc(desc: string): string {
   return m ? m[0] : "";
 }
 
-/** Resumen mes a mes de una tarjeta: recibo cobrado (caja) + tickets del mes. */
-export function resumenTarjeta(entries: LibroLinea[], cuenta: string, anyo: number): TarjetaMes[] {
+/** Resumen mes a mes de una tarjeta: recibo cobrado (caja) + tickets del mes.
+ *  Acepta una cuenta o varias (una tarjeta puede cambiar de cuenta contable). */
+export function resumenTarjeta(entries: LibroLinea[], cuenta: string | string[], anyo: number): TarjetaMes[] {
+  const cuentasTarjeta = new Set(Array.isArray(cuenta) ? cuenta : [cuenta]);
   const byE = new Map<number, LibroLinea[]>();
   for (const l of entries) { if (!byE.has(l.entry)) byE.set(l.entry, []); byE.get(l.entry)!.push(l); }
   const meses: TarjetaMes[] = Array.from({ length: 12 }, (_, mesIdx) => ({
@@ -88,7 +93,7 @@ export function resumenTarjeta(entries: LibroLinea[], cuenta: string, anyo: numb
     const tocaBanco = ls.some(l => l.account.startsWith("57"));
     const tocaProveedor = ls.some(l => esAcreedor(l.account));
     for (const l of ls) {
-      if (l.account !== cuenta || l.anyo !== anyo) continue;
+      if (!cuentasTarjeta.has(l.account) || l.anyo !== anyo) continue;
       // Débito con contrapartida en banco = el banco liquida la tarjeta → cuenta en caja
       if (l.debit > 0.005 && tocaBanco) { meses[l.mesIdx].cargo += l.debit; continue; }
       // Crédito = cargo a la tarjeta: ticket, o pago de una factura registrada
