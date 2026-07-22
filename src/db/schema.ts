@@ -660,6 +660,14 @@ export const categorias = pgTable("categorias", {
 // Para el CF cuenta el cargo GLOBAL que la tarjeta (Sabadell "business mc") pasa
 // a la cuenta cada mes; el detalle (gasolina/parking) es solo informativo, no
 // suma (evita doble conteo con las facturas de Holded).
+// Valores sueltos de finanzas (clave → número), p. ej. el saldo inicial de los
+// bancos a 1 de enero para convertir la variación del diario en caja absoluta.
+export const finanzasValores = pgTable("finanzas_valores", {
+  clave: text("clave").primaryKey(),
+  valor: numeric("valor", { precision: 14, scale: 2 }).notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const tarjetaCargos = pgTable("tarjeta_cargos", {
   id: uuid("id").primaryKey().defaultRandom(),
   year: integer("year").notNull(),

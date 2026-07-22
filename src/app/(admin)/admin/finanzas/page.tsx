@@ -15,21 +15,22 @@ export default async function FinanzasHubPage() {
   const hoy = new Date();
   const mes = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
 
+  // Todo en BASE (sin IVA): el negocio se mira sin IVA; el IVA va aparte.
   let cobrado = 0, pagadoGasto = 0, ok = true;
   try {
     const [ventas, gastos] = await Promise.all([getFacturasVenta(), getGastos()]);
-    cobrado = ventas.filter(f => f.date.startsWith(mes) && f.estado === "cobrada").reduce((s, f) => s + f.total, 0);
-    pagadoGasto = gastos.filter(g => g.date.startsWith(mes)).reduce((s, g) => s + g.total, 0);
+    cobrado = ventas.filter(f => f.date.startsWith(mes) && f.estado === "cobrada").reduce((s, f) => s + f.subtotal, 0);
+    pagadoGasto = gastos.filter(g => g.date.startsWith(mes)).reduce((s, g) => s + g.subtotal, 0);
   } catch { ok = false; }
   const neto = cobrado - pagadoGasto;
 
   const secciones = [
-    { href: "/admin/finanzas/ingresos", titulo: "Ingresos", desc: "Facturas de venta, cobros y IVA repercutido", emoji: "📈", activo: true },
-    { href: "/admin/finanzas/gastos", titulo: "Gastos", desc: "Facturas de compra, pagos y retenciones", emoji: "📉", activo: true },
-    { href: "/admin/finanzas/gastos/fijos", titulo: "Gastos fijos", desc: "Recurrentes por proveedor y control mensual de pago", emoji: "📌", activo: true },
-    { href: "/admin/finanzas/categorias", titulo: "Categorías", desc: "Añadir o quitar categorías de gasto", emoji: "🏷️", activo: true },
-    { href: "#", titulo: "Impuestos", desc: "IVA e IRPF por trimestre", emoji: "🧾", activo: false },
-    { href: "#", titulo: "Resumen anual", desc: "Evolución y resultado del ejercicio", emoji: "📊", activo: false },
+    { href: "/admin/finanzas/caja", titulo: "Caja", desc: "Evolución mensual del grupo: ingresos, gastos, tarjetas y caja de bancos", activo: true },
+    { href: "/admin/finanzas/ingresos", titulo: "Ingresos", desc: "Facturas de venta, cobros y pendientes por línea de negocio", activo: true },
+    { href: "/admin/finanzas/gastos", titulo: "Gastos", desc: "Fijos, variables y tarjetas del mes", activo: true },
+    { href: "/admin/finanzas/gastos/fijos", titulo: "Gastos fijos", desc: "Control anual por proveedor (Bearing y Obliviate)", activo: true },
+    { href: "/admin/finanzas/categorias", titulo: "Categorías", desc: "Añadir o quitar categorías de gasto", activo: true },
+    { href: "#", titulo: "Impuestos", desc: "IVA e IRPF por trimestre", activo: false },
   ];
 
   return (
@@ -42,11 +43,11 @@ export default async function FinanzasHubPage() {
       {/* Resumen del mes */}
       <div className="grid grid-cols-3 gap-4 mb-10">
         <div className="bg-[#2E1A47] px-6 py-6">
-          <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Cobrado en {MESES[hoy.getMonth()]}</p>
+          <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Cobrado en {MESES[hoy.getMonth()]} · sin IVA</p>
           <p className="text-3xl font-black text-white">{ok ? fmtEur(cobrado) : "—"}</p>
         </div>
         <div className="bg-[#2E1A47] px-6 py-6">
-          <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Gastado en {MESES[hoy.getMonth()]}</p>
+          <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Gastado en {MESES[hoy.getMonth()]} · sin IVA</p>
           <p className="text-3xl font-black text-white">{ok ? fmtEur(pagadoGasto) : "—"}</p>
         </div>
         <div className={`px-6 py-6 border ${neto >= 0 ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"}`}>
@@ -60,7 +61,7 @@ export default async function FinanzasHubPage() {
         {secciones.map(s => s.activo ? (
           <Link key={s.titulo} href={s.href}
             className="group bg-white border border-gray-200 rounded-2xl p-6 hover:border-[#2E1A47]/40 hover:shadow-md transition-all flex items-start gap-4">
-            <span className="text-3xl">{s.emoji}</span>
+            <span className="mt-2 w-2.5 h-2.5 rounded-sm bg-[#FFC845] flex-shrink-0" />
             <div className="flex-1">
               <p className="text-lg font-bold text-gray-900 group-hover:text-[#2E1A47]">{s.titulo}</p>
               <p className="text-sm text-gray-400 mt-0.5">{s.desc}</p>
@@ -69,7 +70,7 @@ export default async function FinanzasHubPage() {
           </Link>
         ) : (
           <div key={s.titulo} className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 flex items-start gap-4 opacity-70">
-            <span className="text-3xl grayscale">{s.emoji}</span>
+            <span className="mt-2 w-2.5 h-2.5 rounded-sm bg-gray-300 flex-shrink-0" />
             <div className="flex-1">
               <p className="text-lg font-bold text-gray-400">{s.titulo}</p>
               <p className="text-sm text-gray-400 mt-0.5">{s.desc}</p>

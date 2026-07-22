@@ -105,10 +105,10 @@ export default async function GastosFijosPage() {
         </div>
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-2xl font-bold text-gray-900">Gastos fijos {anyo}</h1>
-          <Link href="/admin/finanzas/categorias" className="text-xs font-semibold text-[#2E1A47] bg-[#EEEBF3] hover:bg-[#e2ddec] rounded-xl px-3 py-1.5 transition-colors whitespace-nowrap">🏷️ Categorías</Link>
+          <Link href="/admin/finanzas/categorias" className="text-xs font-semibold text-[#2E1A47] bg-[#EEEBF3] hover:bg-[#e2ddec] rounded-xl px-3 py-1.5 transition-colors whitespace-nowrap">Categorías</Link>
         </div>
         <p className="text-sm text-gray-400 mt-1">
-          <b className="text-[#2E1A47]">Bearing</b> cruza con las facturas de Holded por proveedor: al llegar → <span className="text-amber-600 font-semibold">recibida</span>, al conciliarse el pago → <span className="text-emerald-600 font-semibold">pagada</span>. <b className="text-amber-700">Obliviate</b> se marca a mano. Importes <b>sin IVA</b> (se muestra "+ IVA"); el <span className="text-red-600 font-semibold">⚠️</span> de un mes avisa de sobrecoste.
+          <b className="text-[#2E1A47]">Bearing</b> cruza con las facturas de Holded por proveedor: al llegar → <span className="text-amber-600 font-semibold">recibida</span>, al conciliarse el pago → <span className="text-emerald-600 font-semibold">pagada</span>. <b className="text-amber-700">Obliviate</b> se marca a mano. Importes <b>sin IVA</b> (se muestra "+ IVA"); el marcador rojo de un mes avisa de sobrecoste.
         </p>
       </div>
 
@@ -135,7 +135,7 @@ export default async function GastosFijosPage() {
             </div>
             <div className={`px-5 py-4 ${totalAvisos > 0 ? "bg-red-50 border border-red-100" : "bg-gray-50 border border-gray-100"}`}>
               <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${totalAvisos > 0 ? "text-red-500" : "text-gray-400"}`}>Avisos de sobrecoste</p>
-              <p className={`text-2xl font-black ${totalAvisos > 0 ? "text-red-600" : "text-gray-300"}`}>{totalAvisos > 0 ? `⚠️ ${totalAvisos}` : "0"}</p>
+              <p className={`text-2xl font-black ${totalAvisos > 0 ? "text-red-600" : "text-gray-300"}`}>{totalAvisos}</p>
               <p className="text-gray-400 text-[9px] mt-0.5 uppercase tracking-wide">meses por encima</p>
             </div>
           </div>
@@ -177,7 +177,7 @@ export default async function GastosFijosPage() {
                           const mi = Number(a.ym.split("-")[1]) - 1;
                           return (
                             <p key={a.ym} className="text-[10px] text-red-600 flex items-start gap-1">
-                              <span>⚠️</span>
+                              <span className="mt-1 w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
                               <span><b>{CORTOS[mi]}</b> +{fmtEur(a.exceso)} de lo estipulado{a.nota ? <span className="text-gray-500"> · {a.nota}</span> : <span className="text-gray-300"> · clic para explicar</span>}</span>
                             </p>
                           );
@@ -193,7 +193,7 @@ export default async function GastosFijosPage() {
             <section className="bg-white border border-amber-100 rounded-2xl shadow-sm overflow-hidden">
               <div className="px-4 py-3 bg-amber-50 flex items-center justify-between">
                 <div>
-                  <h2 className="text-sm font-bold text-amber-800 uppercase tracking-wider">🏢 Obliviate</h2>
+                  <h2 className="text-sm font-bold text-amber-800 uppercase tracking-wider">Obliviate</h2>
                   <p className="text-[10px] text-amber-800/50">manual · fuera de Holded · {fijosObliviate.length} fijos</p>
                 </div>
                 <AddGastoFijoButton empresa="obliviate" categorias={categoriasGasto} />
@@ -233,7 +233,7 @@ export default async function GastosFijosPage() {
                             </span>
                           ))}
                         </div>
-                        <p className="text-[9px] text-amber-700/60">Una sola factura al mes: el importe esperado de cada mes suma lo que toca (mensuales + renovaciones). Si el cobro real difiere, ajusta el importe en la celda y saldrá ⚠.</p>
+                        <p className="text-[9px] text-amber-700/60">Una sola factura al mes: el importe esperado de cada mes suma lo que toca (mensuales + renovaciones). Si el cobro real difiere, ajusta el importe en la celda y quedará marcado en rojo.</p>
                       </div>
                     )}
                     {gf.periodicidad === "anual" && (
@@ -251,7 +251,7 @@ export default async function GastosFijosPage() {
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-400" /> Recibida sin pagar</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-500" /> Mes pasado sin factura/pago</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-gray-100 border border-gray-200" /> Aún no toca</span>
-            <span className="flex items-center gap-1.5"><span className="text-red-500">⚠️</span> Cobrado de más</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border-2 border-red-500" /> Cobrado de más</span>
           </div>
           <p className="text-[11px] text-gray-400 mt-2">
             En <b>Obliviate</b>, clic en un mes → desplegable para <b>sin marcar</b> · <span className="text-amber-600 font-semibold">recibida</span> · <span className="text-emerald-600 font-semibold">pagada</span> y ajustar el importe. Clic en el nombre para renombrar o poner concepto.

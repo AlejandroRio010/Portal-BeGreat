@@ -61,7 +61,7 @@ export function CategoriaRow({ id, nombre, usos }: { id: string; nombre: string;
         <button type="button" onClick={() => { setVal(nombre); setEditing(true); }}
           title="Renombrar" className="flex-1 text-left text-sm font-medium text-gray-800 flex items-center gap-1.5">
           {pending ? "…" : nombre}
-          <span className="opacity-0 group-hover:opacity-100 text-gray-300 text-[10px] transition-opacity">✎</span>
+          <span className="opacity-0 group-hover:opacity-100 text-gray-300 text-[10px] transition-opacity">editar</span>
         </button>
       )}
       {usos > 0 && !editing && (
@@ -69,7 +69,7 @@ export function CategoriaRow({ id, nombre, usos }: { id: string; nombre: string;
       )}
       <button type="button" onClick={quitar} disabled={pending}
         title="Quitar categoría"
-        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 text-sm transition-all disabled:opacity-40">🗑</button>
+        className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 text-[10px] font-semibold transition-all disabled:opacity-40">Quitar</button>
     </div>
   );
 }

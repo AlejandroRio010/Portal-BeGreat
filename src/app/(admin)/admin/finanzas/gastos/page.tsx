@@ -222,7 +222,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
               <td className="px-3 py-3 max-w-[180px]">
                 <a href={holdedUrl(g.id)} target="_blank" rel="noopener noreferrer" className="block text-sm font-semibold text-gray-800 hover:text-[#2E1A47] hover:underline truncate" title={g.proveedor}>{g.proveedor}</a>
                 {opDePurchase.get(g.id) && (
-                  <a href={`/admin/operaciones/${opDePurchase.get(g.id)!.id}`} className="block text-[10px] font-semibold text-[#2E1A47] hover:underline truncate" title={opDePurchase.get(g.id)!.nombre}>🔗 {opDePurchase.get(g.id)!.nombre}</a>
+                  <a href={`/admin/operaciones/${opDePurchase.get(g.id)!.id}`} className="block text-[10px] font-semibold text-[#2E1A47] hover:underline truncate" title={opDePurchase.get(g.id)!.nombre}>→ {opDePurchase.get(g.id)!.nombre}</a>
                 )}
               </td>
               <td className="px-3 py-3 text-xs text-gray-500 max-w-[150px] truncate" title={g.description ?? undefined}>{g.description ?? "—"}</td>
@@ -249,7 +249,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Finanzas — Gastos</h1>
           <p className="text-sm text-gray-400 mt-1">Bearing Point S.L. · desde Holded · todo lo que veas aquí está ya en tu contabilidad</p>
-          <Link href="/admin/finanzas/gastos/fijos" className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-[#2E1A47] hover:underline">📌 Control anual de gastos fijos →</Link>
+          <Link href="/admin/finanzas/gastos/fijos" className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-[#2E1A47] hover:underline">Control anual de gastos fijos →</Link>
         </div>
         <div className="flex gap-0.5 bg-white border border-gray-200 rounded-2xl p-1 self-start">
           {CORTOS.map((m, i) => {
@@ -271,7 +271,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
             <div className="bg-[#2E1A47] px-6 py-5">
               <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Gastado en {mesLabel(mes).split(" ")[0]} · sin IVA</p>
               <p className="text-2xl font-black text-white">{fmtEur(baseMes + baseObliviate)}</p>
-              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">+ IVA {fmtEur(ivaMes + (totalObliviate - baseObliviate))}{cargoTarjeta > 0 ? ` · 💳 ${fmtEur(cargoTarjeta)}` : ""} · caja {fmtEur(totalContados + cargoTarjeta + totalObliviate)}</p>
+              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">+ IVA {fmtEur(ivaMes + (totalObliviate - baseObliviate))}{cargoTarjeta > 0 ? ` · tarjetas ${fmtEur(cargoTarjeta)}` : ""} · caja {fmtEur(totalContados + cargoTarjeta + totalObliviate)}</p>
             </div>
             <div className="bg-white border border-gray-200 px-6 py-5">
               <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1.5">Gastos fijos</p>
@@ -321,7 +321,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
               {/* Obliviate */}
               <div className="bg-white border border-amber-100 rounded-xl overflow-hidden shadow-sm">
                 <div className="px-4 py-2 bg-amber-50 flex items-center justify-between">
-                  <p className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">🏢 Obliviate</p>
+                  <p className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Obliviate</p>
                   <span className="text-[10px] text-amber-600">manual · {fmtEur(totalObliviate)} c/IVA</span>
                 </div>
                 {obliviateMes.length === 0 ? (
@@ -361,7 +361,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                     <div key={b.key}>
                       <div className="flex items-end justify-between mb-2 gap-4">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="text-lg leading-none">{b.emoji}</span>
+                          <span className="mt-1.5 w-2 h-2 rounded-sm bg-[#FFC845] flex-shrink-0" />
                           <div className="min-w-0">
                             <p className="text-sm font-bold text-[#2E1A47]">{b.label}</p>
                             <p className="text-[11px] text-gray-400 truncate">{b.desc}{b.nota ? ` · ${b.nota}` : ""}</p>
@@ -371,15 +371,14 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                       </div>
 
                       {b.key === "tarjeta" ? (
-                        <div className="bg-amber-50/60 border border-amber-200 rounded-2xl px-4 py-3 flex items-center gap-2">
-                          <span className="text-base">💳</span>
-                          <p className="text-xs text-amber-700"><b>{items.length} cargos</b> por {fmtEur(sub)} — lo detallamos mañana (dietas, combustible, parking).</p>
+                        <div className="bg-amber-50/60 border border-amber-200 rounded-2xl px-4 py-3">
+                          <p className="text-xs text-amber-700"><b>{items.length} facturas</b> por {fmtEur(sub)} — no suman aquí: las cubre el recibo mensual de la tarjeta (detalle abajo).</p>
                         </div>
                       ) : (
                         <>
                           {b.key === "nomina" && (
                             <div className="bg-[#EEEBF3]/60 border border-[#2E1A47]/10 rounded-t-2xl px-4 py-2 text-[11px] text-[#2E1A47]/70">
-                              ⓘ Aquí solo entra lo que Holded registra como compra (Seguridad Social, gestoría). Los <b>sueldos netos de Rita y Macarena no están en Holded</b> — <b>pendiente (mañana)</b>: los metemos como importe mensual para que se vean aquí.
+                              Aquí solo entra lo que Holded registra como compra (Seguridad Social, gestoría). Los <b>sueldos netos de Rita y Macarena no están en Holded</b> — pendiente: los metemos como importe mensual para que se vean aquí.
                             </div>
                           )}
                           <div className="bg-white border border-gray-100 overflow-hidden shadow-sm">{filaGastos(items)}</div>
@@ -396,7 +395,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
               (caja, descontando facturas ya contadas) + gastado del mes por categorías */}
           {tarjetas.filter(t => t.actividad).map(tj => (
             <div className="mt-6" key={tj.def.cuenta}>
-              <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider mb-3">💳 Tarjeta {tj.def.label} · {mesLabel(mes)}</h2>
+              <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider mb-3">Tarjeta {tj.def.label} · {mesLabel(mes)}</h2>
               <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
@@ -412,14 +411,14 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                     </p>
                     {tj.facturasContadas > 0.005 ? (
                       <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1 mt-1.5">
-                        📄 Incluye <b>{fmtEur(tj.facturasContadas)}</b> de facturas ya contadas en fijos/variables → en caja suma <b>{fmtEur(tj.enCaja)}</b> (sin duplicar)
+                        Incluye <b>{fmtEur(tj.facturasContadas)}</b> de facturas ya contadas en fijos/variables → en caja suma <b>{fmtEur(tj.enCaja)}</b> (sin duplicar)
                       </p>
                     ) : tj.recibo > 0.005 && (
                       <p className="text-[10px] text-gray-400 mt-1">En caja suma {fmtEur(tj.enCaja)}</p>
                     )}
                     {tj.recibo <= 0.005 && tj.gastadoPrev > 0.005 && (
                       <p className="text-[10px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-2 py-1 mt-1.5">
-                        ⚠️ En {mesAnteriorNombre} se gastaron <b>{fmtEur(tj.gastadoPrev)}</b> con esta tarjeta y este mes no aparece ningún recibo del banco en la contabilidad. Falta por conciliar/apuntar el cargo — revisa el extracto (o ponlo a mano aquí arriba).
+                        En {mesAnteriorNombre} se gastaron <b>{fmtEur(tj.gastadoPrev)}</b> con esta tarjeta y este mes no aparece ningún recibo del banco en la contabilidad. Falta por conciliar/apuntar el cargo — revisa el extracto (o ponlo a mano aquí arriba).
                       </p>
                     )}
                   </div>
@@ -434,7 +433,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                     {/* Minisección "Gastado en el mes": se alimenta de la conciliación semanal
                         y se cobrará en el recibo del mes siguiente (a mes vencido) */}
                     <div className="flex items-baseline justify-between gap-3 mb-2 flex-wrap">
-                      <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">🧾 Gastado en {mesLabel(mes)} · {fmtEur(tj.mesData.gastado)}</p>
+                      <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Gastado en {mesLabel(mes)} · {fmtEur(tj.mesData.gastado)}</p>
                       <p className="text-[10px] text-gray-400">se cobrará en el recibo de {mesSiguienteNombre} · no suma en caja este mes</p>
                     </div>
                     {tj.mesData.tickets.length === 0 ? (
@@ -446,13 +445,13 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                         if (v <= 0.005) return null;
                         return (
                           <span key={c.key} className="inline-flex items-center gap-1.5 bg-[#EEEBF3] text-[#2E1A47] rounded-xl px-3 py-1.5 text-xs font-semibold">
-                            {c.emoji} {c.label} · {fmtEur(v)}
+                            {c.label} · {fmtEur(v)}
                           </span>
                         );
                       })}
                       {tj.mesData.pagosFactura > 0.005 && (
                         <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl px-3 py-1.5 text-xs font-semibold">
-                          📄 Pagos de factura · {fmtEur(tj.mesData.pagosFactura)}
+                          Pagos de factura · {fmtEur(tj.mesData.pagosFactura)}
                         </span>
                       )}
                     </div>
@@ -465,9 +464,9 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                               <span className="text-[10px] text-gray-400 whitespace-nowrap">{new Date(t.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span>
                               <span className="text-xs font-medium text-gray-700 truncate">{t.desc}</span>
                               {t.pagaFactura
-                                ? <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap">📄 Factura</span>
-                                : <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap">{cat?.emoji} {cat?.label}</span>}
-                              {t.esFactura && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-gray-50 text-gray-400 border border-gray-200 whitespace-nowrap" title="Factura de Holded aún sin conciliar como movimiento de tarjeta">📄 con factura</span>}
+                                ? <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap">Factura</span>
+                                : <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#EEEBF3] text-[#2E1A47] whitespace-nowrap">{cat?.label}</span>}
+                              {t.esFactura && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-gray-50 text-gray-400 border border-gray-200 whitespace-nowrap" title="Factura de Holded aún sin conciliar como movimiento de tarjeta">con factura</span>}
                             </span>
                             <span className="text-xs font-bold text-gray-700 whitespace-nowrap">{fmtEur(t.importe)}</span>
                           </div>

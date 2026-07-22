@@ -75,7 +75,7 @@ function AddGastoFijoObliviate({ categorias }: { categorias: string[] }) {
           <div className="bg-white rounded-3xl shadow-xl w-full max-w-md mt-[8vh] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-5 border-b border-amber-100 flex items-start justify-between gap-4 bg-amber-50/50">
               <div>
-                <h3 className="text-lg font-bold text-amber-800">🏢 Añadir gasto fijo · Obliviate</h3>
+                <h3 className="text-lg font-bold text-amber-800">Añadir gasto fijo · Obliviate</h3>
                 <p className="text-xs text-gray-400 mt-0.5">Manual (no está en Holded). El importe va <b>sin IVA</b>.</p>
               </div>
               <button onClick={cerrar} className="text-gray-300 hover:text-gray-500 text-xl leading-none">✕</button>
@@ -374,10 +374,10 @@ export function ObliviateFijoCell({ id, ym, estado, importe, aplica, esPasado, c
   return (
     <>
       <button ref={btnRef} type="button" disabled={pending} onClick={toggle}
-        title={`${mesNombre} · ${importe != null ? eur(importe) + " · " : ""}${desvio ? `⚠️ esperado ${eur(esperado!)} · ` : ""}elegir estado / importe`}
+        title={`${mesNombre} · ${importe != null ? eur(importe) + " · " : ""}${desvio ? `distinto de lo esperado (${eur(esperado!)}) · ` : ""}elegir estado / importe`}
         className={`relative mx-auto ${w} h-8 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors disabled:opacity-60 ${cls} ${desvio ? "ring-2 ring-red-500 ring-offset-1" : ""}`}>
         {pending ? "…" : disp}
-        {desvio && <span className="absolute -top-2 -right-1.5 text-[11px] leading-none">⚠️</span>}
+        {desvio && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white" />}
       </button>
       {open && pos && (
         <>
@@ -513,7 +513,7 @@ export function FijoInfoEdit({ id, label, nota, categoria, tono = "bearing" }: {
     <button type="button" onClick={() => setEditing(true)} title="Editar nombre y concepto" className="text-left group/edit block min-w-0">
       <p className="text-sm font-semibold text-gray-800 truncate flex items-center gap-1">
         {label}
-        <span className="opacity-0 group-hover/edit:opacity-100 text-gray-300 text-[10px] transition-opacity">✎</span>
+        <span className="opacity-0 group-hover/edit:opacity-100 text-gray-300 text-[10px] transition-opacity">editar</span>
       </p>
       <p className="text-[10px] text-gray-400 truncate">{categoria}{nota ? ` · ${nota}` : ""}</p>
     </button>
@@ -557,10 +557,10 @@ export function ProveedorFijoEditor({ id, match, movimientos, sugerencias }: {
     <button type="button" onClick={() => { setVal(match); setEditing(true); }}
       title="Vincular / cambiar el proveedor que se busca en el libro diario"
       className="mt-1 inline-flex items-center gap-1.5 text-[10px] text-gray-400 hover:text-[#2E1A47] group/prov">
-      <span className={ok ? "text-emerald-500" : "text-amber-500"}>{ok ? "🔗" : "⚠️"}</span>
+      <span className={`w-2 h-2 rounded-full ${ok ? "bg-emerald-500" : "bg-amber-500"}`} />
       <span className="font-medium">{pending ? "…" : match}</span>
       <span className={ok ? "text-emerald-600" : "text-amber-600"}>· {ok ? `${movimientos} en el diario` : "sin coincidencias"}</span>
-      <span className="opacity-0 group-hover/prov:opacity-100 text-gray-300 transition-opacity">✎</span>
+      <span className="opacity-0 group-hover/prov:opacity-100 text-gray-300 transition-opacity">editar</span>
     </button>
   );
 }
@@ -623,7 +623,7 @@ export function BearingMesCell({ id, mes, estipulado }: {
         title={`${mesNombre} · ${mes.n > 0 ? `${eur(mes.base)} s/IVA · ${mes.n} factura${mes.n !== 1 ? "s" : ""}` : mes.estado === "falta" ? "sin factura (mes pasado)" : "aún no toca"}`}
         className={`relative mx-auto w-8 h-8 rounded-lg flex items-center justify-center text-[9px] font-bold transition-colors disabled:opacity-50 ${COLOR_MES[mes.estado]} ${mes.overcharge ? "ring-2 ring-red-500 ring-offset-1" : ""}`}>
         {pending ? "…" : symbol}
-        {mes.overcharge && <span className="absolute -top-2 -right-1.5 text-[11px] leading-none">⚠️</span>}
+        {mes.overcharge && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white" />}
         {!mes.overcharge && mes.nota && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#2E1A47] border border-white" />}
         {mes.n > 1 && <span className="absolute -bottom-1 -right-1 bg-[#2E1A47] text-white text-[7px] w-3 h-3 rounded-full flex items-center justify-center">{mes.n}</span>}
       </button>
@@ -645,7 +645,7 @@ export function BearingMesCell({ id, mes, estipulado }: {
                 )}
                 {mes.overcharge && (
                   <>
-                    <p className="mt-1.5 text-[11px] font-bold text-red-600 bg-red-50 rounded-lg px-2 py-1">⚠️ {eur(mes.exceso)} más de lo estipulado</p>
+                    <p className="mt-1.5 text-[11px] font-bold text-red-600 bg-red-50 rounded-lg px-2 py-1">{eur(mes.exceso)} más de lo estipulado</p>
                     <button type="button" onClick={fijarNuevoImporte}
                       className="mt-1.5 w-full text-[11px] font-semibold text-[#2E1A47] bg-[#EEEBF3] hover:bg-[#e2ddec] rounded-lg px-2 py-1.5 transition-colors">
                       Es el nuevo importe fijo → poner {eur(mes.base)}
@@ -718,7 +718,7 @@ export function RemoveGastoFijoButton({ id, label }: { id: string; label: string
       disabled={pending}
       title="Quitar de gastos fijos"
       className="text-gray-300 hover:text-red-500 text-sm disabled:opacity-40 transition-colors">
-      {pending ? "…" : "🗑"}
+      {pending ? "…" : "Quitar"}
     </button>
   );
 }

@@ -28,10 +28,10 @@ export const tarjetaDe = (cuenta: string) => TARJETAS.find(t => t.cuentas.includ
 // diario (los movimientos que se concilian semana a semana); dietas es el cajón
 // por defecto (restaurantes y demás no llevan patrón fijo).
 export type CategoriaTicket = "gasolina" | "parking" | "dietas";
-export const CATEGORIAS_TICKET: { key: CategoriaTicket; label: string; emoji: string }[] = [
-  { key: "gasolina", label: "Gasolina", emoji: "⛽" },
-  { key: "parking", label: "Parking y peajes", emoji: "🅿️" },
-  { key: "dietas", label: "Dietas y otros", emoji: "🍽️" },
+export const CATEGORIAS_TICKET: { key: CategoriaTicket; label: string }[] = [
+  { key: "gasolina", label: "Gasolina" },
+  { key: "parking", label: "Parking y peajes" },
+  { key: "dietas", label: "Dietas y otros" },
 ];
 
 const normDesc = (s: string) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
