@@ -87,17 +87,29 @@ export function nominasPorMes(diario: LibroLinea[], anyo: number): NominasMes[] 
     }
   }
 
-  for (const M of meses) {
-    // Estado de pago del líquido por persona (por importe: 1.409,52 ≠ 1.400)
-    const pool = [...M.netosPagadosImportes];
-    for (const p of M.personas) {
-      const i = pool.findIndex(v => Math.abs(v - p.neto) < 0.5);
-      if (i >= 0) { p.netoPagado = true; pool.splice(i, 1); }
+  // Estado de pago del líquido POR PERSONA con ARRASTRE: las nóminas se pagan a
+  // mes vencido y a veces en bloque, así que un pago salda la más antigua
+  // pendiente de esa persona. Presupuesto por importe de neto (1.409,52 = una
+  // persona, 1.400 = otra; los pagos partidos —1.200+200— van a la de menor neto).
+  const netosPersona = [...new Set(meses.flatMap(m => m.personas.map(p => Math.round(p.neto))))];
+  if (netosPersona.length) {
+    const menor = Math.min(...netosPersona);
+    const budget = new Map<number, number>();
+    for (const M of meses) for (const linea of M.netosPagadosImportes) {
+      const match = netosPersona.find(n => Math.abs(n - linea) < 1);
+      const key = match ?? menor;
+      budget.set(key, (budget.get(key) ?? 0) + linea);
     }
-    const totalNeto = M.personas.reduce((s, p) => s + p.neto, 0);
-    if (totalNeto > 0.5 && M.pagosNetos + 0.5 >= totalNeto) M.personas.forEach(p => { p.netoPagado = true; });
+    const usado = new Map<number, number>();
+    for (const M of meses) for (const p of M.personas) {
+      const key = Math.round(p.neto);
+      const u = usado.get(key) ?? 0;
+      if (u + p.neto <= (budget.get(key) ?? 0) + 0.5) { p.netoPagado = true; usado.set(key, u + p.neto); }
+    }
+  }
 
-    M.netoDevengado = round2(totalNeto);
+  for (const M of meses) {
+    M.netoDevengado = round2(M.personas.reduce((s, p) => s + p.neto, 0));
     M.irpfRetenidoMes = round2(M.irpfRetenidoMes);
     M.costeDevengo = round2(M.personas.reduce((s, p) => s + p.costeEmpresa, 0) + M.cuotaAutonomos);
     M.coste = round2(M.personas.length > 0 ? M.costeDevengo : M.pagosNetos + M.cuotaAutonomos);
