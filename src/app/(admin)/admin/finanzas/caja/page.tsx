@@ -127,6 +127,13 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
   // enero, que ya entra por el saldo inicial manual. Contarlo lo duplicaría.
   const flujoBancos = Array.from({ length: 12 }, () => 0);
   for (const l of diario) if (l.account.startsWith("57") && l.anyo === anyoN && l.type !== "opening") flujoBancos[l.mesIdx] += l.debit - l.credit;
+  // Pago real a Obliviate (factura FR 011.2025) el 13/01/2026 desde Laboral:
+  // salió del banco pero su asiento no existe en Holded (pendiente de la
+  // asesoría, Q1 declarado). Se descuenta a mano SOLO mientras el apunte no
+  // aparezca en el diario — en cuanto se contabilice, el ajuste se apaga solo.
+  const OBLIVIATE_ENE_2026 = 5142.5;
+  const obliviateContabilizado = diario.some(l => l.account === "57200004" && l.anyo === 2026 && l.mesIdx === 0 && Math.abs(l.credit - OBLIVIATE_ENE_2026) < 0.01);
+  if (anyoN === 2026 && !obliviateContabilizado) flujoBancos[0] -= OBLIVIATE_ENE_2026;
   let acc = 0;
   const cajaFinMes = flujoBancos.map(v => (acc += v));
 
