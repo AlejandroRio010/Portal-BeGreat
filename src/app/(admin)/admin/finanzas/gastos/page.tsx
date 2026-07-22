@@ -8,6 +8,7 @@ import { getGastos, type HoldedGasto } from "@/lib/holded";
 import { getGastosFijos, esDelFijo, importeFijoMes, conIva, construirCandidatos } from "@/lib/gastosFijos";
 import { getLibroDiario, type LibroLinea } from "@/lib/holdedLedger";
 import { resumenTarjeta, TARJETAS, CATEGORIAS_TICKET, normRef, categoriaTicket, type TarjetaMes } from "@/lib/tarjetas";
+import { nominasPorMes } from "@/lib/nominas";
 import { getCategoriasGasto } from "@/lib/categorias";
 import { BUCKETS, bucketDe } from "@/lib/gastosBuckets";
 import { fmtEur } from "@/lib/format";
@@ -127,6 +128,9 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   });
   // Lo que las tarjetas suman en caja este mes (recibos menos facturas ya contadas)
   const cargoTarjeta = tarjetas.reduce((s, t) => s + t.enCaja, 0);
+
+  // Nóminas y personal del mes, del libro diario (asientos de nómina + pagos)
+  const nominasMes = nominasPorMes(diario, anyoN)[mesN - 1];
 
   // Facturas del mes del cajón tarjeta (gasolina, parking…) que AÚN no están
   // conciliadas como movimiento en ninguna cuenta 52x: se enseñan ya como
@@ -270,8 +274,8 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
           <div className="grid grid-cols-4 gap-4 mb-6">
             <div className="bg-[#2E1A47] px-6 py-5">
               <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Gastado en {mesLabel(mes).split(" ")[0]} · sin IVA</p>
-              <p className="text-2xl font-black text-white">{fmtEur(baseMes + baseObliviate)}</p>
-              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">+ IVA {fmtEur(ivaMes + (totalObliviate - baseObliviate))}{cargoTarjeta > 0 ? ` · tarjetas ${fmtEur(cargoTarjeta)}` : ""} · caja {fmtEur(totalContados + cargoTarjeta + totalObliviate)}</p>
+              <p className="text-2xl font-black text-white">{fmtEur(baseMes + baseObliviate + nominasMes.coste)}</p>
+              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">+ IVA {fmtEur(ivaMes + (totalObliviate - baseObliviate))}{cargoTarjeta > 0 ? ` · tarjetas ${fmtEur(cargoTarjeta)}` : ""}{nominasMes.coste > 0.5 ? ` · nóminas ${fmtEur(nominasMes.coste)}` : ""} · caja {fmtEur(totalContados + cargoTarjeta + totalObliviate + nominasMes.coste)}</p>
             </div>
             <div className="bg-white border border-gray-200 px-6 py-5">
               <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1.5">Gastos fijos</p>
@@ -378,7 +382,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                         <>
                           {b.key === "nomina" && (
                             <div className="bg-[#EEEBF3]/60 border border-[#2E1A47]/10 rounded-t-2xl px-4 py-2 text-[11px] text-[#2E1A47]/70">
-                              Aquí solo entra lo que Holded registra como compra (Seguridad Social, gestoría). Los <b>sueldos netos de Rita y Macarena no están en Holded</b> — pendiente: los metemos como importe mensual para que se vean aquí.
+                              Aquí solo entra lo que Holded registra como compra. Los <b>sueldos de Rita y Macarena</b> están en la sección <b>Nóminas y personal</b> (abajo), leída del libro diario.
                             </div>
                           )}
                           <div className="bg-white border border-gray-100 overflow-hidden shadow-sm">{filaGastos(items)}</div>
@@ -389,6 +393,39 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                 })}
               </div>
             )}
+          </div>
+
+          {/* Nóminas y personal — del libro diario: asientos de nómina (devengo)
+              y, si la gestoría aún no los ha pasado, lo pagado por banco */}
+          <div className="mt-6">
+            <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider mb-3">Nóminas y personal · {mesLabel(mes)}</h2>
+            <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5">
+              {nominasMes.personas.length > 0 ? (
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {nominasMes.personas.map((p, i) => (
+                    <div key={i} className="border border-gray-100 rounded-xl px-4 py-3">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className="text-sm font-bold text-[#2E1A47]">{p.etiqueta}</p>
+                        <p className="text-sm font-black text-[#2E1A47] whitespace-nowrap">{fmtEur(p.costeEmpresa)} <span className="text-[9px] font-normal text-gray-400">coste empresa</span></p>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1.5">
+                        Neto <b>{fmtEur(p.neto)}</b> · IRPF retenido {fmtEur(p.irpf)}
+                        {p.ssTotal > 0.5 && <> · SS {fmtEur(p.ssTotal)} <span className="text-gray-400">(empresa {fmtEur(p.ssEmpresa)}, a mes vencido)</span></>}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">La gestoría aún no ha pasado los asientos de nómina de este mes — se cuenta lo pagado por banco.</p>
+              )}
+              <div className="mt-3 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[11px] text-gray-500 border-t border-gray-100 pt-3">
+                {nominasMes.cuotaAutonomos > 0.5 && <span>Cuota de autónomos (Rita): <b className="text-[#2E1A47]">{fmtEur(nominasMes.cuotaAutonomos)}</b></span>}
+                {nominasMes.pagosNetos > 0.5 && <span>Nóminas pagadas por banco: <b className="text-[#2E1A47]">{fmtEur(nominasMes.pagosNetos)}</b></span>}
+                {nominasMes.pagoSS > 0.5 && <span>Seguridad Social pagada (TGSS): <b className="text-[#2E1A47]">{fmtEur(nominasMes.pagoSS)}</b></span>}
+                {nominasMes.pagoIRPF > 0.5 && <span>IRPF ingresado a Hacienda (mod. 111): <b className="text-[#2E1A47]">{fmtEur(nominasMes.pagoIRPF)}</b></span>}
+                <span className="ml-auto text-sm font-black text-[#2E1A47]">Coste del mes: {fmtEur(nominasMes.coste)}</span>
+              </div>
+            </div>
           </div>
 
           {/* Tarjetas de crédito — mismo mecanismo para las 3: recibo a mes vencido

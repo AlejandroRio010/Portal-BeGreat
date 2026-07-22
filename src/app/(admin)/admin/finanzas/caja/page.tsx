@@ -9,6 +9,7 @@ import { getGastosFijos, esDelFijo, importeFijoMes } from "@/lib/gastosFijos";
 import { getLibroDiario, type LibroLinea } from "@/lib/holdedLedger";
 import { resumenTarjeta, TARJETAS, CATEGORIAS_TICKET, normRef } from "@/lib/tarjetas";
 import { BUCKETS, bucketDe, type BucketVariable } from "@/lib/gastosBuckets";
+import { nominasPorMes } from "@/lib/nominas";
 import { fmtEur } from "@/lib/format";
 import SaldoInicialEdit from "./SaldoInicialEdit";
 
@@ -83,6 +84,9 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
     return { def, resumen, recibos, enCaja };
   });
 
+  // Nóminas y personal por mes (del diario)
+  const nominasAno = nominasPorMes(diario, anyoN);
+
   // ── Resumen de cada mes del año (todo en BASE sin IVA; la tarjeta, por su
   //    recibo, que es dinero real de banco) ──
   const meses = Array.from({ length: 12 }, (_, m) => {
@@ -112,9 +116,10 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
     for (const g of variablesItems) porBucket.set(bucketConLink(g), (porBucket.get(bucketConLink(g)) ?? 0) + g.subtotal);
 
     const tarjetas = tarjetasCalc.reduce((s, t) => s + t.enCaja[m], 0);
-    const salidas = fijosTotal + variables + tarjetas;
+    const nominas = nominasAno[m].coste;
+    const salidas = fijosTotal + variables + nominas + tarjetas;
     const neto = ingresos - salidas;
-    return { m, ym, ingresos, cobrado, pendiente, porLinea, fijosTotal, fijosBearingBase, fijosObliviateBase, variables, porBucket, tarjetas, salidas, neto };
+    return { m, ym, ingresos, cobrado, pendiente, porLinea, fijosTotal, fijosBearingBase, fijosObliviateBase, variables, porBucket, nominas, nominasDet: nominasAno[m], tarjetas, salidas, neto };
   });
 
   // ── Caja de bancos a fin de mes (variación del diario + saldo inicial) ──
@@ -171,7 +176,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
             <div className="bg-[#2E1A47] px-6 py-5">
               <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Gastos</p>
               <p className="text-2xl font-black text-white">{fmtEur(M.salidas)}</p>
-              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">fijos {fmtEur(M.fijosTotal)} · variables {fmtEur(M.variables)}{M.tarjetas > 0.5 ? ` · tarjetas ${fmtEur(M.tarjetas)}` : ""}</p>
+              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">fijos {fmtEur(M.fijosTotal)} · variables {fmtEur(M.variables)}{M.nominas > 0.5 ? ` · nóminas ${fmtEur(M.nominas)}` : ""}{M.tarjetas > 0.5 ? ` · tarjetas ${fmtEur(M.tarjetas)}` : ""}</p>
             </div>
             <div className={`px-6 py-5 border ${M.neto >= 0 ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"}`}>
               <p className={`text-[10px] font-bold uppercase tracking-wider mb-1.5 ${M.neto >= 0 ? "text-emerald-600" : "text-red-600"}`}>Neto del mes</p>
@@ -223,6 +228,20 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
                   </div>
                   <p className="text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(M.fijosTotal)}</p>
                 </div>
+                {M.nominas > 0.5 && (
+                  <div className="px-5 py-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm text-gray-700">Nóminas y personal</p>
+                      <p className="text-[11px] text-gray-400">
+                        {M.nominasDet.personas.length > 0
+                          ? M.nominasDet.personas.map(p => `${p.etiqueta.split(" ")[0]} ${fmtEur(p.costeEmpresa)}`).join(" · ")
+                          : "según pagos por banco"}
+                        {M.nominasDet.cuotaAutonomos > 0.5 ? ` · cuota autónomos ${fmtEur(M.nominasDet.cuotaAutonomos)}` : ""}
+                      </p>
+                    </div>
+                    <p className="text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(M.nominas)}</p>
+                  </div>
+                )}
                 {BUCKETS.filter(b => b.key !== "tarjeta").map(b => {
                   const v = M.porBucket.get(b.key) ?? 0;
                   if (v <= 0.5) return null;
@@ -262,7 +281,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
               <table className="w-full">
                 <thead>
                   <tr className="bg-[#EEEBF3] border-b border-gray-100">
-                    {["Mes", "Ingresos", "Pendiente", "Fijos", "Variables", "Tarjetas", "Neto", saldoInicial != null ? "Caja fin de mes" : "Variación bancos"].map((h, i) => (
+                    {["Mes", "Ingresos", "Pendiente", "Fijos", "Variables", "Nóminas", "Tarjetas", "Neto", saldoInicial != null ? "Caja fin de mes" : "Variación bancos"].map((h, i) => (
                       <th key={h} className={`px-4 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider ${i === 0 ? "text-left" : "text-right"}`}>{h}</th>
                     ))}
                   </tr>
@@ -277,6 +296,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
                       <td className={`px-4 py-3 text-xs text-right whitespace-nowrap ${x.pendiente > 0.5 ? "text-red-600 font-semibold" : "text-gray-300"}`}>{x.pendiente > 0.5 ? fmtEur(x.pendiente) : "—"}</td>
                       <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{fmtEur(x.fijosTotal)}</td>
                       <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{fmtEur(x.variables)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{x.nominas > 0.5 ? fmtEur(x.nominas) : "—"}</td>
                       <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{x.tarjetas > 0.5 ? fmtEur(x.tarjetas) : "—"}</td>
                       <td className={`px-4 py-3 text-sm text-right font-bold whitespace-nowrap ${x.neto >= 0 ? "text-emerald-700" : "text-red-600"}`}>{fmtEur(x.neto)}</td>
                       <td className="px-4 py-3 text-sm text-right font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(saldoInicial != null ? saldoInicial + cajaFinMes[x.m] : cajaFinMes[x.m])}</td>
@@ -290,6 +310,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
                     <td className="px-4 py-3.5 text-xs text-right font-bold text-white/70 whitespace-nowrap">{ytdPendiente > 0.5 ? fmtEur(ytdPendiente) : "—"}</td>
                     <td className="px-4 py-3.5 text-sm text-right font-bold text-white/80 whitespace-nowrap">{fmtEur(ytd.reduce((s, x) => s + x.fijosTotal, 0))}</td>
                     <td className="px-4 py-3.5 text-sm text-right font-bold text-white/80 whitespace-nowrap">{fmtEur(ytd.reduce((s, x) => s + x.variables, 0))}</td>
+                    <td className="px-4 py-3.5 text-sm text-right font-bold text-white/80 whitespace-nowrap">{fmtEur(ytd.reduce((s, x) => s + x.nominas, 0))}</td>
                     <td className="px-4 py-3.5 text-sm text-right font-bold text-white/80 whitespace-nowrap">{fmtEur(ytd.reduce((s, x) => s + x.tarjetas, 0))}</td>
                     <td className={`px-4 py-3.5 text-sm text-right font-black whitespace-nowrap ${ytdNeto >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtEur(ytdNeto)}</td>
                     <td className="px-4 py-3.5 text-sm text-right font-black text-[#FFC845] whitespace-nowrap">{fmtEur(saldoInicial != null ? saldoInicial + cajaFinMes[mesActualIdx] : cajaFinMes[mesActualIdx])}</td>
@@ -298,7 +319,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
               </table>
             </div>
             <p className="px-5 py-3 text-[11px] text-gray-400 border-t border-gray-100">
-              Importes sin IVA (el IVA se lleva aparte para impuestos). Las tarjetas cuentan por el recibo del banco, descontando las facturas ya contadas en fijos o variables. {saldoInicial == null ? "Pon el saldo inicial de los bancos a 1 de enero para ver la caja absoluta en vez de la variación." : "La caja de bancos sale del libro diario (cuentas 57x) más el saldo inicial."}
+              Importes sin IVA (el IVA se lleva aparte para impuestos). Las tarjetas cuentan por el recibo del banco, descontando las facturas ya contadas en fijos o variables. Las nóminas salen del libro diario (asientos de nómina; si la gestoría aún no los ha pasado, lo pagado por banco). {saldoInicial == null ? "Pon el saldo inicial de los bancos a 1 de enero para ver la caja absoluta en vez de la variación." : "La caja de bancos sale del libro diario (cuentas 57x) más el saldo inicial."}
             </p>
           </section>
         </>
