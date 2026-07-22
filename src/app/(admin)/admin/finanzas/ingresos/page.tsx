@@ -57,6 +57,8 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
     }
   }
 
+  // TODO SIN IVA: los importes de negocio se miran en base; el IVA se calcula
+  // por detrás (motor en lib/iva.ts) para la reserva y la liquidación trimestral.
   const delMes = facturas.filter(f => f.date.startsWith(mes));
   const facturado = delMes.reduce((s, f) => s + f.total, 0);
   const baseFacturado = delMes.reduce((s, f) => s + f.subtotal, 0);
@@ -64,10 +66,17 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
   const cobradas = delMes.filter(f => f.estado === "cobrada");
   const cobrado = cobradas.reduce((s, f) => s + f.total, 0) + delMes.filter(f => f.estado === "parcial").reduce((s, f) => s + f.pagado, 0);
   const ivaCobrado = cobradas.reduce((s, f) => s + f.tax, 0);
+  // Cobrado en BASE: cobradas enteras + parte proporcional de las parciales
+  const baseCobrado = delMes.reduce((s, f) => {
+    if (f.estado === "cobrada") return s + f.subtotal;
+    if (f.estado === "parcial" && f.total > 0) return s + f.pagado * (f.subtotal / f.total);
+    return s;
+  }, 0);
 
-  // Pendiente de cobro del mes visible
+  // Pendiente de cobro del mes visible (base sin IVA; el con-IVA, como dato menor)
   const pendientes = delMes.filter(f => f.estado !== "cobrada");
   const pendienteTotal = pendientes.reduce((s, f) => s + f.pendiente, 0);
+  const basePendiente = Math.max(0, baseFacturado - baseCobrado);
 
   // IVA del trimestre (facturas cobradas) → hay que reservarlo para Hacienda
   const { q, meses: mesesQ } = trimestreDe(mes);
@@ -75,9 +84,10 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
     .filter(f => mesesQ.some(m => f.date.startsWith(m)) && f.estado === "cobrada")
     .reduce((s, f) => s + f.tax, 0);
 
+  // Por línea de negocio, en BASE (sin IVA)
   const porCategoria = CATEGORIAS.map(c => {
     const fs = delMes.filter(f => f.categoria === c);
-    return { c, n: fs.length, total: fs.reduce((s, f) => s + f.total, 0) };
+    return { c, n: fs.length, total: fs.reduce((s, f) => s + f.subtotal, 0) };
   }).filter(x => x.n > 0);
 
   const tabla = (cat ? delMes.filter(f => f.categoria === cat) : delMes);
@@ -144,17 +154,17 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
               <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">+ IVA {fmtEur(ivaFacturado)} · total {fmtEur(facturado)}</p>
             </div>
             <div className="bg-[#2E1A47] px-6 py-5">
-              <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Cobrado</p>
-              <p className="text-2xl font-black text-white">{fmtEur(cobrado)}</p>
-              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">de lo facturado este mes</p>
+              <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Cobrado · sin IVA</p>
+              <p className="text-2xl font-black text-white">{fmtEur(baseCobrado)}</p>
+              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">con IVA {fmtEur(cobrado)}</p>
             </div>
             <div className="bg-white border border-gray-200 px-6 py-5">
-              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1.5">Pendiente de cobro</p>
-              <p className="text-2xl font-black text-[#2E1A47]">{fmtEur(pendienteTotal)}</p>
-              <p className="text-gray-400 text-[9px] mt-1 uppercase tracking-wide">{pendientes.length} factura{pendientes.length !== 1 ? "s" : ""} del mes sin cobrar</p>
+              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1.5">Pendiente de cobro · sin IVA</p>
+              <p className="text-2xl font-black text-[#2E1A47]">{fmtEur(basePendiente)}</p>
+              <p className="text-gray-400 text-[9px] mt-1 uppercase tracking-wide">{pendientes.length} factura{pendientes.length !== 1 ? "s" : ""} · con IVA {fmtEur(pendienteTotal)}</p>
             </div>
             <div className="bg-white border border-amber-200 px-6 py-5">
-              <p className="text-amber-600 text-[10px] font-bold uppercase tracking-wider mb-1.5">⚠ De lo cobrado, es IVA</p>
+              <p className="text-amber-600 text-[10px] font-bold uppercase tracking-wider mb-1.5">De lo cobrado, es IVA</p>
               <p className="text-2xl font-black text-amber-600">{fmtEur(ivaCobrado)}</p>
               <p className="text-gray-400 text-[9px] mt-1 uppercase tracking-wide">no es tuyo — resérvalo para Hacienda</p>
             </div>
@@ -187,7 +197,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
               <Link href={`/admin/finanzas/ingresos?mes=${mes}`}
                 className={`px-4 py-3 border rounded-2xl transition-all ${!cat ? "bg-[#2E1A47] border-[#2E1A47] text-white" : "bg-white border-gray-200 hover:border-[#2E1A47]/40"}`}>
                 <p className={`text-[10px] font-bold uppercase tracking-wider ${!cat ? "text-white/60" : "text-gray-400"}`}>Todo · {delMes.length}</p>
-                <p className={`text-lg font-black ${!cat ? "text-white" : "text-[#2E1A47]"}`}>{fmtEur(facturado)}</p>
+                <p className={`text-lg font-black ${!cat ? "text-white" : "text-[#2E1A47]"}`}>{fmtEur(baseFacturado)}</p>
               </Link>
               {porCategoria.map(({ c, n, total }) => (
                 <Link key={c} href={`/admin/finanzas/ingresos?mes=${mes}${cat === c ? "" : `&cat=${encodeURIComponent(c)}`}`}
@@ -237,7 +247,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
                           <td className="px-3 py-3 max-w-[170px]">
                             <span className="block text-sm font-semibold text-gray-800 truncate" title={f.contact_name}>{f.contact_name}</span>
                             {opDeFactura.get(f.id) && (
-                              <a href={`/admin/operaciones/${opDeFactura.get(f.id)!.id}`} className="block text-[10px] font-semibold text-[#2E1A47] hover:underline truncate" title={opDeFactura.get(f.id)!.nombre}>🔗 {opDeFactura.get(f.id)!.nombre}</a>
+                              <a href={`/admin/operaciones/${opDeFactura.get(f.id)!.id}`} className="block text-[10px] font-semibold text-[#2E1A47] hover:underline truncate" title={opDeFactura.get(f.id)!.nombre}>→ {opDeFactura.get(f.id)!.nombre}</a>
                             )}
                           </td>
                           <td className="px-3 py-3 text-xs text-gray-500 max-w-[200px] truncate" title={f.description ?? undefined}>{f.description ?? "—"}</td>
@@ -262,7 +272,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
           {!cat && pendientes.length > 0 && (
             <div className="mt-6 bg-white border border-red-100 overflow-hidden shadow-sm">
               <div className="px-6 py-4 border-b border-red-100 bg-red-50/50">
-                <p className="text-sm font-bold text-red-700">Pendientes de cobro de {mesLabel(mes)} ({pendientes.length}) — {fmtEur(pendienteTotal)}</p>
+                <p className="text-sm font-bold text-red-700">Pendientes de cobro de {mesLabel(mes)} ({pendientes.length}) — {fmtEur(basePendiente)} sin IVA</p>
               </div>
               <div className="divide-y divide-gray-50">
                 {pendientes.slice(0, 15).map(f => (
@@ -271,7 +281,10 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
                       <p className="text-sm font-semibold text-gray-800 truncate">{f.contact_name} <span className="text-xs font-mono text-gray-400 ml-1">{f.document_number}</span></p>
                       <p className="text-xs text-gray-400 truncate">{f.description ?? "—"} · {new Date(f.date).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}</p>
                     </div>
-                    <p className="text-sm font-black text-red-600 whitespace-nowrap">{fmtEur(f.pendiente)}</p>
+                    <div className="text-right whitespace-nowrap">
+                      <p className="text-sm font-black text-red-600">{fmtEur(f.total > 0 ? f.pendiente * (f.subtotal / f.total) : f.pendiente)}</p>
+                      <p className="text-[10px] text-gray-400">con IVA {fmtEur(f.pendiente)}</p>
+                    </div>
                   </div>
                 ))}
               </div>
