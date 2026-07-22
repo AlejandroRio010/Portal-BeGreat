@@ -123,8 +123,10 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
   });
 
   // ── Caja de bancos a fin de mes (variación del diario + saldo inicial) ──
+  // OJO: el asiento de apertura (type "opening") NO es flujo — es el saldo a 1 de
+  // enero, que ya entra por el saldo inicial manual. Contarlo lo duplicaría.
   const flujoBancos = Array.from({ length: 12 }, () => 0);
-  for (const l of diario) if (l.account.startsWith("57") && l.anyo === anyoN) flujoBancos[l.mesIdx] += l.debit - l.credit;
+  for (const l of diario) if (l.account.startsWith("57") && l.anyo === anyoN && l.type !== "opening") flujoBancos[l.mesIdx] += l.debit - l.credit;
   let acc = 0;
   const cajaFinMes = flujoBancos.map(v => (acc += v));
 
