@@ -30,21 +30,11 @@ export function esAcreedor(account: string): boolean {
 }
 const esGasto = (account: string) => String(account)[0] === "6";
 
-/** Descarga el libro diario del ejercicio en curso (desde FINANZAS_DESDE). */
-export async function getLibroDiario(): Promise<LibroLinea[]> {
-  const key = process.env.HOLDED_API_KEY;
-  if (!key) throw new Error("Falta HOLDED_API_KEY");
-  // OJO: el API de ledger-entries trata start_date como EXCLUYENTE — con
-  // 2026-01-01 se pierde todo lo fechado el 1 de enero (p. ej. las nóminas).
-  // Pedimos desde el día anterior; los apuntes de 2025 se filtran por año.
-  const anyoBase = Number(FINANZAS_DESDE.slice(0, 4));
-  const d = new Date(`${FINANZAS_DESDE}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - 1);
-  const desde = d.toISOString().slice(0, 10);   // 2025-12-31
-  const hasta = `${anyoBase}-12-31`;
+// Una ventana de fechas del diario, paginada por cursor.
+async function getVentana(key: string, desde: string, hasta: string): Promise<LibroLinea[]> {
   const out: LibroLinea[] = [];
   let cursor: string | null = null;
-  for (let page = 0; page < 40; page++) {
+  for (let page = 0; page < 30; page++) {
     const url = new URL(`${BASE}/ledger-entries`);
     url.searchParams.set("start_date", desde);
     url.searchParams.set("end_date", hasta);
@@ -63,12 +53,44 @@ export async function getLibroDiario(): Promise<LibroLinea[]> {
         debit: num(l.debit), credit: num(l.credit),
       });
     }
-    if (!data.cursor || !items.length) break;
+    if (!data.cursor || !items.length || data.cursor === cursor) break;
     cursor = data.cursor;
   }
-  // CRÍTICO: el API devuelve líneas duplicadas (mismo asiento+línea varias veces).
-  // Deduplicamos por (entry, line) o cualquier suma saldría inflada. Y filtramos
-  // el año base (por si el borde de fecha colase algún apunte de diciembre).
+  return out;
+}
+
+/** Descarga el libro diario del ejercicio en curso (desde FINANZAS_DESDE). */
+export async function getLibroDiario(): Promise<LibroLinea[]> {
+  const key = process.env.HOLDED_API_KEY;
+  if (!key) throw new Error("Falta HOLDED_API_KEY");
+  // CRÍTICO: con rangos de fechas largos, ledger-entries DEVUELVE EL DIARIO
+  // INCOMPLETO (se come líneas de forma silenciosa e inconsistente entre
+  // llamadas — comprobado contra el mayor real en jul-2026, faltaban ~85k de
+  // salidas de un solo mes). Con ventanas de ≤7 días devuelve todo. Pedimos el
+  // año en ventanas semanales solapadas 1 día (start_date es EXCLUYENTE: con
+  // 2026-01-01 se pierde lo fechado el 1 de enero, p. ej. las nóminas) y
+  // deduplicamos la unión.
+  const anyoBase = Number(FINANZAS_DESDE.slice(0, 4));
+  const ini = new Date(`${FINANZAS_DESDE}T00:00:00Z`);
+  ini.setUTCDate(ini.getUTCDate() - 1);
+  const fin = new Date(`${anyoBase}-12-31T00:00:00Z`);
+  const ventanas: [string, string][] = [];
+  for (let d = ini; d < fin; ) {
+    const h = new Date(d); h.setUTCDate(h.getUTCDate() + 7);
+    const hasta = h > fin ? fin : h;
+    ventanas.push([d.toISOString().slice(0, 10), hasta.toISOString().slice(0, 10)]);
+    if (hasta >= fin) break;
+    d = new Date(hasta); d.setUTCDate(d.getUTCDate() - 1); // solape de 1 día
+  }
+  const out: LibroLinea[] = [];
+  const LOTE = 8;
+  for (let i = 0; i < ventanas.length; i += LOTE) {
+    const rs = await Promise.all(ventanas.slice(i, i + LOTE).map(([a, b]) => getVentana(key, a, b)));
+    for (const r of rs) out.push(...r);
+  }
+  // El API también devuelve líneas duplicadas (mismo asiento+línea) y el solape
+  // duplica los bordes: deduplicamos por (entry, line) o las sumas saldrían
+  // infladas. Y filtramos el año base (el borde inicial cuela diciembre).
   const vistos = new Set<string>();
   return out.filter(l => {
     if (l.anyo < anyoBase) return false;
