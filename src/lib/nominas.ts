@@ -48,7 +48,9 @@ export function nominasPorMes(diario: LibroLinea[], anyo: number): NominasMes[] 
     const l0 = ls[0];
     if (l0.anyo !== anyo || l0.mesIdx < 0 || l0.mesIdx > 11) continue;
     const M = meses[l0.mesIdx];
-    const esNomina = ls.some(l => l.type === "payroll");
+    // Nómina = asiento de tipo payroll O que carga sueldos (640), para que
+    // valga también si la gestoría lo crea a mano (tipo distinto de payroll).
+    const esNomina = ls.some(l => l.type === "payroll") || ls.some(l => l.account.startsWith("640") && l.debit > 0.5);
     const tocaBanco = ls.some(l => l.account.startsWith("57"));
 
     if (esNomina) {

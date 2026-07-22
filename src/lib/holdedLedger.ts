@@ -34,8 +34,14 @@ const esGasto = (account: string) => String(account)[0] === "6";
 export async function getLibroDiario(): Promise<LibroLinea[]> {
   const key = process.env.HOLDED_API_KEY;
   if (!key) throw new Error("Falta HOLDED_API_KEY");
-  const desde = FINANZAS_DESDE;                 // 2026-01-01
-  const hasta = `${FINANZAS_DESDE.slice(0, 4)}-12-31`;
+  // OJO: el API de ledger-entries trata start_date como EXCLUYENTE — con
+  // 2026-01-01 se pierde todo lo fechado el 1 de enero (p. ej. las nóminas).
+  // Pedimos desde el día anterior; los apuntes de 2025 se filtran por año.
+  const anyoBase = Number(FINANZAS_DESDE.slice(0, 4));
+  const d = new Date(`${FINANZAS_DESDE}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  const desde = d.toISOString().slice(0, 10);   // 2025-12-31
+  const hasta = `${anyoBase}-12-31`;
   const out: LibroLinea[] = [];
   let cursor: string | null = null;
   for (let page = 0; page < 40; page++) {
@@ -61,9 +67,11 @@ export async function getLibroDiario(): Promise<LibroLinea[]> {
     cursor = data.cursor;
   }
   // CRÍTICO: el API devuelve líneas duplicadas (mismo asiento+línea varias veces).
-  // Deduplicamos por (entry, line) o cualquier suma saldría inflada.
+  // Deduplicamos por (entry, line) o cualquier suma saldría inflada. Y filtramos
+  // el año base (por si el borde de fecha colase algún apunte de diciembre).
   const vistos = new Set<string>();
   return out.filter(l => {
+    if (l.anyo < anyoBase) return false;
     const k = `${l.entry}|${l.line}`;
     if (vistos.has(k)) return false;
     vistos.add(k);
