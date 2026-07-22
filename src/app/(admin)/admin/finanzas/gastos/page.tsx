@@ -8,7 +8,7 @@ import { getGastos, type HoldedGasto } from "@/lib/holded";
 import { getGastosFijos, esDelFijo, importeFijoMes, conIva, construirCandidatos } from "@/lib/gastosFijos";
 import { getLibroDiario, type LibroLinea } from "@/lib/holdedLedger";
 import { resumenTarjeta, TARJETAS, CATEGORIAS_TICKET, normRef, categoriaTicket, type TarjetaMes } from "@/lib/tarjetas";
-import { nominasPorMes } from "@/lib/nominas";
+import { nominasPorMes, irpfTrimestreHasta } from "@/lib/nominas";
 import { getCategoriasGasto } from "@/lib/categorias";
 import { BUCKETS, bucketDe } from "@/lib/gastosBuckets";
 import { fmtEur } from "@/lib/format";
@@ -130,7 +130,10 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   const cargoTarjeta = tarjetas.reduce((s, t) => s + t.enCaja, 0);
 
   // Nóminas y personal del mes, del libro diario (asientos de nómina + pagos)
-  const nominasMes = nominasPorMes(diario, anyoN)[mesN - 1];
+  const nominasAno = nominasPorMes(diario, anyoN);
+  const nominasMes = nominasAno[mesN - 1];
+  const irpfTrimestre = irpfTrimestreHasta(nominasAno, mesN - 1);
+  const trimestreN = Math.floor((mesN - 1) / 3) + 1;
 
   // Facturas del mes del cajón tarjeta (gasolina, parking…) que AÚN no están
   // conciliadas como movimiento en ninguna cuenta 52x: se enseñan ya como
@@ -399,31 +402,64 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
               y, si la gestoría aún no los ha pasado, lo pagado por banco */}
           <div className="mt-6">
             <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider mb-3">Nóminas y personal · {mesLabel(mes)}</h2>
-            <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5">
+            <div className="space-y-4">
               {nominasMes.personas.length > 0 ? (
                 <div className="grid sm:grid-cols-2 gap-4">
                   {nominasMes.personas.map((p, i) => (
-                    <div key={i} className="border border-gray-100 rounded-xl px-4 py-3">
-                      <div className="flex items-baseline justify-between gap-2">
+                    <div key={i} className="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
+                      <div className="px-5 py-3 bg-[#EEEBF3] flex items-center justify-between">
                         <p className="text-sm font-bold text-[#2E1A47]">{p.etiqueta}</p>
-                        <p className="text-sm font-black text-[#2E1A47] whitespace-nowrap">{fmtEur(p.costeEmpresa)} <span className="text-[9px] font-normal text-gray-400">coste empresa</span></p>
+                        <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${p.netoPagado ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{p.netoPagado ? "Pagada" : "Pendiente de pago"}</span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1.5">
-                        Neto <b>{fmtEur(p.neto)}</b> · IRPF retenido {fmtEur(p.irpf)}
-                        {p.ssTotal > 0.5 && <> · SS {fmtEur(p.ssTotal)} <span className="text-gray-400">(empresa {fmtEur(p.ssEmpresa)}, a mes vencido)</span></>}
-                      </p>
+                      <div className="divide-y divide-gray-50">
+                        <div className="px-5 py-3 flex items-baseline justify-between gap-3">
+                          <div>
+                            <p className="text-sm text-gray-700">Líquido</p>
+                            <p className="text-[11px] text-gray-400">lo que recibe la persona</p>
+                          </div>
+                          <p className="text-base font-black text-[#2E1A47] whitespace-nowrap">{fmtEur(p.neto)}</p>
+                        </div>
+                        <div className="px-5 py-3 flex items-baseline justify-between gap-3">
+                          <div>
+                            <p className="text-sm text-gray-700">{p.autonoma ? "Cuota de autónomos" : "Seguridad Social"}</p>
+                            <p className="text-[11px] text-gray-400">{p.autonoma ? "la paga la empresa" : `empresa ${fmtEur(p.ssEmpresa)} · se paga a mes vencido`}</p>
+                          </div>
+                          <p className="text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(p.autonoma ? nominasMes.cuotaAutonomos : p.ssTotal)}</p>
+                        </div>
+                        <div className="px-5 py-3 flex items-baseline justify-between gap-3">
+                          <div>
+                            <p className="text-sm text-gray-700">IRPF retenido</p>
+                            <p className="text-[11px] text-gray-400">a guardar para el modelo 111 trimestral</p>
+                          </div>
+                          <p className="text-sm font-bold text-amber-600 whitespace-nowrap">{fmtEur(p.irpf)}</p>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-gray-400">La gestoría aún no ha pasado los asientos de nómina de este mes — se cuenta lo pagado por banco.</p>
+                <div className="bg-white border border-gray-100 shadow-sm rounded-2xl px-5 py-4">
+                  <p className="text-xs text-gray-400">La gestoría aún no ha pasado los asientos de nómina de este mes — se cuenta lo pagado por banco{nominasMes.cuotaAutonomos > 0.5 ? ` y la cuota de autónomos (${fmtEur(nominasMes.cuotaAutonomos)})` : ""}.</p>
+                </div>
               )}
-              <div className="mt-3 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[11px] text-gray-500 border-t border-gray-100 pt-3">
-                {nominasMes.cuotaAutonomos > 0.5 && <span>Cuota de autónomos (Rita): <b className="text-[#2E1A47]">{fmtEur(nominasMes.cuotaAutonomos)}</b></span>}
-                {nominasMes.pagosNetos > 0.5 && <span>Nóminas pagadas por banco: <b className="text-[#2E1A47]">{fmtEur(nominasMes.pagosNetos)}</b></span>}
-                {nominasMes.pagoSS > 0.5 && <span>Seguridad Social pagada (TGSS): <b className="text-[#2E1A47]">{fmtEur(nominasMes.pagoSS)}</b></span>}
-                {nominasMes.pagoIRPF > 0.5 && <span>IRPF ingresado a Hacienda (mod. 111): <b className="text-[#2E1A47]">{fmtEur(nominasMes.pagoIRPF)}</b></span>}
-                <span className="ml-auto text-sm font-black text-[#2E1A47]">Coste del mes: {fmtEur(nominasMes.coste)}</span>
+
+              {/* Reserva del IRPF trimestral + pagos reales del mes (cuándo se paga) */}
+              <div className="bg-white border border-gray-100 shadow-sm rounded-2xl px-5 py-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <p className="text-sm font-bold text-[#2E1A47]">A guardar para Hacienda · IRPF del {trimestreN}º trimestre</p>
+                    <p className="text-[11px] text-gray-400">retenido acumulado del trimestre (nóminas y facturas) — se ingresa con el modelo 111</p>
+                  </div>
+                  <p className="text-xl font-black text-amber-600 whitespace-nowrap">{fmtEur(irpfTrimestre)}</p>
+                </div>
+                <div className="mt-3 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[11px] text-gray-500 border-t border-gray-100 pt-3">
+                  <span className="uppercase tracking-wide text-[10px] font-bold text-gray-400">Pagado este mes:</span>
+                  {nominasMes.pagosNetos > 0.5 && <span>Nóminas netas <b className="text-[#2E1A47]">{fmtEur(nominasMes.pagosNetos)}</b></span>}
+                  {nominasMes.pagoSS > 0.5 && <span>Seguridad Social (TGSS) <b className="text-[#2E1A47]">{fmtEur(nominasMes.pagoSS)}</b></span>}
+                  {nominasMes.pagoIRPF > 0.5 && <span>IRPF a Hacienda (mod. 111) <b className="text-[#2E1A47]">{fmtEur(nominasMes.pagoIRPF)}</b></span>}
+                  {nominasMes.pagosNetos <= 0.5 && nominasMes.pagoSS <= 0.5 && nominasMes.pagoIRPF <= 0.5 && <span className="text-gray-400">nada aún</span>}
+                  <span className="ml-auto text-sm font-black text-[#2E1A47]">Coste del mes: {fmtEur(nominasMes.coste)}</span>
+                </div>
               </div>
             </div>
           </div>
