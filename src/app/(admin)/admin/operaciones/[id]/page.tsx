@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues, financialEntities, entityOffices, entityOfficeContacts, operationDocuments, clientDocuments, avalDocuments, contacts, operationTasks } from "@/db/schema";
+import { operations, clients, suppliers, notes, collaborators, customFields, customFieldValues, financialEntities, entityOffices, operationDocuments, clientDocuments, avalDocuments, contacts, operationTasks } from "@/db/schema";
 import { eq, asc, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { avalistasDeOp } from "@/lib/avalistas";
@@ -220,7 +220,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
     : null;
 
   const opOffice = op.entity_office_id
-    ? await db.select({ id: entityOffices.id, nombre: entityOffices.nombre, ciudad: entityOffices.ciudad, email: entityOffices.email, telefono: entityOffices.telefono })
+    ? await db.select({ id: entityOffices.id, entity_id: entityOffices.entity_id, nombre: entityOffices.nombre, ciudad: entityOffices.ciudad })
         .from(entityOffices).where(eq(entityOffices.id, op.entity_office_id)).limit(1).then(r => r[0] ?? null)
     : null;
 
@@ -234,10 +234,6 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
   const colabLogo = op.colaborador_id
     ? await db.select({ logo_url: collaborators.logo_url }).from(collaborators).where(eq(collaborators.id, op.colaborador_id)).limit(1).then(r => r[0]?.logo_url ?? null)
     : null;
-
-  const officeContacts = op.entity_office_id
-    ? await db.select().from(entityOfficeContacts).where(eq(entityOfficeContacts.office_id, op.entity_office_id))
-    : [];
 
   const clienteContacto = op.client_id
     ? await db.select({ id: contacts.id, nombre: contacts.nombre }).from(contacts).where(eq(contacts.client_id, op.client_id)).limit(1).then(r => r[0] ?? null)
@@ -583,20 +579,13 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
                   {opOffice && (
                     <div>
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Oficina que la estudia</dt>
-                      <dd className="text-sm text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</dd>
-                      {opOffice.email && <dd className="text-xs text-gray-500 mt-0.5">{opOffice.email}</dd>}
-                      {opOffice.telefono && <dd className="text-xs text-gray-500">{opOffice.telefono}</dd>}
+                      <dd className="text-sm">
+                        <Link href={`/admin/entidades/${opOffice.entity_id}/oficinas/${opOffice.id}`} className="text-[#2E1A47] font-semibold hover:underline">
+                          {opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""} →
+                        </Link>
+                      </dd>
                     </div>
                   )}
-                  {officeContacts.map(c => (
-                    <div key={c.id}>
-                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Persona de contacto en la entidad</dt>
-                      <dd className="text-sm text-gray-800 font-semibold">{c.nombre}</dd>
-                      {c.rol && <dd className="text-xs text-gray-400">{c.rol}</dd>}
-                      {c.email && <dd className="text-xs text-gray-500">{c.email}</dd>}
-                      {c.telefono && <dd className="text-xs text-gray-500">{c.telefono}</dd>}
-                    </div>
-                  ))}
                   {/* Campos personalizados rellenos */}
                   {opCustomFields
                     .filter((f) => { const v = opCustomValues.find((cv) => cv.field_id === f.id); return v && v.valor && v.valor.trim() !== ""; })

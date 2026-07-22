@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { collaborators, financialEntities, entityOffices, entityContacts, entityNotes, operations, clients } from "@/db/schema";
-import { eq, and, or, inArray } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { fmtEur } from "@/lib/format";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
@@ -43,16 +43,15 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
     ? await db.select().from(entityNotes).where(eq(entityNotes.entity_id, id)).orderBy(entityNotes.created_at)
     : [];
 
-  // Operaciones del colaborador en esta entidad: por sus oficinas o ligadas por
-  // el nombre de la entidad financiera (así salen las entidades sin oficinas).
-  const officeIds = oficinas.map(o => o.id);
-  const vinculo = officeIds.length
-    ? or(eq(operations.entidad_financiera, entidad.nombre), inArray(operations.entity_office_id, officeIds))
-    : eq(operations.entidad_financiera, entidad.nombre);
-  const ops = await db
-    .select({ id: operations.id, nombre: operations.nombre, fase: operations.fase, importe: operations.importe, client_nombre: clients.nombre })
-    .from(operations).leftJoin(clients, eq(operations.client_id, clients.id))
-    .where(and(vinculo, eq(operations.collaborator_id, userId))).orderBy(operations.created_at);
+  // Operaciones del colaborador en la ficha de la entidad SOLO si NO tiene
+  // oficinas (si las tiene, se ven dentro de cada oficina). Se ligan por el
+  // nombre de la entidad financiera.
+  const ops = oficinas.length === 0
+    ? await db
+        .select({ id: operations.id, nombre: operations.nombre, fase: operations.fase, importe: operations.importe, client_nombre: clients.nombre })
+        .from(operations).leftJoin(clients, eq(operations.client_id, clients.id))
+        .where(and(eq(operations.entidad_financiera, entidad.nombre), eq(operations.collaborator_id, userId), ne(operations.status, "archivada"))).orderBy(operations.created_at)
+    : [];
 
   const inicial = entidad.nombre.charAt(0).toUpperCase();
 
@@ -193,7 +192,8 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
             )}
           </div>
 
-          {/* Operaciones del colaborador en esta entidad */}
+          {/* Operaciones: solo si la entidad no tiene oficinas */}
+          {oficinas.length === 0 && (
           <div className="bg-white border border-gray-200 p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-widest">Tus operaciones</h2>
@@ -216,6 +216,7 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
               <p className="text-sm text-gray-400">Sin operaciones tuyas en esta entidad.</p>
             )}
           </div>
+          )}
         </div>
       </div>
     </div>

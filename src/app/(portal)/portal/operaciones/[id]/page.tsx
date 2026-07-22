@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { comisionDeColaborador } from "@/lib/comisiones";
-import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments, clientDocuments, avalDocuments, financialEntities, entityOffices, entityOfficeContacts, contacts, operationTasks } from "@/db/schema";
+import { operations, clients, suppliers, notes, customFields, customFieldValues, collaborators, operationDocuments, clientDocuments, avalDocuments, financialEntities, entityOffices, contacts, operationTasks } from "@/db/schema";
 import { avalistasDeOp } from "@/lib/avalistas";
 import { eq, and, asc, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
@@ -125,13 +125,9 @@ export default async function OperacionDetallePage({ params }: { params: Promise
     : null;
 
   const opOffice = op.entity_office_id
-    ? await db.select({ id: entityOffices.id, nombre: entityOffices.nombre, ciudad: entityOffices.ciudad, email: entityOffices.email, telefono: entityOffices.telefono })
+    ? await db.select({ id: entityOffices.id, entity_id: entityOffices.entity_id, nombre: entityOffices.nombre, ciudad: entityOffices.ciudad })
         .from(entityOffices).where(eq(entityOffices.id, op.entity_office_id)).limit(1).then(r => r[0] ?? null)
     : null;
-
-  const officeContacts = op.entity_office_id
-    ? await db.select().from(entityOfficeContacts).where(eq(entityOfficeContacts.office_id, op.entity_office_id))
-    : [];
 
   // Persona de contacto del cliente y del proveedor (para la ficha de renting)
   const clienteContacto = op.client_id
@@ -464,18 +460,17 @@ export default async function OperacionDetallePage({ params }: { params: Promise
                   {nivelEntidades <= 3 && opOffice && (
                     <div>
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Oficina que la estudia</dt>
-                      <dd className="text-sm text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</dd>
+                      <dd className="text-sm">
+                        {nivelEntidades <= 2 ? (
+                          <Link href={`/portal/entidades/${opOffice.entity_id}/oficinas/${opOffice.id}`} className="text-[#2E1A47] font-semibold hover:underline">
+                            {opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""} →
+                          </Link>
+                        ) : (
+                          <span className="text-gray-800 font-medium">{opOffice.nombre}{opOffice.ciudad ? ` — ${opOffice.ciudad}` : ""}</span>
+                        )}
+                      </dd>
                     </div>
                   )}
-                  {nivelEntidades === 1 && officeContacts.map(c => (
-                    <div key={c.id}>
-                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Persona de contacto en la entidad</dt>
-                      <dd className="text-sm text-gray-800 font-semibold">{c.nombre}</dd>
-                      {c.rol && <dd className="text-xs text-gray-400">{c.rol}</dd>}
-                      {c.email && <dd className="text-xs text-gray-500">{c.email}</dd>}
-                      {c.telefono && <dd className="text-xs text-gray-500">{c.telefono}</dd>}
-                    </div>
-                  ))}
                   {op.es_renovacion && opOriginal && (
                     <div>
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Renovación de</dt>
