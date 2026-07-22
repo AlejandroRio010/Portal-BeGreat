@@ -1,9 +1,10 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { financialEntities, entityOffices, entityContacts, entityNotes } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { financialEntities, entityOffices, entityContacts, entityNotes, operations, clients } from "@/db/schema";
+import { eq, or, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { fmtEur } from "@/lib/format";
 import EntidadEditForm from "./EntidadEditForm";
 import NuevaOficinaForm from "./NuevaOficinaForm";
 import EliminarEntidadBtn from "./EliminarEntidadBtn";
@@ -33,6 +34,17 @@ export default async function EntidadFichaPage({ params }: { params: Promise<{ i
   const oficinas = await db.select().from(entityOffices).where(eq(entityOffices.entity_id, id)).orderBy(entityOffices.nombre);
   const contactos = await db.select().from(entityContacts).where(eq(entityContacts.entity_id, id)).orderBy(entityContacts.created_at);
   const notes = await db.select().from(entityNotes).where(eq(entityNotes.entity_id, id)).orderBy(entityNotes.created_at);
+
+  // Operaciones de la entidad: por sus oficinas (entity_office_id) o ligadas por
+  // el nombre de la entidad financiera (entidad_financiera), para que salgan
+  // también las de entidades de renting SIN oficinas (p. ej. Tendit).
+  const officeIds = oficinas.map(o => o.id);
+  const condOps = [eq(operations.entidad_financiera, entidad.nombre)];
+  if (officeIds.length) condOps.push(inArray(operations.entity_office_id, officeIds));
+  const ops = await db
+    .select({ id: operations.id, nombre: operations.nombre, fase: operations.fase, status: operations.status, importe: operations.importe, created_at: operations.created_at, client_nombre: clients.nombre })
+    .from(operations).leftJoin(clients, eq(operations.client_id, clients.id))
+    .where(or(...condOps)).orderBy(operations.created_at);
 
   const inicial = entidad.nombre.charAt(0).toUpperCase();
 
@@ -165,6 +177,33 @@ export default async function EntidadFichaPage({ params }: { params: Promise<{ i
             )}
 
             <NuevaOficinaForm entityId={id} />
+          </div>
+
+          {/* Operaciones ligadas a la entidad */}
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-widest">Operaciones</h2>
+              <span className="text-xs text-gray-400">{ops.length} operaci{ops.length !== 1 ? "ones" : "ón"}</span>
+            </div>
+            {ops.length > 0 ? (
+              <div className="bg-white border border-gray-200 divide-y divide-gray-50">
+                {ops.map(o => (
+                  <Link key={o.id} href={`/admin/operaciones/${o.id}`}
+                    className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-[#EEEBF3]/30 group">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 group-hover:text-[#2E1A47] truncate">{o.nombre}</p>
+                      <p className="text-xs text-gray-400 truncate">{o.client_nombre ?? "—"}{o.fase ? ` · ${o.fase}` : ""}</p>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      {o.importe != null && Number(o.importe) > 0 && <span className="text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(Number(o.importe))}</span>}
+                      <span className="text-[#2E1A47] opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 bg-white border border-gray-200 px-4 py-6 text-center">Sin operaciones ligadas a esta entidad.</p>
+            )}
           </div>
         </div>
       </div>

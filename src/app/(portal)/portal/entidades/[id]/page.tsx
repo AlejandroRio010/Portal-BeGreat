@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { collaborators, financialEntities, entityOffices, entityContacts, entityNotes } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { collaborators, financialEntities, entityOffices, entityContacts, entityNotes, operations, clients } from "@/db/schema";
+import { eq, and, or, inArray } from "drizzle-orm";
+import { fmtEur } from "@/lib/format";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import NotesSection from "@/components/NotesSection";
@@ -41,6 +42,17 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
   const notes = nivel <= 2
     ? await db.select().from(entityNotes).where(eq(entityNotes.entity_id, id)).orderBy(entityNotes.created_at)
     : [];
+
+  // Operaciones del colaborador en esta entidad: por sus oficinas o ligadas por
+  // el nombre de la entidad financiera (así salen las entidades sin oficinas).
+  const officeIds = oficinas.map(o => o.id);
+  const vinculo = officeIds.length
+    ? or(eq(operations.entidad_financiera, entidad.nombre), inArray(operations.entity_office_id, officeIds))
+    : eq(operations.entidad_financiera, entidad.nombre);
+  const ops = await db
+    .select({ id: operations.id, nombre: operations.nombre, fase: operations.fase, importe: operations.importe, client_nombre: clients.nombre })
+    .from(operations).leftJoin(clients, eq(operations.client_id, clients.id))
+    .where(and(vinculo, eq(operations.collaborator_id, userId))).orderBy(operations.created_at);
 
   const inicial = entidad.nombre.charAt(0).toUpperCase();
 
@@ -178,6 +190,30 @@ export default async function PortalEntidadDetallePage({ params }: { params: Pro
               </div>
             ) : (
               <p className="text-sm text-gray-400">Sin oficinas registradas.</p>
+            )}
+          </div>
+
+          {/* Operaciones del colaborador en esta entidad */}
+          <div className="bg-white border border-gray-200 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-widest">Tus operaciones</h2>
+              <span className="text-xs text-gray-400">{ops.length} operaci{ops.length !== 1 ? "ones" : "ón"}</span>
+            </div>
+            {ops.length > 0 ? (
+              <div className="divide-y divide-gray-50">
+                {ops.map(o => (
+                  <Link key={o.id} href={`/portal/operaciones/${o.id}`}
+                    className="flex items-center justify-between gap-4 py-3 hover:bg-[#EEEBF3]/30 group">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 group-hover:text-[#2E1A47] truncate">{o.nombre}</p>
+                      <p className="text-xs text-gray-400 truncate">{o.client_nombre ?? "—"}{o.fase ? ` · ${o.fase}` : ""}</p>
+                    </div>
+                    {o.importe != null && Number(o.importe) > 0 && <span className="text-sm font-bold text-[#2E1A47] whitespace-nowrap flex-shrink-0">{fmtEur(Number(o.importe))}</span>}
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">Sin operaciones tuyas en esta entidad.</p>
             )}
           </div>
         </div>
