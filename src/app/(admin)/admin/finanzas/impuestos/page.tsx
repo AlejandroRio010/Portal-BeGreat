@@ -28,21 +28,18 @@ const REGLA_IVA: Partial<Record<CategoriaGasto, { pct: number; regla: string }>>
   "Dietas y restauración": { pct: 0, regla: "hostelería/atenciones: no deducible (art. 96)" },
 };
 
-interface PagoImpuesto { fecha: string; tipo: "iva" | "irpf" | "is"; importe: number; periodo: string; orden: string }
+interface PagoImpuesto { fecha: string; tipo: "iva" | "irpf" | "is"; importe: number; clave: string }
 
 // A qué liquidación corresponde un pago, por su fecha (se paga el mes siguiente
 // al cierre del periodo: enero → 4T del año anterior; abril → 1T; julio → 2T;
 // octubre → 3T). El 202 va por pagos: abril (1P), octubre (2P), diciembre (3P).
-function periodoDe(fecha: string, tipo: "iva" | "irpf" | "is"): { periodo: string; orden: string } {
+function claveDe(fecha: string, tipo: "iva" | "irpf" | "is"): string {
   const [y, m] = fecha.split("-").map(Number);
-  if (tipo === "is") {
-    const p = m <= 4 ? "1er pago (abril)" : m <= 10 ? "2º pago (octubre)" : "3er pago (diciembre)";
-    return { periodo: `Modelo 202 · ${p} ${y}`, orden: `${y}-${String(m).padStart(2, "0")}` };
-  }
-  if (m <= 3) return { periodo: `4T ${y - 1}`, orden: `${y - 1}-13` };
-  if (m <= 6) return { periodo: `1T ${y}`, orden: `${y}-03` };
-  if (m <= 9) return { periodo: `2T ${y}`, orden: `${y}-06` };
-  return { periodo: `3T ${y}`, orden: `${y}-09` };
+  if (tipo === "is") return m <= 4 ? `1P ${y}` : m <= 10 ? `2P ${y}` : `3P ${y}`;
+  if (m <= 3) return `4T ${y - 1}`;
+  if (m <= 6) return `1T ${y}`;
+  if (m <= 9) return `2T ${y}`;
+  return `3T ${y}`;
 }
 
 export default async function ImpuestosPage() {
@@ -90,20 +87,34 @@ export default async function ImpuestosPage() {
     for (const l of diario) {
       const tipo = CUENTAS_IMPUESTO[l.account];
       if (!tipo || l.debit <= 0.005 || !asientosConBanco.has(l.entry)) continue;
-      const { periodo, orden } = periodoDe(l.date, tipo);
-      pagos.push({ fecha: l.date, tipo, importe: l.debit, periodo, orden });
+      pagos.push({ fecha: l.date, tipo, importe: l.debit, clave: claveDe(l.date, tipo) });
     }
   } catch (e: any) { holdedError = e?.message ?? "Error Holded"; }
 
-  // Agrupar por liquidación (los trimestres de IVA/IRPF juntos; el 202 aparte)
-  const grupos = new Map<string, { periodo: string; orden: string; iva: number; irpf: number; is: number; fechas: string[] }>();
+  // Pagos agrupados por impuesto + liquidación (clave "iva|1T 2026", etc.)
+  const pagosPorClave = new Map<string, { importe: number; fechas: string[] }>();
   for (const p of pagos) {
-    if (!grupos.has(p.periodo)) grupos.set(p.periodo, { periodo: p.periodo, orden: p.orden, iva: 0, irpf: 0, is: 0, fechas: [] });
-    const g = grupos.get(p.periodo)!;
-    g[p.tipo] += p.importe;
+    const k = `${p.tipo}|${p.clave}`;
+    if (!pagosPorClave.has(k)) pagosPorClave.set(k, { importe: 0, fechas: [] });
+    const g = pagosPorClave.get(k)!;
+    g.importe += p.importe;
     if (!g.fechas.includes(p.fecha)) g.fechas.push(p.fecha);
   }
-  const filas = [...grupos.values()].sort((a, b) => a.orden.localeCompare(b.orden));
+
+  // Periodos que muestra cada cuadro (con su fecha límite de pago)
+  const hoyIso = hoy.toISOString().slice(0, 10);
+  const PERIODOS_TRIM = [
+    { clave: `4T ${anyo - 1}`, label: `4T ${anyo - 1}`, vence: `${anyo}-01-30`, mesPago: "enero" },
+    { clave: `1T ${anyo}`, label: `1T ${anyo}`, vence: `${anyo}-04-20`, mesPago: "abril" },
+    { clave: `2T ${anyo}`, label: `2T ${anyo}`, vence: `${anyo}-07-20`, mesPago: "julio" },
+    { clave: `3T ${anyo}`, label: `3T ${anyo}`, vence: `${anyo}-10-20`, mesPago: "octubre" },
+    { clave: `4T ${anyo}`, label: `4T ${anyo}`, vence: `${anyo + 1}-01-30`, mesPago: `enero ${anyo + 1}` },
+  ];
+  const PERIODOS_202 = [
+    { clave: `1P ${anyo}`, label: "1er pago", vence: `${anyo}-04-20`, mesPago: "abril" },
+    { clave: `2P ${anyo}`, label: "2º pago", vence: `${anyo}-10-20`, mesPago: "octubre" },
+    { clave: `3P ${anyo}`, label: "3er pago", vence: `${anyo}-12-20`, mesPago: "diciembre" },
+  ];
   const totIva = pagos.filter(p => p.tipo === "iva").reduce((s, p) => s + p.importe, 0);
   const totIrpf = pagos.filter(p => p.tipo === "irpf").reduce((s, p) => s + p.importe, 0);
   const totIs = pagos.filter(p => p.tipo === "is").reduce((s, p) => s + p.importe, 0);
@@ -147,50 +158,44 @@ export default async function ImpuestosPage() {
             </div>
           </div>
 
-          {/* Liquidaciones */}
-          <section className="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-            <div className="px-5 py-3.5 bg-[#2E1A47]">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider">Pagos por liquidación</h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-[#EEEBF3] border-b border-gray-100">
-                    {["Liquidación", "Pagado el", ETIQUETA.iva, ETIQUETA.irpf, ETIQUETA.is, "Total"].map((h, i) => (
-                      <th key={h} className={`px-4 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider ${i <= 1 ? "text-left" : "text-right"}`}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {filas.map(f => (
-                    <tr key={f.periodo} className="hover:bg-[#EEEBF3]/30">
-                      <td className="px-4 py-3 text-sm font-semibold text-gray-700">{f.periodo}</td>
-                      <td className="px-4 py-3 text-xs text-gray-400">{f.fechas.map(fmtFecha).join(" · ")}</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-700 whitespace-nowrap">{f.iva > 0.005 ? fmtEur(f.iva) : "—"}</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-700 whitespace-nowrap">{f.irpf > 0.005 ? fmtEur(f.irpf) : "—"}</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-700 whitespace-nowrap">{f.is > 0.005 ? fmtEur(f.is) : "—"}</td>
-                      <td className="px-4 py-3 text-sm text-right font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(f.iva + f.irpf + f.is)}</td>
-                    </tr>
-                  ))}
-                  {filas.length === 0 && (
-                    <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">No hay pagos de impuestos registrados en Holded este año.</td></tr>
-                  )}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-[#2E1A47]">
-                    <td className="px-4 py-3.5 text-sm font-black text-white uppercase tracking-wide" colSpan={2}>Total</td>
-                    <td className="px-4 py-3.5 text-sm text-right font-bold text-white/80 whitespace-nowrap">{fmtEur(totIva)}</td>
-                    <td className="px-4 py-3.5 text-sm text-right font-bold text-white/80 whitespace-nowrap">{fmtEur(totIrpf)}</td>
-                    <td className="px-4 py-3.5 text-sm text-right font-bold text-white/80 whitespace-nowrap">{fmtEur(totIs)}</td>
-                    <td className="px-4 py-3.5 text-sm text-right font-black text-[#FFC845] whitespace-nowrap">{fmtEur(totIva + totIrpf + totIs)}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-            <p className="px-5 py-3 text-[11px] text-gray-400 border-t border-gray-100">
-              Cada fila es una liquidación: lo pagado en enero corresponde al 4T del año anterior, lo de abril al 1T, lo de julio al 2T y lo de octubre al 3T. Los importes salen del libro diario de Holded (cargos a las cuentas 4750/4751/473 con salida de banco) — si un pago no aparece, es que aún no está contabilizado en Holded.
-            </p>
-          </section>
+          {/* Un cuadro por impuesto: IVA, IRPF y modelo 202 */}
+          <div className="grid lg:grid-cols-3 gap-4">
+            {([
+              { tipo: "iva" as const, titulo: ETIQUETA.iva, total: totIva, periodos: PERIODOS_TRIM },
+              { tipo: "irpf" as const, titulo: ETIQUETA.irpf, total: totIrpf, periodos: PERIODOS_TRIM },
+              { tipo: "is" as const, titulo: ETIQUETA.is, total: totIs, periodos: PERIODOS_202 },
+            ]).map(cuadro => (
+              <section key={cuadro.tipo} className="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden flex flex-col">
+                <div className="px-4 py-3 bg-[#2E1A47]">
+                  <h2 className="text-xs font-bold text-white uppercase tracking-wider">{cuadro.titulo}</h2>
+                </div>
+                <div className="divide-y divide-gray-50 flex-1">
+                  {cuadro.periodos.map(p => {
+                    const pago = pagosPorClave.get(`${cuadro.tipo}|${p.clave}`);
+                    const vencido = p.vence < hoyIso;
+                    return (
+                      <div key={p.clave} className={`px-4 py-2.5 flex items-center justify-between gap-3 ${!pago && !vencido ? "opacity-50" : ""}`}>
+                        <div>
+                          <p className="text-sm text-gray-700 font-medium">{p.label}</p>
+                          <p className="text-[10px] text-gray-400">
+                            {pago ? `pagado el ${pago.fechas.map(fmtFecha).join(" · ")}` : vencido ? "sin pago registrado en Holded" : `se paga en ${p.mesPago}`}
+                          </p>
+                        </div>
+                        <p className={`text-sm font-bold whitespace-nowrap ${pago ? "text-[#2E1A47]" : "text-gray-300"}`}>{pago ? fmtEur(pago.importe) : "—"}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="px-4 py-3 bg-[#EEEBF3] flex items-center justify-between">
+                  <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wide">Total pagado</p>
+                  <p className="text-sm font-black text-[#2E1A47]">{fmtEur(cuadro.total)}</p>
+                </div>
+              </section>
+            ))}
+          </div>
+          <p className="mt-3 text-[11px] text-gray-400">
+            Los importes salen del libro diario de Holded (cargos a las cuentas 4750 / 4751 / 473 con salida de banco). Cada liquidación se paga el mes siguiente al cierre del periodo: 4T en enero, 1T en abril, 2T en julio y 3T en octubre. El modelo 202 va en tres pagos: abril, octubre y diciembre. Si un pago no aparece, es que aún no está contabilizado en Holded.
+          </p>
 
           {/* IVA del trimestre en curso — estimación en vivo */}
           <section className="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden mt-8">
