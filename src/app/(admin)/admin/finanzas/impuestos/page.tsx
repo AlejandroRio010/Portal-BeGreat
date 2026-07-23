@@ -89,15 +89,18 @@ export default async function ImpuestosPage() {
       if (f.tax > 0.005) conIva++; else sinIva++;
     }
     for (const g of gastos.filter(g => en(g.date))) {
-      if (g.tax <= 0.005) continue;
-      soportadoTotal += g.tax;
+      // El campo tax de Holded viene NETO de retención (IVA − IRPF); el IVA
+      // soportado real es tax + retención.
+      const iva = g.tax + g.retencion;
+      if (iva <= 0.005) continue;
+      soportadoTotal += iva;
       const regla = REGLA_IVA[g.categoria];
       const pct = regla?.pct ?? 1;
-      deducible += g.tax * pct;
+      deducible += iva * pct;
       if (regla && pct < 1) {
         if (!ajustes.has(g.categoria)) ajustes.set(g.categoria, { regla: regla.regla, iva: 0, perdido: 0 });
         const a = ajustes.get(g.categoria)!;
-        a.iva += g.tax; a.perdido += g.tax * (1 - pct);
+        a.iva += iva; a.perdido += iva * (1 - pct);
       }
     }
     return { repercutido, conIva, sinIva, soportadoTotal, deducible, ajustes, resultado: repercutido - deducible };

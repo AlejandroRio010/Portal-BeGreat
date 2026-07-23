@@ -387,7 +387,20 @@ export async function getGastos(opts?: { incluirBorradores?: boolean }): Promise
       const total = num(i.total);
       const desc = i.description ?? i.lines?.[0]?.name ?? "";
       const cuentaId = cuentaDeFactura(i.lines);
-      const retencion = (i.lines ?? []).reduce((s: number, l: any) => s + num(l?.retention), 0);
+      // Retención IRPF: puede venir en el campo retention de la línea o como
+      // impuesto de línea ("p_ret_7", "p_ret_15"…) — en ese caso se calcula
+      // sobre la base de la línea. OJO: el campo tax del documento viene NETO
+      // (IVA − retención); el IVA bruto real es tax + retencion.
+      const retencion = (i.lines ?? []).reduce((s: number, l: any) => {
+        const directa = num(l?.retention);
+        if (directa) return s + directa;
+        const base = num(l?.price) * (num(l?.units) || 1) * (1 - num(l?.discount) / 100);
+        const pct = (Array.isArray(l?.taxes) ? l.taxes : []).reduce((p: number, t: any) => {
+          const m = /^p_ret_(\d+(?:_\d+)?)$/.exec(String(t));
+          return m ? p + parseFloat(m[1].replace("_", ".")) : p;
+        }, 0);
+        return s + (base * pct) / 100;
+      }, 0);
       // Pagado real = máximo entre lo que dice la factura y los pagos conciliados
       const pagoRec = pagos.get(i.id);
       const pagado = Math.max(num(i.payments_total), pagoRec?.importe ?? 0);
