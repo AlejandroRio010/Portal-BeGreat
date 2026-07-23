@@ -6,6 +6,7 @@ import { eq, and } from "drizzle-orm";
 import { sendOperationValidatedEmail, sendOperationDeniedEmail, sendOperationWonEmail, sendSupplierOperationDeniedEmail } from "@/lib/email";
 import { fmtEur, sanitizeNumeric } from "@/lib/format";
 import { resolveAvalistas, legacyAvalFields, type AvalistaInput } from "@/lib/avalistas";
+import { getFacturasByIds } from "@/lib/holded";
 
 export async function PATCH(
   req: NextRequest,
@@ -171,6 +172,19 @@ export async function PATCH(
     updateData.holded_invoice_id = holded_invoice_id || null;
     updateData.holded_invoice_number = holded_invoice_id ? (holded_invoice_number || null) : null;
     updateData.holded_invoices = holded_invoice_id ? [{ id: holded_invoice_id, number: holded_invoice_number ?? null }] : [];
+  }
+  // La fecha de cierre se sincroniza SIEMPRE con la fecha de emisión de la
+  // factura de venta vinculada (la más antigua si hay varias): el mes de la op
+  // en finanzas es el mes en que se facturó, sin mantener la fecha a mano.
+  const facturasVinculadas = updateData.holded_invoices as { id: string }[] | undefined;
+  if (facturasVinculadas && facturasVinculadas.length > 0) {
+    try {
+      const facturas = await getFacturasByIds(facturasVinculadas.map(f => f.id));
+      const fechas = facturas.map(f => f.date).filter(Boolean).sort();
+      if (fechas[0]) updateData.fecha_cierre = new Date(`${fechas[0]}T12:00:00Z`);
+    } catch {
+      // Si Holded no responde, no bloqueamos el guardado; la fecha queda como estaba.
+    }
   }
   if (Array.isArray(holded_purchases)) {
     // Facturas de compra vinculadas (pago a proveedor/cliente y comisiones).
