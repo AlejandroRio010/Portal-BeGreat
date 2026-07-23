@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getFacturasVenta, getGastos } from "@/lib/holded";
+import { getResumenCaja } from "@/lib/cajaResumen";
 import { fmtEur } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -13,16 +13,21 @@ export default async function FinanzasHubPage() {
   if (!session || (session.user as any).role !== "admin") notFound();
 
   const hoy = new Date();
-  const mes = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
+  const anyo = hoy.getFullYear();
+  const mesIdx = hoy.getMonth();
 
-  // Todo en BASE (sin IVA): el negocio se mira sin IVA; el IVA va aparte.
-  let cobrado = 0, pagadoGasto = 0, ok = true;
+  // El MISMO motor que la página de Caja: así los KPIs del hub y el detalle
+  // del mes cuentan siempre lo mismo (fijos + variables + nóminas + tarjetas).
+  let ok = true;
+  let ingresos = 0, cobrado = 0, salidas = 0, neto = 0;
   try {
-    const [ventas, gastos] = await Promise.all([getFacturasVenta(), getGastos()]);
-    cobrado = ventas.filter(f => f.date.startsWith(mes) && f.estado === "cobrada").reduce((s, f) => s + f.subtotal, 0);
-    pagadoGasto = gastos.filter(g => g.date.startsWith(mes)).reduce((s, g) => s + g.subtotal, 0);
+    const { holdedError, meses } = await getResumenCaja(anyo);
+    if (holdedError) ok = false;
+    else {
+      const M = meses[mesIdx];
+      ingresos = M.ingresos; cobrado = M.cobrado; salidas = M.salidas; neto = M.neto;
+    }
   } catch { ok = false; }
-  const neto = cobrado - pagadoGasto;
 
   const secciones = [
     { href: "/admin/finanzas/caja", titulo: "Caja", desc: "El mes en curso: ingresos, gastos, operaciones firmadas y caja de bancos", activo: true },
@@ -30,8 +35,8 @@ export default async function FinanzasHubPage() {
     { href: "/admin/finanzas/ingresos", titulo: "Ingresos", desc: "Facturas de venta, cobros y pendientes por línea de negocio", activo: true },
     { href: "/admin/finanzas/gastos", titulo: "Gastos", desc: "Fijos, variables y tarjetas del mes", activo: true },
     { href: "/admin/finanzas/gastos/fijos", titulo: "Gastos fijos", desc: "Control anual por proveedor (Bearing y Obliviate)", activo: true },
-    { href: "/admin/finanzas/categorias", titulo: "Categorías", desc: "Añadir o quitar categorías de gasto", activo: true },
     { href: "/admin/finanzas/impuestos", titulo: "Impuestos", desc: "Lo pagado a Hacienda por liquidación: IVA, IRPF y modelo 202", activo: true },
+    { href: "/admin/finanzas/categorias", titulo: "Categorías", desc: "Añadir o quitar categorías de gasto", activo: true },
   ];
 
   return (
@@ -41,15 +46,17 @@ export default async function FinanzasHubPage() {
         <p className="text-sm text-gray-400 mt-1">Bearing Point S.L. · control de caja en tiempo real desde Holded</p>
       </div>
 
-      {/* Resumen del mes */}
+      {/* Resumen del mes — mismos números que la página de Caja */}
       <div className="grid grid-cols-3 gap-4 mb-10">
         <div className="bg-[#2E1A47] px-6 py-6">
-          <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Cobrado en {MESES[hoy.getMonth()]} · sin IVA</p>
-          <p className="text-3xl font-black text-white">{ok ? fmtEur(cobrado) : "—"}</p>
+          <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Ingresos de {MESES[mesIdx]} · sin IVA</p>
+          <p className="text-3xl font-black text-white">{ok ? fmtEur(ingresos) : "—"}</p>
+          {ok && <p className="text-white/40 text-[10px] mt-1.5 uppercase tracking-wide">cobrado {fmtEur(cobrado)}</p>}
         </div>
         <div className="bg-[#2E1A47] px-6 py-6">
-          <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Gastado en {MESES[hoy.getMonth()]} · sin IVA</p>
-          <p className="text-3xl font-black text-white">{ok ? fmtEur(pagadoGasto) : "—"}</p>
+          <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Gastos de {MESES[mesIdx]} · sin IVA</p>
+          <p className="text-3xl font-black text-white">{ok ? fmtEur(salidas) : "—"}</p>
+          {ok && <p className="text-white/40 text-[10px] mt-1.5 uppercase tracking-wide">fijos + variables + nóminas + tarjetas</p>}
         </div>
         <div className={`px-6 py-6 border ${neto >= 0 ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"}`}>
           <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${neto >= 0 ? "text-emerald-600" : "text-red-600"}`}>Neto del mes {neto >= 0 ? "· hemos ganado" : "· en negativo"}</p>
@@ -59,7 +66,7 @@ export default async function FinanzasHubPage() {
 
       {/* Accesos a secciones */}
       <div className="grid grid-cols-2 gap-4">
-        {secciones.map(s => s.activo ? (
+        {secciones.map(s => (
           <Link key={s.titulo} href={s.href}
             className="group bg-white border border-gray-200 rounded-2xl p-6 hover:border-[#2E1A47]/40 hover:shadow-md transition-all flex items-start gap-4">
             <span className="mt-2 w-2.5 h-2.5 rounded-sm bg-[#FFC845] flex-shrink-0" />
@@ -69,15 +76,6 @@ export default async function FinanzasHubPage() {
             </div>
             <span className="text-[#2E1A47] opacity-0 group-hover:opacity-100 transition-opacity">→</span>
           </Link>
-        ) : (
-          <div key={s.titulo} className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 flex items-start gap-4 opacity-70">
-            <span className="mt-2 w-2.5 h-2.5 rounded-sm bg-gray-300 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-lg font-bold text-gray-400">{s.titulo}</p>
-              <p className="text-sm text-gray-400 mt-0.5">{s.desc}</p>
-            </div>
-            <span className="text-[10px] text-gray-400 uppercase tracking-wide bg-white border border-gray-200 px-2 py-0.5 rounded-full">Próximamente</span>
-          </div>
         ))}
       </div>
     </div>
