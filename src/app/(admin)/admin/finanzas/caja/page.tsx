@@ -122,9 +122,9 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
       <div className="flex items-start justify-between mb-8 gap-6">
         <div>
           <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
-            <Link href="/admin/finanzas" className="hover:text-[#2E1A47]">Finanzas</Link><span>/</span><span className="text-gray-600 font-medium">Caja</span>
+            <Link href="/admin/finanzas" className="hover:text-[#2E1A47]">Finanzas</Link><span>/</span><span className="text-gray-600 font-medium">Resumen mensual</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Finanzas — Caja</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Finanzas — Resumen mensual</h1>
           <p className="text-sm text-gray-400 mt-1">El mes en curso · importes sin IVA (la tarjeta, por su recibo bancario) · <Link href="/admin/finanzas/evolucion" className="text-[#2E1A47] font-semibold hover:underline">ver evolución del año →</Link></p>
         </div>
         <div className="flex gap-0.5 bg-white border border-gray-200 rounded-2xl p-1 self-start">
