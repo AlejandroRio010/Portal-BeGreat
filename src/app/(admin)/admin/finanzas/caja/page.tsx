@@ -2,14 +2,11 @@ import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/db";
-import { operations, tarjetaCargos, finanzasValores } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { getFacturasVenta, getGastos, type HoldedInvoice, type HoldedGasto } from "@/lib/holded";
-import { getGastosFijos, esDelFijo, importeFijoMes } from "@/lib/gastosFijos";
-import { getLibroDiario, type LibroLinea } from "@/lib/holdedLedger";
-import { resumenTarjeta, TARJETAS, CATEGORIAS_TICKET, normRef } from "@/lib/tarjetas";
-import { BUCKETS, bucketDe, type BucketVariable } from "@/lib/gastosBuckets";
-import { nominasPorMes } from "@/lib/nominas";
+import { operations, clients, collaborators } from "@/db/schema";
+import { eq, inArray } from "drizzle-orm";
+import { getResumenCaja } from "@/lib/cajaResumen";
+import { CATEGORIAS_TICKET } from "@/lib/tarjetas";
+import { BUCKETS } from "@/lib/gastosBuckets";
 import { fmtEur } from "@/lib/format";
 import SaldoInicialEdit from "./SaldoInicialEdit";
 
@@ -18,6 +15,10 @@ export const dynamic = "force-dynamic";
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const CORTOS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const mesLabel = (ym: string) => { const [y, m] = ym.split("-").map(Number); return `${MESES[m - 1]} ${y}`; };
+
+const FASES_FIRMADA = ["Contrato firmado", "Honorarios pagados", "Transferencia realizada"];
+
+type RepartoColaborador = { id?: string; nombre?: string; importe?: string };
 
 export default async function CajaPage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
   const session = await auth();
@@ -28,138 +29,51 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
   const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
   const mes = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? sp.mes! : mesActual;
   const [anyoN, mesN] = mes.split("-").map(Number);
-  const mesActualIdx = mesActual.startsWith(String(anyoN)) ? Number(mesActual.split("-")[1]) - 1 : 11;
 
-  let facturas: HoldedInvoice[] = [];
-  let gastos: HoldedGasto[] = [];
-  let diario: LibroLinea[] = [];
-  let holdedError: string | null = null;
-  try {
-    [facturas, gastos, diario] = await Promise.all([getFacturasVenta(), getGastos({ incluirBorradores: true }), getLibroDiario()]);
-  } catch (e: any) { holdedError = e?.message ?? "Error Holded"; }
-
-  const [allFijos, ops, cargoRows, valores] = await Promise.all([
-    getGastosFijos(),
-    db.select({ id: operations.id, holded_purchases: operations.holded_purchases }).from(operations),
-    db.select({ month: tarjetaCargos.month, cuenta: tarjetaCargos.cuenta, importe: tarjetaCargos.importe }).from(tarjetaCargos).where(eq(tarjetaCargos.year, anyoN)),
-    db.select().from(finanzasValores).where(eq(finanzasValores.clave, `saldo_inicial_bancos_${anyoN}`)),
+  const [{ holdedError, saldoInicial, meses, cajaFinMes, tarjetasCalc }, opsFirmadasAll] = await Promise.all([
+    getResumenCaja(anyoN),
+    db.select({
+      id: operations.id,
+      nombre: operations.nombre,
+      producto: operations.producto,
+      pipeline_key: operations.pipeline_key,
+      fase: operations.fase,
+      fecha_cierre: operations.fecha_cierre,
+      created_at: operations.created_at,
+      comision_begreat: operations.comision_begreat,
+      comision_colaborador: operations.comision_colaborador,
+      colaboradores_comision: operations.colaboradores_comision,
+      cliente: clients.nombre,
+      colaborador: collaborators.nombre,
+    }).from(operations)
+      .leftJoin(clients, eq(operations.client_id, clients.id))
+      .leftJoin(collaborators, eq(operations.collaborator_id, collaborators.id))
+      .where(inArray(operations.fase, FASES_FIRMADA)),
   ]);
-  const fijosBearing = allFijos.filter(f => f.empresa === "bearing");
-  const fijosObliviate = allFijos.filter(f => f.empresa === "obliviate");
-  const saldoInicial = valores[0] ? Number(valores[0].valor) : null;
 
-  // Vínculos factura de compra → operación (el vínculo manda sobre la cuenta)
-  const tipoDePurchase = new Map<string, string>();
-  for (const o of ops) for (const p of (o.holded_purchases as { id?: string; tipo?: string }[] | null) ?? []) {
-    if (p?.id && p.tipo) tipoDePurchase.set(p.id, p.tipo);
-  }
-  const bucketConLink = (g: HoldedGasto): BucketVariable => {
-    const t = tipoDePurchase.get(g.id);
-    if (t === "pago") return "mercaderia";
-    if (t === "comision") return "comisiones";
-    return bucketDe(g);
+  // Ops firmadas del mes seleccionado (por fecha de cierre; si no la tiene, alta)
+  const comisionColabs = (o: { comision_colaborador: string | null; colaboradores_comision: unknown }) => {
+    const rep = (o.colaboradores_comision as RepartoColaborador[] | null) ?? [];
+    if (rep.length) return rep.reduce((s, c) => s + (parseFloat(c.importe ?? "") || 0), 0);
+    return Number(o.comision_colaborador ?? 0);
   };
-  const docContada = new Map<string, boolean>();
-  for (const g of gastos) { const dn = normRef(g.document_number); if (dn) docContada.set(dn, bucketConLink(g) !== "tarjeta"); }
-  const manual = new Map<string, number>();
-  for (const r of cargoRows) manual.set(`${r.month}|${r.cuenta}`, Number(r.importe));
-
-  // ── Tarjetas: recibo en caja por mes (mismo motor que la página de gastos) ──
-  const tarjetasCalc = TARJETAS.map(def => {
-    const resumen = resumenTarjeta(diario, def.cuentas, anyoN);
-    for (const m of resumen) for (const tk of m.tickets) {
-      if (!tk.pagaFactura && tk.ref && docContada.has(normRef(tk.ref))) { tk.pagaFactura = true; m.pagosFactura += tk.importe; m.porCategoria[tk.categoria] -= tk.importe; }
-    }
-    let arrastre = 0;
-    const enCaja: number[] = [];
-    const recibos: number[] = [];
-    for (let m = 0; m < 12; m++) {
-      const cargoM = manual.get(`${m + 1}|${def.cuenta}`) ?? resumen[m].cargo;
-      const desc = Math.min(arrastre, cargoM);
-      arrastre -= desc;
-      for (const tk of resumen[m].tickets) if (tk.pagaFactura && tk.ref && (docContada.get(normRef(tk.ref)) ?? false)) arrastre += tk.importe;
-      recibos.push(cargoM);
-      enCaja.push(Math.max(0, cargoM - desc));
-    }
-    return { def, resumen, recibos, enCaja };
-  });
-
-  // Nóminas y personal por mes (del diario)
-  const nominasAno = nominasPorMes(diario, anyoN);
-
-  // ── Resumen de cada mes del año (todo en BASE sin IVA; la tarjeta, por su
-  //    recibo, que es dinero real de banco) ──
-  const meses = Array.from({ length: 12 }, (_, m) => {
-    const ym = `${anyoN}-${String(m + 1).padStart(2, "0")}`;
-    const ymKey = `${anyoN}-${m + 1}`;
-
-    const fMes = facturas.filter(f => f.date.startsWith(ym));
-    const ingresos = fMes.reduce((s, f) => s + f.subtotal, 0);
-    const cobrado = fMes.reduce((s, f) => f.estado === "cobrada" ? s + f.subtotal : f.estado === "parcial" && f.total > 0 ? s + f.pagado * (f.subtotal / f.total) : s, 0);
-    const pendiente = Math.max(0, ingresos - cobrado);
-    const porLinea = new Map<string, number>();
-    for (const f of fMes) porLinea.set(f.categoria, (porLinea.get(f.categoria) ?? 0) + f.subtotal);
-
-    const gMes = gastos.filter(g => g.date.startsWith(ym));
-    const esFijo = (g: HoldedGasto) => fijosBearing.some(f => esDelFijo(f, g.proveedor, g.contact_id, g.cuenta_id));
-    const fijosBearingBase = gMes.filter(esFijo).reduce((s, g) => s + g.subtotal, 0);
-    const fijosObliviateBase = fijosObliviate.reduce((s, f) => {
-      const cell = f.estado_manual?.[ymKey];
-      const override = typeof cell === "object" && cell ? cell.i : undefined;
-      return s + (override ?? importeFijoMes(f, m));
-    }, 0);
-    const fijosTotal = fijosBearingBase + fijosObliviateBase;
-
-    const variablesItems = gMes.filter(g => !esFijo(g) && bucketConLink(g) !== "tarjeta");
-    const variables = variablesItems.reduce((s, g) => s + g.subtotal, 0);
-    const porBucket = new Map<BucketVariable, number>();
-    for (const g of variablesItems) porBucket.set(bucketConLink(g), (porBucket.get(bucketConLink(g)) ?? 0) + g.subtotal);
-
-    const tarjetas = tarjetasCalc.reduce((s, t) => s + t.enCaja[m], 0);
-    const nominas = nominasAno[m].coste;
-    const salidas = fijosTotal + variables + nominas + tarjetas;
-    const neto = ingresos - salidas;
-    return { m, ym, ingresos, cobrado, pendiente, porLinea, fijosTotal, fijosBearingBase, fijosObliviateBase, variables, porBucket, nominas, nominasDet: nominasAno[m], tarjetas, salidas, neto };
-  });
-
-  // ── Caja de bancos a fin de mes (variación del diario + saldo inicial) ──
-  // OJO: el asiento de apertura (type "opening") NO es flujo — es el saldo a 1 de
-  // enero, que ya entra por el saldo inicial manual. Contarlo lo duplicaría.
-  const flujoBancos = Array.from({ length: 12 }, () => 0);
-  for (const l of diario) if (l.account.startsWith("57") && l.anyo === anyoN && l.type !== "opening") flujoBancos[l.mesIdx] += l.debit - l.credit;
-  // Pagos reales que salieron del banco pero no tienen asiento en Holded
-  // (pendientes del OK de la asesoría, Q1 declarado) + desfases menores
-  // documentados en la conciliación del 22/07/2026. Los ajustes con "match"
-  // se apagan solos cuando aparece en el diario un crédito por ese importe en
-  // su cuenta y mes (ya contabilizado → no restar dos veces); los fijos (sin
-  // match, desfases en apuntes ya conciliados) se retiran a mano si la
-  // asesoría revisa Q1. Importe positivo = el mayor va por encima del banco.
-  const AJUSTES_2026: { mesIdx: number; importe: number; cuenta?: string; match?: number[] }[] = [
-    { mesIdx: 0, importe: 5142.5, cuenta: "57200004", match: [5142.5] },    // pago a Obliviate FR 011.2025 (13/01)
-    { mesIdx: 0, importe: 275.85, cuenta: "57200004", match: [275.85] },    // liquidación VISA Laboral (01/01)
-    { mesIdx: 0, importe: 610.37, cuenta: "57200004", match: [610.37] },    // Seg. Social Régimen General (30/01)
-    { mesIdx: 0, importe: 103.33, cuenta: "57200003", match: [103.33] },    // liquidación VISA Clásica Bankinter (05/01)
-    { mesIdx: 4, importe: 3.5, cuenta: "57200004", match: [3.5, 1413.02] }, // pico nómina abril (banco 1.413,02 / mayor 1.409,52)
-    { mesIdx: 6, importe: 331.78, cuenta: "57200001", match: [331.78] },    // transferencia a Omnilink (22/07, pendiente de facturas)
-    { mesIdx: 0, importe: 454.8 },                                          // desfases Sabadell enero (Rita 200+1.200, tarjeta 247,44, renting BMW −1.192,64)
-    { mesIdx: 3, importe: -6.2 },                                           // desfase Sabadell abril (Vivaz Retiro)
-    { mesIdx: 4, importe: -35.2 },                                          // desfases Sabadell mayo (Área de València + servicios)
-    { mesIdx: 6, importe: 84.02 },                                          // desfase Sabadell julio (recibo O2 84,00 + redondeo)
-  ];
-  if (anyoN === 2026) for (const a of AJUSTES_2026) {
-    const contabilizado = a.match && diario.some(l => l.account === a.cuenta && l.anyo === 2026 && l.mesIdx === a.mesIdx && a.match!.some(m => Math.abs(l.credit - m) < 0.01));
-    if (!contabilizado) flujoBancos[a.mesIdx] -= a.importe;
-  }
-  let acc = 0;
-  const cajaFinMes = flujoBancos.map(v => (acc += v));
+  const opsMes = opsFirmadasAll
+    .filter(o => {
+      const f = o.fecha_cierre ?? o.created_at;
+      if (!f) return false;
+      const d = new Date(f);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` === mes;
+    })
+    .map(o => ({ ...o, ganado: Number(o.comision_begreat ?? 0), pagado: comisionColabs(o) }))
+    .sort((a, b) => b.ganado - a.ganado);
+  const totalGanado = opsMes.reduce((s, o) => s + o.ganado, 0);
+  const totalPagado = opsMes.reduce((s, o) => s + o.pagado, 0);
 
   const M = meses[mesN - 1];
-  const ytd = meses.slice(0, mesActualIdx + 1);
-  const ytdIngresos = ytd.reduce((s, x) => s + x.ingresos, 0);
-  const ytdSalidas = ytd.reduce((s, x) => s + x.salidas, 0);
-  const ytdNeto = ytdIngresos - ytdSalidas;
-  const ytdPendiente = ytd.reduce((s, x) => s + x.pendiente, 0);
   const cajaMes = saldoInicial != null ? saldoInicial + cajaFinMes[mesN - 1] : cajaFinMes[mesN - 1];
+  const cajaMesAnterior = mesN >= 2
+    ? (saldoInicial != null ? saldoInicial + cajaFinMes[mesN - 2] : cajaFinMes[mesN - 2])
+    : saldoInicial;
 
   // Mini desglose del cargo de tarjeta: a qué se fue el gasto del MES ANTERIOR
   const desgloseTarjetas = tarjetasCalc
@@ -174,7 +88,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
             <Link href="/admin/finanzas" className="hover:text-[#2E1A47]">Finanzas</Link><span>/</span><span className="text-gray-600 font-medium">Caja</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Finanzas — Caja</h1>
-          <p className="text-sm text-gray-400 mt-1">Evolución mensual del grupo · importes sin IVA (la tarjeta, por su recibo bancario)</p>
+          <p className="text-sm text-gray-400 mt-1">El mes en curso · importes sin IVA (la tarjeta, por su recibo bancario) · <Link href="/admin/finanzas/evolucion" className="text-[#2E1A47] font-semibold hover:underline">ver evolución del año →</Link></p>
         </div>
         <div className="flex gap-0.5 bg-white border border-gray-200 rounded-2xl p-1 self-start">
           {CORTOS.map((c, i) => {
@@ -192,7 +106,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
       ) : (
         <>
           {/* KPIs del mes */}
-          <div className="grid grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-4 gap-4 mb-6">
             <div className="bg-[#2E1A47] px-6 py-5">
               <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Ingresos de {mesLabel(mes).split(" ")[0]}</p>
               <p className="text-2xl font-black text-white">{fmtEur(M.ingresos)}</p>
@@ -211,80 +125,71 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
             <div className="bg-[#FFC845]/15 border border-[#FFC845] px-6 py-5">
               <p className="text-[#2E1A47]/60 text-[10px] font-bold uppercase tracking-wider mb-1.5">{saldoInicial != null ? "Caja bancos · fin de mes" : "Variación de bancos en el año"}</p>
               <p className="text-2xl font-black text-[#2E1A47]">{fmtEur(cajaMes)}</p>
+              <p className="text-[#2E1A47]/50 text-[9px] mt-1 uppercase tracking-wide">
+                {cajaMesAnterior != null ? `cerró ${mesN >= 2 ? MESES[mesN - 2] : "el año pasado"} en ${fmtEur(cajaMesAnterior)}` : ""}
+              </p>
               <div className="mt-1"><SaldoInicialEdit anyo={anyoN} valor={saldoInicial} /></div>
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-6 mb-8">
-            {/* Ingresos por línea de negocio */}
+          {/* Ingresos y gastos, compactos, con acceso al detalle */}
+          <div className="grid lg:grid-cols-2 gap-4 mb-6">
             <section className="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-              <div className="px-5 py-3.5 bg-[#EEEBF3] flex items-center justify-between">
-                <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider">Ingresos por línea de negocio</h2>
-                <Link href={`/admin/finanzas/ingresos?mes=${mes}`} className="text-xs font-semibold text-[#2E1A47] hover:underline">Ver facturas →</Link>
+              <div className="px-4 py-2.5 bg-[#EEEBF3] flex items-center justify-between">
+                <h2 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Ingresos por línea</h2>
+                <Link href={`/admin/finanzas/ingresos?mes=${mes}`} className="text-[11px] font-semibold text-[#2E1A47] hover:underline">Ver facturas →</Link>
               </div>
               <div className="divide-y divide-gray-50">
                 {[...M.porLinea.entries()].sort((a, b) => b[1] - a[1]).map(([linea, importe]) => (
-                  <div key={linea} className="px-5 py-3 flex items-center justify-between gap-3">
-                    <p className="text-sm text-gray-700">{linea}</p>
-                    <p className="text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(importe)}</p>
+                  <div key={linea} className="px-4 py-2 flex items-center justify-between gap-3">
+                    <p className="text-xs text-gray-700">{linea}</p>
+                    <p className="text-xs font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(importe)}</p>
                   </div>
                 ))}
-                {M.porLinea.size === 0 && <p className="px-5 py-8 text-center text-sm text-gray-400">Sin facturas este mes.</p>}
+                {M.porLinea.size === 0 && <p className="px-4 py-6 text-center text-xs text-gray-400">Sin facturas este mes.</p>}
               </div>
               {M.pendiente > 0.5 && (
-                <div className="px-5 py-3 bg-red-50/60 border-t border-red-100 flex items-center justify-between">
-                  <p className="text-xs font-semibold text-red-700">Pendiente de cobrar del mes</p>
-                  <p className="text-sm font-black text-red-600">{fmtEur(M.pendiente)}</p>
+                <div className="px-4 py-2 bg-red-50/60 border-t border-red-100 flex items-center justify-between">
+                  <p className="text-[11px] font-semibold text-red-700">Pendiente de cobrar</p>
+                  <p className="text-xs font-black text-red-600">{fmtEur(M.pendiente)}</p>
                 </div>
               )}
             </section>
 
-            {/* Gastos del mes */}
             <section className="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-              <div className="px-5 py-3.5 bg-[#EEEBF3] flex items-center justify-between">
-                <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider">Gastos del mes</h2>
-                <Link href={`/admin/finanzas/gastos?mes=${mes}`} className="text-xs font-semibold text-[#2E1A47] hover:underline">Ver detalle →</Link>
+              <div className="px-4 py-2.5 bg-[#EEEBF3] flex items-center justify-between">
+                <h2 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Gastos del mes</h2>
+                <Link href={`/admin/finanzas/gastos?mes=${mes}`} className="text-[11px] font-semibold text-[#2E1A47] hover:underline">Ver detalle →</Link>
               </div>
               <div className="divide-y divide-gray-50">
-                <div className="px-5 py-3 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm text-gray-700">Gastos fijos del grupo</p>
-                    <p className="text-[11px] text-gray-400">Bearing {fmtEur(M.fijosBearingBase)} · Obliviate {fmtEur(M.fijosObliviateBase)} · <Link href="/admin/finanzas/gastos/fijos" className="text-[#2E1A47] hover:underline font-semibold">control anual →</Link></p>
-                  </div>
-                  <p className="text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(M.fijosTotal)}</p>
+                <div className="px-4 py-2 flex items-center justify-between gap-3">
+                  <p className="text-xs text-gray-700">Gastos fijos del grupo <Link href="/admin/finanzas/gastos/fijos" className="text-[10px] text-[#2E1A47] hover:underline font-semibold">control anual →</Link></p>
+                  <p className="text-xs font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(M.fijosTotal)}</p>
                 </div>
                 {M.nominas > 0.5 && (
-                  <div className="px-5 py-3 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm text-gray-700">Nóminas y personal</p>
-                      <p className="text-[11px] text-gray-400">
-                        {M.nominasDet.personas.length > 0
-                          ? M.nominasDet.personas.map(p => `${p.etiqueta.split(" ")[0]} ${fmtEur(p.costeEmpresa)}`).join(" · ")
-                          : "según pagos por banco"}
-                        {M.nominasDet.cuotaAutonomos > 0.5 ? ` · cuota autónomos ${fmtEur(M.nominasDet.cuotaAutonomos)}` : ""}
-                      </p>
-                    </div>
-                    <p className="text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(M.nominas)}</p>
+                  <div className="px-4 py-2 flex items-center justify-between gap-3">
+                    <p className="text-xs text-gray-700">Nóminas y personal</p>
+                    <p className="text-xs font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(M.nominas)}</p>
                   </div>
                 )}
                 {BUCKETS.filter(b => b.key !== "tarjeta").map(b => {
                   const v = M.porBucket.get(b.key) ?? 0;
                   if (v <= 0.5) return null;
                   return (
-                    <div key={b.key} className="px-5 py-3 flex items-center justify-between gap-3">
-                      <p className="text-sm text-gray-700">{b.label}</p>
-                      <p className="text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(v)}</p>
+                    <div key={b.key} className="px-4 py-2 flex items-center justify-between gap-3">
+                      <p className="text-xs text-gray-700">{b.label}</p>
+                      <p className="text-xs font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(v)}</p>
                     </div>
                   );
                 })}
                 {desgloseTarjetas.map(t => (
-                  <div key={t.def.cuenta} className="px-5 py-3">
+                  <div key={t.def.cuenta} className="px-4 py-2">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm text-gray-700">Tarjeta {t.def.banco} <span className="text-[11px] text-gray-400">· recibo del gasto de {MESES[(mesN + 10) % 12]}</span></p>
-                      <p className="text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(t.cargo)}</p>
+                      <p className="text-xs text-gray-700">Tarjeta {t.def.banco} <span className="text-[10px] text-gray-400">· recibo de {MESES[(mesN + 10) % 12]}</span></p>
+                      <p className="text-xs font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(t.cargo)}</p>
                     </div>
                     {t.prev && t.prev.gastado > 0.5 && (
-                      <p className="text-[11px] text-gray-400 mt-1">
+                      <p className="text-[10px] text-gray-400 mt-0.5">
                         {CATEGORIAS_TICKET.map(c => ({ c, v: t.prev!.porCategoria[c.key] })).filter(x => x.v > 0.5)
                           .map(x => `${x.c.label} ${fmtEur(x.v)}`)
                           .concat(t.prev.pagosFactura > 0.5 ? [`Pagos de factura ${fmtEur(t.prev.pagosFactura)}`] : [])
@@ -297,56 +202,48 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
             </section>
           </div>
 
-          {/* Evolución del año */}
-          <section className="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-            <div className="px-5 py-3.5 bg-[#2E1A47]">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider">Evolución del año {anyoN}</h2>
+          {/* Operaciones firmadas del mes: lo ganado y lo pagado a colaboradores */}
+          <section className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider">Operaciones firmadas en {mesLabel(mes)}</h2>
+              {opsMes.length > 0 && (
+                <p className="text-xs text-gray-500">
+                  <span className="font-bold text-[#2E1A47]">BeGreat {fmtEur(totalGanado)}</span>
+                  {totalPagado > 0.5 && <> · colaboradores <span className="font-bold text-gray-700">{fmtEur(totalPagado)}</span></>}
+                </p>
+              )}
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-[#EEEBF3] border-b border-gray-100">
-                    {["Mes", "Ingresos", "Pendiente", "Fijos", "Variables", "Nóminas", "Tarjetas", "Neto", saldoInicial != null ? "Caja fin de mes" : "Variación bancos"].map((h, i) => (
-                      <th key={h} className={`px-4 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider ${i === 0 ? "text-left" : "text-right"}`}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {meses.slice(0, mesActualIdx + 1).map(x => (
-                    <tr key={x.ym} className={`hover:bg-[#EEEBF3]/30 ${x.ym === mes ? "bg-[#EEEBF3]/50" : ""}`}>
-                      <td className="px-4 py-3">
-                        <Link href={`/admin/finanzas/caja?mes=${x.ym}`} className={`text-sm font-semibold hover:underline ${x.ym === mes ? "text-[#2E1A47]" : "text-gray-700"}`}>{CORTOS[x.m]}</Link>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-700 whitespace-nowrap">{fmtEur(x.ingresos)}</td>
-                      <td className={`px-4 py-3 text-xs text-right whitespace-nowrap ${x.pendiente > 0.5 ? "text-red-600 font-semibold" : "text-gray-300"}`}>{x.pendiente > 0.5 ? fmtEur(x.pendiente) : "—"}</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{fmtEur(x.fijosTotal)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{fmtEur(x.variables)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{x.nominas > 0.5 ? fmtEur(x.nominas) : "—"}</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{x.tarjetas > 0.5 ? fmtEur(x.tarjetas) : "—"}</td>
-                      <td className={`px-4 py-3 text-sm text-right font-bold whitespace-nowrap ${x.neto >= 0 ? "text-emerald-700" : "text-red-600"}`}>{fmtEur(x.neto)}</td>
-                      <td className="px-4 py-3 text-sm text-right font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(saldoInicial != null ? saldoInicial + cajaFinMes[x.m] : cajaFinMes[x.m])}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-[#2E1A47]">
-                    <td className="px-4 py-3.5 text-sm font-black text-white uppercase tracking-wide">YTD</td>
-                    <td className="px-4 py-3.5 text-sm text-right font-black text-white whitespace-nowrap">{fmtEur(ytdIngresos)}</td>
-                    <td className="px-4 py-3.5 text-xs text-right font-bold text-white/70 whitespace-nowrap">{ytdPendiente > 0.5 ? fmtEur(ytdPendiente) : "—"}</td>
-                    <td className="px-4 py-3.5 text-sm text-right font-bold text-white/80 whitespace-nowrap">{fmtEur(ytd.reduce((s, x) => s + x.fijosTotal, 0))}</td>
-                    <td className="px-4 py-3.5 text-sm text-right font-bold text-white/80 whitespace-nowrap">{fmtEur(ytd.reduce((s, x) => s + x.variables, 0))}</td>
-                    <td className="px-4 py-3.5 text-sm text-right font-bold text-white/80 whitespace-nowrap">{fmtEur(ytd.reduce((s, x) => s + x.nominas, 0))}</td>
-                    <td className="px-4 py-3.5 text-sm text-right font-bold text-white/80 whitespace-nowrap">{fmtEur(ytd.reduce((s, x) => s + x.tarjetas, 0))}</td>
-                    <td className={`px-4 py-3.5 text-sm text-right font-black whitespace-nowrap ${ytdNeto >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtEur(ytdNeto)}</td>
-                    <td className="px-4 py-3.5 text-sm text-right font-black text-[#FFC845] whitespace-nowrap">{fmtEur(saldoInicial != null ? saldoInicial + cajaFinMes[mesActualIdx] : cajaFinMes[mesActualIdx])}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-            <p className="px-5 py-3 text-[11px] text-gray-400 border-t border-gray-100">
-              Importes sin IVA (el IVA se lleva aparte para impuestos). Las tarjetas cuentan por el recibo del banco, descontando las facturas ya contadas en fijos o variables. Las nóminas salen del libro diario (asientos de nómina; si la gestoría aún no los ha pasado, lo pagado por banco). {saldoInicial == null ? "Pon el saldo inicial de los bancos a 1 de enero para ver la caja absoluta en vez de la variación." : "La caja de bancos sale del libro diario (cuentas 57x) más el saldo inicial."}
-            </p>
+            {opsMes.length === 0 ? (
+              <div className="bg-white border border-dashed border-gray-200 rounded-2xl px-5 py-8 text-center text-sm text-gray-400">Sin operaciones firmadas este mes.</div>
+            ) : (
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {opsMes.map(o => (
+                  <Link key={o.id} href={`/admin/operaciones/${o.id}`}
+                    className="group bg-white border border-gray-100 shadow-sm rounded-2xl p-4 hover:border-[#2E1A47]/40 hover:shadow-md transition-all">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <p className="text-sm font-bold text-gray-900 group-hover:text-[#2E1A47] leading-tight">{o.nombre || o.producto || "Operación"}</p>
+                      <span className={`text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full whitespace-nowrap ${o.pipeline_key === "renting" ? "bg-[#EEEBF3] text-[#2E1A47]" : "bg-[#FFC845]/20 text-[#8a6d00]"}`}>{o.pipeline_key === "renting" ? "Renting" : "Consultoría"}</span>
+                    </div>
+                    <p className="text-[11px] text-gray-400 mb-3 truncate">{[o.cliente, o.colaborador].filter(Boolean).join(" · ") || o.fase}</p>
+                    <div className="flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-wide text-gray-400">Comisión BeGreat</p>
+                        <p className="text-lg font-black text-emerald-700">{fmtEur(o.ganado)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] font-bold uppercase tracking-wide text-gray-400">A colaboradores</p>
+                        <p className={`text-sm font-bold ${o.pagado > 0.5 ? "text-gray-700" : "text-gray-300"}`}>{o.pagado > 0.5 ? fmtEur(o.pagado) : "—"}</p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </section>
+
+          <p className="text-[11px] text-gray-400">
+            Importes sin IVA (el IVA se lleva aparte para impuestos). Las tarjetas cuentan por el recibo del banco, descontando las facturas ya contadas en fijos o variables. Las nóminas salen del libro diario. {saldoInicial == null ? "Pon el saldo inicial de los bancos a 1 de enero para ver la caja absoluta en vez de la variación." : "La caja de bancos sale del libro diario (cuentas 57x) más el saldo inicial."} La evolución mes a mes del año está en <Link href="/admin/finanzas/evolucion" className="text-[#2E1A47] font-semibold hover:underline">su propia sección →</Link>
+          </p>
         </>
       )}
     </div>

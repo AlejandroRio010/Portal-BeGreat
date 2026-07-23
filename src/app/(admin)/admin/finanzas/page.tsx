@@ -25,7 +25,8 @@ export default async function FinanzasHubPage() {
   const neto = cobrado - pagadoGasto;
 
   const secciones = [
-    { href: "/admin/finanzas/caja", titulo: "Caja", desc: "Evolución mensual del grupo: ingresos, gastos, tarjetas y caja de bancos", activo: true },
+    { href: "/admin/finanzas/caja", titulo: "Caja", desc: "El mes en curso: ingresos, gastos, operaciones firmadas y caja de bancos", activo: true },
+    { href: "/admin/finanzas/evolucion", titulo: "Evolución del año", desc: "Mes a mes: ingresos, gastos, neto y caja a fin de cada mes", activo: true },
     { href: "/admin/finanzas/ingresos", titulo: "Ingresos", desc: "Facturas de venta, cobros y pendientes por línea de negocio", activo: true },
     { href: "/admin/finanzas/gastos", titulo: "Gastos", desc: "Fijos, variables y tarjetas del mes", activo: true },
     { href: "/admin/finanzas/gastos/fijos", titulo: "Gastos fijos", desc: "Control anual por proveedor (Bearing y Obliviate)", activo: true },
