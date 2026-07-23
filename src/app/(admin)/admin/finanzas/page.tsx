@@ -31,7 +31,7 @@ export default async function FinanzasHubPage() {
     { href: "/admin/finanzas/gastos", titulo: "Gastos", desc: "Fijos, variables y tarjetas del mes", activo: true },
     { href: "/admin/finanzas/gastos/fijos", titulo: "Gastos fijos", desc: "Control anual por proveedor (Bearing y Obliviate)", activo: true },
     { href: "/admin/finanzas/categorias", titulo: "Categorías", desc: "Añadir o quitar categorías de gasto", activo: true },
-    { href: "#", titulo: "Impuestos", desc: "IVA e IRPF por trimestre", activo: false },
+    { href: "/admin/finanzas/impuestos", titulo: "Impuestos", desc: "Lo pagado a Hacienda por liquidación: IVA, IRPF y modelo 202", activo: true },
   ];
 
   return (
