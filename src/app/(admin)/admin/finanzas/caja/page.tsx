@@ -51,9 +51,9 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
       .where(inArray(operations.fase, FASES_FIRMADA)),
   ]);
 
-  // Ops firmadas del mes seleccionado, por fecha de ALTA (created_at): el mismo
-  // criterio que el gráfico de la home. La fecha_cierre no vale: muchas ops se
-  // marcaron cerradas en bloque el 15-17/07/2026 y llevan esa fecha grabada.
+  // Ops firmadas del mes seleccionado, por fecha de CIERRE (la fecha real de
+  // firma; Alejandro mantiene el dato en las fichas). Si no la tiene, cae a la
+  // fecha de alta.
   const comisionColabs = (o: { comision_colaborador: string | null; colaboradores_comision: unknown }) => {
     const rep = (o.colaboradores_comision as RepartoColaborador[] | null) ?? [];
     if (rep.length) return rep.reduce((s, c) => s + (parseFloat(c.importe ?? "") || 0), 0);
@@ -61,7 +61,9 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
   };
   const opsMes = opsFirmadasAll
     .filter(o => {
-      const d = new Date(o.created_at);
+      const f = o.fecha_cierre ?? o.created_at;
+      if (!f) return false;
+      const d = new Date(f);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` === mes;
     })
     .map(o => ({ ...o, ganado: Number(o.comision_begreat ?? 0), pagado: comisionColabs(o) }))
