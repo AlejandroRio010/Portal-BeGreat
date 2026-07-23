@@ -30,7 +30,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
   const mes = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? sp.mes! : mesActual;
   const [anyoN, mesN] = mes.split("-").map(Number);
 
-  const [{ holdedError, saldoInicial, meses, cajaFinMes, tarjetasCalc, gastos }, opsFirmadasAll] = await Promise.all([
+  const [{ holdedError, saldoInicial, meses, cajaFinMes, tarjetasCalc, gastos, facturas }, opsFirmadasAll] = await Promise.all([
     getResumenCaja(anyoN),
     db.select({
       id: operations.id,
@@ -44,6 +44,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
       comision_colaborador: operations.comision_colaborador,
       colaboradores_comision: operations.colaboradores_comision,
       holded_purchases: operations.holded_purchases,
+      holded_invoices: operations.holded_invoices,
       cliente: clients.nombre,
       colaborador: collaborators.nombre,
     }).from(operations)
@@ -78,6 +79,32 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
     .sort((a, b) => b.ganado - a.ganado);
   const totalGanado = opsMes.reduce((s, o) => s + o.ganado, 0);
   const totalPagado = opsMes.reduce((s, o) => s + o.pagado, 0);
+
+  // Cruce de meses: cobros y pagos de comisión que caen ESTE mes pero son de
+  // ops de OTRO mes (la op se firma el 30 y la comisión se paga al siguiente).
+  const mesDeOp = (o: { fecha_cierre: Date | null; created_at: Date }) => {
+    const d = new Date(o.fecha_cierre ?? o.created_at);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+  type MovCruzado = { key: string; tipo: "cobro" | "comision"; opId: string; opNombre: string; opMes: string; detalle: string; importe: number };
+  const movsCruzados: MovCruzado[] = [];
+  for (const o of opsFirmadasAll) {
+    const om = mesDeOp(o);
+    if (om === mes) continue;
+    const nombre = o.nombre || o.producto || "Operación";
+    for (const inv of ((o.holded_invoices as { id?: string }[] | null) ?? [])) {
+      const f = inv?.id ? facturas.find(x => x.id === inv.id) : undefined;
+      if (f?.fecha_cobro?.startsWith(mes) && f.pagado > 0.5)
+        movsCruzados.push({ key: `c|${f.id}`, tipo: "cobro", opId: o.id, opNombre: nombre, opMes: om, detalle: `factura ${f.document_number}`, importe: f.subtotal });
+    }
+    for (const p of ((o.holded_purchases as { id?: string; tipo?: string }[] | null) ?? [])) {
+      if (p.tipo !== "comision" || !p.id) continue;
+      const g = gastos.find(x => x.id === p.id);
+      if (g?.fecha_pago?.startsWith(mes))
+        movsCruzados.push({ key: `p|${g.id}`, tipo: "comision", opId: o.id, opNombre: nombre, opMes: om, detalle: `${g.proveedor} · ${g.document_number}`, importe: g.subtotal });
+    }
+  }
+  movsCruzados.sort((a, b) => b.importe - a.importe);
 
   const M = meses[mesN - 1];
   const cajaMes = saldoInicial != null ? saldoInicial + cajaFinMes[mesN - 1] : cajaFinMes[mesN - 1];
@@ -253,6 +280,32 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
                     )}
                   </Link>
                 ))}
+              </div>
+            )}
+
+            {/* Cobros y comisiones de ops de OTROS meses que caen en este */}
+            {movsCruzados.length > 0 && (
+              <div className="mt-4 bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
+                <div className="px-4 py-2.5 bg-[#EEEBF3]">
+                  <h3 className="text-xs font-bold text-[#2E1A47] uppercase tracking-wider">Movidas este mes de operaciones de otros meses</h3>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {movsCruzados.map(m => (
+                    <Link key={m.key} href={`/admin/operaciones/${m.opId}`} className="px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-[#EEEBF3]/30 transition-colors">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={`text-sm ${m.tipo === "cobro" ? "text-emerald-600" : "text-gray-400"}`}>{m.tipo === "cobro" ? "↓" : "↑"}</span>
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-700 truncate">
+                            {m.tipo === "cobro" ? "Cobrada" : "Pagada la comisión de"} <span className="font-semibold">{m.opNombre}</span>
+                            <span className="text-gray-400"> · op de {mesLabel(m.opMes)}</span>
+                          </p>
+                          <p className="text-[10px] text-gray-400 truncate">{m.detalle}</p>
+                        </div>
+                      </div>
+                      <p className={`text-xs font-bold whitespace-nowrap ${m.tipo === "cobro" ? "text-emerald-700" : "text-gray-700"}`}>{m.tipo === "cobro" ? "+" : "−"} {fmtEur(m.importe)}</p>
+                    </Link>
+                  ))}
+                </div>
               </div>
             )}
           </section>

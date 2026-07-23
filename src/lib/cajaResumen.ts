@@ -46,6 +46,8 @@ export interface ResumenCaja {
   tarjetasCalc: TarjetaCalc[];
   /** Facturas de compra del año (para cruzar ops ↔ gasto real facturado). */
   gastos: HoldedGasto[];
+  /** Facturas de venta del año (para cruzar ops ↔ cobros reales). */
+  facturas: Awaited<ReturnType<typeof getFacturasVenta>>;
 }
 
 export async function getResumenCaja(anyoN: number): Promise<ResumenCaja> {
@@ -171,5 +173,5 @@ export async function getResumenCaja(anyoN: number): Promise<ResumenCaja> {
   let acc = 0;
   const cajaFinMes = flujoBancos.map(v => (acc += v));
 
-  return { holdedError, saldoInicial, meses, cajaFinMes, tarjetasCalc, gastos };
+  return { holdedError, saldoInicial, meses, cajaFinMes, tarjetasCalc, gastos, facturas };
 }
