@@ -30,7 +30,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
   const mes = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? sp.mes! : mesActual;
   const [anyoN, mesN] = mes.split("-").map(Number);
 
-  const [{ holdedError, saldoInicial, meses, cajaFinMes, tarjetasCalc }, opsFirmadasAll] = await Promise.all([
+  const [{ holdedError, saldoInicial, meses, cajaFinMes, tarjetasCalc, gastos }, opsFirmadasAll] = await Promise.all([
     getResumenCaja(anyoN),
     db.select({
       id: operations.id,
@@ -43,6 +43,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
       comision_begreat: operations.comision_begreat,
       comision_colaborador: operations.comision_colaborador,
       colaboradores_comision: operations.colaboradores_comision,
+      holded_purchases: operations.holded_purchases,
       cliente: clients.nombre,
       colaborador: collaborators.nombre,
     }).from(operations)
@@ -66,7 +67,14 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
       const d = new Date(f);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` === mes;
     })
-    .map(o => ({ ...o, ganado: Number(o.comision_begreat ?? 0), pagado: comisionColabs(o) }))
+    .map(o => {
+      // Lo que el colaborador ha FACTURADO de verdad (base sin IVA de sus
+      // facturas de comisión vinculadas) — para avisar si no cuadra con lo pactado.
+      const purchases = (o.holded_purchases as { id?: string; tipo?: string }[] | null) ?? [];
+      const idsComision = purchases.filter(p => p.tipo === "comision" && p.id).map(p => p.id!);
+      const facturado = gastos.filter(g => idsComision.includes(g.id)).reduce((s, g) => s + g.subtotal, 0);
+      return { ...o, ganado: Number(o.comision_begreat ?? 0), pagado: comisionColabs(o), facturado, tieneFacturaComision: idsComision.length > 0 };
+    })
     .sort((a, b) => b.ganado - a.ganado);
   const totalGanado = opsMes.reduce((s, o) => s + o.ganado, 0);
   const totalPagado = opsMes.reduce((s, o) => s + o.pagado, 0);
@@ -237,6 +245,12 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
                         <p className={`text-sm font-bold ${o.pagado > 0.5 ? "text-gray-700" : "text-gray-300"}`}>{o.pagado > 0.5 ? fmtEur(o.pagado) : "—"}</p>
                       </div>
                     </div>
+                    {o.pagado > 0.5 && o.tieneFacturaComision && Math.abs(o.facturado - o.pagado) > 0.5 && (
+                      <p className="text-[10px] font-semibold text-amber-600 mt-2 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1">⚠ Facturado {fmtEur(o.facturado)} de {fmtEur(o.pagado)} pactados</p>
+                    )}
+                    {o.pagado > 0.5 && !o.tieneFacturaComision && (
+                      <p className="text-[10px] text-gray-400 mt-2">Sin factura de comisión vinculada aún</p>
+                    )}
                   </Link>
                 ))}
               </div>
