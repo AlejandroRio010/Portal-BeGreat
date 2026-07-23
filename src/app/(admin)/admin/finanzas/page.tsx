@@ -56,7 +56,7 @@ export default async function FinanzasHubPage() {
         <div className="bg-[#2E1A47] px-6 py-6">
           <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Gastos de {MESES[mesIdx]} · sin IVA</p>
           <p className="text-3xl font-black text-white">{ok ? fmtEur(salidas) : "—"}</p>
-          {ok && <p className="text-white/40 text-[10px] mt-1.5 uppercase tracking-wide">fijos + variables + nóminas + tarjetas</p>}
+          {ok && <p className="text-white/40 text-[10px] mt-1.5 uppercase tracking-wide">fijos + variables + nóminas + tarjetas + impuestos</p>}
         </div>
         <div className={`px-6 py-6 border ${neto >= 0 ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"}`}>
           <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${neto >= 0 ? "text-emerald-600" : "text-red-600"}`}>Neto del mes {neto >= 0 ? "· hemos ganado" : "· en negativo"}</p>

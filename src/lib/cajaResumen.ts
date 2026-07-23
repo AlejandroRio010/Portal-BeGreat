@@ -27,6 +27,10 @@ export interface MesCaja {
   nominas: number;
   nominasDet: NominasMes;
   tarjetas: number;
+  /** Impuestos pagados por banco ese mes: IVA (4750) + Sociedades (473/4752).
+   *  El IRPF (4751) NO se suma: ya está dentro del coste de nóminas (bruto)
+   *  y de las comisiones (base con retención) — sumarlo lo contaría dos veces. */
+  impuestos: number;
   salidas: number;
   neto: number;
 }
@@ -108,6 +112,16 @@ export async function getResumenCaja(anyoN: number): Promise<ResumenCaja> {
   // Nóminas y personal por mes (del diario)
   const nominasAno = nominasPorMes(diario, anyoN);
 
+  // Impuestos pagados por banco cada mes: IVA (4750x) y Sociedades (473x/4752x).
+  // El IRPF (4751x) queda fuera: ya cuenta dentro de nóminas y comisiones.
+  const asientosConBanco = new Set(diario.filter(l => l.account.startsWith("57") && l.credit > 0.005).map(l => l.entry));
+  const impuestosMes = Array.from({ length: 12 }, () => 0);
+  for (const l of diario) {
+    if (l.anyo !== anyoN || l.debit <= 0.005 || !asientosConBanco.has(l.entry)) continue;
+    if (l.account.startsWith("4750") || l.account.startsWith("473") || l.account.startsWith("4752"))
+      impuestosMes[l.mesIdx] += l.debit;
+  }
+
   // ── Resumen de cada mes del año ──
   const meses: MesCaja[] = Array.from({ length: 12 }, (_, m) => {
     const ym = `${anyoN}-${String(m + 1).padStart(2, "0")}`;
@@ -137,9 +151,10 @@ export async function getResumenCaja(anyoN: number): Promise<ResumenCaja> {
 
     const tarjetas = tarjetasCalc.reduce((s, t) => s + t.enCaja[m], 0);
     const nominas = nominasAno[m].coste;
-    const salidas = fijosTotal + variables + nominas + tarjetas;
+    const impuestos = impuestosMes[m];
+    const salidas = fijosTotal + variables + nominas + tarjetas + impuestos;
     const neto = ingresos - salidas;
-    return { m, ym, ingresos, cobrado, pendiente, porLinea, fijosTotal, fijosBearingBase, fijosObliviateBase, variables, porBucket, nominas, nominasDet: nominasAno[m], tarjetas, salidas, neto };
+    return { m, ym, ingresos, cobrado, pendiente, porLinea, fijosTotal, fijosBearingBase, fijosObliviateBase, variables, porBucket, nominas, nominasDet: nominasAno[m], tarjetas, impuestos, salidas, neto };
   });
 
   // ── Caja de bancos a fin de mes (variación del diario + saldo inicial) ──

@@ -152,7 +152,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
             <div className="bg-[#2E1A47] px-6 py-5">
               <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Gastos</p>
               <p className="text-2xl font-black text-white">{fmtEur(M.salidas)}</p>
-              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">fijos {fmtEur(M.fijosTotal)} · variables {fmtEur(M.variables)}{M.nominas > 0.5 ? ` · nóminas ${fmtEur(M.nominas)}` : ""}{M.tarjetas > 0.5 ? ` · tarjetas ${fmtEur(M.tarjetas)}` : ""}</p>
+              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">fijos {fmtEur(M.fijosTotal)} · variables {fmtEur(M.variables)}{M.nominas > 0.5 ? ` · nóminas ${fmtEur(M.nominas)}` : ""}{M.tarjetas > 0.5 ? ` · tarjetas ${fmtEur(M.tarjetas)}` : ""}{M.impuestos > 0.5 ? ` · impuestos ${fmtEur(M.impuestos)}` : ""}</p>
             </div>
             <div className={`px-6 py-5 border ${M.neto >= 0 ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"}`}>
               <p className={`text-[10px] font-bold uppercase tracking-wider mb-1.5 ${M.neto >= 0 ? "text-emerald-600" : "text-red-600"}`}>Neto del mes</p>
@@ -207,6 +207,12 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
                   <div className="px-4 py-2 flex items-center justify-between gap-3">
                     <p className="text-xs text-gray-700">Nóminas y personal</p>
                     <p className="text-xs font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(M.nominas)}</p>
+                  </div>
+                )}
+                {M.impuestos > 0.5 && (
+                  <div className="px-4 py-2 flex items-center justify-between gap-3">
+                    <p className="text-xs text-gray-700">Impuestos pagados (IVA / Sociedades) <Link href="/admin/finanzas/impuestos" className="text-[10px] text-[#2E1A47] hover:underline font-semibold">detalle →</Link></p>
+                    <p className="text-xs font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(M.impuestos)}</p>
                   </div>
                 )}
                 {BUCKETS.filter(b => b.key !== "tarjeta").map(b => {
