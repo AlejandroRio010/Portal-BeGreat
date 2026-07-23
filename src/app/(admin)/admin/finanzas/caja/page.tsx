@@ -127,13 +127,29 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
   // enero, que ya entra por el saldo inicial manual. Contarlo lo duplicaría.
   const flujoBancos = Array.from({ length: 12 }, () => 0);
   for (const l of diario) if (l.account.startsWith("57") && l.anyo === anyoN && l.type !== "opening") flujoBancos[l.mesIdx] += l.debit - l.credit;
-  // Pago real a Obliviate (factura FR 011.2025) el 13/01/2026 desde Laboral:
-  // salió del banco pero su asiento no existe en Holded (pendiente de la
-  // asesoría, Q1 declarado). Se descuenta a mano SOLO mientras el apunte no
-  // aparezca en el diario — en cuanto se contabilice, el ajuste se apaga solo.
-  const OBLIVIATE_ENE_2026 = 5142.5;
-  const obliviateContabilizado = diario.some(l => l.account === "57200004" && l.anyo === 2026 && l.mesIdx === 0 && Math.abs(l.credit - OBLIVIATE_ENE_2026) < 0.01);
-  if (anyoN === 2026 && !obliviateContabilizado) flujoBancos[0] -= OBLIVIATE_ENE_2026;
+  // Pagos reales que salieron del banco pero no tienen asiento en Holded
+  // (pendientes del OK de la asesoría, Q1 declarado) + desfases menores
+  // documentados en la conciliación del 22/07/2026. Los ajustes con "match"
+  // se apagan solos cuando aparece en el diario un crédito por ese importe en
+  // su cuenta y mes (ya contabilizado → no restar dos veces); los fijos (sin
+  // match, desfases en apuntes ya conciliados) se retiran a mano si la
+  // asesoría revisa Q1. Importe positivo = el mayor va por encima del banco.
+  const AJUSTES_2026: { mesIdx: number; importe: number; cuenta?: string; match?: number[] }[] = [
+    { mesIdx: 0, importe: 5142.5, cuenta: "57200004", match: [5142.5] },    // pago a Obliviate FR 011.2025 (13/01)
+    { mesIdx: 0, importe: 275.85, cuenta: "57200004", match: [275.85] },    // liquidación VISA Laboral (01/01)
+    { mesIdx: 0, importe: 610.37, cuenta: "57200004", match: [610.37] },    // Seg. Social Régimen General (30/01)
+    { mesIdx: 0, importe: 103.33, cuenta: "57200003", match: [103.33] },    // liquidación VISA Clásica Bankinter (05/01)
+    { mesIdx: 4, importe: 3.5, cuenta: "57200004", match: [3.5, 1413.02] }, // pico nómina abril (banco 1.413,02 / mayor 1.409,52)
+    { mesIdx: 6, importe: 331.78, cuenta: "57200001", match: [331.78] },    // transferencia a Omnilink (22/07, pendiente de facturas)
+    { mesIdx: 0, importe: 454.8 },                                          // desfases Sabadell enero (Rita 200+1.200, tarjeta 247,44, renting BMW −1.192,64)
+    { mesIdx: 3, importe: -6.2 },                                           // desfase Sabadell abril (Vivaz Retiro)
+    { mesIdx: 4, importe: -35.2 },                                          // desfases Sabadell mayo (Área de València + servicios)
+    { mesIdx: 6, importe: 84.02 },                                          // desfase Sabadell julio (recibo O2 84,00 + redondeo)
+  ];
+  if (anyoN === 2026) for (const a of AJUSTES_2026) {
+    const contabilizado = a.match && diario.some(l => l.account === a.cuenta && l.anyo === 2026 && l.mesIdx === a.mesIdx && a.match!.some(m => Math.abs(l.credit - m) < 0.01));
+    if (!contabilizado) flujoBancos[a.mesIdx] -= a.importe;
+  }
   let acc = 0;
   const cajaFinMes = flujoBancos.map(v => (acc += v));
 
