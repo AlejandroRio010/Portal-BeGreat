@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/db";
-import { operations, tarjetaCargos } from "@/db/schema";
+import { operations, tarjetaCargos, obliviateMovs } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { getGastos, type HoldedGasto } from "@/lib/holded";
 import { getGastosFijos, esDelFijo, importeFijoMes, conIva, construirCandidatos } from "@/lib/gastosFijos";
@@ -189,6 +189,14 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   const totalObliviate = obliviateMes.reduce((s, x) => s + x.total, 0);
   const baseObliviate = obliviateMes.reduce((s, x) => s + x.base, 0);
 
+  // Gastos de Obliviate por banco este mes (bruto, con IVA) — SOLO informativo:
+  // no entran en las sumas de esta página (ya cuentan en la caja del grupo).
+  // Los fijos y el intragrupo se excluyen (los fijos ya están arriba).
+  const CATS_GASTO_OBLIVIATE = ["comision", "tarjeta", "impuestos", "efectivo", "otros"];
+  const gastosObliviateBanco = (await db.select().from(obliviateMovs))
+    .filter(m => m.fecha.startsWith(mes) && Number(m.importe) < 0 && CATS_GASTO_OBLIVIATE.includes(m.categoria))
+    .reduce((s, m) => s + -Number(m.importe), 0);
+
   const delMes = gastos.filter(g => g.date.startsWith(mes));
   const esTarjeta = (g: HoldedGasto) => bucketConLink(g) === "tarjeta";
   const fijos = delMes.filter(esFijo);
@@ -294,6 +302,17 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
               {retencion > 0 && <p className="text-gray-400 text-[9px] mt-1 uppercase tracking-wide">IRPF retenido: {fmtEur(retencion)}</p>}
             </div>
           </div>
+
+          {/* Obliviate: solo informativo — su banco ya cuenta en la caja del grupo, no en estas sumas */}
+          {gastosObliviateBanco > 0.5 && (
+            <div className="mb-6 bg-amber-50/60 border border-amber-200 rounded-2xl px-5 py-3 flex items-center justify-between gap-3">
+              <p className="text-xs text-amber-800">
+                <span className="font-bold">Gastos de Obliviate por banco este mes: {fmtEur(gastosObliviateBanco)}</span>
+                <span className="text-amber-700/70"> · en bruto (con IVA) · no suma en los totales de arriba, ya cuenta en la caja del grupo</span>
+              </p>
+              <Link href="/admin/finanzas/obliviate" className="text-xs font-semibold text-[#2E1A47] hover:underline whitespace-nowrap">Ver detalle →</Link>
+            </div>
+          )}
 
           {/* Gastos fijos del mes — Bearing (izq) · Obliviate (der), compacto */}
           <div className="mb-6">
