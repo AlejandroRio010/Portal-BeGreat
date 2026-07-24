@@ -27,7 +27,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
   const sp = await searchParams;
   const hoy = new Date();
   const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
-  const mes = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? sp.mes! : mesActual;
+  const mes = /^\d{4}-(0[1-9]|1[0-2])$/.test(sp.mes ?? "") ? sp.mes! : mesActual;
   const [anyoN, mesN] = mes.split("-").map(Number);
 
   const [{ holdedError, saldoInicial, meses, cajaFinMes, saldoInicialObliviate, cajaObliviateFinMes, tarjetasCalc, gastos, facturas }, opsFirmadasAll] = await Promise.all([

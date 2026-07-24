@@ -73,7 +73,11 @@ export async function getLibroDiario(): Promise<LibroLinea[]> {
   const anyoBase = Number(FINANZAS_DESDE.slice(0, 4));
   const ini = new Date(`${FINANZAS_DESDE}T00:00:00Z`);
   ini.setUTCDate(ini.getUTCDate() - 1);
-  const fin = new Date(`${anyoBase}-12-31T00:00:00Z`);
+  // Hasta el 1 de enero del año siguiente al ACTUAL (end_date podría ser
+  // excluyente como start_date: así el 31/12 nunca queda fuera). Antes se
+  // paraba en el año de FINANZAS_DESDE y en 2027 el diario vendría vacío.
+  const anyoFin = Math.max(anyoBase, new Date().getFullYear());
+  const fin = new Date(`${anyoFin + 1}-01-01T00:00:00Z`);
   const ventanas: [string, string][] = [];
   for (let d = ini; d < fin; ) {
     const h = new Date(d); h.setUTCDate(h.getUTCDate() + 7);

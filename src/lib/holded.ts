@@ -431,7 +431,10 @@ export async function getGastos(opts?: { incluirBorradores?: boolean }): Promise
     cursor = data.cursor;
   }
 
+  // Tope superior dinámico: hasta el final del año en curso (antes estaba
+  // "2027-01-01" hardcodeado y el 1-ene-2027 los gastos desaparecían en silencio).
+  const hastaFin = `${new Date().getFullYear() + 1}-01-01`;
   return out
-    .filter(g => g.date >= FINANZAS_DESDE && g.date < "2027-01-01")
+    .filter(g => g.date >= FINANZAS_DESDE && g.date < hastaFin)
     .sort((a, b) => b.date.localeCompare(a.date));
 }

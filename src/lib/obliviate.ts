@@ -18,7 +18,11 @@ export const CATEGORIAS_OBLIVIATE: { key: CategoriaObliviate; label: string; not
 /** Categoría automática de un movimiento del extracto, por su concepto. */
 export function categoriaDeMovimiento(concepto: string, importe: number): CategoriaObliviate {
   const c = (concepto || "").toUpperCase();
-  if (importe > 0) return c.includes("BEARING") ? "intragrupo" : "cobro";
+  // El intragrupo aplica en AMBOS sentidos: cobros de Bearing y también
+  // transferencias salientes hacia Bearing (si no, una salida a Bearing
+  // contaría como gasto del grupo cuando es dinero que cambia de bolsillo).
+  if (c.includes("BEARING")) return "intragrupo";
+  if (importe > 0) return "cobro";
   if (c.includes("TARJETA CREDITO")) return "tarjeta";
   if (c.includes("IMPUESTOS")) return "impuestos";
   if (c.includes("REINTEGRO CAJERO")) return "efectivo";

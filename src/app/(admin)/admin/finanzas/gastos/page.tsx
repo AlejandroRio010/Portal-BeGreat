@@ -34,7 +34,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   const sp = await searchParams;
   const hoy = new Date();
   const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
-  const mes = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? sp.mes! : mesActual;
+  const mes = /^\d{4}-(0[1-9]|1[0-2])$/.test(sp.mes ?? "") ? sp.mes! : mesActual;
 
   let gastos: HoldedGasto[] = [];
   let diario: LibroLinea[] = [];
@@ -177,12 +177,19 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   // Fijos de Obliviate que aplican a este mes (mensuales siempre; anuales solo en su
   // mes), respetando el override de importe manual si lo hay.
   // Importes de Obliviate en base (sin IVA); la caja suma con IVA (como Bearing)
+  const movsObliv = await db.select().from(obliviateMovs);
+  // Estado del fijo de Obliviate: igual que en el control anual — si tiene
+  // extracto_match, manda el banco (recibo en el mes → pagada; sin recibo y el
+  // mes ya corre → pendiente); lo manual siempre gana.
+  const reciboEnMes = (match: string) =>
+    movsObliv.some(x => x.fecha.startsWith(mes) && Number(x.importe) < 0 && x.concepto.toUpperCase().includes(match.toUpperCase()));
   const obliviateMes = fijosObliviate.map(f => {
     const cell = f.estado_manual?.[ymKey];
     const override = typeof cell === "object" && cell ? cell.i : undefined;
     const base = override ?? importeFijoMes(f, mesIdx);
-    // Sin marca explícita: se asume pagado si el mes ya pasó o es el actual
-    const estadoDefault = mes <= mesActual ? "pagada" : "pendiente";
+    const estadoBanco = f.extracto_match ? (reciboEnMes(f.extracto_match) ? "pagada" : mes <= mesActual ? "pendiente" : undefined) : undefined;
+    // Sin marca explícita ni banco: se asume pagado si el mes ya pasó o es el actual
+    const estadoDefault = estadoBanco ?? (mes <= mesActual ? "pagada" : "pendiente");
     const estado = (typeof cell === "string" ? cell : cell?.e) ?? estadoDefault;
     return { f, base, total: conIva(base), estado };
   }).filter(x => x.base > 0);
@@ -193,7 +200,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   // no entran en las sumas de esta página (ya cuentan en la caja del grupo).
   // Los fijos y el intragrupo se excluyen (los fijos ya están arriba).
   const CATS_GASTO_OBLIVIATE = ["comision", "tarjeta", "impuestos", "efectivo", "otros"];
-  const gastosObliviateBanco = (await db.select().from(obliviateMovs))
+  const gastosObliviateBanco = movsObliv
     .filter(m => m.fecha.startsWith(mes) && Number(m.importe) < 0 && CATS_GASTO_OBLIVIATE.includes(m.categoria))
     .reduce((s, m) => s + -Number(m.importe), 0);
 

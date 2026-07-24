@@ -166,7 +166,11 @@ export async function getResumenCaja(anyoN: number): Promise<ResumenCaja> {
     }, 0);
     const fijosTotal = fijosBearingBase + fijosObliviateBase;
 
-    const variablesItems = gMes.filter(g => !esFijo(g) && bucketConLink(g) !== "tarjeta");
+    // Las compras de Bearing A OBLIVIATE son intragrupo: no cuentan como gasto
+    // del grupo (el coste real de Obliviate ya entra por sus propios movimientos
+    // de banco). Sin esto, la facturación cruzada se contaría dos veces.
+    const esIntragrupo = (g: HoldedGasto) => g.proveedor.toLowerCase().includes("obliviate");
+    const variablesItems = gMes.filter(g => !esFijo(g) && bucketConLink(g) !== "tarjeta" && !esIntragrupo(g));
     const variables = variablesItems.reduce((s, g) => s + g.subtotal, 0);
     const porBucket = new Map<BucketVariable, number>();
     for (const g of variablesItems) porBucket.set(bucketConLink(g), (porBucket.get(bucketConLink(g)) ?? 0) + g.subtotal);

@@ -37,7 +37,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   const hoy = new Date();
   const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
-  const mes = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? sp.mes! : mesActual;
+  const mes = /^\d{4}-(0[1-9]|1[0-2])$/.test(sp.mes ?? "") ? sp.mes! : mesActual;
   const cat = CATEGORIAS.includes(sp.cat as CategoriaIngreso) ? (sp.cat as CategoriaIngreso) : null;
 
   let facturas: HoldedInvoice[] = [];
