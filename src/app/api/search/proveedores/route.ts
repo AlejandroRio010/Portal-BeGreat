@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { suppliers } from "@/db/schema";
-import { ilike } from "drizzle-orm";
+import { ilike, and, eq } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -19,7 +19,14 @@ export async function GET(req: NextRequest) {
     codigo: suppliers.codigo,
   };
 
-  const results = await db.select(cols).from(suppliers).where(ilike(suppliers.nombre, `%${q}%`)).limit(8);
+  // El admin busca en todos; el colaborador solo en sus proveedores (no debe
+  // ver los de otros — mismo criterio que /api/search/clientes).
+  const role = (session.user as any).role;
+  const where = role === "admin"
+    ? ilike(suppliers.nombre, `%${q}%`)
+    : and(ilike(suppliers.nombre, `%${q}%`), eq(suppliers.collaborator_id, (session.user as any).collaboratorId));
+
+  const results = await db.select(cols).from(suppliers).where(where).limit(8);
 
   return NextResponse.json(results);
 }

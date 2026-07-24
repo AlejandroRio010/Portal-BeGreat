@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if ((session.user as any).role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id: group_id } = await params;
   const { texto } = await req.json();
@@ -28,6 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 export async function PATCH(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if ((session.user as any).role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const userId = ((session.user as any).collaboratorId ?? session.user!.id) as string;
   const { noteId, texto, pinned } = await req.json();

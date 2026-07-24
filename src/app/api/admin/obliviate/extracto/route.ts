@@ -16,6 +16,9 @@ export async function POST(req: NextRequest) {
   const form = await req.formData();
   const file = form.get("extracto");
   if (!(file instanceof File)) return NextResponse.json({ error: "Falta el fichero" }, { status: 400 });
+  // Un extracto del banco pesa unos KB; topamos a 5 MB para no cargar en
+  // memoria un fichero enorme (defensa frente a DoS por subida).
+  if (file.size > 5 * 1024 * 1024) return NextResponse.json({ error: "El fichero es demasiado grande (máx. 5 MB)" }, { status: 400 });
 
   let filas: unknown[][];
   try {
