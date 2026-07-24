@@ -16,14 +16,15 @@ export default async function EvolucionPage() {
   const anyoN = hoy.getFullYear();
   const mesActualIdx = hoy.getMonth();
 
-  const { holdedError, saldoInicial, meses, cajaFinMes } = await getResumenCaja(anyoN);
+  const { holdedError, saldoInicial, meses, cajaFinMes, saldoInicialObliviate, cajaObliviateFinMes } = await getResumenCaja(anyoN);
 
   const ytd = meses.slice(0, mesActualIdx + 1);
   const ytdIngresos = ytd.reduce((s, x) => s + x.ingresos, 0);
   const ytdSalidas = ytd.reduce((s, x) => s + x.salidas, 0);
-  const ytdNeto = ytdIngresos - ytdSalidas;
+  const ytdNeto = ytd.reduce((s, x) => s + x.neto, 0); // incluye los cobros de Obliviate
   const ytdPendiente = ytd.reduce((s, x) => s + x.pendiente, 0);
-  const cajaHoy = saldoInicial != null ? saldoInicial + cajaFinMes[mesActualIdx] : cajaFinMes[mesActualIdx];
+  const cajaHoy = (saldoInicial != null ? saldoInicial + cajaFinMes[mesActualIdx] : cajaFinMes[mesActualIdx])
+    + (saldoInicialObliviate != null ? saldoInicialObliviate + cajaObliviateFinMes[mesActualIdx] : cajaObliviateFinMes[mesActualIdx]);
 
   return (
     <div>
@@ -70,7 +71,7 @@ export default async function EvolucionPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-[#EEEBF3] border-b border-gray-100">
-                    {["Mes", "Ingresos", "Pendiente", "Fijos", "Variables", "Nóminas", "Tarjetas", "Impuestos", "Neto", saldoInicial != null ? "Caja fin de mes" : "Variación bancos"].map((h, i) => (
+                    {["Mes", "Ingresos", "Pendiente", "Fijos", "Variables", "Nóminas", "Tarjetas", "Impuestos", "Obliviate", "Neto", saldoInicial != null ? "Caja fin de mes" : "Variación bancos"].map((h, i) => (
                       <th key={h} className={`px-4 py-3 text-xs font-bold text-[#2E1A47] uppercase tracking-wider ${i === 0 ? "text-left" : "text-right"}`}>{h}</th>
                     ))}
                   </tr>
@@ -88,8 +89,9 @@ export default async function EvolucionPage() {
                       <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{x.nominas > 0.5 ? fmtEur(x.nominas) : "—"}</td>
                       <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{x.tarjetas > 0.5 ? fmtEur(x.tarjetas) : "—"}</td>
                       <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{x.impuestos > 0.5 ? fmtEur(x.impuestos) : "—"}</td>
+                      <td className={`px-4 py-3 text-sm text-right whitespace-nowrap ${Math.abs(x.obliviateCobros - x.obliviateGastos) > 0.5 ? (x.obliviateCobros - x.obliviateGastos >= 0 ? "text-emerald-700" : "text-gray-600") : "text-gray-300"}`}>{Math.abs(x.obliviateCobros - x.obliviateGastos) > 0.5 ? fmtEur(x.obliviateCobros - x.obliviateGastos) : "—"}</td>
                       <td className={`px-4 py-3 text-sm text-right font-bold whitespace-nowrap ${x.neto >= 0 ? "text-emerald-700" : "text-red-600"}`}>{fmtEur(x.neto)}</td>
-                      <td className="px-4 py-3 text-sm text-right font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(saldoInicial != null ? saldoInicial + cajaFinMes[x.m] : cajaFinMes[x.m])}</td>
+                      <td className="px-4 py-3 text-sm text-right font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur((saldoInicial != null ? saldoInicial + cajaFinMes[x.m] : cajaFinMes[x.m]) + (saldoInicialObliviate != null ? saldoInicialObliviate + cajaObliviateFinMes[x.m] : cajaObliviateFinMes[x.m]))}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -103,6 +105,7 @@ export default async function EvolucionPage() {
                     <td className="px-4 py-3.5 text-sm text-right font-bold text-white/80 whitespace-nowrap">{fmtEur(ytd.reduce((s, x) => s + x.nominas, 0))}</td>
                     <td className="px-4 py-3.5 text-sm text-right font-bold text-white/80 whitespace-nowrap">{fmtEur(ytd.reduce((s, x) => s + x.tarjetas, 0))}</td>
                     <td className="px-4 py-3.5 text-sm text-right font-bold text-white/80 whitespace-nowrap">{fmtEur(ytd.reduce((s, x) => s + x.impuestos, 0))}</td>
+                    <td className="px-4 py-3.5 text-sm text-right font-bold text-white/80 whitespace-nowrap">{fmtEur(ytd.reduce((s, x) => s + x.obliviateCobros - x.obliviateGastos, 0))}</td>
                     <td className={`px-4 py-3.5 text-sm text-right font-black whitespace-nowrap ${ytdNeto >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtEur(ytdNeto)}</td>
                     <td className="px-4 py-3.5 text-sm text-right font-black text-[#FFC845] whitespace-nowrap">{fmtEur(cajaHoy)}</td>
                   </tr>

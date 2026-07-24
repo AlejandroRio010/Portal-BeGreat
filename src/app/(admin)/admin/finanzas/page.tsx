@@ -34,6 +34,7 @@ export default async function FinanzasHubPage() {
     { href: "/admin/finanzas/evolucion", titulo: "Evolución del año", desc: "Mes a mes: ingresos, gastos, neto y caja a fin de cada mes", activo: true },
     { href: "/admin/finanzas/ingresos-gastos", titulo: "Ingresos y gastos", desc: "Todo el detalle: facturas de venta, gastos, fijos y categorías", activo: true },
     { href: "/admin/finanzas/impuestos", titulo: "Impuestos", desc: "Lo pagado a Hacienda por liquidación: IVA, IRPF y modelos 202/200", activo: true },
+    { href: "/admin/finanzas/obliviate", titulo: "Obliviate", desc: "Movimientos del banco de Obliviate: extracto, categorías y caja del grupo", activo: true },
   ];
 
   // Resumen 2025 (cifras oficiales del cierre: modelo 200 presentado jul-2026)

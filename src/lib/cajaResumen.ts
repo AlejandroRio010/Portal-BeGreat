@@ -3,8 +3,9 @@
 // Evolución del año. Todo en BASE sin IVA; la tarjeta, por su recibo, que es
 // dinero real de banco.
 import { db } from "@/db";
-import { operations, tarjetaCargos, finanzasValores } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { operations, tarjetaCargos, finanzasValores, obliviateMovs } from "@/db/schema";
+import { eq, inArray } from "drizzle-orm";
+import { obliviatePorMes, type ObliviateMes, type MovObliviate, type CategoriaObliviate } from "@/lib/obliviate";
 import { getFacturasVenta, getGastos, type HoldedGasto } from "@/lib/holded";
 import { getGastosFijos, esDelFijo, importeFijoMes } from "@/lib/gastosFijos";
 import { getLibroDiario, type LibroLinea } from "@/lib/holdedLedger";
@@ -27,6 +28,12 @@ export interface MesCaja {
   nominas: number;
   nominasDet: NominasMes;
   tarjetas: number;
+  /** Cobros reales de Obliviate en el mes (sin intragrupo), por caja. */
+  obliviateCobros: number;
+  /** Gastos de Obliviate por banco: comisiones, tarjeta, impuestos, efectivo y
+   *  otros. Los fijos de Obliviate NO (ya cuentan en fijosObliviateBase) y el
+   *  intragrupo tampoco (neutro para el grupo). */
+  obliviateGastos: number;
   /** Impuestos pagados por banco ese mes: IVA (4750) + Sociedades (473/4752).
    *  El IRPF (4751) NO se suma: ya está dentro del coste de nóminas (bruto)
    *  y de las comisiones (base con retención) — sumarlo lo contaría dos veces. */
@@ -47,6 +54,10 @@ export interface ResumenCaja {
   saldoInicial: number | null;
   meses: MesCaja[];
   cajaFinMes: number[];
+  /** Caja de Obliviate: saldo inicial del año y flujo acumulado a fin de cada mes. */
+  saldoInicialObliviate: number | null;
+  cajaObliviateFinMes: number[];
+  obliviateMeses: ObliviateMes[];
   tarjetasCalc: TarjetaCalc[];
   /** Facturas de compra del año (para cruzar ops ↔ gasto real facturado). */
   gastos: HoldedGasto[];
@@ -63,15 +74,26 @@ export async function getResumenCaja(anyoN: number): Promise<ResumenCaja> {
     [facturas, gastos, diario] = await Promise.all([getFacturasVenta(), getGastos({ incluirBorradores: true }), getLibroDiario()]);
   } catch (e: any) { holdedError = e?.message ?? "Error Holded"; }
 
-  const [allFijos, ops, cargoRows, valores] = await Promise.all([
+  const [allFijos, ops, cargoRows, valores, movsObliviate] = await Promise.all([
     getGastosFijos(),
     db.select({ id: operations.id, holded_purchases: operations.holded_purchases }).from(operations),
     db.select({ month: tarjetaCargos.month, cuenta: tarjetaCargos.cuenta, importe: tarjetaCargos.importe }).from(tarjetaCargos).where(eq(tarjetaCargos.year, anyoN)),
-    db.select().from(finanzasValores).where(eq(finanzasValores.clave, `saldo_inicial_bancos_${anyoN}`)),
+    db.select().from(finanzasValores).where(inArray(finanzasValores.clave, [`saldo_inicial_bancos_${anyoN}`, `saldo_inicial_obliviate_${anyoN}`])),
+    db.select().from(obliviateMovs),
   ]);
   const fijosBearing = allFijos.filter(f => f.empresa === "bearing");
   const fijosObliviate = allFijos.filter(f => f.empresa === "obliviate");
-  const saldoInicial = valores[0] ? Number(valores[0].valor) : null;
+  const valorDe = (clave: string) => { const v = valores.find(x => x.clave === clave); return v ? Number(v.valor) : null; };
+  const saldoInicial = valorDe(`saldo_inicial_bancos_${anyoN}`);
+  const saldoInicialObliviate = valorDe(`saldo_inicial_obliviate_${anyoN}`);
+
+  // Obliviate: movimientos de banco por mes (cobros, gastos y flujo)
+  const obliviateMeses = obliviatePorMes(
+    movsObliviate.map(m => ({ fecha: m.fecha, concepto: m.concepto, importe: Number(m.importe), saldo: m.saldo != null ? Number(m.saldo) : null, categoria: m.categoria as CategoriaObliviate }) satisfies MovObliviate),
+    anyoN,
+  );
+  let accObliv = 0;
+  const cajaObliviateFinMes = obliviateMeses.map(m => (accObliv += m.flujo));
 
   // Vínculos factura de compra → operación (el vínculo manda sobre la cuenta)
   const tipoDePurchase = new Map<string, string>();
@@ -152,9 +174,11 @@ export async function getResumenCaja(anyoN: number): Promise<ResumenCaja> {
     const tarjetas = tarjetasCalc.reduce((s, t) => s + t.enCaja[m], 0);
     const nominas = nominasAno[m].coste;
     const impuestos = impuestosMes[m];
-    const salidas = fijosTotal + variables + nominas + tarjetas + impuestos;
-    const neto = ingresos - salidas;
-    return { m, ym, ingresos, cobrado, pendiente, porLinea, fijosTotal, fijosBearingBase, fijosObliviateBase, variables, porBucket, nominas, nominasDet: nominasAno[m], tarjetas, impuestos, salidas, neto };
+    const obliviateCobros = obliviateMeses[m].cobros;
+    const obliviateGastos = obliviateMeses[m].gastos;
+    const salidas = fijosTotal + variables + nominas + tarjetas + impuestos + obliviateGastos;
+    const neto = ingresos + obliviateCobros - salidas;
+    return { m, ym, ingresos, cobrado, pendiente, porLinea, fijosTotal, fijosBearingBase, fijosObliviateBase, variables, porBucket, nominas, nominasDet: nominasAno[m], tarjetas, impuestos, obliviateCobros, obliviateGastos, salidas, neto };
   });
 
   // ── Caja de bancos a fin de mes (variación del diario + saldo inicial) ──
@@ -188,5 +212,5 @@ export async function getResumenCaja(anyoN: number): Promise<ResumenCaja> {
   let acc = 0;
   const cajaFinMes = flujoBancos.map(v => (acc += v));
 
-  return { holdedError, saldoInicial, meses, cajaFinMes, tarjetasCalc, gastos, facturas };
+  return { holdedError, saldoInicial, meses, cajaFinMes, saldoInicialObliviate, cajaObliviateFinMes, obliviateMeses, tarjetasCalc, gastos, facturas };
 }

@@ -660,6 +660,20 @@ export const categorias = pgTable("categorias", {
 // Para el CF cuenta el cargo GLOBAL que la tarjeta (Sabadell "business mc") pasa
 // a la cuenta cada mes; el detalle (gasolina/parking) es solo informativo, no
 // suma (evita doble conteo con las facturas de Holded).
+// Movimientos bancarios de OBLIVIATE (segunda empresa del grupo, fuera de
+// Holded). Se importan del extracto del Sabadell y se categorizan para la
+// caja consolidada del grupo. "intragrupo" = facturación cruzada con Bearing
+// (neutra para el grupo: no cuenta como ingreso ni gasto del grupo).
+export const obliviateMovs = pgTable("obliviate_movs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fecha: text("fecha").notNull(),          // YYYY-MM-DD
+  concepto: text("concepto").notNull(),
+  importe: numeric("importe", { precision: 12, scale: 2 }).notNull(), // + cobro / − pago
+  saldo: numeric("saldo", { precision: 12, scale: 2 }),               // saldo tras el mov (para dedup del extracto)
+  categoria: text("categoria").notNull(),  // cobro | intragrupo | comision | fijo | tarjeta | impuestos | efectivo | otros
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Valores sueltos de finanzas (clave → número), p. ej. el saldo inicial de los
 // bancos a 1 de enero para convertir la variación del diario en caja absoluta.
 export const finanzasValores = pgTable("finanzas_valores", {

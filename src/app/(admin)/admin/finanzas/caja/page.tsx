@@ -30,7 +30,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
   const mes = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? sp.mes! : mesActual;
   const [anyoN, mesN] = mes.split("-").map(Number);
 
-  const [{ holdedError, saldoInicial, meses, cajaFinMes, tarjetasCalc, gastos, facturas }, opsFirmadasAll] = await Promise.all([
+  const [{ holdedError, saldoInicial, meses, cajaFinMes, saldoInicialObliviate, cajaObliviateFinMes, tarjetasCalc, gastos, facturas }, opsFirmadasAll] = await Promise.all([
     getResumenCaja(anyoN),
     db.select({
       id: operations.id,
@@ -107,10 +107,13 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
   movsCruzados.sort((a, b) => b.importe - a.importe);
 
   const M = meses[mesN - 1];
-  const cajaMes = saldoInicial != null ? saldoInicial + cajaFinMes[mesN - 1] : cajaFinMes[mesN - 1];
+  // Caja del GRUPO: bancos Bearing (Holded) + banco Obliviate (extracto importado)
+  const cajaBearing = (m: number) => (saldoInicial != null ? saldoInicial + cajaFinMes[m] : cajaFinMes[m]);
+  const cajaObliv = (m: number) => (saldoInicialObliviate != null ? saldoInicialObliviate + cajaObliviateFinMes[m] : cajaObliviateFinMes[m]);
+  const cajaMes = cajaBearing(mesN - 1) + cajaObliv(mesN - 1);
   const cajaMesAnterior = mesN >= 2
-    ? (saldoInicial != null ? saldoInicial + cajaFinMes[mesN - 2] : cajaFinMes[mesN - 2])
-    : saldoInicial;
+    ? cajaBearing(mesN - 2) + cajaObliv(mesN - 2)
+    : (saldoInicial != null || saldoInicialObliviate != null ? (saldoInicial ?? 0) + (saldoInicialObliviate ?? 0) : null);
 
   // Mini desglose del cargo de tarjeta: a qué se fue el gasto del MES ANTERIOR
   const desgloseTarjetas = tarjetasCalc
@@ -160,10 +163,10 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
               <p className="text-gray-400 text-[9px] mt-1 uppercase tracking-wide">ingresos − gastos del mes</p>
             </div>
             <div className="bg-[#FFC845]/15 border border-[#FFC845] px-6 py-5">
-              <p className="text-[#2E1A47]/60 text-[10px] font-bold uppercase tracking-wider mb-1.5">{saldoInicial != null ? "Caja bancos · fin de mes" : "Variación de bancos en el año"}</p>
+              <p className="text-[#2E1A47]/60 text-[10px] font-bold uppercase tracking-wider mb-1.5">{saldoInicial != null ? "Caja del grupo · fin de mes" : "Variación de bancos en el año"}</p>
               <p className="text-2xl font-black text-[#2E1A47]">{fmtEur(cajaMes)}</p>
               <p className="text-[#2E1A47]/50 text-[9px] mt-1 uppercase tracking-wide">
-                {cajaMesAnterior != null ? `cerró ${mesN >= 2 ? MESES[mesN - 2] : "el año pasado"} en ${fmtEur(cajaMesAnterior)}` : ""}
+                Bearing {fmtEur(cajaBearing(mesN - 1))} · Obliviate {fmtEur(cajaObliv(mesN - 1))}{cajaMesAnterior != null ? ` · cerró ${mesN >= 2 ? MESES[mesN - 2] : "el año"} en ${fmtEur(cajaMesAnterior)}` : ""}
               </p>
               <div className="mt-1"><SaldoInicialEdit anyo={anyoN} valor={saldoInicial} /></div>
             </div>
@@ -183,7 +186,13 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
                     <p className="text-xs font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(importe)}</p>
                   </div>
                 ))}
-                {M.porLinea.size === 0 && <p className="px-4 py-6 text-center text-xs text-gray-400">Sin facturas este mes.</p>}
+                {M.obliviateCobros > 0.5 && (
+                  <div className="px-4 py-2 flex items-center justify-between gap-3">
+                    <p className="text-xs text-gray-700">Cobros Obliviate <Link href="/admin/finanzas/obliviate" className="text-[10px] text-[#2E1A47] hover:underline font-semibold">detalle →</Link></p>
+                    <p className="text-xs font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(M.obliviateCobros)}</p>
+                  </div>
+                )}
+                {M.porLinea.size === 0 && M.obliviateCobros <= 0.5 && <p className="px-4 py-6 text-center text-xs text-gray-400">Sin facturas este mes.</p>}
               </div>
               {M.pendiente > 0.5 && (
                 <div className="px-4 py-2 bg-red-50/60 border-t border-red-100 flex items-center justify-between">
@@ -213,6 +222,12 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
                   <div className="px-4 py-2 flex items-center justify-between gap-3">
                     <p className="text-xs text-gray-700">Impuestos pagados (IVA / Sociedades) <Link href="/admin/finanzas/impuestos" className="text-[10px] text-[#2E1A47] hover:underline font-semibold">detalle →</Link></p>
                     <p className="text-xs font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(M.impuestos)}</p>
+                  </div>
+                )}
+                {M.obliviateGastos > 0.5 && (
+                  <div className="px-4 py-2 flex items-center justify-between gap-3">
+                    <p className="text-xs text-gray-700">Gastos Obliviate por banco <Link href="/admin/finanzas/obliviate" className="text-[10px] text-[#2E1A47] hover:underline font-semibold">detalle →</Link></p>
+                    <p className="text-xs font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(M.obliviateGastos)}</p>
                   </div>
                 )}
                 {BUCKETS.filter(b => b.key !== "tarjeta").map(b => {
