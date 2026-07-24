@@ -4,6 +4,9 @@ import Link from "next/link";
 import { getLibroDiario } from "@/lib/holdedLedger";
 import { getFacturasVenta, getGastos, type CategoriaGasto, type HoldedInvoice, type HoldedGasto } from "@/lib/holded";
 import { nominasPorMes } from "@/lib/nominas";
+import { db } from "@/db";
+import { obliviateMovs } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { fmtEur } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -114,6 +117,25 @@ export default async function ImpuestosPage() {
 
   const ivaAct = estimaIVA(trimestre);
   const irpfAct = estimaIRPF(trimestre);
+
+  // Detalle del IRPF del trimestre en curso (para los desplegables):
+  // nóminas con retención (por mes y persona) y facturas de autónomos con IRPF
+  const MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  const irpfNominasDet = nominasAno
+    .slice((trimestre - 1) * 3, trimestre * 3)
+    .flatMap(m => m.personas.filter(p => p.irpf > 0.005).map(p => ({ mes: MESES_CORTOS[m.mesIdx], etiqueta: p.etiqueta, irpf: p.irpf })));
+  const enTrimAct = (fecha: string) => mesesDeTrim(trimestre).some(ym => fecha.startsWith(ym));
+  const irpfFacturasDet = gastos
+    .filter(g => enTrimAct(g.date) && g.retencion > 0.005)
+    .map(g => ({ fecha: g.date, proveedor: g.proveedor, num: g.document_number, retencion: g.retencion }))
+    .sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+  // Impuestos de OBLIVIATE: solo lo que ha salido de su banco (extracto importado)
+  const impuestosObliviate = (await db.select().from(obliviateMovs).where(eq(obliviateMovs.categoria, "impuestos")))
+    .map(m => ({ fecha: m.fecha, concepto: m.concepto, importe: -Number(m.importe) }))
+    .filter(m => m.fecha.startsWith(String(anyo)))
+    .sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const totObliviate = impuestosObliviate.reduce((s, m) => s + m.importe, 0);
 
   // Pagos agrupados por impuesto + liquidación (el 200 se junta con el 202 en el cuadro de Sociedades)
   const pagosPorClave = new Map<string, { importe: number; fechas: string[] }>();
@@ -312,20 +334,44 @@ export default async function ImpuestosPage() {
               <span className="text-[10px] font-bold uppercase tracking-wide text-[#2E1A47]/60 bg-white border border-[#2E1A47]/15 px-2 py-0.5 rounded-full">se liquida el 20 de {["abril", "julio", "octubre", "enero"][trimestre - 1]}</span>
             </div>
             <div className="divide-y divide-gray-50">
-              <div className="px-5 py-3 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm text-gray-700">Retenido en nóminas</p>
-                  <p className="text-[11px] text-gray-400">IRPF de las nóminas del trimestre (Maca y Rita)</p>
-                </div>
-                <p className="text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(irpfAct.nominas)}</p>
-              </div>
-              <div className="px-5 py-3 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm text-gray-700">Retenido en facturas de autónomos</p>
-                  <p className="text-[11px] text-gray-400">retenciones de las facturas recibidas (Pablo, Alejandro y cualquier otro autónomo que facture con retención)</p>
-                </div>
-                <p className="text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(irpfAct.facturas)}</p>
-              </div>
+              <details className="group">
+                <summary className="px-5 py-3 flex items-center justify-between gap-3 cursor-pointer list-none hover:bg-[#EEEBF3]/30 transition-colors">
+                  <div>
+                    <p className="text-sm text-gray-700">Retenido en nóminas <span className="text-[10px] text-[#2E1A47] font-semibold">{irpfNominasDet.length > 0 ? "▸ ver detalle" : ""}</span></p>
+                    <p className="text-[11px] text-gray-400">IRPF de las nóminas del trimestre (Maca y Rita)</p>
+                  </div>
+                  <p className="text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(irpfAct.nominas)}</p>
+                </summary>
+                {irpfNominasDet.length > 0 && (
+                  <div className="px-5 pb-3 bg-[#EEEBF3]/20">
+                    {irpfNominasDet.map((n, i) => (
+                      <div key={i} className="flex items-center justify-between py-1 border-t border-gray-50 first:border-0">
+                        <p className="text-[11px] text-gray-600">{n.etiqueta} <span className="text-gray-400">· nómina de {n.mes}</span></p>
+                        <p className="text-[11px] font-semibold text-gray-700">{fmtEur(n.irpf)}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </details>
+              <details className="group">
+                <summary className="px-5 py-3 flex items-center justify-between gap-3 cursor-pointer list-none hover:bg-[#EEEBF3]/30 transition-colors">
+                  <div>
+                    <p className="text-sm text-gray-700">Retenido en facturas de autónomos <span className="text-[10px] text-[#2E1A47] font-semibold">{irpfFacturasDet.length > 0 ? "▸ ver detalle" : ""}</span></p>
+                    <p className="text-[11px] text-gray-400">retenciones de las facturas recibidas (Pablo, Alejandro y cualquier otro autónomo que facture con retención)</p>
+                  </div>
+                  <p className="text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(irpfAct.facturas)}</p>
+                </summary>
+                {irpfFacturasDet.length > 0 && (
+                  <div className="px-5 pb-3 bg-[#EEEBF3]/20">
+                    {irpfFacturasDet.map((f, i) => (
+                      <div key={i} className="flex items-center justify-between py-1 border-t border-gray-50 first:border-0">
+                        <p className="text-[11px] text-gray-600">{f.proveedor} <span className="text-gray-400">· {f.num} · {f.fecha.slice(8, 10)}/{f.fecha.slice(5, 7)}</span></p>
+                        <p className="text-[11px] font-semibold text-gray-700">{fmtEur(f.retencion)}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </details>
               <div className="px-5 py-4 flex items-center justify-between gap-3 bg-[#FFC845]/10">
                 <p className="text-sm font-bold text-[#2E1A47]">A ingresar estimado del {trimestre}T (mod. 111)</p>
                 <p className="text-xl font-black text-[#2E1A47] whitespace-nowrap">{fmtEur(irpfAct.total)}</p>
@@ -333,6 +379,30 @@ export default async function ImpuestosPage() {
             </div>
             <p className="px-5 py-3 text-[11px] text-gray-400 border-t border-gray-100">
               Suma de lo retenido en el trimestre según el diario (abonos a la cuenta 4751): nóminas + facturas de autónomos con retención. Si entra un autónomo nuevo que facture con IRPF, entra solo en el cálculo.
+            </p>
+          </section>
+
+          {/* Impuestos de Obliviate: solo lo que ha salido de su banco */}
+          <section className="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden mt-6">
+            <div className="px-5 py-3.5 bg-[#EEEBF3] flex items-center justify-between">
+              <h2 className="text-sm font-bold text-[#2E1A47] uppercase tracking-wider">Impuestos de Obliviate · pagados por banco</h2>
+              <Link href="/admin/finanzas/obliviate" className="text-[11px] font-semibold text-[#2E1A47] hover:underline">Ver su banco →</Link>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {impuestosObliviate.map((m, i) => (
+                <div key={i} className="px-5 py-2.5 flex items-center justify-between gap-3">
+                  <p className="text-xs text-gray-700">{m.concepto} <span className="text-[10px] text-gray-400">· {m.fecha.slice(8, 10)}/{m.fecha.slice(5, 7)}/{m.fecha.slice(2, 4)}</span></p>
+                  <p className="text-xs font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(m.importe)}</p>
+                </div>
+              ))}
+              {impuestosObliviate.length === 0 && <p className="px-5 py-6 text-center text-xs text-gray-400">Sin pagos de impuestos en el extracto importado.</p>}
+              <div className="px-5 py-3 bg-[#FFC845]/10 flex items-center justify-between">
+                <p className="text-xs font-bold text-[#2E1A47] uppercase tracking-wide">Total Obliviate</p>
+                <p className="text-sm font-black text-[#2E1A47]">{fmtEur(totObliviate)}</p>
+              </div>
+            </div>
+            <p className="px-5 py-3 text-[11px] text-gray-400 border-t border-gray-100">
+              Obliviate no está en Holded: aquí solo se refleja lo que sale de su banco (extracto importado), sin estimaciones ni liquidaciones. Su contabilidad la lleva su asesoría.
             </p>
           </section>
         </>
