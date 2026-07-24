@@ -28,6 +28,9 @@ export interface GastoFijo {
   cuenta_id: string | null;         // si está, casa solo las facturas con esta cuenta contable
   cuenta_label: string | null;      // etiqueta legible de la cuenta (para mostrar)
   empresa: string;                  // "bearing" (cruza Holded) | "obliviate" (manual)
+  // Solo Obliviate: palabra clave a buscar en el concepto del extracto de su
+  // banco para marcar el mes como pagado automáticamente (p. ej. "EXPELLIARM").
+  extracto_match: string | null;
   periodicidad: string;             // "mensual" | "anual"
   mes_cobro: number | null;         // 1-12, solo para los anuales
   // Estado + importe manual por mes: { "2026-3": { e?: "recibida"|"pagada", i?: number } }
@@ -88,6 +91,7 @@ export async function getGastosFijos(): Promise<GastoFijo[]> {
       cuenta_id: r.cuenta_id ?? null,
       cuenta_label: r.cuenta_label ?? null,
       empresa: r.empresa ?? "bearing",
+      extracto_match: r.extracto_match ?? null,
       periodicidad: r.periodicidad ?? "mensual",
       mes_cobro: r.mes_cobro ?? null,
       estado_manual: (r.estado_manual as Record<string, any>) ?? {},

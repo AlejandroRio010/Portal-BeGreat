@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getGastos, type HoldedGasto } from "@/lib/holded";
 import { getGastosFijos, esDelFijo, importeFijoMes, parteMensual, parteAnual, construirCandidatos } from "@/lib/gastosFijos";
+import { db } from "@/db";
+import { obliviateMovs } from "@/db/schema";
 import { getCategoriasGasto } from "@/lib/categorias";
 import { fmtEur } from "@/lib/format";
 import {
@@ -68,7 +70,15 @@ export default async function GastosFijosPage() {
     return { gf, meses, avisos };
   });
 
-  // ── Obliviate: mes a mes manual ──
+  // ── Obliviate: mes a mes — automático contra el extracto de su banco si el
+  //    fijo tiene extracto_match (el recibo aparece → pagada; mes pasado sin
+  //    recibo → pendiente); lo marcado a mano siempre manda. Sin extracto_match
+  //    (p. ej. IONOS, que va por tarjeta) se queda con el criterio manual. ──
+  const movsObliv = await db.select().from(obliviateMovs);
+  const reciboEnMes = (match: string, m: number) => {
+    const ymPad = `${anyo}-${String(m + 1).padStart(2, "0")}`;
+    return movsObliv.some(x => x.fecha.startsWith(ymPad) && Number(x.importe) < 0 && x.concepto.toUpperCase().includes(match.toUpperCase()));
+  };
   const filasObliviate = fijosObliviate.map(gf => {
     const meses = CORTOS.map((_, m) => {
       const aplica = gf.periodicidad === "mensual" || gf.mes_cobro === m + 1;
@@ -77,7 +87,8 @@ export default async function GastosFijosPage() {
       const override = typeof cell === "object" && cell ? cell.i : undefined;
       const esperado = importeFijoMes(gf, m);
       const importe = override ?? esperado;
-      const estadoDefault = m <= mesActualIdx ? "pagada" : "pendiente";
+      const estadoBanco = gf.extracto_match ? (reciboEnMes(gf.extracto_match, m) ? "pagada" : m <= mesActualIdx ? "pendiente" : undefined) : undefined;
+      const estadoDefault = estadoBanco ?? (m <= mesActualIdx ? "pagada" : "pendiente");
       const estado = (typeof cell === "string" ? cell : cell?.e) ?? estadoDefault;
       return { m, aplica, ym, estado, importe, esperado, esPasado: m < mesActualIdx };
     });
@@ -194,7 +205,7 @@ export default async function GastosFijosPage() {
               <div className="px-4 py-3 bg-amber-50 flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-bold text-amber-800 uppercase tracking-wider">Obliviate</h2>
-                  <p className="text-[10px] text-amber-800/50">manual · fuera de Holded · {fijosObliviate.length} fijos</p>
+                  <p className="text-[10px] text-amber-800/50">extracto del banco + manual · fuera de Holded · {fijosObliviate.length} fijos</p>
                 </div>
                 <AddGastoFijoButton empresa="obliviate" categorias={categoriasGasto} />
               </div>
@@ -254,7 +265,7 @@ export default async function GastosFijosPage() {
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border-2 border-red-500" /> Cobrado de más</span>
           </div>
           <p className="text-[11px] text-gray-400 mt-2">
-            En <b>Obliviate</b>, clic en un mes → desplegable para <b>sin marcar</b> · <span className="text-amber-600 font-semibold">recibida</span> · <span className="text-emerald-600 font-semibold">pagada</span> y ajustar el importe. Clic en el nombre para renombrar o poner concepto.
+            En <b>Obliviate</b>, el estado sale solo del <b>extracto del banco</b> (si el recibo aparece en el mes → pagada; si el mes pasó sin recibo → pendiente). Sube el extracto en la sección Obliviate para actualizarlo. Lo marcado a mano manda sobre lo automático: clic en un mes → <b>sin marcar</b> · <span className="text-amber-600 font-semibold">recibida</span> · <span className="text-emerald-600 font-semibold">pagada</span> y ajustar importe. IONOS va por tarjeta, así que sigue en manual.
           </p>
         </>
       )}
