@@ -152,7 +152,11 @@ export async function getResumenCaja(anyoN: number): Promise<ResumenCaja> {
     const ym = `${anyoN}-${String(m + 1).padStart(2, "0")}`;
     const ymKey = `${anyoN}-${m + 1}`;
 
-    const fMes = facturas.filter(f => f.date.startsWith(ym));
+    // Las ventas de Bearing A OBLIVIATE son intragrupo: no son ingreso del grupo
+    // (dinero de un bolsillo a otro). Se excluyen igual que las compras a
+    // Obliviate se excluyen de los gastos — el intragrupo es neutro en ambos lados.
+    const esVentaIntragrupo = (f: { contact_name: string }) => f.contact_name.toLowerCase().includes("obliviate");
+    const fMes = facturas.filter(f => f.date.startsWith(ym) && !esVentaIntragrupo(f));
     const ingresos = fMes.reduce((s, f) => s + f.subtotal, 0);
     const cobrado = fMes.reduce((s, f) => f.estado === "cobrada" ? s + f.subtotal : f.estado === "parcial" && f.total > 0 ? s + f.pagado * (f.subtotal / f.total) : s, 0);
     const pendiente = Math.max(0, ingresos - cobrado);
@@ -175,7 +179,22 @@ export async function getResumenCaja(anyoN: number): Promise<ResumenCaja> {
     // del grupo (el coste real de Obliviate ya entra por sus propios movimientos
     // de banco). Sin esto, la facturación cruzada se contaría dos veces.
     const esIntragrupo = (g: HoldedGasto) => g.proveedor.toLowerCase().includes("obliviate");
-    const variablesItems = gMes.filter(g => !esFijo(g) && bucketConLink(g) !== "tarjeta" && !esIntragrupo(g));
+    // VARIABLES por fecha de PAGO (caja real del mes): un gasto variable cuenta
+    // cuando SALE del banco, no cuando se factura. Así un pago que salda varias
+    // facturas de meses anteriores (p. ej. Omnilink) cuenta entero en el mes en
+    // que se paga. Los no pagados aún no son caja (aparecen al pagarse).
+    // EXCEPCIÓN: la mercadería (equipo de renting que BeGreat refactura) es
+    // passthrough y se queda por devengo, para que cancele con su venta del
+    // mismo mes; si no, el neto se dispara al desincronizar venta y compra.
+    const esVariable = (g: HoldedGasto) => !esFijo(g) && !g.borrador && bucketConLink(g) !== "tarjeta" && !esIntragrupo(g);
+    // Mes en que un variable cuenta como caja: su fecha de pago; si está pagado
+    // pero Holded no guardó la fecha, cae a la de factura (para no perderlo).
+    const mesCajaDe = (g: HoldedGasto) => g.fecha_pago ?? (g.estado === "pagada" ? g.date : null);
+    const variablesItems = gastos.filter(g => {
+      if (!esVariable(g)) return false;
+      if (bucketConLink(g) === "mercaderia") return g.date.startsWith(ym);   // passthrough → devengo
+      return !!mesCajaDe(g)?.startsWith(ym);                                 // resto → caja real (pagado)
+    });
     const variables = variablesItems.reduce((s, g) => s + g.subtotal, 0);
     const porBucket = new Map<BucketVariable, number>();
     for (const g of variablesItems) porBucket.set(bucketConLink(g), (porBucket.get(bucketConLink(g)) ?? 0) + g.subtotal);
