@@ -206,7 +206,9 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
 
   const delMes = gastos.filter(g => g.date.startsWith(mes));
   const esTarjeta = (g: HoldedGasto) => bucketConLink(g) === "tarjeta";
-  const fijos = delMes.filter(esFijo);
+  // Sin borradores: los borradores automáticos de las recurrentes de Holded no
+  // son la factura real (esa es la que se sube) — no cuentan ni ensucian el estado.
+  const fijos = delMes.filter(g => esFijo(g) && !g.borrador);
   // Las variables NO incluyen la tarjeta (esa cuenta por su cargo global, no por factura)
   const variables = delMes.filter(g => !esFijo(g) && !esTarjeta(g));
   // Base/IVA/total solo de lo que cuenta por factura (sin tarjeta)

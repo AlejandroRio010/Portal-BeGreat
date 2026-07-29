@@ -161,7 +161,9 @@ export async function getResumenCaja(anyoN: number): Promise<ResumenCaja> {
 
     const gMes = gastos.filter(g => g.date.startsWith(ym));
     const esFijo = (g: HoldedGasto) => fijosBearing.some(f => esDelFijo(f, g.proveedor, g.contact_id, g.cuenta_id));
-    const fijosBearingBase = gMes.filter(esFijo).reduce((s, g) => s + g.subtotal, 0);
+    // Sin borradores: los borradores automáticos de las facturas recurrentes de
+    // Holded duplicarían la base cuando convive el borrador con la factura real.
+    const fijosBearingBase = gMes.filter(g => esFijo(g) && !g.borrador).reduce((s, g) => s + g.subtotal, 0);
     const fijosObliviateBase = fijosObliviate.reduce((s, f) => {
       const cell = f.estado_manual?.[ymKey];
       const override = typeof cell === "object" && cell ? cell.i : undefined;

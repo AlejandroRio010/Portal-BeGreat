@@ -50,7 +50,9 @@ export default async function GastosFijosPage() {
     const meses: BearingMes[] = CORTOS.map((_, m) => {
       const pref = `${anyo}-${String(m + 1).padStart(2, "0")}`;   // para casar la fecha
       const ymKey = `${anyo}-${m + 1}`;                            // clave de la nota (sin padding)
-      const facts = delAnyo.filter(g => g.date.startsWith(pref) && esDelFijo(gf, g.proveedor, g.contact_id, g.cuenta_id));
+      // Los BORRADORES no cuentan: Holded genera borradores automáticos de las
+      // facturas recurrentes y no son la factura real (esa es la que se sube).
+      const facts = delAnyo.filter(g => !g.borrador && g.date.startsWith(pref) && esDelFijo(gf, g.proveedor, g.contact_id, g.cuenta_id));
       const base = facts.reduce((s, g) => s + g.subtotal, 0);
       const hay = facts.length > 0;
       const pagadas = hay && facts.every(g => g.estado === "pagada");
