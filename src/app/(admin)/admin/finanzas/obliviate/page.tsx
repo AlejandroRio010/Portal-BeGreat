@@ -44,6 +44,13 @@ export default async function ObliviatePage() {
   const mesesOrdenados = [...porMes.keys()].sort().reverse();
   const fmtFecha = (f: string) => { const [y, mm, d] = f.split("-"); return `${d}/${mm}`; };
 
+  // Última subida del extracto (cuándo se importó por última vez) y hasta qué
+  // día llegan los movimientos (para saber si está al día).
+  const ultimaSubida = movs.reduce<Date | null>((max, m) => (!max || m.created_at > max ? m.created_at : max), null);
+  const datosHasta = movs.reduce<string | null>((max, m) => (!max || m.fecha > max ? m.fecha : max), null);
+  const fmtDT = (d: Date) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()} a las ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const fmtDia = (f: string) => { const [y, mm, d] = f.split("-"); return `${d}/${mm}/${y}`; };
+
   return (
     <div>
       <div className="flex items-start justify-between mb-8 gap-6">
@@ -54,7 +61,15 @@ export default async function ObliviatePage() {
           <h1 className="text-2xl font-bold text-gray-900">Finanzas — Obliviate</h1>
           <p className="text-sm text-gray-400 mt-1">Movimientos del Sabadell de Obliviate · se importan del extracto y entran en la caja del grupo</p>
         </div>
-        <div className="self-start"><ExtractoUpload /></div>
+        <div className="self-start flex flex-col items-end gap-1.5">
+          <ExtractoUpload />
+          {ultimaSubida && (
+            <p className="text-[10px] text-gray-400 text-right">
+              Última subida: <span className="font-semibold text-gray-500">{fmtDT(ultimaSubida)}</span>
+              {datosHasta ? <> · datos hasta {fmtDia(datosHasta)}</> : null}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* KPIs */}
