@@ -34,6 +34,9 @@ export interface MesCaja {
    *  otros. Los fijos de Obliviate NO (ya cuentan en fijosObliviateBase) y el
    *  intragrupo tampoco (neutro para el grupo). */
   obliviateGastos: number;
+  /** Impuestos pagados por el banco de Obliviate ese mes (IRPF/IS) — subconjunto
+   *  de obliviateGastos, expuesto aparte para desglosarlo del resto. */
+  obliviateImpuestos: number;
   /** Impuestos pagados por banco ese mes: IVA (4750) + Sociedades (473/4752).
    *  El IRPF (4751) NO se suma: ya está dentro del coste de nóminas (bruto)
    *  y de las comisiones (base con retención) — sumarlo lo contaría dos veces. */
@@ -180,9 +183,10 @@ export async function getResumenCaja(anyoN: number): Promise<ResumenCaja> {
     const impuestos = impuestosMes[m];
     const obliviateCobros = obliviateMeses[m].cobros;
     const obliviateGastos = obliviateMeses[m].gastos;
+    const obliviateImpuestos = -obliviateMeses[m].porCategoria.impuestos; // salidas → positivo
     const salidas = fijosTotal + variables + nominas + tarjetas + impuestos + obliviateGastos;
     const neto = ingresos + obliviateCobros - salidas;
-    return { m, ym, ingresos, cobrado, pendiente, porLinea, fijosTotal, fijosBearingBase, fijosObliviateBase, variables, porBucket, nominas, nominasDet: nominasAno[m], tarjetas, impuestos, obliviateCobros, obliviateGastos, salidas, neto };
+    return { m, ym, ingresos, cobrado, pendiente, porLinea, fijosTotal, fijosBearingBase, fijosObliviateBase, variables, porBucket, nominas, nominasDet: nominasAno[m], tarjetas, impuestos, obliviateCobros, obliviateGastos, obliviateImpuestos, salidas, neto };
   });
 
   // ── Caja de bancos a fin de mes (variación del diario + saldo inicial) ──
