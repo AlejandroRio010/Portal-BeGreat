@@ -1,6 +1,8 @@
 // Cliente de la API v2 de Holded (solo lectura) para la sección de finanzas.
 // La clave vive en HOLDED_API_KEY (scopes: contabilidad + ventas).
 
+import { unstable_cache } from "next/cache";
+
 const BASE = "https://api.holded.com/api/v2";
 
 /** Los históricos de finanzas empiezan aquí; lo anterior a 2026 no se considera. */
@@ -126,7 +128,12 @@ async function getFechasCobro(key: string): Promise<Map<string, string>> {
 }
 
 // ── Fetch con paginación por cursor ──────────────────────────────────────────
-export async function getFacturasVenta(): Promise<HoldedInvoice[]> {
+// CACHÉ: los datos de Holded se cachean 5 min con la etiqueta "holded" (varias
+// llamadas al API por carga los hacían lentos). El botón "Refrescar" de
+// finanzas invalida la etiqueta para ver datos recién conciliados al momento.
+export const getFacturasVenta = unstable_cache(getFacturasVentaUncached, ["facturas-venta"], { revalidate: 300, tags: ["holded"] });
+
+async function getFacturasVentaUncached(): Promise<HoldedInvoice[]> {
   const key = process.env.HOLDED_API_KEY;
   if (!key) throw new Error("Falta HOLDED_API_KEY");
 
@@ -366,7 +373,10 @@ async function getPagosCompra(key: string): Promise<Map<string, { fecha: string;
   return map;
 }
 
-export async function getGastos(opts?: { incluirBorradores?: boolean }): Promise<HoldedGasto[]> {
+// Cacheado 5 min (etiqueta "holded"); las opciones forman parte de la clave.
+export const getGastos = unstable_cache(getGastosUncached, ["gastos"], { revalidate: 300, tags: ["holded"] });
+
+async function getGastosUncached(opts?: { incluirBorradores?: boolean }): Promise<HoldedGasto[]> {
   const key = process.env.HOLDED_API_KEY;
   if (!key) throw new Error("Falta HOLDED_API_KEY");
 

@@ -9,6 +9,7 @@ import { CATEGORIAS_TICKET } from "@/lib/tarjetas";
 import { BUCKETS } from "@/lib/gastosBuckets";
 import { fmtEur } from "@/lib/format";
 import SaldoInicialEdit from "./SaldoInicialEdit";
+import RefreshButton from "../RefreshButton";
 
 export const dynamic = "force-dynamic";
 
@@ -130,7 +131,9 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
           <h1 className="text-2xl font-bold text-gray-900">Finanzas — Resumen mensual</h1>
           <p className="text-sm text-gray-400 mt-1">El mes en curso · importes sin IVA (la tarjeta, por su recibo bancario) · <Link href="/admin/finanzas/evolucion" className="text-[#2E1A47] font-semibold hover:underline">ver evolución del año →</Link></p>
         </div>
-        <div className="flex gap-0.5 bg-white border border-gray-200 rounded-2xl p-1 self-start">
+        <div className="flex items-center gap-2 self-start">
+        <RefreshButton />
+        <div className="flex gap-0.5 bg-white border border-gray-200 rounded-2xl p-1">
           {CORTOS.map((c, i) => {
             const ym = `${anyoN}-${String(i + 1).padStart(2, "0")}`;
             const activo = ym === mes; const futuro = ym > mesActual;
@@ -138,6 +141,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
             return <Link key={c} href={`/admin/finanzas/caja?mes=${ym}`}
               className={`px-2 py-1.5 text-[11px] font-semibold rounded-xl transition-colors ${activo ? "bg-[#2E1A47] text-white" : "text-gray-500 hover:bg-[#EEEBF3] hover:text-[#2E1A47]"}`}>{c}</Link>;
           })}
+        </div>
         </div>
       </div>
 

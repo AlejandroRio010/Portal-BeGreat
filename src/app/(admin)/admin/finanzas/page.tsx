@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getResumenCaja } from "@/lib/cajaResumen";
 import { fmtEur } from "@/lib/format";
+import RefreshButton from "./RefreshButton";
 
 export const dynamic = "force-dynamic";
 
@@ -51,9 +52,12 @@ export default async function FinanzasHubPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Finanzas</h1>
-        <p className="text-sm text-gray-400 mt-1">Bearing Point S.L. · control de caja en tiempo real desde Holded</p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Finanzas</h1>
+          <p className="text-sm text-gray-400 mt-1">Bearing Point S.L. · control de caja en tiempo real desde Holded</p>
+        </div>
+        <div className="self-start"><RefreshButton /></div>
       </div>
 
       {/* Resumen del mes — mismos números que la página de Caja */}

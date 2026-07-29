@@ -5,6 +5,7 @@
 // el cargo a la cuenta de gasto (grupo 6) nos da la base sin IVA.
 
 const BASE = "https://api.holded.com/api/v2";
+import { unstable_cache } from "next/cache";
 import { FINANZAS_DESDE } from "@/lib/holded";
 
 export interface LibroLinea {
@@ -59,8 +60,12 @@ async function getVentana(key: string, desde: string, hasta: string): Promise<Li
   return out;
 }
 
-/** Descarga el libro diario del ejercicio en curso (desde FINANZAS_DESDE). */
-export async function getLibroDiario(): Promise<LibroLinea[]> {
+/** Descarga el libro diario del ejercicio en curso (desde FINANZAS_DESDE).
+ *  Cacheado 5 min (etiqueta "holded"): son ~30 llamadas al API de Holded por
+ *  las ventanas semanales — es LA razón de que finanzas fuera lento. */
+export const getLibroDiario = unstable_cache(getLibroDiarioUncached, ["libro-diario"], { revalidate: 300, tags: ["holded"] });
+
+async function getLibroDiarioUncached(): Promise<LibroLinea[]> {
   const key = process.env.HOLDED_API_KEY;
   if (!key) throw new Error("Falta HOLDED_API_KEY");
   // CRÍTICO: con rangos de fechas largos, ledger-entries DEVUELVE EL DIARIO
