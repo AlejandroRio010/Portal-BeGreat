@@ -7,22 +7,11 @@ import { eq, desc } from "drizzle-orm";
 import { CATEGORIAS_OBLIVIATE, type CategoriaObliviate } from "@/lib/obliviate";
 import { fmtEur } from "@/lib/format";
 import ExtractoUpload from "./ExtractoUpload";
+import CategoriaSelect from "./CategoriaSelect";
 
 export const dynamic = "force-dynamic";
 
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-
-const BADGE: Record<CategoriaObliviate, string> = {
-  cobro: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  intragrupo: "bg-[#EEEBF3] text-[#2E1A47] border-[#2E1A47]/20",
-  comision: "bg-amber-50 text-amber-700 border-amber-200",
-  fijo: "bg-gray-50 text-gray-500 border-gray-200",
-  tarjeta: "bg-blue-50 text-blue-700 border-blue-200",
-  impuestos: "bg-red-50 text-red-600 border-red-200",
-  efectivo: "bg-gray-50 text-gray-500 border-gray-200",
-  otros: "bg-gray-50 text-gray-500 border-gray-200",
-};
-const LABEL = Object.fromEntries(CATEGORIAS_OBLIVIATE.map(c => [c.key, c.label])) as Record<CategoriaObliviate, string>;
 
 export default async function ObliviatePage() {
   const session = await auth();
@@ -117,7 +106,7 @@ export default async function ObliviatePage() {
                 <div key={m.id} className="px-5 py-2 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span className="text-[10px] text-gray-400 w-9 flex-shrink-0">{fmtFecha(m.fecha)}</span>
-                    <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full border flex-shrink-0 ${BADGE[m.categoria as CategoriaObliviate]}`}>{LABEL[m.categoria as CategoriaObliviate]}</span>
+                    <CategoriaSelect id={m.id} categoria={m.categoria as CategoriaObliviate} />
                     <p className="text-xs text-gray-700 truncate">{m.concepto}</p>
                   </div>
                   <p className={`text-xs font-bold whitespace-nowrap ${Number(m.importe) >= 0 ? "text-emerald-700" : "text-gray-700"}`}>{fmtEur(Number(m.importe))}</p>
