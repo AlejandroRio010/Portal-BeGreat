@@ -129,6 +129,13 @@ export default async function ImpuestosPage() {
     .filter(g => enTrimAct(g.date) && g.retencion > 0.005)
     .map(g => ({ fecha: g.date, proveedor: g.proveedor, num: g.document_number, retencion: g.retencion }))
     .sort((a, b) => a.fecha.localeCompare(b.fecha));
+  // Meses del trimestre ya empezados sin ninguna nómina en el diario: la
+  // gestoría aún no ha pasado el asiento, así que la estimación va corta.
+  const mesActualIdx0 = hoy.getMonth();
+  const nominasFaltan = nominasAno
+    .slice((trimestre - 1) * 3, trimestre * 3)
+    .filter(m => m.mesIdx <= mesActualIdx0 && m.personas.length === 0)
+    .map(m => MESES_CORTOS[m.mesIdx]);
 
   // Impuestos de OBLIVIATE: solo lo que ha salido de su banco (extracto importado)
   const impuestosObliviate = (await db.select().from(obliviateMovs).where(eq(obliviateMovs.categoria, "impuestos")))
@@ -232,7 +239,7 @@ export default async function ImpuestosPage() {
                         <div>
                           <p className="text-sm text-gray-700 font-medium">{p.label}</p>
                           <p className={`text-[10px] ${!pago && p.previsto ? "text-amber-600 font-semibold" : "text-gray-400"}`}>
-                            {pago ? `pagado el ${pago.fechas.map(fmtFecha).join(" · ")}` : p.previsto ? "presentado · pendiente de cargo, al caer" : vencido ? "sin pago registrado en Holded" : `se paga en ${p.mesPago}`}
+                            {pago ? `pagado el ${pago.fechas.map(fmtFecha).join(" · ")}` : p.previsto ? "cuota íntegra · el cargo real será menor (menos los pagos del 202 ya hechos); se verá al conciliar" : vencido ? "sin pago registrado en Holded" : `se paga en ${p.mesPago}`}
                           </p>
                         </div>
                         <p className={`text-sm font-bold whitespace-nowrap ${pago ? "text-[#2E1A47]" : p.previsto ? "text-amber-600" : "text-gray-300"}`}>
@@ -372,13 +379,18 @@ export default async function ImpuestosPage() {
                   </div>
                 )}
               </details>
+              {nominasFaltan.length > 0 && (
+                <div className="px-5 py-2.5 bg-amber-50/60 border-y border-amber-100">
+                  <p className="text-[11px] font-semibold text-amber-700">⚠ Falta la nómina de {nominasFaltan.join(", ")} en Holded — la estimación va corta hasta que la gestoría pase el asiento.</p>
+                </div>
+              )}
               <div className="px-5 py-4 flex items-center justify-between gap-3 bg-[#FFC845]/10">
                 <p className="text-sm font-bold text-[#2E1A47]">A ingresar estimado del {trimestre}T (mod. 111)</p>
                 <p className="text-xl font-black text-[#2E1A47] whitespace-nowrap">{fmtEur(irpfAct.total)}</p>
               </div>
             </div>
             <p className="px-5 py-3 text-[11px] text-gray-400 border-t border-gray-100">
-              Suma de lo retenido en el trimestre según el diario (abonos a la cuenta 4751): nóminas + facturas de autónomos con retención. Si entra un autónomo nuevo que facture con IRPF, entra solo en el cálculo.
+              Suma de lo retenido en el trimestre según el diario (abonos a la cuenta 4751): nóminas + facturas de autónomos con retención. Si entra un autónomo nuevo que facture con IRPF, entra solo en el cálculo. La cifra crece según la gestoría pase las nóminas del trimestre.
             </p>
           </section>
 
