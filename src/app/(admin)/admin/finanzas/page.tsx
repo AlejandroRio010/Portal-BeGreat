@@ -61,7 +61,7 @@ export default async function FinanzasHubPage() {
       </div>
 
       {/* Resumen del mes — mismos números que la página de Caja */}
-      <div className="grid grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4 mb-10">
         <div className="bg-[#2E1A47] px-6 py-6">
           <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Ingresos de {MESES[mesIdx]} · sin IVA</p>
           <p className="text-3xl font-black text-white">{ok ? fmtEur(ingresos) : "—"}</p>
@@ -79,7 +79,7 @@ export default async function FinanzasHubPage() {
       </div>
 
       {/* Accesos a secciones */}
-      <div className="grid grid-cols-2 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
         {secciones.map(s => (
           <Link key={s.titulo} href={s.href}
             className="group bg-white border border-gray-200 rounded-2xl p-6 hover:border-[#2E1A47]/40 hover:shadow-md transition-all flex items-start gap-4">

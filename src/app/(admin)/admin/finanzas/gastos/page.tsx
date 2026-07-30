@@ -266,7 +266,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-8 gap-6">
+      <div className="flex flex-wrap items-start justify-between mb-8 gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
             <Link href="/admin/finanzas" className="hover:text-[#2E1A47]">Finanzas</Link><span>/</span><span className="text-gray-600 font-medium">Gastos</span>
@@ -275,7 +275,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
           <p className="text-sm text-gray-400 mt-1">Bearing Point S.L. · desde Holded · todo lo que veas aquí está ya en tu contabilidad</p>
           <Link href="/admin/finanzas/gastos/fijos" className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-[#2E1A47] hover:underline">Control anual de gastos fijos →</Link>
         </div>
-        <div className="flex gap-0.5 bg-white border border-gray-200 rounded-2xl p-1 self-start">
+        <div className="flex flex-wrap gap-0.5 bg-white border border-gray-200 rounded-2xl p-1 self-start">
           {CORTOS.map((m, i) => {
             const ym = `${anyo}-${String(i + 1).padStart(2, "0")}`;
             const activo = ym === mes; const futuro = ym > mesActual;
@@ -291,7 +291,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
       ) : (
         <>
           {/* KPIs del mes */}
-          <div className="grid grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
             <div className="bg-[#2E1A47] px-6 py-5">
               <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Gastado en {mesLabel(mes).split(" ")[0]} · sin IVA</p>
               <p className="text-2xl font-black text-white">{fmtEur(baseMes + baseObliviate + nominasMes.coste)}</p>

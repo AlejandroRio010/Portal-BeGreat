@@ -26,7 +26,7 @@ export default async function IngresosGastosHubPage() {
         <p className="text-sm text-gray-400 mt-1">Todo el detalle del día a día: facturas, gastos y su clasificación</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {secciones.map(s => (
           <Link key={s.titulo} href={s.href}
             className="group bg-white border border-gray-200 rounded-2xl p-6 hover:border-[#2E1A47]/40 hover:shadow-md transition-all flex items-start gap-4">

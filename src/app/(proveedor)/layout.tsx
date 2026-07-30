@@ -22,7 +22,7 @@ export default async function ProveedorLayout({ children }: { children: React.Re
   return (
     <div className="flex min-h-screen">
       <Sidebar nombre={nombre} identificador={identificador} role="proveedor" puedeVerEntidades={supplier?.puede_ver_entidades ?? false} logoUrl={supplier?.logo_url ?? null} />
-      <main className="flex-1 ml-64 p-8 min-h-screen bg-[#f8f7fb]">{children}</main>
+      <main className="flex-1 lg:ml-64 px-4 pb-6 pt-20 lg:p-8 min-h-screen bg-[#f8f7fb]">{children}</main>
     </div>
   );
 }

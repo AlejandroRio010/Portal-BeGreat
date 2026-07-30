@@ -94,7 +94,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-8 gap-6">
+      <div className="flex flex-wrap items-start justify-between mb-8 gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
             <Link href="/admin/finanzas" className="hover:text-[#2E1A47]">Finanzas</Link><span>/</span><span className="text-gray-600 font-medium">Ingresos</span>
@@ -147,7 +147,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
       ) : (
         <>
           {/* KPIs del mes */}
-          <div className="grid grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4">
             <div className="bg-[#2E1A47] px-6 py-5">
               <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Facturado en {mesLabel(mes).split(" ")[0]} · sin IVA</p>
               <p className="text-2xl font-black text-white">{fmtEur(baseFacturado)}</p>

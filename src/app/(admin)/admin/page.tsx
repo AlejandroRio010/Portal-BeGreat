@@ -94,7 +94,7 @@ export default async function AdminHomePage({
       </div>
 
       {/* ── KPIs ── */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         {/* Oscura: ops firmadas + fee BeGreat */}
         <div className="flex overflow-hidden">
           <div className="flex-1 bg-[#2E1A47] px-6 py-5">
@@ -201,7 +201,7 @@ export default async function AdminHomePage({
       </div>
 
       {/* ── Bloques ops en marcha ── */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4 mb-6">
         {/* Total activas */}
         <div className="bg-[#2E1A47] px-5 py-4 flex items-center justify-between">
           <div>

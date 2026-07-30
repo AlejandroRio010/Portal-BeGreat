@@ -53,7 +53,7 @@ export default async function ObliviatePage() {
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-8 gap-6">
+      <div className="flex flex-wrap items-start justify-between mb-8 gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
             <Link href="/admin/finanzas" className="hover:text-[#2E1A47]">Finanzas</Link><span>/</span><span className="text-gray-600 font-medium">Obliviate</span>
@@ -73,7 +73,7 @@ export default async function ObliviatePage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-8">
         <div className="bg-[#2E1A47] px-6 py-5">
           <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Saldo inicial {anyo}</p>
           <p className="text-2xl font-black text-white">{saldoInicial != null ? fmtEur(saldoInicial) : "—"}</p>

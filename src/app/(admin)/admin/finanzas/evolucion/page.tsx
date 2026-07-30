@@ -41,7 +41,7 @@ export default async function EvolucionPage() {
       ) : (
         <>
           {/* Resumen del año */}
-          <div className="grid grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-8">
             <div className="bg-[#2E1A47] px-6 py-5">
               <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Ingresos del año</p>
               <p className="text-2xl font-black text-white">{fmtEur(ytdIngresos)}</p>

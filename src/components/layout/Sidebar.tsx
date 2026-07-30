@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 interface SidebarProps {
   nombre: string;
@@ -69,11 +70,15 @@ export default function Sidebar({ nombre, identificador, role, puedeVerEntidades
     nav = [...proveedorNav.slice(0, -2), { href: "/proveedor/entidades", label: "Entidades financieras", exact: false }, ...proveedorNav.slice(-2)];
   }
 
-  return (
-    <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-gradient-to-b from-[#2E1A47] via-[#2A1740] to-[#1F0F33] text-white z-50">
+  const home = role === "admin" ? "/admin" : role === "proveedor" ? "/proveedor" : "/portal";
+  const [abierto, setAbierto] = useState(false);
+  // En móvil, cerrar el menú al navegar a otra página
+  useEffect(() => { setAbierto(false); }, [pathname]);
 
+  const contenido = (
+    <>
       {/* Logo — centrado, link al inicio */}
-      <Link href={role === "admin" ? "/admin" : role === "proveedor" ? "/proveedor" : "/portal"} className="flex items-center justify-center px-6 py-6 hover:opacity-80 transition-opacity">
+      <Link href={home} className="flex items-center justify-center px-6 py-6 hover:opacity-80 transition-opacity">
         <Image
           src="/begreat-logo-blanco.png"
           alt="BeGreat Consulting"
@@ -135,6 +140,42 @@ export default function Sidebar({ nombre, identificador, role, puedeVerEntidades
           Cerrar sesión →
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Barra superior (solo móvil) */}
+      <div className="lg:hidden fixed top-0 inset-x-0 h-14 z-40 flex items-center justify-between px-4 bg-gradient-to-r from-[#2E1A47] to-[#2A1740] shadow-md">
+        <Link href={home}>
+          <Image src="/begreat-logo-blanco.png" alt="BeGreat Consulting" width={104} height={31} className="object-contain" priority />
+        </Link>
+        <button onClick={() => setAbierto(true)} aria-label="Abrir menú" className="p-2 -mr-2 text-white">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Cajón deslizante (solo móvil) */}
+      {abierto && (
+        <div className="lg:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setAbierto(false)} aria-hidden />
+          <aside className="absolute left-0 top-0 h-full w-64 flex flex-col bg-gradient-to-b from-[#2E1A47] via-[#2A1740] to-[#1F0F33] text-white shadow-2xl">
+            <button onClick={() => setAbierto(false)} aria-label="Cerrar menú" className="absolute top-4 right-3 p-2 text-white/60 hover:text-white">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" />
+              </svg>
+            </button>
+            {contenido}
+          </aside>
+        </div>
+      )}
+
+      {/* Sidebar fija (escritorio) */}
+      <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-64 flex-col bg-gradient-to-b from-[#2E1A47] via-[#2A1740] to-[#1F0F33] text-white z-50">
+        {contenido}
+      </aside>
+    </>
   );
 }
