@@ -935,25 +935,9 @@ export default function AdminOpForm({
                         </div>
                       )}
 
-                      {/* Pago de mercadería: factura de compra al proveedor/cliente */}
-                      <div className="border-t border-gray-200 pt-3">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#2E1A47]" />
-                          <label className="text-[10px] text-gray-400 uppercase tracking-wider">Pago mercadería · factura de compra</label>
-                        </div>
-                        <PurchasePicker
-                          opId={opId}
-                          contraparte={facturaDestinatario === "cliente" ? (clientNombre ?? "") : (supplierNombre ?? "")}
-                          esperado={importeNum}
-                          autonomo={false}
-                          selected={pagoLinks}
-                          onChange={setPagoLinks}
-                          accent="purple"
-                          placeholder="Buscar factura de compra…"
-                          hint="Lo que pagamos al proveedor/cliente por el equipo · busca importe + IVA 21% · sin las ya vinculadas a otra op"
-                        />
-                        <ObliviateResolver value={getObl("mercaderia", null)} onChange={v => setObl("mercaderia", null, v)} esperado={importeNum} verbo="pagado" />
-                      </div>
+                      {/* Los vínculos con facturas de Holded se quitaron del formulario
+                          (2026-07-30, decisión de Alejandro): el cobro/pago se controla
+                          directamente en Holded. Los vínculos existentes se conservan. */}
                     </div>
                   )}
 
@@ -1010,38 +994,6 @@ export default function AdminOpForm({
                             </div>
                           );
                         })()}
-                        {/* Pago de la comisión: factura de compra del colaborador en Holded */}
-                        <div className="mt-2 border-t border-dashed border-gray-100 pt-2">
-                          <div className="flex items-center gap-1.5 mb-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                            <span className="text-[9px] text-gray-400 uppercase tracking-wider">Pago · factura de compra en Holded</span>
-                          </div>
-                          {c.id ? (() => {
-                            const ac = allColaboradores.find(a => a.id === c.id);
-                            const pct = ac?.irpf_pct ?? 7;
-                            return (
-                            <>
-                              <PurchasePicker
-                                opId={opId}
-                                contraparte={c.nombre}
-                                esperado={c.importe}
-                                autonomo={!!ac?.es_autonomo}
-                                irpfPct={ac?.es_autonomo ? pct : null}
-                                selected={comisionLinks(c.id)}
-                                onChange={next => setComisionLinks(c.id!, next)}
-                                accent="amber"
-                                placeholder="Buscar factura de comisión…"
-                                hint={ac?.es_autonomo
-                                  ? `Compras de ${c.nombre || "este colaborador"} · autónomo: busca base + IVA 21% − IRPF ${pct}%`
-                                  : `Compras de ${c.nombre || "este colaborador"} · empresa: busca base + IVA 21%`}
-                              />
-                              <ObliviateResolver value={getObl("comision", c.id)} onChange={v => setObl("comision", c.id!, v)} esperado={c.importe} verbo="pagado" />
-                            </>
-                            );
-                          })() : (
-                            <p className="text-[9px] text-gray-400">Selecciona la persona para vincular su factura de pago.</p>
-                          )}
-                        </div>
                       </div>
                     ))}
                     <button type="button" onClick={addColab}
@@ -1071,63 +1023,6 @@ export default function AdminOpForm({
                     <p className="text-[9px] text-gray-400 mt-1">Fee total ({calcFeeTotal().toLocaleString("es-ES", { minimumFractionDigits: 2 })} €) − Colaboradores ({totalColabFee().toLocaleString("es-ES", { minimumFractionDigits: 2 })} €)</p>
                   </div>
 
-                  {/* ── Cobro: facturas de Holded vinculadas (una o varias) ── */}
-                  <div className="border-t border-gray-200 pt-3">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      <label className="text-[10px] text-gray-400 uppercase tracking-wider">Cobro · facturas en Holded</label>
-                    </div>
-
-                    {/* Facturas ya vinculadas */}
-                    {holdedInvoices.map((f) => (
-                      <div key={f.id} className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 mb-1.5">
-                        <p className="text-xs font-bold text-emerald-800 truncate">Factura {f.number ?? f.id}</p>
-                        <button type="button" onClick={() => setHoldedInvoices(holdedInvoices.filter(x => x.id !== f.id))}
-                          className="text-[10px] text-gray-400 hover:text-red-500 flex-shrink-0 ml-2">✕ Quitar</button>
-                      </div>
-                    ))}
-
-                    {/* Buscador para añadir otra */}
-                    <div className="relative">
-                      <input value={facturaQuery}
-                        onChange={e => onFacturaQuery(e.target.value)}
-                        onFocus={onFacturaFocus}
-                        onBlur={() => setTimeout(() => setFacturaOpen(false), 200)}
-                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-800 focus:outline-none focus:border-[#2E1A47]"
-                        placeholder={holdedInvoices.length > 0 ? "+ Añadir otra factura (cobro en 2 partes)…" : "Buscar factura de cobro…"} autoComplete="off" />
-                      {facturaLoading && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-gray-300 border-t-[#2E1A47] animate-spin rounded-full" />}
-                      {facturaOpen && (
-                        <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-72 overflow-y-auto">
-                          <label className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50 cursor-pointer sticky top-0">
-                            <input type="checkbox" checked={facturaTodas}
-                              onChange={e => { setFacturaTodas(e.target.checked); buscarFacturas(facturaQuery, e.target.checked); }}
-                              className="w-3.5 h-3.5 accent-[#2E1A47]" />
-                            <span className="text-[10px] text-gray-500">Ver todas (sin filtrar por {pipelineKey === "renting" ? "entidad/renting" : "cliente/consultoría"})</span>
-                          </label>
-                          {facturaResults.filter((f: any) => !holdedInvoices.some(h => h.id === f.id)).length === 0 ? (
-                            <p className="px-3 py-3 text-xs text-gray-400">{facturaLoading ? "Buscando…" : "Sin facturas disponibles."}</p>
-                          ) : facturaResults.filter((f: any) => !holdedInvoices.some(h => h.id === f.id)).map((f: any) => (
-                            <button key={f.id} type="button"
-                              onMouseDown={() => { setHoldedInvoices([...holdedInvoices, { id: f.id, number: f.numero }]); setFacturaOpen(false); setFacturaQuery(""); }}
-                              className={`w-full text-left px-3 py-2 hover:bg-[#EEEBF3] border-b border-gray-50 last:border-0 ${f.coincide_importe ? "bg-emerald-50/40" : ""}`}>
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="text-xs font-semibold text-gray-800 truncate">{f.cliente}</p>
-                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ${f.estado === "cobrada" ? "bg-emerald-100 text-emerald-700" : f.estado === "parcial" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"}`}>{f.estado === "cobrada" ? "Cobrada" : f.estado === "parcial" ? "Parcial" : "Pendiente"}</span>
-                              </div>
-                              <p className="text-[10px] text-gray-400">
-                                {f.numero} · {fmtEuroInput(String(f.total))}€ · {new Date(f.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
-                                {f.coincide_importe && <span className="text-emerald-600 font-semibold"> · ✓ cuadra con el fee</span>}
-                              </p>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      <p className="text-[10px] text-gray-400 mt-1">
-                        {pipelineKey === "renting" ? "Facturas de renting a la entidad de la op" : "Facturas de consultoría al cliente de la op"} · sin las ya vinculadas a otra op. El estado y el cuadre se ven en la ficha.
-                      </p>
-                      <ObliviateResolver value={getObl("cobro", null)} onChange={v => setObl("cobro", null, v)} esperado={isFactura ? importeFacturadoBegreat : calcFeeTotal()} verbo="cobrado" />
-                    </div>
-                  </div>
                 </div>
               )}
 
