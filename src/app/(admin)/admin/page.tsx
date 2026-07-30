@@ -28,6 +28,7 @@ export default async function AdminHomePage({
       importe: operations.importe,
       nombre: operations.nombre,
       created_at: operations.created_at,
+      fecha_cierre: operations.fecha_cierre,
       client_nombre: clients.nombre,
       colaborador_nombre: collaborators.nombre,
       colaborador_id: collaborators.id,
@@ -46,19 +47,25 @@ export default async function AdminHomePage({
 
   const pendientes8 = pendientes.slice(0, 8);
 
-  // Ranking data for client component
+  // Ranking data for client component — la fecha que manda es la de CIERRE
+  // (firma real, como en finanzas); si no la hay, la de alta.
   const rankingOps = allOps.map(o => ({
     colaborador_id: o.colaborador_id,
     colaborador_nombre: o.colaborador_nombre,
     fase: o.fase,
     comision_colaborador: o.comision_colaborador,
     comision_begreat: o.comision_begreat,
-    created_at: o.created_at.toISOString(),
+    created_at: (o.fecha_cierre ?? o.created_at).toISOString(),
   }));
+
+  // El mes de una op firmada es su fecha de CIERRE (la fecha real de firma,
+  // sincronizada con la factura) — el MISMO criterio que finanzas/caja. Si no
+  // la tiene, cae a la fecha de alta.
+  const fechaFirma = (op: { fecha_cierre: Date | null; created_at: Date }) => new Date(op.fecha_cierre ?? op.created_at);
 
   // Year filter
   const availableYears = Array.from(
-    new Set(allOps.map((o) => new Date(o.created_at).getFullYear()))
+    new Set(allOps.map((o) => fechaFirma(o).getFullYear()))
   ).sort((a, b) => b - a);
   const currentYear = new Date().getFullYear();
   const selectedYear = sp.year ? parseInt(sp.year) : (availableYears[0] ?? currentYear);
@@ -67,9 +74,9 @@ export default async function AdminHomePage({
   const monthlyOps = Array(12).fill(0);
   const monthlyFeeBegreat = Array(12).fill(0);
   for (const op of allOps) {
-    const d = new Date(op.created_at);
-    if (d.getFullYear() !== selectedYear) continue;
     if (!FIRMADAS.includes(op.fase ?? "")) continue;
+    const d = fechaFirma(op);
+    if (d.getFullYear() !== selectedYear) continue;
     const m = d.getMonth();
     monthlyOps[m] += 1;
     monthlyFeeBegreat[m] += Number(op.comision_begreat ?? 0);
