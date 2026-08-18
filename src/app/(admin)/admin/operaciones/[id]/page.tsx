@@ -614,6 +614,7 @@ export default async function AdminOperacionDetallePage({ params }: { params: Pr
             initialFacturaDestinatario={op.factura_destinatario ?? null}
             clientNombre={op.client_nombre ?? null}
             supplierNombre={op.supplier_nombre ?? null}
+            supplierId={op.supplier_id ?? null}
             colaboradorNombre={op.colaborador_nombre ?? null}
             colaboradorId={op.colaborador_id ?? null}
             initialColaboradores={(op.colaboradores_comision as any) ?? []}

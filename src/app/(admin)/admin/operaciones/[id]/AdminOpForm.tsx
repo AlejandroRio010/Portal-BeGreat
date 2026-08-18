@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fmtPctInput, fmtEuroInput, rawFromFmt } from "@/lib/format";
 import AvalistasEditor, { type AvalistaForm, emptyAvalista, avalistasPayload } from "@/components/AvalistasEditor";
+import { ProveedorBuscadorField } from "@/components/AltaOpFields";
 import PurchasePicker from "./PurchasePicker";
 import ObliviateResolver, { type ObliviateVal } from "./ObliviateResolver";
 import { rangoCuota } from "@/lib/cuotaRenting";
@@ -102,6 +103,7 @@ interface Props {
   // context names
   clientNombre?: string | null;
   supplierNombre?: string | null;
+  supplierId?: string | null;
   colaboradorNombre?: string | null;
   colaboradorId?: string | null;
   // entity/office lists
@@ -171,6 +173,7 @@ export default function AdminOpForm({
   initialObliviateMov = [],
   clientNombre,
   supplierNombre,
+  supplierId: initialSupplierId,
   colaboradorNombre,
   colaboradorId,
   allEntities,
@@ -487,6 +490,14 @@ export default function AdminOpForm({
     return m;
   });
 
+  // ── Proveedor (cambiable en renting; petición de la jefa 30-jul-2026) ────
+  // El id solo cambia al ELEGIR un proveedor de la lista; escribir sin
+  // seleccionar no desvincula (evita perder el proveedor por un despiste).
+  const [provSel, setProvSel] = useState<{ id: string | null; nombre: string }>({
+    id: initialSupplierId ?? null,
+    nombre: supplierNombre ?? "",
+  });
+
   // ── Handlers ──────────────────────────────────────────────────────────────
   async function patch(data: Record<string, unknown>) {
     const res = await fetch(`/api/admin/operations/${opId}`, {
@@ -548,6 +559,7 @@ export default function AdminOpForm({
         holded_invoices: holdedInvoices,
         holded_purchases: holdedPurchases,
         obliviate_mov: obliviateMov,
+        supplier_id: provSel.id,
       });
       setSaved(true);
     } catch { setError("Error al guardar los cambios."); }
@@ -1026,6 +1038,23 @@ export default function AdminOpForm({
                 </div>
               )}
 
+
+              {/* Proveedor (solo renting): cambiable con buscador */}
+              {pipelineKey === "renting" && (
+                <div className="space-y-1">
+                  <ProveedorBuscadorField
+                    nombre={provSel.nombre}
+                    setNombre={(v) => setProvSel(prev => ({ ...prev, nombre: v }))}
+                    onSelect={(p) => setProvSel({ id: p.id, nombre: p.nombre })}
+                    onClearLink={() => { /* el vínculo solo cambia al elegir de la lista */ }}
+                    label="block text-xs text-gray-400 uppercase tracking-wider"
+                    inp="w-full border border-gray-200 px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-[#2E1A47]"
+                  />
+                  {provSel.id !== (initialSupplierId ?? null) && (
+                    <p className="text-[10px] font-semibold text-amber-600">⚠ Proveedor cambiado a «{provSel.nombre}» — se aplicará al guardar.</p>
+                  )}
+                </div>
+              )}
 
               {/* Entidad financiera → Oficina */}
               <div className="space-y-2">
