@@ -103,7 +103,12 @@ async function getLibroDiarioUncached(): Promise<LibroLinea[]> {
   const vistos = new Set<string>();
   return out.filter(l => {
     if (l.anyo < anyoBase) return false;
-    const k = `${l.entry}|${l.line}`;
+    // OJO: los asientos recién creados llegan con entry_number = 0 (provisional);
+    // dos asientos distintos con entry 0 colisionarían por (entry, line) y se
+    // perderían líneas reales. Para esos, la clave incluye el contenido.
+    const k = l.entry === 0
+      ? `0|${l.line}|${l.date}|${l.account}|${l.debit}|${l.credit}`
+      : `${l.entry}|${l.line}`;
     if (vistos.has(k)) return false;
     vistos.add(k);
     return true;
