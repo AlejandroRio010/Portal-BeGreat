@@ -119,7 +119,8 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
   // Mini desglose del cargo de tarjeta: a qué se fue el gasto del MES ANTERIOR
   const desgloseTarjetas = tarjetasCalc
     .map(t => ({ def: t.def, cargo: t.enCaja[mesN - 1], prev: mesN >= 2 ? t.resumen[mesN - 2] : null }))
-    .filter(t => t.cargo > 0.005);
+    // abs: un cargo negativo (liquidación a favor tras una devolución) también se muestra
+    .filter(t => Math.abs(t.cargo) > 0.005);
 
   return (
     <div>
@@ -159,7 +160,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
             <div className="bg-[#2E1A47] px-6 py-5">
               <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Gastos</p>
               <p className="text-2xl font-black text-white">{fmtEur(M.salidas)}</p>
-              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">fijos {fmtEur(M.fijosTotal)} · variables {fmtEur(M.variables)}{M.nominas > 0.5 ? ` · nóminas ${fmtEur(M.nominas)}` : ""}{M.tarjetas > 0.5 ? ` · tarjetas ${fmtEur(M.tarjetas)}` : ""}{M.impuestos > 0.5 ? ` · impuestos ${fmtEur(M.impuestos)}` : ""}{M.obliviateImpuestos > 0.5 ? ` · impuestos Obliviate ${fmtEur(M.obliviateImpuestos)}` : ""}</p>
+              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">fijos {fmtEur(M.fijosTotal)} · variables {fmtEur(M.variables)}{M.nominas > 0.5 ? ` · nóminas ${fmtEur(M.nominas)}` : ""}{Math.abs(M.tarjetas) > 0.5 ? ` · tarjetas ${fmtEur(M.tarjetas)}` : ""}{M.impuestos > 0.5 ? ` · impuestos ${fmtEur(M.impuestos)}` : ""}{M.obliviateImpuestos > 0.5 ? ` · impuestos Obliviate ${fmtEur(M.obliviateImpuestos)}` : ""}</p>
             </div>
             <div className={`px-6 py-5 border ${M.neto >= 0 ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"}`}>
               <p className={`text-[10px] font-bold uppercase tracking-wider mb-1.5 ${M.neto >= 0 ? "text-emerald-600" : "text-red-600"}`}>Neto del mes</p>

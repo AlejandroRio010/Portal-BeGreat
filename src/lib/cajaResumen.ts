@@ -125,11 +125,13 @@ export async function getResumenCaja(anyoN: number): Promise<ResumenCaja> {
     const recibos: number[] = [];
     for (let m = 0; m < 12; m++) {
       const cargoM = manual.get(`${m + 1}|${def.cuenta}`) ?? resumen[m].cargo;
-      const desc = Math.min(arrastre, cargoM);
+      // Un cargo NEGATIVO es una liquidación a favor (devolución que netea el
+      // mes): entra tal cual como ingreso en caja, sin recortar a cero.
+      const desc = Math.min(arrastre, Math.max(0, cargoM));
       arrastre -= desc;
       for (const tk of resumen[m].tickets) if (tk.pagaFactura && tk.ref && (docContada.get(normRef(tk.ref)) ?? false)) arrastre += tk.importe;
       recibos.push(cargoM);
-      enCaja.push(Math.max(0, cargoM - desc));
+      enCaja.push(cargoM - desc);
     }
     return { def, resumen, recibos, enCaja };
   });

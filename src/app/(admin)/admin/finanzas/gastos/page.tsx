@@ -107,7 +107,8 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
       const datos = resumen[m];
       // El cargo del mes en el recorrido incluye el manual si lo hay
       const cargoM = cargoManualDe.get(`${m + 1}|${def.cuenta}`) ?? datos.cargo;
-      const descuento = Math.min(arrastre, cargoM);
+      // Cargo negativo = liquidación a favor: no absorbe arrastre
+      const descuento = Math.min(arrastre, Math.max(0, cargoM));
       if (m === mesN - 1) descuentoMes = descuento;
       arrastre -= descuento;
       for (const tk of datos.tickets) {
@@ -118,8 +119,9 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
     const cargoAuto = mesData.cargo;
     const manual = cargoManualDe.get(`${mesN}|${def.cuenta}`) ?? null;
     const recibo = manual ?? cargoAuto;
-    const facturasContadas = Math.min(descuentoMes, recibo);
-    const enCaja = Math.max(0, recibo - facturasContadas);
+    const facturasContadas = Math.min(descuentoMes, Math.max(0, recibo));
+    // Recibo negativo (liquidación a favor) = ingreso en caja, se muestra tal cual
+    const enCaja = recibo - facturasContadas;
     const actividad = resumen.some(m => m.cargo > 0.005 || m.tickets.length > 0) || cargoRows.some(r => r.cuenta === def.cuenta);
     // Gasto del mes anterior: si lo hubo y este mes no aparece recibo, algo falta
     // en la contabilidad (el banco cobra a mes vencido sí o sí).
@@ -295,7 +297,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
             <div className="bg-[#2E1A47] px-6 py-5">
               <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-1.5">Gastado en {mesLabel(mes).split(" ")[0]} · sin IVA</p>
               <p className="text-2xl font-black text-white">{fmtEur(baseMes + baseObliviate + nominasMes.coste)}</p>
-              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">+ IVA {fmtEur(ivaMes + (totalObliviate - baseObliviate))}{cargoTarjeta > 0 ? ` · tarjetas ${fmtEur(cargoTarjeta)}` : ""}{nominasMes.coste > 0.5 ? ` · nóminas ${fmtEur(nominasMes.coste)}` : ""} · caja {fmtEur(totalContados + cargoTarjeta + totalObliviate + nominasMes.coste)}</p>
+              <p className="text-white/40 text-[9px] mt-1 uppercase tracking-wide">+ IVA {fmtEur(ivaMes + (totalObliviate - baseObliviate))}{Math.abs(cargoTarjeta) > 0.005 ? ` · tarjetas ${fmtEur(cargoTarjeta)}` : ""}{nominasMes.coste > 0.5 ? ` · nóminas ${fmtEur(nominasMes.coste)}` : ""} · caja {fmtEur(totalContados + cargoTarjeta + totalObliviate + nominasMes.coste)}</p>
             </div>
             <div className="bg-white border border-gray-200 px-6 py-5">
               <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1.5">Gastos fijos</p>

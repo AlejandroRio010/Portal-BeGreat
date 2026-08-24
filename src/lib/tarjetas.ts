@@ -92,12 +92,35 @@ export function resumenTarjeta(entries: LibroLinea[], cuenta: string | string[],
   for (const ls of byE.values()) {
     const tocaBanco = ls.some(l => l.account.startsWith("57"));
     const tocaProveedor = ls.some(l => esAcreedor(l.account));
+    // El banco RECIBE dinero (débito en 572x): la liquidación va al revés —
+    // hubo más devoluciones que gastos y el banco INGRESA la diferencia.
+    const bancoRecibe = ls.some(l => l.account.startsWith("572") && l.debit > 0.005);
+    // Traspaso entre cuentas de la MISMA tarjeta (reclasificaciones contables):
+    // ni gasto ni recibo, se ignora el asiento entero.
+    const propias = ls.filter(l => cuentasTarjeta.has(String(l.account)));
+    if (propias.some(l => l.debit > 0.005) && propias.some(l => l.credit > 0.005)) continue;
     for (const l of ls) {
       if (!cuentasTarjeta.has(l.account) || l.anyo !== anyo) continue;
       // Débito con contrapartida en banco = el banco liquida la tarjeta → cuenta en caja
       if (l.debit > 0.005 && tocaBanco) { meses[l.mesIdx].cargo += l.debit; continue; }
+      // Débito SIN banco = devolución/abono del comercio a la tarjeta
+      // (contrapartida en ingresos): ticket NEGATIVO que netea el gasto del mes.
+      if (l.debit > 0.005) {
+        const ref = refDoc(l.description);
+        const k = `DEV|${ref ? `${l.date}|${l.debit.toFixed(2)}|${ref}` : `e${l.entry}|${l.line}`}`;
+        if (vistos.has(k)) continue;
+        vistos.add(k);
+        const categoria = categoriaTicket(l.description);
+        meses[l.mesIdx].tickets.push({ date: l.date, mesIdx: l.mesIdx, desc: l.description || "(sin concepto)", importe: -l.debit, categoria, pagaFactura: false, ref: ref || null });
+        meses[l.mesIdx].gastado -= l.debit;
+        meses[l.mesIdx].porCategoria[categoria] -= l.debit;
+        continue;
+      }
       // Crédito = cargo a la tarjeta: ticket, o pago de una factura registrada
       if (l.credit > 0.005) {
+        // ...salvo que el banco esté COBRANDO (liquidación a favor): el recibo
+        // del mes es un INGRESO en caja, no un cargo ni un ticket.
+        if (bancoRecibe && !tocaProveedor) { meses[l.mesIdx].cargo -= l.credit; continue; }
         const ref = refDoc(l.description);
         const k = ref ? `${l.date}|${l.credit.toFixed(2)}|${ref}` : `e${l.entry}|${l.line}`;
         if (vistos.has(k)) continue;

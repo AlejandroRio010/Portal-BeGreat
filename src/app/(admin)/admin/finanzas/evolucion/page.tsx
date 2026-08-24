@@ -87,7 +87,7 @@ export default async function EvolucionPage() {
                       <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{fmtEur(x.fijosTotal)}</td>
                       <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{fmtEur(x.variables)}</td>
                       <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{x.nominas > 0.5 ? fmtEur(x.nominas) : "—"}</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{x.tarjetas > 0.5 ? fmtEur(x.tarjetas) : "—"}</td>
+                      <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{Math.abs(x.tarjetas) > 0.5 ? fmtEur(x.tarjetas) : "—"}</td>
                       <td className="px-4 py-3 text-sm text-right text-gray-600 whitespace-nowrap">{x.impuestos > 0.5 ? fmtEur(x.impuestos) : "—"}</td>
                       <td className={`px-4 py-3 text-sm text-right whitespace-nowrap ${Math.abs(x.obliviateCobros - x.obliviateGastos) > 0.5 ? (x.obliviateCobros - x.obliviateGastos >= 0 ? "text-emerald-700" : "text-gray-600") : "text-gray-300"}`}>{Math.abs(x.obliviateCobros - x.obliviateGastos) > 0.5 ? fmtEur(x.obliviateCobros - x.obliviateGastos) : "—"}</td>
                       <td className={`px-4 py-3 text-sm text-right font-bold whitespace-nowrap ${x.neto >= 0 ? "text-emerald-700" : "text-red-600"}`}>{fmtEur(x.neto)}</td>

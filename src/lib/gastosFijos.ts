@@ -21,7 +21,7 @@ export interface GastoFijo {
   id: string;
   label: string;
   match: string;                    // subcadena del nombre del proveedor (normalizada)
-  holded_contact_id: string | null; // si está, el match es exacto por contacto
+  holded_contact_id: string | null; // si está, el match es exacto por contacto (admite varios ids separados por comas)
   mensual: number | null;           // importe mensual base (sin IVA); null si es variable
   categoria: string;
   nota?: string | null;
@@ -111,8 +111,12 @@ export function norm(s: string): string {
  *    proveedor (Movistar telecom vs. renting de iPhone).
  */
 export function esDelFijo(g: GastoFijo, proveedor: string, contactId?: string | null, cuentaId?: string | null): boolean {
-  const provOk = g.holded_contact_id && contactId
-    ? g.holded_contact_id === contactId
+  // holded_contact_id admite VARIOS ids separados por comas: Holded a veces
+  // duplica el contacto de un proveedor (p. ej. Telefónica en ago-2026) y las
+  // facturas nuevas llegan con otro id aunque sean del mismo fijo.
+  const ids = (g.holded_contact_id ?? "").split(",").map(s => s.trim()).filter(Boolean);
+  const provOk = ids.length && contactId
+    ? ids.includes(contactId)
     : norm(proveedor).includes(norm(g.match));
   if (!provOk) return false;
   if (g.cuenta_id) return cuentaId === g.cuenta_id;
