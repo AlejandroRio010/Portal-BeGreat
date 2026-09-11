@@ -140,12 +140,9 @@ export default function AltaOpAdminForm({ colaboradores }: { colaboradores: Cola
       const data = await res.json();
       setDbResults(data);
       setDbSearched(true);
-      if (data.length === 0) {
-        setDbOpen(false);
-        setEsNuevoCliente(true);
-      } else {
-        setDbOpen(true);
-      }
+      // Mantener el desplegable abierto siempre: muestra coincidencias de la BD
+      // y el botón "Añadir como nueva empresa". No saltar solo al modo nuevo.
+      setDbOpen(true);
     }, 250);
   }
 

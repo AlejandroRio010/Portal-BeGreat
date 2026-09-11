@@ -699,8 +699,7 @@ function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClie
               onNew={() => setEsNuevoCliente(true)}
               placeholder="Escribe para buscar o añadir nueva empresa..."
               searchUrl="/api/search/clientes" nameField="cliente_nombre"
-              label="Empresa cliente *" inp={inpCls} labelCls={lCls}
-              autoNewWhenEmpty />
+              label="Empresa cliente *" inp={inpCls} labelCls={lCls} />
           </div>
         )}
       </div>

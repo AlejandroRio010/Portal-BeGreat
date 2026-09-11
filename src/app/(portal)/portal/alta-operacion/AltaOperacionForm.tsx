@@ -989,8 +989,7 @@ function ClienteSection({ clienteNombre, setClienteNombre, clienteEmail, setClie
               onNew={() => setEsNuevoCliente(true)}
               placeholder="Escribe para buscar o añadir nueva empresa..."
               searchUrl="/api/search/clientes" nameField="cliente_nombre"
-              label="Empresa cliente *" inp={inp} labelCls={labelCls} disabled={disabled}
-              autoNewWhenEmpty />
+              label="Empresa cliente *" inp={inp} labelCls={labelCls} disabled={disabled} />
           </div>
         )}
       </div>
@@ -1121,8 +1120,7 @@ function ProveedorSection({ proveedorNombre, setProveedorNombre, proveedorEmail,
               onNew={() => setEsNuevoProveedor(true)}
               placeholder="Escribe para buscar o añadir nuevo proveedor..."
               searchUrl="/api/search/proveedores" nameField="proveedor_nombre"
-              label="Nombre del proveedor" inp={inp} labelCls={labelCls}
-              autoNewWhenEmpty />
+              label="Nombre del proveedor" inp={inp} labelCls={labelCls} />
           </div>
         )}
       </div>
