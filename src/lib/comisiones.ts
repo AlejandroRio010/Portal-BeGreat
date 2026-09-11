@@ -14,11 +14,29 @@
 type Origen = { importe?: string | null };
 type ColabCom = { nombre?: string | null; importe?: string | null };
 
+export type RepartoColaborador = { id?: string; nombre?: string; importe?: string };
+
+/**
+ * Comisión de UN colaborador concreto en una operación: su línea dentro del
+ * reparto (colaboradores_comision). Si la op no tiene reparto, cae al campo
+ * legacy comision_colaborador (ops antiguas con un solo colaborador).
+ * Nunca devuelve la suma de todos los colaboradores.
+ */
+export function comisionDeColaborador(
+  op: { comision_colaborador: string | null; colaboradores_comision?: unknown },
+  collaboratorId: string,
+): number {
+  const reparto = (op.colaboradores_comision as RepartoColaborador[] | null) ?? [];
+  if (reparto.length === 0) return Number(op.comision_colaborador ?? 0);
+  const mia = reparto.find(c => c.id === collaboratorId);
+  return mia ? (parseFloat(mia.importe ?? "") || 0) : 0;
+}
+
 export interface OpComision {
   comision_begreat?: string | number | null;
   comision_colaborador?: string | number | null;
-  comision_origenes?: Origen[] | null;
-  colaboradores_comision?: ColabCom[] | null;
+  comision_origenes?: unknown;
+  colaboradores_comision?: unknown;
   modalidad_renting?: string | null;
   importe_facturado_begreat?: string | number | null;
   importe?: string | number | null;
@@ -31,7 +49,7 @@ const n = (v: unknown) => {
 
 /** Suma de lo que se llevan los colaboradores (array nuevo o campo legacy). */
 export function comisionColaboradoresDeOp(o: OpComision): number {
-  const arr = (o.colaboradores_comision ?? [])
+  const arr = ((o.colaboradores_comision as ColabCom[] | null) ?? [])
     .reduce((s, c) => s + (parseFloat(c.importe ?? "") || 0), 0);
   if (arr > 0) return arr;
   return n(o.comision_colaborador);
@@ -39,7 +57,7 @@ export function comisionColaboradoresDeOp(o: OpComision): number {
 
 /** Honorarios totales cobrados al cliente por la operación. */
 export function honorariosDeOp(o: OpComision): number {
-  const sumOrigenes = (o.comision_origenes ?? [])
+  const sumOrigenes = ((o.comision_origenes as Origen[] | null) ?? [])
     .reduce((s, x) => s + (parseFloat(x.importe ?? "") || 0), 0);
   if (sumOrigenes > 0) return sumOrigenes;
   const esFactura = o.modalidad_renting === "begreat_factura" && o.importe_facturado_begreat && o.importe;
