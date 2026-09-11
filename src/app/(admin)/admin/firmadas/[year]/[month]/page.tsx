@@ -3,6 +3,7 @@ import { operations, clients, collaborators } from "@/db/schema";
 import { eq, or, isNull, ne } from "drizzle-orm";
 import Link from "next/link";
 import { fmtEur } from "@/lib/format";
+import { comisionBegreatDeOp, comisionColaboradoresDeOp } from "@/lib/comisiones";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,10 @@ export default async function AdminFirmadasMesPage({ params }: { params: Promise
       importe: operations.importe,
       comision_colaborador: operations.comision_colaborador,
       comision_begreat: operations.comision_begreat,
+      comision_origenes: operations.comision_origenes,
+      colaboradores_comision: operations.colaboradores_comision,
+      modalidad_renting: operations.modalidad_renting,
+      importe_facturado_begreat: operations.importe_facturado_begreat,
       created_at: operations.created_at,
       client_nombre: clients.nombre,
       colaborador_nombre: collaborators.nombre,
@@ -39,8 +44,8 @@ export default async function AdminFirmadasMesPage({ params }: { params: Promise
     return d.getFullYear() === y && d.getMonth() === m - 1;
   });
 
-  const feeBegreat = delMes.reduce((s, o) => s + Number(o.comision_begreat ?? 0), 0);
-  const feeColab = delMes.reduce((s, o) => s + Number(o.comision_colaborador ?? 0), 0);
+  const feeBegreat = delMes.reduce((s, o) => s + comisionBegreatDeOp(o), 0);
+  const feeColab = delMes.reduce((s, o) => s + comisionColaboradoresDeOp(o), 0);
   const totalFinanciado = delMes.reduce((s, o) => s + Number(o.importe ?? 0), 0);
 
   return (
@@ -98,8 +103,8 @@ export default async function AdminFirmadasMesPage({ params }: { params: Promise
                     </span>
                   </td>
                   <td className="px-6 py-3.5 text-sm text-gray-700 font-medium whitespace-nowrap">{fmtEur(op.importe)}</td>
-                  <td className="px-6 py-3.5 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(op.comision_begreat)}</td>
-                  <td className="px-6 py-3.5 text-sm text-gray-500 whitespace-nowrap">{fmtEur(op.comision_colaborador)}</td>
+                  <td className="px-6 py-3.5 text-sm font-bold text-[#2E1A47] whitespace-nowrap">{fmtEur(comisionBegreatDeOp(op))}</td>
+                  <td className="px-6 py-3.5 text-sm text-gray-500 whitespace-nowrap">{fmtEur(comisionColaboradoresDeOp(op))}</td>
                   <td className="px-6 py-3.5 text-right whitespace-nowrap">
                     <Link href={`/admin/operaciones/${op.id}`} className="text-xs text-[#2E1A47] font-semibold hover:underline">Ver →</Link>
                   </td>

@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { fmtEur } from "@/lib/format";
 import HistorialTabla from "@/components/HistorialTabla";
+import { comisionBegreatDeOp, comisionColaboradoresDeOp } from "@/lib/comisiones";
 
 export const dynamic = "force-dynamic";
 
@@ -64,8 +65,8 @@ export default async function AdminHistorialPage({
 
   const firmadas = allOps.filter((o) => FIRMADAS.includes(o.fase ?? ""));
   const pendientes = allOps.filter((o) => o.status === "pendiente_de_validar" || (o.status === "activa" && !FIRMADAS.includes(o.fase ?? "")));
-  const feeBegreat = firmadas.reduce((s, o) => s + Number(o.comision_begreat ?? 0), 0);
-  const feeColab = firmadas.reduce((s, o) => s + Number(o.comision_colaborador ?? 0), 0);
+  const feeBegreat = firmadas.reduce((s, o) => s + comisionBegreatDeOp(o), 0);
+  const feeColab = firmadas.reduce((s, o) => s + comisionColaboradoresDeOp(o), 0);
 
   return (
     <div>
@@ -151,7 +152,7 @@ export default async function AdminHistorialPage({
         const origenes = (o.comision_origenes as Origen[] | null) ?? [];
         const colabsCom = (o.colaboradores_comision as ColabCom[] | null) ?? [];
         const sumOrigenes = origenes.reduce((s, x) => s + (parseFloat(x.importe ?? "") || 0), 0);
-        const bg = Number(o.comision_begreat ?? 0);
+        const bg = comisionBegreatDeOp(o);
         const colabTotal = Number(o.comision_colaborador ?? 0);
         const esFactura = o.modalidad_renting === "begreat_factura" && o.importe_facturado_begreat && o.importe;
         const honorarios = sumOrigenes > 0

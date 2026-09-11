@@ -140,10 +140,11 @@ function AddNoteForm({ apiUrl, placeholder }: { apiUrl: string; placeholder: str
 }
 
 // ─── Note item ───────────────────────────────────────────────────────────────
-function NoteItem({ note, apiUrl, canEdit, canPin, idx }: { note: Note; apiUrl: string; canEdit: boolean; canPin: boolean; idx: number }) {
+function NoteItem({ note, apiUrl, canEdit, canPin, canDelete, idx }: { note: Note; apiUrl: string; canEdit: boolean; canPin: boolean; canDelete: boolean; idx: number }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const editEditorId = `notes-edit-${idx}`;
 
   async function handleSave() {
@@ -151,12 +152,17 @@ function NoteItem({ note, apiUrl, canEdit, canPin, idx }: { note: Note; apiUrl: 
     const text = stripHtml(html);
     if (!text) { setEditing(false); return; }
     setSaving(true);
-    await fetch(apiUrl, {
+    const res = await fetch(apiUrl, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ noteId: note.id, texto: html }),
     });
     setSaving(false);
+    if (!res.ok) {
+      const b = await res.json().catch(() => ({}));
+      alert(b.error ?? "No se pudo guardar la nota");
+      return;
+    }
     setEditing(false);
     router.refresh();
   }
@@ -167,6 +173,23 @@ function NoteItem({ note, apiUrl, canEdit, canPin, idx }: { note: Note; apiUrl: 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ noteId: note.id, pinned: !note.pinned }),
     });
+    router.refresh();
+  }
+
+  async function handleDelete() {
+    if (!confirm("¿Eliminar esta nota? No se puede deshacer.")) return;
+    setDeleting(true);
+    const res = await fetch(apiUrl, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ noteId: note.id }),
+    });
+    setDeleting(false);
+    if (!res.ok) {
+      const b = await res.json().catch(() => ({}));
+      alert(b.error ?? "No se pudo eliminar la nota");
+      return;
+    }
     router.refresh();
   }
 
@@ -193,6 +216,11 @@ function NoteItem({ note, apiUrl, canEdit, canPin, idx }: { note: Note; apiUrl: 
           {canEdit && !editing && (
             <button onClick={() => setEditing(true)} className="text-[10px] text-gray-400 hover:text-[#2E1A47] font-semibold">
               Editar
+            </button>
+          )}
+          {canDelete && !editing && (
+            <button onClick={handleDelete} disabled={deleting} className="text-[10px] text-gray-400 hover:text-red-500 font-semibold disabled:opacity-50">
+              {deleting ? "Eliminando…" : "Eliminar"}
             </button>
           )}
         </div>
@@ -243,9 +271,11 @@ export default function NotesSection({ notes, apiUrl, placeholder = "Añade una 
         ) : (
           ordenadas.map((n, i) => {
             const isOwn = !!currentUserId && n.author_id === currentUserId;
-            const canEdit = readOnly ? false : isOwn;
+            // El admin puede editar y eliminar cualquier nota; el colaborador solo las suyas
+            const canEdit = readOnly ? false : (isOwn || !!isAdmin);
             const canPinNote = readOnly ? false : (canPin && (isOwn || !!isAdmin));
-            return <NoteItem key={n.id} note={n} apiUrl={apiUrl} canEdit={canEdit} canPin={canPinNote} idx={i} />;
+            const canDelete = readOnly ? false : !!isAdmin;
+            return <NoteItem key={n.id} note={n} apiUrl={apiUrl} canEdit={canEdit} canPin={canPinNote} canDelete={canDelete} idx={i} />;
           })
         )}
       </div>

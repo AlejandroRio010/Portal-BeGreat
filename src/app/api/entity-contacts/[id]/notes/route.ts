@@ -41,7 +41,7 @@ export async function PATCH(req: NextRequest) {
   const updateData: Record<string, unknown> = {};
   if (typeof texto === "string" && texto.trim()) {
     const userId = (session.user as any).collaboratorId as string;
-    if (note.author_id !== userId) return NextResponse.json({ error: "Solo puedes editar tus propias notas" }, { status: 403 });
+    if ((session.user as any).role !== "admin" && note.author_id !== userId) return NextResponse.json({ error: "Solo puedes editar tus propias notas" }, { status: 403 });
     updateData.texto = texto.trim();
   }
   if (typeof pinned === "boolean") updateData.pinned = pinned;

@@ -40,12 +40,21 @@ export async function PATCH(req: NextRequest) {
 
   const updateData: Record<string, unknown> = {};
   if (typeof texto === "string" && texto.trim()) {
-    if (note.author_id !== userId) return NextResponse.json({ error: "Solo puedes editar tus propias notas" }, { status: 403 });
+    if ((session.user as any).role !== "admin" && note.author_id !== userId) return NextResponse.json({ error: "Solo puedes editar tus propias notas" }, { status: 403 });
     updateData.texto = texto.trim();
   }
   if (typeof pinned === "boolean") updateData.pinned = pinned;
   if (Object.keys(updateData).length === 0) return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
 
   await db.update(clientGroupNotes).set(updateData).where(eq(clientGroupNotes.id, noteId));
+  return NextResponse.json({ ok: true });
+}
+
+export async function DELETE(req: NextRequest) {
+  const session = await auth();
+  if (!session || (session.user as any).role !== "admin") return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+  const { noteId } = await req.json();
+  if (!noteId) return NextResponse.json({ error: "Datos requeridos" }, { status: 400 });
+  await db.delete(clientGroupNotes).where(eq(clientGroupNotes.id, noteId));
   return NextResponse.json({ ok: true });
 }

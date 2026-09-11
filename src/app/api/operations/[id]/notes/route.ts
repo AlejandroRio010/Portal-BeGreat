@@ -68,7 +68,7 @@ export async function PATCH(
     const [note] = await db.select().from(notes).where(eq(notes.id, noteId)).limit(1);
     if (!note) return NextResponse.json({ error: "Nota no encontrada" }, { status: 404 });
 
-    if (note.author_id !== userId) {
+    if ((session.user as any).role !== "admin" && note.author_id !== userId) {
       return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
     }
 
@@ -83,4 +83,13 @@ export async function PATCH(
     console.error("[NOTES PATCH ERROR]", err);
     return NextResponse.json({ error: err?.message ?? "Error interno" }, { status: 500 });
   }
+}
+
+export async function DELETE(req: NextRequest) {
+  const session = await auth();
+  if (!session || (session.user as any).role !== "admin") return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+  const { noteId } = await req.json();
+  if (!noteId) return NextResponse.json({ error: "Datos requeridos" }, { status: 400 });
+  await db.delete(notes).where(eq(notes.id, noteId));
+  return NextResponse.json({ ok: true });
 }
