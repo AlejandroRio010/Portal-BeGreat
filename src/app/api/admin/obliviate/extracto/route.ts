@@ -33,10 +33,34 @@ export async function POST(req: NextRequest) {
   const iCab = filas.findIndex(f => String(f?.[0] ?? "").trim().toLowerCase().startsWith("f. operativa"));
   if (iCab < 0) return NextResponse.json({ error: "No encuentro la cabecera 'F. Operativa' — formato inesperado" }, { status: 400 });
 
+  // Parser robusto de importes: admite formato español (1.000,00) y anglosajón
+  // (1,000.00). El separador decimal es el símbolo (. o ,) que esté más a la
+  // derecha; el otro es separador de miles y se elimina. Sabadell exporta en
+  // formato anglosajón, así que -1,000.00 debe leerse como -1000, no como -1.
   const num = (v: unknown) => {
-    const s = String(v ?? "").replace(/\./g, m => (String(v).includes(",") ? "" : m)).replace(",", ".");
-    const n = parseFloat(s);
-    return Number.isFinite(n) ? n : null;
+    let s = String(v ?? "").trim().replace(/\s/g, "");
+    if (!s) return null;
+    const neg = /^-/.test(s) || /-$/.test(s);
+    s = s.replace(/[^\d.,]/g, "");
+    if (!s) return null;
+    const lastComma = s.lastIndexOf(",");
+    const lastDot = s.lastIndexOf(".");
+    const decPos = Math.max(lastComma, lastDot);
+    if (decPos >= 0) {
+      const decChar = s[decPos];
+      const decimales = s.slice(decPos + 1);
+      // Si tras el último separador hay 3 dígitos, es separador de miles (sin decimales)
+      if (/^\d{3}$/.test(decimales)) {
+        s = s.replace(/[.,]/g, "");
+      } else {
+        const milesChar = decChar === "," ? "." : ",";
+        s = s.split(milesChar).join("").replace(decChar, ".");
+      }
+    }
+    let n = parseFloat(s);
+    if (!Number.isFinite(n)) return null;
+    if (neg) n = -Math.abs(n);
+    return n;
   };
   const movs: { fecha: string; concepto: string; importe: number; saldo: number | null }[] = [];
   for (const f of filas.slice(iCab + 1)) {
